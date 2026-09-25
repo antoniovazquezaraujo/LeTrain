@@ -19,6 +19,7 @@ import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.Tractor;
 import letrain.vehicle.rail.Linker;
+import letrain.vehicle.rail.ScriptTrainEventListener;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
 import letrain.vehicle.rail.impl.Wagon;
@@ -338,9 +339,72 @@ class BrakeAtBoundaryIntegrationTest {
         assertTrue(subject.isAutoMode());
     }
 
+    @Test
+    @DisplayName("halting beside a shared fork does not contact the train still clearing it")
+    void haltingBesideSharedFork_doesNotContact_andResumes() {
+        // Blocker: a train with its tail wagon on the shared fork f2 and the rest in EAST, so the
+        // subject's next block stays locked while the node cell is physically occupied.
+        Train blocker = placeTrain(2, List.of(world.tB, world.tB1, world.f2),
+                List.of(true, false, false), List.of(Dir.E, Dir.E, Dir.E));
+        ((Locomotive) blocker.getDirectorLinker()).setEngineOn(false);
+        blocker.getSafetyManager().claimOccupiedSegments();
+        assertTrue(model.getBlockManager().getOwnedSegments(blocker).contains(east()));
+
+        // Subject: auto, rolling at speed 1 through the siding towards EAST.
+        Train subject = placeTrain(1, List.of(world.s2, world.s1), List.of(true, false),
+                List.of(Dir.W, Dir.N));
+        ((letrain.itinerary.impl.AutoPilotImpl) subject.getAutopilot())
+                .setMode(letrain.itinerary.AutoPilot.Mode.FOLLOWING);
+        Locomotive loco = (Locomotive) subject.getDirectorLinker();
+        loco.setEngineOn(true);
+        loco.setCurrentSpeed(1);
+        loco.setTargetSpeed(1);
+
+        List<String> contacts = new ArrayList<>();
+        subject.addScriptTrainEventListener(contactListener(contacts));
+        blocker.addScriptTrainEventListener(contactListener(contacts));
+
+        subject.getSafetyManager().acquireInitialLocks();
+        assertTrue(subject.getSafetyManager().isWaitingForBlock(),
+                "the subject must wait for EAST (owned by the blocker)");
+
+        runUntil(() -> subject.getSafetyManager().isWaitingForBlock() && subject.getSpeed() == 0,
+                600);
+
+        assertSame(world.s3, subject.getPhysicalFront().getTrack(),
+                "the subject must halt on the last siding rail before the shared fork");
+        assertTrue(contacts.isEmpty(),
+                "halting on that rail must not contact the train clearing the fork: " + contacts);
+
+        // The other train clears the node and frees its block; the subject must resume.
+        world.tB.removeLinker();
+        world.tB1.removeLinker();
+        world.f2.removeLinker();
+        model.getBlockManager().releaseAll(blocker);
+
+        runUntil(() -> subject.getPhysicalFront().getTrack() == world.tB1, 600);
+        assertSame(world.tB1, subject.getPhysicalFront().getTrack(),
+                "the subject must resume once the block is released and the node is clear");
+        assertTrue(contacts.isEmpty(), "a clean resume must not contact either: " + contacts);
+    }
+
     // ------------------------------------------------------------------
     // Helpers
     // ------------------------------------------------------------------
+
+    private ScriptTrainEventListener contactListener(List<String> events) {
+        return new ScriptTrainEventListener() {
+            @Override
+            public void onContact(Train train, Point pos, int speed) {
+                events.add("contact train=" + train.getId() + " @" + pos + " speed=" + speed);
+            }
+
+            @Override
+            public void onCrash(Train train, Point pos, int speed) {
+                events.add("crash train=" + train.getId() + " @" + pos + " speed=" + speed);
+            }
+        };
+    }
 
     private void programSubject(Train subject, int speed) {
         // The DSL trainRef is the locomotive id (CommandManager.resolveTrain).
@@ -376,6 +440,11 @@ class BrakeAtBoundaryIntegrationTest {
      * positions carry a locomotive (the rest are wagons).
      */
     private Train placeTrain(int id, List<RailTrack> tracks, List<Boolean> locoFlags) {
+        return placeTrain(id, tracks, locoFlags, tracks.stream().map(t -> Dir.W).toList());
+    }
+
+    private Train placeTrain(int id, List<RailTrack> tracks, List<Boolean> locoFlags,
+            List<Dir> entryDirs) {
         Train train = new Train(id);
         train.setModel(model);
         List<Linker> linkers = new ArrayList<>();
@@ -396,7 +465,7 @@ class BrakeAtBoundaryIntegrationTest {
         }
         train.setDirectorLinker((Tractor) linkers.get(0));
         for (int i = 0; i < tracks.size(); i++) {
-            tracks.get(i).enterLinkerFromDir(Dir.W, linkers.get(i));
+            tracks.get(i).enterLinkerFromDir(entryDirs.get(i), linkers.get(i));
         }
         if (tracks.get(0).getComponent() instanceof Station station) {
             train.setStationId(station.getId());
