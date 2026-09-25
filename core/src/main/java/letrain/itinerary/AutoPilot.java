@@ -65,6 +65,20 @@ public interface AutoPilot {
     default void onTick() {}
 
     /**
+     * Low-speed physical contact of the train (issue #645). {@code stop on contact} missions
+     * complete here: the train ends stopped pressed against the vehicle (or buffer) ahead, ready
+     * for {@code couple}. No-op when the contact is not the target of the running mission.
+     */
+    default void onContact(letrain.map.Point pos, int speed) {}
+
+    /**
+     * Crash of the train (issue #645): the contact happened at or above the crash threshold and the
+     * normal physics (destruction) applies. A running {@code stop on contact} mission fails with a
+     * warning instead of waiting for a train that no longer exists.
+     */
+    default void onCrash(letrain.map.Point pos, int speed) {}
+
+    /**
      * Sink for mission problem messages (rejection, unreachable, lost route, stall). The console
      * sets it so typed orders warn on screen; scripts leave it null and warnings go to the log
      * only. Success notices are log-only and never reach this sink (user UX decision).

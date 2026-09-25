@@ -686,7 +686,8 @@ public class AutoPilotImpl implements AutoPilot {
     }
 
     /***********************************************************
-     * Issue #619: one-shot missions (stop at / stop when blocked)
+     * Issue #619: one-shot missions (stop at / stop when blocked) Issue #645: stop on contact
+     * (coupling approach)
      **********************************************************/
 
     @Override
@@ -745,7 +746,10 @@ public class AutoPilotImpl implements AutoPilot {
         boolean reverse = false;
         currentRoute = List.of();
         missionReversed = false;
-        if (m.kind() == TrainMission.Kind.STATION || m.kind() == TrainMission.Kind.SENSOR) {
+        if (m.kind() == TrainMission.Kind.ON_CONTACT) {
+            // Issue #645: no route, no brake plan and no auto-reversal; the train drives straight
+            // at the ordered speed until the physical contact (onContact/onCrash).
+        } else if (m.kind() == TrainMission.Kind.STATION || m.kind() == TrainMission.Kind.SENSOR) {
             if (getTrainCurrentSegment() == null || getMissionTargetSegment(m) == null) {
                 m.fail();
                 warnMission("Train " + train.getId() + ": " + m.description() + " not found");
@@ -843,6 +847,11 @@ public class AutoPilotImpl implements AutoPilot {
                     applyStopPlan(rails);
                 }
             }
+            case ON_CONTACT -> {
+                // Issue #645: no braking curve. The coupling approach drives at the ordered speed
+                // until the physical contact stops it; the mission completes in onContact (or
+                // fails in onCrash at or above the crash threshold, normal physics).
+            }
         }
     }
 
@@ -871,6 +880,36 @@ public class AutoPilotImpl implements AutoPilot {
         missionStalledTicks++;
         if (missionStalledTicks >= MISSION_STALL_TICKS) {
             failMission("could not reach " + mission.description() + " (stalled)");
+        }
+    }
+
+    /**
+     * Issue #645: the coupling approach completes on the first low-speed physical contact. The
+     * train is already emergency-stopped by {@code Train.notifyContact} and stays pressed against
+     * the vehicle ahead, ready for {@code couple}. A contact with the buffer ahead (dead end) also
+     * completes it: the physical stop is the goal of the order.
+     */
+    @Override
+    public void onContact(letrain.map.Point pos, int speed) {
+        if (mission == null || !mission.isActive() || mode != Mode.FOLLOWING) {
+            return;
+        }
+        if (mission.kind() == TrainMission.Kind.ON_CONTACT) {
+            completeMission("contact ahead");
+        }
+    }
+
+    /**
+     * Issue #645: at or above the crash threshold the contact is a crash (normal physics, no
+     * shield); the mission fails with a warning instead of waiting for a train being destroyed.
+     */
+    @Override
+    public void onCrash(letrain.map.Point pos, int speed) {
+        if (mission == null || !mission.isActive() || mode != Mode.FOLLOWING) {
+            return;
+        }
+        if (mission.kind() == TrainMission.Kind.ON_CONTACT) {
+            failMission("crashed before touching the vehicle ahead");
         }
     }
 
@@ -1018,6 +1057,10 @@ public class AutoPilotImpl implements AutoPilot {
      * switches as they are now. {@code -1} when it cannot be determined (target not on the walk,
      * loop, head without direction). For end of track / blocked it returns the standoff one rail
      * before the buffer, so the train does not contact it.
+     *
+     * <p>
+     * {@code stop on contact} has no stop point: it intentionally drives up to the physical contact
+     * (issue #645), so it always returns {@code -1} and no braking curve is applied.
      */
     private int missionRailsToStop() {
         if (mission == null || train == null || train.isPendingReverse()) {
@@ -1025,6 +1068,9 @@ public class AutoPilotImpl implements AutoPilot {
         }
         Dir dir = travelDir();
         if (dir == null) {
+            return -1;
+        }
+        if (mission.kind() == TrainMission.Kind.ON_CONTACT) {
             return -1;
         }
         if (mission.kind() == TrainMission.Kind.STATION
@@ -1149,6 +1195,40 @@ public class AutoPilotImpl implements AutoPilot {
         if (m.kind() == TrainMission.Kind.SENSOR) {
             letrain.track.Sensor se = model.getSensor(m.targetId());
             return se != null ? segmentAtPosition(se.getPosition()) : null;
+        }
+        if (m.kind() == TrainMission.Kind.ON_CONTACT) {
+            // Issue #645: the approach target is resolved dynamically to the first vehicle ahead
+            // (the physical walk with the switches as they are now). The safety layer uses it to
+            // let the maneuver enter the canton occupied by its own detached part.
+            return approachedVehicleSegment();
+        }
+        return null;
+    }
+
+    /**
+     * Canton of the first vehicle ahead on the physical walk (issue #645), or null when there is
+     * none in sight. Only vehicles of other trains count: a link of our own consist ahead is not a
+     * contact target.
+     */
+    private Segment approachedVehicleSegment() {
+        if (train == null || train.getModel() == null) {
+            return null;
+        }
+        RailwayGraph graph = train.getModel().getRailwayGraph();
+        Linker head = train.getPhysicalFront();
+        Dir dir = travelDir();
+        if (graph == null || head == null || dir == null
+                || !(head.getTrack() instanceof RailTrack headTrack)) {
+            return null;
+        }
+        RailIterator it = new RailIterator(headTrack, dir);
+        int steps = 0;
+        while (steps < MISSION_MAX_WALK && it.advance()) {
+            steps++;
+            Linker occupant = it.getTrack().getLinker();
+            if (occupant != null && occupant.getTrain() != null && occupant.getTrain() != train) {
+                return it.getTrack() instanceof RailTrack rail ? graph.getSegment(rail) : null;
+            }
         }
         return null;
     }
