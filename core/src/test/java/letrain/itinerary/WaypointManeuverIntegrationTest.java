@@ -145,6 +145,44 @@ class WaypointManeuverIntegrationTest {
         }
 
         @Test
+        @DisplayName("a chain of repeated waypoints advances to the next distinct stop")
+        void repeatedWaypointChain_advancesToNextStop() {
+            List<RailTrack> line = line(0, 3, 0);
+            ForkRailTrack fork = fork(3, 0, Dir.W, Dir.E);
+            fork.addRoute(Dir.W, Dir.S);
+            RailTrack stub = track(3, 1);
+            List<RailTrack> far = line(4, 3, 0); // x = 4..6
+            connect(line.get(2), Dir.E, fork, Dir.W);
+            connect(fork, Dir.E, far.get(0), Dir.W);
+            fork.connect(Dir.S, stub);
+            stub.connect(Dir.N, fork);
+            Station a = station(line.get(0), "a");
+            Station b = station(far.get(2), "b");
+            Train train = placeTrain(line.get(0), Dir.W); // faces b
+            train.setStationId(a.getId());
+
+            List<String> errors = model.setProgram("""
+                    create itinerary "chain" {
+                        add station "a" reverse
+                        add station "a"
+                        add station "a" reverse
+                        add station "b"
+                    }
+                    assign itinerary "chain" to train %d;
+                    train %d set autopilot true;
+                    train %d set speed 3;
+                    """.formatted(train.getId(), train.getId(), train.getId()));
+            assertTrue(errors.isEmpty(), "unexpected errors: " + errors);
+
+            runUntil(() -> train.getStationId() == b.getId(), 900);
+
+            assertEquals(b.getId(), train.getStationId(),
+                    "the chain of repeated stops must advance to the next distinct stop (review)");
+            assertFalse(((Locomotive) train.getDirectorLinker()).isReversed(),
+                    "the reverses of the first and third waypoints must both run");
+        }
+
+        @Test
         @DisplayName("a missing A* route with the destination ahead does not blame the sense")
         void aheadButNoRoute_doesNotBlameTheSense() {
             List<RailTrack> line = line(0, 6, 0);
