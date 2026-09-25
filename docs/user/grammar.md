@@ -26,15 +26,18 @@ These are executed immediately. **They require a semicolon (`;`) at the end**.
 
 **One-shot missions (`stop at …`)**: destination and speed travel in the same order, so the train
 does not start before receiving the destination. The speed is applied when the maneuver starts
-(without `speed` the train keeps its current target; at 0 the order is rejected with a warning) and
-the train always ends stopped. The destination can be a station, a sensor, the end of track (the
-train brakes on the last rail, without touching the buffer) or the first block (`stop when blocked`
-ends the mission at the block and does **not** resume when it is released). If the destination is
-only reachable in the opposite sense, the order reverses the train once at the start. An order
-received while the train is running an itinerary is rejected with a warning (nothing is paused):
-use `train N set autopilot false;` or write the maneuver in the itinerary. Speed signals and blocks
-keep ruling on top: the mission's braking curve only lowers the speed, never raises it. A new order
-replaces the running mission.
+(without `speed`, or with `speed 0`, the train keeps its current target; if that is 0 the order is
+rejected with a warning) and the train always ends stopped. The destination can be a station, a
+sensor, the end of track **ahead of the train** (the train brakes on the last rail, without touching
+the buffer; a closed loop with no end ahead warns and does not move) or the first block
+(`stop when blocked` ends the mission at the block and does **not** resume when it is released). If
+the destination is only reachable in the opposite sense, the order reverses the train once at the
+start. An order received while the train is running an itinerary is rejected with a warning (nothing
+is paused): use `train N set autopilot false;` or write the maneuver in the itinerary. If the
+destination becomes unreachable mid-mission (the route is lost) or the train stays stopped without a
+block/schedule/loading reason for about one game hour, the mission fails with a warning. Speed
+signals and blocks keep ruling on top: the mission's braking curve only lowers the speed, never
+raises it. A new order replaces the running mission.
 
 **Naming Elements:**
 - `station [ID] set name "My Station";`

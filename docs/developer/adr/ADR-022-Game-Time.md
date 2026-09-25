@@ -284,14 +284,17 @@ add station "B" arrival 06:27,
   reanudar en silencio. Para maniobras manuales: `train N set autopilot false;`.
 - **Misiones sueltas (issue #619)**: `train N stop at station|sensor "X" [speed V];`,
   `stop at end` y `stop when blocked` son misiones de **un solo uso** implementadas sobre el
-  autopilot: la velocidad va en la orden (sin ella se usa la que el tren tenga puesta; a 0 se
-  rechaza con aviso), el tren termina parado y la misión avisa al llegar. Si el destino solo es
-  alcanzable en sentido contrario, la orden **auto-invierte una vez** al empezar; `stop at end`
-  frena en la última vía antes del tope y `stop when blocked` termina en el primer bloqueo (no
-  reanuda al liberarse). Una orden nueva reemplaza a la misión en curso y `set autopilot false`
-  la cancela. Los cantones y las señales siguen mandando: la curva de frenado de la misión
-  reutiliza las piezas del #633 (`maxSpeedForRails`, `brakingRailsFromCurrentState`) y **solo baja
-  el target, nunca lo sube**.
+  autopilot: la velocidad va en la orden (sin ella —o con `speed 0`— se usa la que el tren tenga
+  puesta; si es 0 se rechaza con aviso), el tren termina parado y la misión avisa al llegar. Si el
+  destino solo es alcanzable en sentido contrario, la orden **auto-invierte una vez** al empezar;
+  `stop at end` frena en la última vía antes del tope y `stop when blocked` termina en el primer
+  bloqueo (no reanuda al liberarse). Una orden nueva reemplaza a la misión en curso y
+  `set autopilot false` la cancela. Si a mitad de misión se pierde la ruta (por ejemplo, el
+  destino desaparece) la misión **falla con aviso**; también falla si el tren se queda parado sin
+  espera de bloque/horario/carga durante ~1 hora de juego (guardián de estancamiento, `onTick`).
+  Los cantones y las señales siguen mandando: la curva de frenado de la misión reutiliza las piezas
+  del #633 (`maxSpeedForRails`, `brakingRailsFromCurrentState`) y **solo baja el target, nunca lo
+  sube**.
 - La maniobra **no se recorta**: el horario es plan, la maniobra es trabajo; si no da tiempo, el
   tren sale tarde y el desfase se mide.
 
