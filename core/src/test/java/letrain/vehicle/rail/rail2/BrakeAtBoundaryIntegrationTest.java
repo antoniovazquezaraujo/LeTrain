@@ -264,6 +264,62 @@ class BrakeAtBoundaryIntegrationTest {
     }
 
     @Test
+    @DisplayName("deferred speed order released before the plan engages is restored (M1)")
+    void deferredSpeedOrder_releasedBeforeEngage_isRestored() {
+        park(placeTrain(2, List.of(world.tMain), List.of(true)));
+        Train blockerEast = park(placeTrain(3, List.of(world.tB), List.of(true)));
+        Train subject = placeTrain(1, List.of(world.headStart(), world.second(), world.third()),
+                List.of(true, false, false));
+        programSubject(subject, 1);
+        Locomotive loco = (Locomotive) subject.getDirectorLinker();
+
+        // While rolling with the plan pending (before the curve engages), order a new speed.
+        runUntil(() -> subject.getPhysicalFront().getTrack() == world.s1, 2000);
+        assertTrue(subject.getSafetyManager().isWaitingForBlock());
+        orderSpeed(subject, 3);
+        assertEquals(0, loco.getTargetSpeed(), "the wait gate must defer the ordered speed");
+
+        model.getBlockManager().release(blockerEast, east());
+
+        assertEquals(3, loco.getTargetSpeed(),
+                "the release must restore the deferred order instead of losing it");
+        runUntil(() -> subject.getPhysicalFront().getTrack() == world.tB1, 2000);
+        assertSame(world.tB1, subject.getPhysicalFront().getTrack(),
+                "the train must resume with the ordered speed");
+    }
+
+    @Test
+    @DisplayName("deferred speed order while stopped at the boundary is restored (M1)")
+    void deferredSpeedOrder_whileStoppedAtBoundary_isRestored() {
+        park(placeTrain(2, List.of(world.tMain), List.of(true)));
+        Train blockerEast = park(placeTrain(3, List.of(world.tB), List.of(true)));
+        Train subject = placeTrain(1, List.of(world.headStart(), world.second(), world.third()),
+                List.of(true, false, false));
+        programSubject(subject, 1);
+        Locomotive loco = (Locomotive) subject.getDirectorLinker();
+
+        runUntil(() -> subject.getSafetyManager().isWaitingForBlock() && subject.getSpeed() == 0,
+                4000);
+        assertSame(world.s3, subject.getPhysicalFront().getTrack(),
+                "the plan must have stopped it");
+        assertEquals(0, loco.getTargetSpeed());
+
+        orderSpeed(subject, 3);
+
+        assertEquals(0, loco.getTargetSpeed(), "the wait gate must defer the ordered speed");
+        assertTrue(subject.getSafetyManager().isWaitingForBlock(),
+                "ordering a speed must not clear the wait (it would strand the order)");
+
+        model.getBlockManager().release(blockerEast, east());
+
+        assertEquals(3, loco.getTargetSpeed(),
+                "the release must restore the deferred order of a stopped train");
+        runUntil(() -> subject.getPhysicalFront().getTrack() == world.tB1, 3000);
+        assertSame(world.tB1, subject.getPhysicalFront().getTrack(),
+                "the train must start moving with the ordered speed");
+    }
+
+    @Test
     @DisplayName("push-pull (two locomotives) counts one rail per advance and stops on the same rail")
     void pushPull_countsOneRailPerAdvance() {
         park(placeTrain(2, List.of(world.tMain), List.of(true)));
@@ -298,6 +354,13 @@ class BrakeAtBoundaryIntegrationTest {
                 train %d set autopilot true;
                 train %d set speed %d;
                 """.formatted(world.a.getId(), world.b.getId(), locoId, locoId, locoId, speed));
+        assertTrue(errors.isEmpty(), "unexpected errors: " + errors);
+    }
+
+    /** Orders a speed through the DSL (console path), as a user or a trigger would. */
+    private void orderSpeed(Train subject, int speed) {
+        int locoId = ((Locomotive) subject.getDirectorLinker()).getId();
+        List<String> errors = model.setProgram("train " + locoId + " set speed " + speed + ";");
         assertTrue(errors.isEmpty(), "unexpected errors: " + errors);
     }
 

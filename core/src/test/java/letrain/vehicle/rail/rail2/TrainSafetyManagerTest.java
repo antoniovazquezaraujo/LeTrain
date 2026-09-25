@@ -149,6 +149,35 @@ class TrainSafetyManagerTest {
     // ------------------------------------------------------------------
 
     @Test
+    @DisplayName("invasion must not overwrite the saved desired speed with the capped one (m3)")
+    void invasion_keepsSavedDesiredSpeed() {
+        Train train = new Train(1);
+        train.setModel(model);
+
+        Locomotive loco = new Locomotive(103, 'N');
+        RailTrack track = mock(RailTrack.class);
+        loco.setTrack(track);
+        train.pushBack(loco);
+        train.setDirectorLinker(loco);
+
+        TrainSafetyManager safety = (TrainSafetyManager) train.getSafetyManager();
+        Segment invaded = mock(Segment.class, "invaded");
+        when(blockManager.getOwnedSegments(train)).thenReturn(List.of());
+        when(blockManager.tryLock(train, invaded)).thenReturn(false);
+        when(blockManager.getOwners(invaded)).thenReturn(List.of());
+
+        loco.setTargetSpeed(2); // the current target (may be the one capped by the curve)
+        train.setSavedTargetSpeed(3); // the desired speed remembered by the plan
+
+        safety.onSegmentEntered(invaded);
+
+        assertEquals(0, loco.getTargetSpeed(), "the invasion must brake directly");
+        assertTrue(safety.isWaitingForBlock());
+        assertEquals(3, train.getSavedTargetSpeed(),
+                "the invasion must not store the capped target over the desired speed");
+    }
+
+    @Test
     @DisplayName("blocked next segment with an unknown boundary falls back to braking now (#633)")
     void blockedNextSegment_unknownBoundary_brakesNow() {
         Train train = new Train(1);

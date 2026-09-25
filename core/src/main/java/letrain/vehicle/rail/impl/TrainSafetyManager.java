@@ -406,7 +406,14 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                         train.getId(), currentSegment.getId());
                 cancelScheduledStop();
                 brakedForBlock = true;
-                train.getMovementManager().initiateBraking();
+                // Direct brake: Train.brake() would save the current target, which may be the one
+                // the braking curve already capped, over the desired speed (issue #633).
+                Locomotive invasionDirector = directorLocomotive();
+                if (invasionDirector != null) {
+                    invasionDirector.setTargetSpeedDirect(0);
+                } else {
+                    train.getMovementManager().initiateBraking();
+                }
                 train.setPendingManualMode(true);
                 for (Train owner : bm.getOwners(currentSegment)) {
                     if (owner != train) {
@@ -490,17 +497,18 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                 if (locked) {
                     log.info("Train {} (AUTO) successfully woke up and locked segment {}",
                             train.getId(), nextSegment.getId());
-                    boolean restore = brakedForBlock || targetCapped;
+                    boolean restore = brakedForBlock || targetCapped || train.hasSavedTargetSpeed();
                     clearBlockWait();
                     if (restore) {
-                        // Restore the speed desired before the plan (or the newest order the wait
-                        // gate stored); a plan that neither braked nor capped leaves it untouched.
+                        // Restore the speed desired before the plan, the newest order the wait gate
+                        // stored, or a brake's saved speed. A wait that neither braked, capped nor
+                        // deferred anything leaves the target untouched.
                         train.restoreSpeed();
                     }
                 }
             } else if (isWaitingForBlock && nextSegment != null
                     && bm.getOwnedSegments(train).contains(nextSegment)) {
-                boolean restore = brakedForBlock || targetCapped;
+                boolean restore = brakedForBlock || targetCapped || train.hasSavedTargetSpeed();
                 clearBlockWait();
                 if (restore) {
                     train.restoreSpeed();

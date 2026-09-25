@@ -101,6 +101,19 @@ public class Train implements Renderable {
         this.savedTargetSpeed = speed;
     }
 
+    /**
+     * True when there is a speed saved for a later restore (block/schedule wait gate, brake…). The
+     * safety layer uses it to decide whether a release must restore a deferred order (issue #633).
+     */
+    public boolean hasSavedTargetSpeed() {
+        return savedTargetSpeed > 0;
+    }
+
+    /** The speed saved for a later restore, or -1 when there is none. */
+    public int getSavedTargetSpeed() {
+        return savedTargetSpeed;
+    }
+
     public Train(int id) {
         this.id = ValidationUtils.requirePositive(id, "train id");
         this.linkers = new LinkedList<>();
@@ -300,7 +313,10 @@ public class Train implements Renderable {
             int oldSpeed = speedLinker.getTargetSpeed();
             this.setSavedSpeedBeforeReverse(-1);
             speedLinker.setSpeed(speed);
-            if (speed > 0 && oldSpeed == 0 && getModel() != null) {
+            // The effective target can be 0 when the block/schedule wait gate deferred the order;
+            // the train is not really starting, so do not acquire initial locks (which would clear
+            // the wait and strand the deferred speed) (issue #633).
+            if (speedLinker.getTargetSpeed() > 0 && oldSpeed == 0 && getModel() != null) {
                 letrain.segments.Segment seg = resolveCurrentSegmentFromGraph();
                 if (seg != null) {
                     notifyAutopilotSegmentEntered(seg);
