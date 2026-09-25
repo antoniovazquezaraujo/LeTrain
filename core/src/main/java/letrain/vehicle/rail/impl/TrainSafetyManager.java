@@ -2,6 +2,7 @@ package letrain.vehicle.rail.impl;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.Set;
 import letrain.itinerary.Waypoint;
 import letrain.map.Dir;
@@ -29,6 +30,31 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
 
     private boolean isWaitingForBlock = false; // Única variable de estado de parada de bloque
     private transient boolean insideFindNextSegment = false;
+
+    /** Guard de seguridad para caminatas topológicas en bucles puros (issue #633). */
+    static final int MAX_TOPOLOGY_WALK_ITERATIONS = 10000;
+
+    /**
+     * Frenada programada hacia la frontera del cantón (issue #633): vías que quedan hasta la vía de
+     * parada (la última antes del nodo frontera); -1 = no hay plan. Va decreciendo en
+     * {@link #onRailAdvanced()}.
+     */
+    private int railsToStop = -1;
+
+    /**
+     * Tick de simulación en que se creó el plan. Si nace durante un avance (entrada en
+     * desvío/segmento), ese mismo avance no debe descontar: {@code onRailAdvanced()} corre tras
+     * {@code moveLinkers}, en el mismo tick.
+     */
+    private long planCreatedAtTick = -1;
+
+    /**
+     * La espera actual ya mandó frenar con {@code initiateBraking()} (hay velocidad que restaurar).
+     */
+    private boolean brakedForBlock = false;
+
+    /** La curva de frenado capó el target durante el plan (hay velocidad deseada que restaurar). */
+    private boolean targetCapped = false;
 
     /**
      * Instante (tick de simulación) en que la cabeza del tren atravesó la última curva. -1 indica
@@ -77,11 +103,15 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
     public void forceSegmentReset() {
         this.currentSegment = null;
         this.nextSegment = null;
+        cancelScheduledStop();
+        brakedForBlock = false;
     }
 
     @Override
     public void onEmergencyStop() {
         this.isWaitingForBlock = true;
+        // The emergency brake replaces any boundary plan: it is stopping anyway.
+        cancelScheduledStop();
     }
 
     /**
@@ -140,7 +170,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                 throw new IllegalStateException("Critical Safety Error: Train " + train.getId()
                         + " is in AUTO mode but has no active locomotive or track assignment!");
             }
-            isWaitingForBlock = false;
+            clearBlockWait();
             log.info("Train {} acquireInitialLocks: head or track is null, exiting", train.getId());
             return;
         }
@@ -179,7 +209,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                     }
                 }
                 if (!train.isAutoMode()) {
-                    isWaitingForBlock = false;
+                    clearBlockWait();
                     return;
                 }
             }
@@ -200,7 +230,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
 
         if (!shouldLockNext) {
             nextSegment = null;
-            isWaitingForBlock = false;
+            clearBlockWait();
             log.info(
                     "Train {} acquireInitialLocks: skipping next segment lock (train is stopping or waiting), isWaitingForBlock = false",
                     train.getId());
@@ -209,7 +239,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
             log.info("Train {} acquireInitialLocks: nextSegment is {}", train.getId(),
                     nextSegment != null ? nextSegment.getId() : "null");
             if (nextSegment == null || nextSegment.equals(currentSegment)) {
-                isWaitingForBlock = false;
+                clearBlockWait();
                 log.info(
                         "Train {} acquireInitialLocks: nextSegment is null or equals current, isWaitingForBlock = false",
                         train.getId());
@@ -221,19 +251,11 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                 log.info("Train {} acquireInitialLocks: tryLock nextSegment {} returned {}",
                         train.getId(), nextSegment.getId(), locked);
                 if (locked) {
-                    isWaitingForBlock = false;
+                    clearBlockWait();
                     log.info("Train {} initially locked current segment {} and next segment {}",
                             train.getId(), currentSegment.getId(), nextSegment.getId());
                 } else {
-                    if (train.isAutoMode()) {
-                        train.getMovementManager().initiateBraking();
-                        isWaitingForBlock = true;
-                        log.info(
-                                "Train {} (AUTO) failed to lock next segment {}. Initiating braking. isWaitingForBlock=true.",
-                                train.getId(), nextSegment.getId());
-                    } else {
-                        isWaitingForBlock = false;
-                    }
+                    scheduleStopAtBoundary(nextSegment);
                 }
             }
         }
@@ -371,7 +393,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         log.info("Train {} onSegmentEntered: newSegment={}", train.getId(),
                 newSegment != null ? newSegment.getId() : "null");
         currentSegment = newSegment;
-        isWaitingForBlock = false;
+        clearBlockWait();
 
         // 1. Asegurar posesión del segmento al que acabamos de entrar
         if (!bm.getOwnedSegments(train).contains(currentSegment)) {
@@ -382,7 +404,16 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                 log.warn(
                         "Train {} onSegmentEntered: failed lock on current segment {}. Invasión: iniciando frenada.",
                         train.getId(), currentSegment.getId());
-                train.getMovementManager().initiateBraking();
+                cancelScheduledStop();
+                brakedForBlock = true;
+                // Direct brake: Train.brake() would save the current target, which may be the one
+                // the braking curve already capped, over the desired speed (issue #633).
+                Locomotive invasionDirector = directorLocomotive();
+                if (invasionDirector != null) {
+                    invasionDirector.setTargetSpeedDirect(0);
+                } else {
+                    train.getMovementManager().initiateBraking();
+                }
                 train.setPendingManualMode(true);
                 for (Train owner : bm.getOwners(currentSegment)) {
                     if (owner != train) {
@@ -411,7 +442,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
 
         if (!shouldLockNext) {
             nextSegment = null;
-            isWaitingForBlock = false;
+            clearBlockWait();
             log.info(
                     "Train {} onSegmentEntered: skipping next segment lock (train is stopping or waiting), isWaitingForBlock = false",
                     train.getId());
@@ -420,7 +451,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
             log.info("Train {} onSegmentEntered: nextSegment is {}", train.getId(),
                     nextSegment != null ? nextSegment.getId() : "null");
             if (nextSegment == null || nextSegment.equals(currentSegment)) {
-                isWaitingForBlock = false;
+                clearBlockWait();
                 log.info(
                         "Train {} onSegmentEntered: nextSegment is null or equals current, isWaitingForBlock = false",
                         train.getId());
@@ -434,17 +465,9 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                 if (locked) {
                     log.info("Train {} locked next segment {} upon entry to {}", train.getId(),
                             nextSegment.getId(), currentSegment.getId());
-                    isWaitingForBlock = false;
+                    clearBlockWait();
                 } else {
-                    if (train.isAutoMode()) {
-                        train.getMovementManager().initiateBraking();
-                        isWaitingForBlock = true;
-                        log.info(
-                                "Train {} (AUTO) next segment {} is blocked. Initiating braking. isWaitingForBlock=true.",
-                                train.getId(), nextSegment.getId());
-                    } else {
-                        isWaitingForBlock = false;
-                    }
+                    scheduleStopAtBoundary(nextSegment);
                 }
             }
         }
@@ -474,13 +497,22 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                 if (locked) {
                     log.info("Train {} (AUTO) successfully woke up and locked segment {}",
                             train.getId(), nextSegment.getId());
-                    isWaitingForBlock = false;
-                    train.restoreSpeed();
+                    boolean restore = brakedForBlock || targetCapped || train.hasSavedTargetSpeed();
+                    clearBlockWait();
+                    if (restore) {
+                        // Restore the speed desired before the plan, the newest order the wait gate
+                        // stored, or a brake's saved speed. A wait that neither braked, capped nor
+                        // deferred anything leaves the target untouched.
+                        train.restoreSpeed();
+                    }
                 }
             } else if (isWaitingForBlock && nextSegment != null
                     && bm.getOwnedSegments(train).contains(nextSegment)) {
-                isWaitingForBlock = false;
-                train.restoreSpeed();
+                boolean restore = brakedForBlock || targetCapped || train.hasSavedTargetSpeed();
+                clearBlockWait();
+                if (restore) {
+                    train.restoreSpeed();
+                }
             }
         }
     }
@@ -502,20 +534,16 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         }
 
         nextSegment = findNextSegment(head, graph);
-        isWaitingForBlock = false;
+        clearBlockWait();
 
         if (nextSegment == null || nextSegment.equals(currentSegment)) {
-            isWaitingForBlock = false;
+            clearBlockWait();
         } else {
             boolean locked = bm.tryLock(train, nextSegment);
             if (locked) {
-                isWaitingForBlock = false;
+                clearBlockWait();
             } else {
-                if (train.isAutoMode()) {
-                    train.getMovementManager().initiateBraking();
-                } else {
-                    isWaitingForBlock = false;
-                }
+                scheduleStopAtBoundary(nextSegment);
             }
         }
     }
@@ -659,6 +687,225 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         log.info("Train {} findNextSegmentTopological: next segment not found topographically",
                 train.getId());
         return null;
+    }
+
+    @Override
+    public OptionalInt railsToBoundary() {
+        RailwayGraph graph = train.getModel() != null ? train.getModel().getRailwayGraph() : null;
+        return railsToBoundary(train.getPhysicalFront(), currentSegment, graph);
+    }
+
+    /**
+     * Pure walker behind {@link #railsToBoundary()}: starting from {@code head}'s track and real
+     * direction, advances rail by rail with a {@link RailIterator} (same pattern as
+     * {@link #findNextSegmentTopological}) while the landed rail still belongs to {@code segment}.
+     *
+     * <p>
+     * Returns the number of advances that stay inside the segment. {@code 0} means the next advance
+     * already lands outside (the head is on the last rail of the segment in its travel direction;
+     * the boundary node/fork rail counts as inside because the topology registers it in both
+     * adjacent segments). {@code empty} means there is no reachable boundary: the head is not on a
+     * rail, has no direction, there is no segment/graph, the way ends before leaving the segment
+     * (dead end), or the {@link #MAX_TOPOLOGY_WALK_ITERATIONS} guard tripped (pure loop). When
+     * {@code segment} is null the head's own segment is used as fallback.
+     */
+    public static OptionalInt railsToBoundary(Linker head, Segment segment, RailwayGraph graph) {
+        if (head == null || graph == null || !(head.getTrack() instanceof RailTrack headTrack)) {
+            return OptionalInt.empty();
+        }
+        Segment target = segment != null ? segment : graph.getSegment(headTrack);
+        if (target == null) {
+            return OptionalInt.empty();
+        }
+        Dir exitDir = head.getRealDir();
+        if (exitDir == null) {
+            return OptionalInt.empty();
+        }
+
+        RailIterator iterator = new RailIterator(headTrack, exitDir);
+        int railsInside = 0;
+        int guard = MAX_TOPOLOGY_WALK_ITERATIONS;
+        while (guard-- > 0 && iterator.advance()) {
+            Track next = iterator.getTrack();
+            if (!(next instanceof RailTrack nextRail) || !graph.containsTrack(target, nextRail)) {
+                return OptionalInt.of(railsInside);
+            }
+            railsInside++;
+        }
+        return OptionalInt.empty();
+    }
+
+    /**
+     * La cabeza ha avanzado una vía: descuenta el plan, aplica la curva de frenado (capa el target
+     * a la velocidad que aún cabe en las vías que quedan) y frena cuando ya no cabe más (issue
+     * #633). Una sola llamada por vía y tren: solo la locomotora directora mueve el tren.
+     */
+    @Override
+    public void onRailAdvanced() {
+        if (railsToStop < 0) {
+            return;
+        }
+        if (train.getSimulationTick() == planCreatedAtTick) {
+            // The plan was created by the advance that landed the head on this rail (segment/fork
+            // entry): that move must not consume a rail of the countdown.
+            return;
+        }
+        railsToStop--;
+        applyBrakingCurve();
+        if (brakingRailsFromCurrentState() > railsToStop) {
+            railsToStop = -1;
+            engageBoundaryBrake();
+        }
+    }
+
+    /** Distancia de frenada exacta desde el estado actual (o la de crucero si no hay directora). */
+    private int brakingRailsFromCurrentState() {
+        Locomotive director = directorLocomotive();
+        return director != null ? director.brakingRailsFromCurrentState()
+                : Locomotive.brakingRails(train.getSpeed());
+    }
+
+    /**
+     * Curva de frenado (issue #633): mientras hay plan de frontera, capa el target de la locomotora
+     * directora a la velocidad máxima que todavía puede parar dentro de las vías que quedan
+     * ({@link Locomotive#maxSpeedForRails}). Solo baja el target: un tren que venía acelerando no
+     * se escapa de su distancia de frenada. La velocidad deseada queda guardada para restaurarla al
+     * liberarse el bloque.
+     */
+    private void applyBrakingCurve() {
+        Locomotive director = directorLocomotive();
+        if (director == null || railsToStop < 0) {
+            return;
+        }
+        int safeSpeed = Locomotive.maxSpeedForRails(railsToStop);
+        if (director.getTargetSpeed() > safeSpeed) {
+            director.setTargetSpeedDirect(safeSpeed);
+            targetCapped = true;
+            log.info(
+                    "Train {} (AUTO) braking curve caps the target to {} ({} rails left to the boundary stop)",
+                    train.getId(), safeSpeed, railsToStop);
+        }
+    }
+
+    /**
+     * Frena para el plan de frontera sin pisar la velocidad deseada guardada: usa el setter directo
+     * para no pasar por el gate de espera ni dejar que {@code Train.brake()} guarde la velocidad ya
+     * capada (issue #633).
+     */
+    private void engageBoundaryBrake() {
+        brakedForBlock = true;
+        Locomotive director = directorLocomotive();
+        if (director != null) {
+            director.setTargetSpeedDirect(0);
+        }
+        log.info("Train {} (AUTO) boundary brake engaged at the end of the segment", train.getId());
+    }
+
+    /**
+     * Fallo al bloquear el siguiente cantón (issue #633): decide cuándo frenar para que el tren se
+     * detenga al final de su cantón actual en vez de nada más entrar en él.
+     *
+     * <ul>
+     * <li>Tren manual: no espera bloques (como hasta ahora).
+     * <li>Tren parado ({@code speed == 0}): no hay nada que programar, espera donde está.
+     * <li>Rodando con frontera conocida y distancia suficiente: programa la frenada para cuando
+     * queden {@code brakingRails(speed)} vías; hasta entonces rueda sin frenar.
+     * <li>Rodando sin distancia suficiente o con frontera desconocida: frena ya (comportamiento
+     * anterior). No hay muro artificial: si no da tiempo, el tren entra en el bloque ocupado y
+     * actúa el manejo de invasión/colisión existente.
+     * </ul>
+     *
+     * <p>
+     * La última vía de un cantón es su nodo frontera (desvío/extremo), que la topología comparte
+     * con el cantón siguiente: pisarla dispara {@code onForkEntered -> onSegmentEntered(next)} y,
+     * si ese bloque sigue bloqueado, la invasión. Por eso el objetivo es parar <b>una vía
+     * antes</b>: la última vía completamente dentro del cantón.
+     */
+    private void scheduleStopAtBoundary(Segment blockedSegment) {
+        if (!train.isAutoMode()) {
+            clearBlockWait();
+            return;
+        }
+        isWaitingForBlock = true;
+        int speed = train.getSpeed();
+        if (speed == 0) {
+            // Parado: se queda esperando donde está (frenar ya era no-op y sigue siéndolo).
+            log.info("Train {} (AUTO) next segment {} blocked while stopped: waiting in place",
+                    train.getId(), segmentId(blockedSegment));
+            brakeNowForBlock();
+            return;
+        }
+        OptionalInt boundary = railsToBoundary();
+        if (boundary.isEmpty()) {
+            log.warn(
+                    "Train {} (AUTO) next segment {} blocked and rails to boundary unknown: braking now",
+                    train.getId(), segmentId(blockedSegment));
+            brakeNowForBlock();
+            return;
+        }
+        int brakingRails = Locomotive.brakingRails(speed);
+        int railsToBoundary = boundary.getAsInt();
+        if (railsToBoundary <= brakingRails) {
+            log.info(
+                    "Train {} (AUTO) next segment {} blocked: {} rails to the boundary node <= {} braking rails (speed {}), braking now",
+                    train.getId(), segmentId(blockedSegment), railsToBoundary, brakingRails, speed);
+            brakeNowForBlock();
+            return;
+        }
+        // Plan: the train must halt on the last rail before the boundary node, B-1 advances ahead.
+        // The countdown is decremented after each advance and the advance that reaches the safe
+        // limit is already the first braking move, so the halt lands exactly there. The live
+        // braking curve caps the target while rolling so an accelerating train cannot outrun its
+        // stopping distance (issue #633).
+        rememberDesiredTarget();
+        railsToStop = railsToBoundary - 1;
+        planCreatedAtTick = train.getSimulationTick();
+        applyBrakingCurve();
+        log.info(
+                "Train {} (AUTO) next segment {} blocked: boundary stop planned {} rails ahead ({} to the boundary node)",
+                train.getId(), segmentId(blockedSegment), railsToStop, railsToBoundary);
+    }
+
+    /** Frena ya para la espera actual y recuerda que hay velocidad que restaurar al liberarse. */
+    private void brakeNowForBlock() {
+        brakedForBlock = true;
+        train.getMovementManager().initiateBraking();
+    }
+
+    /**
+     * Guarda la velocidad deseada del tren para restaurarla al liberarse el bloque. La curva solo
+     * baja el target aplicado, así que este valor no se pisa mientras dure el plan.
+     */
+    private void rememberDesiredTarget() {
+        Locomotive director = directorLocomotive();
+        if (director != null && director.getTargetSpeed() > 0) {
+            train.setSavedTargetSpeed(director.getTargetSpeed());
+        }
+    }
+
+    /** Cancela el plan de frenada pendiente (el tren puede seguir rodando con su velocidad). */
+    private void cancelScheduledStop() {
+        railsToStop = -1;
+        planCreatedAtTick = -1;
+    }
+
+    /**
+     * Termina la espera de bloque: cancela cualquier plan de frenada y olvida la frenada aplicada.
+     * No restaura velocidad por sí solo: los caminos que continúan la marcha lo hacen aparte.
+     */
+    private void clearBlockWait() {
+        cancelScheduledStop();
+        brakedForBlock = false;
+        targetCapped = false;
+        isWaitingForBlock = false;
+    }
+
+    private Locomotive directorLocomotive() {
+        return train.getDirectorLinker() instanceof Locomotive locomotive ? locomotive : null;
+    }
+
+    private static String segmentId(Segment segment) {
+        return segment != null ? segment.getId() : "null";
     }
 
     private boolean tryAlternativeSegment(Model model) {

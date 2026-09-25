@@ -293,6 +293,60 @@ public class Locomotive extends Linker implements Tractor {
         return currentSpeed > targetSpeed && currentSpeed > 0;
     }
 
+    /**
+     * Rails the train still advances while braking from {@code speed} down to a full stop with the
+     * current inertia model (issue #633). While braking ({@code targetSpeed == 0}) updateInertia
+     * drops one notch every {@code max(1, currentSpeed)} rails, so starting from a steady cruise
+     * (rail counter at 0) the count is {@code speed + (speed-1) + ... + 1 = speed(speed+1)/2}.
+     *
+     * <p>
+     * Pure helper: it only computes the distance, it does not brake anything. Negative speeds count
+     * as 0. This is the braking distance the safety layer compares against the rails left to the
+     * segment boundary before deciding when to start braking.
+     */
+    public static int brakingRails(int speed) {
+        if (speed <= 0) {
+            return 0;
+        }
+        return speed * (speed + 1) / 2;
+    }
+
+    /**
+     * Maximum speed whose braking distance fits in the given number of rails
+     * ({@code brakingRails(speed) <= rails}), issue #633. It is the ceiling of the braking curve
+     * the safety layer uses to cap the target while a boundary stop is planned. Pure helper;
+     * non-positive rails return 0.
+     */
+    public static int maxSpeedForRails(int rails) {
+        int speed = 0;
+        while (speed < MAX_SPEED && brakingRails(speed + 1) <= rails) {
+            speed++;
+        }
+        return speed;
+    }
+
+    /**
+     * Rails needed to stop from the <b>current</b> state (speed and inertia rail counter), issue
+     * #633. Unlike {@link #brakingRails(int)}, it accounts for a counter that is already partway:
+     * the first notch down comes sooner, so the distance can be shorter. Exact replica of
+     * {@code updateInertia()}'s braking steps; the safety layer uses it to engage the boundary
+     * brake at the precise rail.
+     */
+    public int brakingRailsFromCurrentState() {
+        int rails = 0;
+        int speed = currentSpeed;
+        int counter = Math.max(0, railsSinceLastSpeedChange);
+        while (speed > 0) {
+            counter++;
+            if (counter >= Math.max(1, speed)) {
+                speed--;
+                counter = 0;
+            }
+            rails++;
+        }
+        return rails;
+    }
+
     public boolean isEngineOn() {
         return engineOn;
     }
@@ -352,6 +406,20 @@ public class Locomotive extends Linker implements Tractor {
             getTrain().setSavedTargetSpeed(speed);
             speed = 0;
         }
+        applyTargetSpeed(speed);
+    }
+
+    /**
+     * Sets the target speed bypassing the block/schedule-wait interception of
+     * {@link #setTargetSpeed(int)} (issue #633). The safety layer uses it to cap the speed on the
+     * braking curve while a boundary stop is planned, without clobbering the desired speed the wait
+     * gate keeps for restore.
+     */
+    public void setTargetSpeedDirect(int speed) {
+        applyTargetSpeed(speed);
+    }
+
+    private void applyTargetSpeed(int speed) {
         if (this.targetSpeed != speed) {
             log.info("Locomotive {}: setTargetSpeed changes from {} to {}", id, this.targetSpeed,
                     speed);
@@ -367,13 +435,14 @@ public class Locomotive extends Linker implements Tractor {
         }
         limitTargetSpeed();
 
-        // Sincronizar con el resto de locomotoras del tren
+        // Sincronizar con el resto de locomotoras del tren (directo: no debe pasar por el gate de
+        // espera ni guardar velocidades deseadas por duplicado)
         if (getTrain() != null) {
             for (Tractor tractor : getTrain().getTractors()) {
                 if (tractor instanceof Locomotive && tractor != this) {
 
                     if (tractor.getTargetSpeed() != this.targetSpeed) {
-                        ((Locomotive) tractor).setTargetSpeed(this.targetSpeed);
+                        ((Locomotive) tractor).setTargetSpeedDirect(this.targetSpeed);
                     }
                 }
             }

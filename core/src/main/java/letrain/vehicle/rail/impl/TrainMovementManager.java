@@ -258,7 +258,8 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
         Track nextAfterMove = currentFirstTrack.getConnected(firstLinker.getDir());
         if (nextAfterMove != null) {
             Linker blockingLinker = nextAfterMove.getLinker();
-            if (blockingLinker != null && blockingLinker.getTrain() != train) {
+            if (blockingLinker != null && blockingLinker.getTrain() != train
+                    && !willHaltOnThisRail()) {
                 int speed = train.getSpeed();
                 if (Math.abs(speed) >= Train.CRASH_SPEED_THRESHOLD) {
                     crashDetected(blockingLinker, speed);
@@ -288,6 +289,31 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
         }
 
         return true;
+    }
+
+    /**
+     * True when this move's braking brings the train to a full stop on the current rail (issue
+     * #633): it will not enter the cell ahead, so being adjacent to an occupied cell is not a
+     * collision. This is the case when a train waiting for the next block halts on the last rail of
+     * its segment while another train is still clearing the shared node. If the train later
+     * resumes, the start-from-zero check and the pre-move validation fire the contact again if the
+     * cell is still occupied, so safety is preserved.
+     */
+    private boolean willHaltOnThisRail() {
+        if (!(train.getDirectorLinker() instanceof Locomotive loco)) {
+            return false;
+        }
+        if (loco.brakingRailsFromCurrentState() > 1) {
+            return false;
+        }
+        if (loco.getTargetSpeed() == 0) {
+            return true;
+        }
+        // A train waiting for a block halts on the last rail of its segment: the safety brake
+        // engages right after this collision check (the onRailAdvanced hook runs after
+        // moveLinkers).
+        return train.isAutoMode() && train.getSafetyManager() != null
+                && train.getSafetyManager().isWaitingForBlock();
     }
 
     private void contactDetected(Linker headOccupant, int speed) {
@@ -483,6 +509,12 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
 
         refreshLinkersDirection();
         boolean moved = moveLinkers(normalSense);
+
+        // One real rail advance (head) feeds the safety layer's boundary-stop countdown (issue
+        // #633). Only the director locomotive moves the train, so push-pull counts one per rail.
+        if (moved && !train.isStalled() && train.getSafetyManager() != null) {
+            train.getSafetyManager().onRailAdvanced();
+        }
 
         if (!moved || train.isStalled()) {
             Linker first = train.getLinkers().isEmpty() ? null : train.getLinkers().getFirst();
