@@ -484,6 +484,12 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
         refreshLinkersDirection();
         boolean moved = moveLinkers(normalSense);
 
+        // One real rail advance (head) feeds the safety layer's boundary-stop countdown (issue
+        // #633). Only the director locomotive moves the train, so push-pull counts one per rail.
+        if (moved && !train.isStalled() && train.getSafetyManager() != null) {
+            train.getSafetyManager().onRailAdvanced();
+        }
+
         if (!moved || train.isStalled()) {
             Linker first = train.getLinkers().isEmpty() ? null : train.getLinkers().getFirst();
             for (Linker l : train.getLinkers()) {

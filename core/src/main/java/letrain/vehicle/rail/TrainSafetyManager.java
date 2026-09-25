@@ -172,4 +172,13 @@ public interface TrainSafetyManager {
      * @return el número de avances que quedan dentro del cantón, o vacío si no se puede determinar.
      */
     OptionalInt railsToBoundary();
+
+    /**
+     * La cabeza del tren ha avanzado una vía (issue #633). Lo dispara
+     * {@code TrainMovementManager.advance()} tras cada avance real, una sola vez por tren y vía
+     * (solo avanza la locomotora directora, así que el push-pull no cuenta doble). Alimenta el
+     * contador de la frenada programada hacia la frontera del cantón; no hace nada si no hay
+     * ninguna programada.
+     */
+    void onRailAdvanced();
 }
