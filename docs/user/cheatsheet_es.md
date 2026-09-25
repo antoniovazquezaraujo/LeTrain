@@ -127,6 +127,9 @@ Si no se incluye una distancia después de un giro, se avanza por defecto un pas
 > cabeza y `backward` la cola. Con la locomotora en cabeza tirando de los vagones, los vagones van
 > detrás: usa `uncouple backward 1` para dejarlos (las mismas órdenes valen como acciones de
 > waypoint).
+>
+> `all` es palabra reservada (`uncouple backward all`); para usarla como nombre hay que
+> entrecomillarla: `info station "all";`.
 
 ---
 

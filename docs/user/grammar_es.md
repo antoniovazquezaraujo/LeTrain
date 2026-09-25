@@ -26,6 +26,10 @@ Se ejecutan inmediatamente. **Requieren punto y coma (`;`) al final**.
   (`all` engancha o desengancha todos los vehículos de ese lado; `uncouple backward all` deja la
   locomotora sola y los vagones en su propio tren)`
 
+**Palabra reservada `all`**: `all` es el contador de `couple`/`uncouple` (`uncouple backward all`), así
+que un nombre desnudo `all` en otra orden es un error de sintaxis (`info station all;`); entrecomíllalo
+para usarlo como nombre: `info station "all";`.
+
 **Misiones de un solo uso (`stop at …`)**: el destino y la velocidad viajan en la misma orden, así
 el tren no arranca antes de recibir el destino. La velocidad se aplica al empezar la maniobra (sin
 `speed`, o con `speed 0`, se usa la que el tren tenga puesta; si es 0 la orden se rechaza con aviso)

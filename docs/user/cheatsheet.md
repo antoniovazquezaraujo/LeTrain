@@ -123,6 +123,9 @@
 > `couple`/`uncouple` work by the **physical sense** of the train: `forward` is the head side and
 > `backward` the tail. With the locomotive leading and pulling the wagons, the wagons are behind:
 > use `uncouple backward 1` to leave them (the same orders are available as waypoint actions).
+>
+> `all` is a reserved word (`uncouple backward all`); to use it as a name you must quote it:
+> `info station "all";`.
 
 ---
 

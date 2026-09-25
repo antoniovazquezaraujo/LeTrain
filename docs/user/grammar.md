@@ -26,6 +26,10 @@ These are executed immediately. **They require a semicolon (`;`) at the end**.
   (`all` couples or detaches every vehicle on that side; `uncouple backward all` leaves the
   locomotive alone with the wagons on their own train)`
 
+**Reserved word `all`**: `all` is the count for `couple`/`uncouple` (`uncouple backward all`), so a bare
+`all` name in any other order is a syntax error (`info station all;`); quote it to use it as a name:
+`info station "all";`.
+
 **One-shot missions (`stop at …`)**: destination and speed travel in the same order, so the train
 does not start before receiving the destination. The speed is applied when the maneuver starts
 (without `speed`, or with `speed 0`, the train keeps its current target; if that is 0 the order is
