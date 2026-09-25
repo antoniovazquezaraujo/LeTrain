@@ -49,6 +49,15 @@ public interface AutoPilot {
     default void onRailAdvanced() {}
 
     /**
+     * Segment the active mission drives to, if any (ADR-022 phase 2f). The safety layer uses it to
+     * let a shunting maneuver enter the canton where its destination is (the wagons it must couple
+     * to), instead of waiting forever for that block.
+     */
+    default java.util.Optional<Segment> missionTargetSegment() {
+        return java.util.Optional.empty();
+    }
+
+    /**
      * One simulation tick of the train (issue #619). Missions use it as a stall watchdog: a mission
      * train stopped without a block/schedule/loading reason fails after a grace period. No-op when
      * there is no mission running.
