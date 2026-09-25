@@ -52,8 +52,10 @@ plan que se repita, sino un trabajo puntual.
   destino inalcanzable en ambos sentidos, sin ruta A* o sin velocidad → aviso y sin tocar el tren.
   A mitad de misión, si el tren sale de la ruta y no hay forma de replanificar hacia el destino (o el
   destino desaparece), la misión **falla con aviso**; un **guardián de estancamiento** (`onTick`,
-  ~1 hora de juego parado sin espera de bloque/horario/carga) la falla también. La consola recibe los
-  avisos por `CommandManager.setWarningSink`; los scripts solo al log.
+  ~1 hora de juego parado sin espera de bloque/horario/carga) la falla también. Los avisos de
+  **problema** (rechazo, inalcanzable, ruta perdida, estancamiento) van por
+  `CommandManager.setWarningSink` a la consola en órdenes tecleadas y al log en scripts; el **éxito**
+  (llegada, fin de vía, bloqueo alcanzado, cancelación) solo queda en el log.
 - **Determinismo**: la misión no usa reloj de pared ni azar; el comando se journaliza y se reproduce
   igual sobre una copia (test en `TrainMissionIntegrationTest`).
 

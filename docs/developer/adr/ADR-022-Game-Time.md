@@ -285,8 +285,10 @@ add station "B" arrival 06:27,
 - **Misiones sueltas (issue #619)**: `train N stop at station|sensor "X" [speed V];`,
   `stop at end` y `stop when blocked` son misiones de **un solo uso** implementadas sobre el
   autopilot: la velocidad va en la orden (sin ella —o con `speed 0`— se usa la que el tren tenga
-  puesta; si es 0 se rechaza con aviso), el tren termina parado y la misión avisa al llegar. Si el
-  destino solo es alcanzable en sentido contrario, la orden **auto-invierte una vez** al empezar;
+  puesta; si es 0 se rechaza con aviso), el tren termina parado y la llegada **solo queda en el
+  log** (los avisos de problema —rechazo, inalcanzable, ruta perdida, estancamiento— sí salen por
+  consola en órdenes tecleadas y por log en scripts). Si el destino solo es alcanzable en sentido
+  contrario, la orden **auto-invierte una vez** al empezar;
   `stop at end` frena en la última vía antes del tope y `stop when blocked` **rueda con la curva del
   #633 hasta la última vía de su cantón** ante el primer bloqueo, donde completa parado (no reanuda
   al liberarse; si el bloqueo se libera antes de parar, el tren sigue). Una orden nueva reemplaza a
