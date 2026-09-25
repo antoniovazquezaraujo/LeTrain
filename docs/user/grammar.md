@@ -30,7 +30,9 @@ does not start before receiving the destination. The speed is applied when the m
 rejected with a warning) and the train always ends stopped. The destination can be a station, a
 sensor, the end of track **ahead of the train** (the train brakes on the last rail, without touching
 the buffer; a closed loop with no end ahead warns and does not move) or the first block
-(`stop when blocked` ends the mission at the block and does **not** resume when it is released). If
+(`stop when blocked` rolls to the last rail of its canton before the block and completes stopped
+there; it does **not** resume when it is released, and if the block is freed before it stops it keeps
+going). If
 the destination is only reachable in the opposite sense, the order reverses the train once at the
 start. An order received while the train is running an itinerary is rejected with a warning (nothing
 is paused): use `train N set autopilot false;` or write the maneuver in the itinerary. If the

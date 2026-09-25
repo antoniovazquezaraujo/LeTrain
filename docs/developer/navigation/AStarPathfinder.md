@@ -42,9 +42,12 @@ plan que se repita, sino un trabajo puntual.
   `setTargetSpeedDirect(0)` cuando `brakingRailsFromCurrentState() > vías restantes`. `stop at end`
   apunta a la vía anterior al tope (sin contacto); estación/sensor paran encima del componente.
 - **Seguridad**: la curva de la misión solo **baja** el target; cuando el bloque siguiente no se puede
-  reservar manda el plan de frontera del `TrainSafetyManager` (el tren rueda hasta el final de su
-  cantón). Un bloqueo en una misión `stop at sensor` no la cancela: espera y reanuda al liberarse.
-  Una orden nueva descarta la espera anterior al arrancar (`cancelBlockWait`) y rehace el cálculo.
+  reservar manda el plan de frontera del `TrainSafetyManager` (el tren rueda hasta la última vía de su
+  cantón). `stop when blocked` completa **parado en esa frontera** (se evalúa en `onTick`, porque tras
+  el último avance ya no hay hook de vía); si el bloque se libera mientras rueda, no estaba bloqueado y
+  sigue hasta el siguiente. Un bloqueo en una misión `stop at sensor` no la cancela: espera y reanuda
+  al liberarse. Una orden nueva descarta la espera anterior al arrancar (`cancelBlockWait`) y rehace el
+  cálculo.
 - **Rechazo**: con un itinerario en curso (modo distinto de `IDLE`) la orden se rechaza con aviso;
   destino inalcanzable en ambos sentidos, sin ruta A* o sin velocidad → aviso y sin tocar el tren.
   A mitad de misión, si el tren sale de la ruta y no hay forma de replanificar hacia el destino (o el
