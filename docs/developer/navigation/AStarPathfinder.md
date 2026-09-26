@@ -18,8 +18,8 @@ El sistema permite que los trenes calculen y recorran de forma autónoma la ruta
 La automatización permite definir y asignar itinerarios mediante scripts o consola (ver [[../systems/CommandPattern|Gestión de Automatización]] y la documentación de usuario `grammar.md`):
 ```letrain
 create itinerary "RutaCarbon" {
-    add station 1 load
-    add station 2 unload
+    add station 1, load
+    add station 2, unload
 }
 assign itinerary "RutaCarbon" to train 1;
 train 1 set autopilot true;

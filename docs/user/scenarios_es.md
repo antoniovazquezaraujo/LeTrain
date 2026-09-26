@@ -44,7 +44,8 @@ program {
 - `program { ... }` — el script de automatización (itinerarios, triggers). Se instala después de
   construir, así puede referenciar los elementos recién creados.
 
-Todas las secciones son opcionales y pueden aparecer en cualquier orden; `#` inicia un comentario. Un
+Todas las secciones son opcionales y pueden aparecer en cualquier orden; `#` inicia un comentario
+(también dentro del propio DSL, `program { ... }` incluido). Un
 fichero plano con solo una semilla y comandos (sin llaves) es válido y se trata como `on build`, así
 que los escenarios antiguos siguen funcionando.
 

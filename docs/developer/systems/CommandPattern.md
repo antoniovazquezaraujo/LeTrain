@@ -17,16 +17,18 @@ sensor 1 on train enter {
     fork 3 set curved;
 }
 
-station 10 on train couple {
+station 10 on train exit {
     train accelerate;
 }
 ```
 
 ## Tipos de Acciones
 - **Semáforos**: `set open | closed | invert`.
-- **Desvíos (Forks)**: `set straight | curved | flip`.
-- **Trenes**: `accelerate | decelerate | set speed <n> | invert | load | unload | set engine on/off`.
-- **Enganches**: `couple | uncouple`.
+- **Desvíos (Forks)**: `set straight | curved | <dirección> | flip`.
+- **Trenes**: `accelerate | decelerate | set speed <n> | invert | reverse | park | stop | load | unload | set engine on/off`.
+- **Enganches**: `couple | uncouple` (sin número, todos los vehículos de ese lado).
+- **Eventos**: `enter | exit` (con `forward`/`backward` opcional); los eventos `couple`/`uncouple` se retiraron en el lote 2 al no dispararse nunca.
+- **Comentarios**: `#` inicia un comentario de línea en todo el DSL.
 
 ## Símbolos Clave
 - `letrain.mvp.impl.services.AutomationEngine`: Punto de entrada para el parseo de programas.
