@@ -195,6 +195,8 @@ public class Model implements letrain.mvp.Model {
     private transient SimulationService internalSimService;
     private transient letrain.time.impl.SimpleGameClock gameClock =
             new letrain.time.impl.SimpleGameClock();
+    /** Visible message sink for DSL problem notices; wired by the clients (see Model). */
+    private transient java.util.function.BiConsumer<String, String> userMessageSink;
 
     private AutomationEngine getAutomationEngine() {
         if (automationEngine == null) {
@@ -931,6 +933,16 @@ public class Model implements letrain.mvp.Model {
     @Override
     public String getProgram() {
         return this.program;
+    }
+
+    @Override
+    public void setUserMessageSink(java.util.function.BiConsumer<String, String> sink) {
+        this.userMessageSink = sink;
+    }
+
+    @Override
+    public java.util.function.BiConsumer<String, String> getUserMessageSink() {
+        return this.userMessageSink;
     }
 
     @Override

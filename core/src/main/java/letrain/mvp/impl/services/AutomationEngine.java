@@ -28,9 +28,9 @@ public class AutomationEngine {
     }
 
     public List<String> setProgram(String program) {
-        clearAllAutomationListeners();
         List<String> errors = new ArrayList<>();
         if (program == null || program.trim().isEmpty()) {
+            clearAllAutomationListeners();
             return errors;
         }
 
@@ -38,6 +38,18 @@ public class AutomationEngine {
             program = program.toLowerCase();
             CharStream input = CharStreams.fromString(program);
             LeTrainLexer lexer = new LeTrainLexer(input);
+            lexer.removeErrorListeners();
+            lexer.addErrorListener(new org.antlr.v4.runtime.BaseErrorListener() {
+                @Override
+                public void syntaxError(org.antlr.v4.runtime.Recognizer<?, ?> recognizer,
+                        Object offendingSymbol, int line, int charPositionInLine, String msg,
+                        org.antlr.v4.runtime.RecognitionException e) {
+                    String errorMsg =
+                            "Lexer error at line " + line + ":" + charPositionInLine + " " + msg;
+                    log.error(errorMsg);
+                    errors.add(errorMsg);
+                }
+            });
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             ScriptLogicParser parser = new ScriptLogicParser(tokens);
 
@@ -55,7 +67,19 @@ public class AutomationEngine {
             });
 
             ScriptLogicParser.ScriptStartContext sintaxTree = parser.scriptStart();
+            if (!errors.isEmpty()) {
+                // D1: lexer/syntax errors never execute (not even partially). The previously
+                // applied automation stays in place until a valid program replaces it.
+                return errors;
+            }
+            clearAllAutomationListeners();
             CommandManager manager = new CommandManager(model);
+            java.util.function.BiConsumer<String, String> sink = model.getUserMessageSink();
+            if (sink != null) {
+                // D1: program warnings (unknown entity, dropped waypoint, clamped speed…) reach the
+                // same visible channel as console warnings.
+                manager.setWarningSink(sink);
+            }
             manager.visit(sintaxTree);
         } catch (Exception e) {
             log.error("Error parsing or executing automation program", e);

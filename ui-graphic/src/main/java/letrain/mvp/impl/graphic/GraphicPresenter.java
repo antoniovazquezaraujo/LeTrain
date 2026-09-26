@@ -170,6 +170,7 @@ public class GraphicPresenter extends ApplicationAdapter
 
     public GraphicPresenter(letrain.mvp.Model model, SoundscapeAmbience ambience) {
         this.model = ValidationUtils.requireNonNull(model, "model");
+        wireUserMessageSink();
         this.ambience = ambience;
         this.resourceContext = new letrain.visitor.gdx3d.Gdx3DResourceContext();
         this.renderer = new Gdx3DRenderer(resourceContext);
@@ -209,6 +210,16 @@ public class GraphicPresenter extends ApplicationAdapter
     public void showMessage(String title, String message) {
         if (hud != null) {
             hud.showMessage(title, message);
+        }
+    }
+
+    /**
+     * Points the model's DSL message sink at the visible message panel (D1). Programs, itineraries
+     * and missions then report their problems where the player can see them, not only in the log.
+     */
+    private void wireUserMessageSink() {
+        if (model != null) {
+            model.setUserMessageSink((title, message) -> showMessage(title, message));
         }
     }
 
@@ -610,6 +621,7 @@ public class GraphicPresenter extends ApplicationAdapter
         }
         boolean wasPaused = model.isPauseEditing();
         this.model = newModel;
+        wireUserMessageSink();
         if (audioController == null) {
             this.audioController = new letrain.audio.AudioController(newModel);
         } else {
@@ -997,6 +1009,7 @@ public class GraphicPresenter extends ApplicationAdapter
 
     private void applyLoadedModel(letrain.mvp.impl.Model loadedModel, File file) {
         this.model = ValidationUtils.requireNonNull(loadedModel, "loadedModel");
+        wireUserMessageSink();
 
         log.info("Game loaded successfully from {}",
                 file != null ? file.getAbsolutePath() : "(editor)");

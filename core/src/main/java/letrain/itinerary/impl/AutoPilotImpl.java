@@ -1294,11 +1294,21 @@ public class AutoPilotImpl implements AutoPilot {
         log.info("[AP] {}", text);
     }
 
-    /** Problem notice: log plus the console sink when there is one (scripts stay log-only). */
+    /** Problem notice: log plus the visible sink (console, or the model's when there is one). */
     private void warnMission(String text) {
         log.warn("[AP] {}", text);
-        if (missionNotifier != null) {
-            missionNotifier.accept(text);
+        Consumer<String> notifier = missionNotifier;
+        if (notifier == null && train != null && train.getModel() != null) {
+            // Saved games / programs: the notifier is transient, but the model keeps the visible
+            // channel. Fall back to it so itinerary maneuver problems are never log-only (D1).
+            java.util.function.BiConsumer<String, String> sink =
+                    train.getModel().getUserMessageSink();
+            if (sink != null) {
+                notifier = message -> sink.accept("Autopilot", message);
+            }
+        }
+        if (notifier != null) {
+            notifier.accept(text);
         }
     }
 }

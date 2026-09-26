@@ -589,7 +589,7 @@ class AutoPilotIntegrationTest {
             m.setProgram("""
                     station %d set name "Madrid";
                     station %d set name "Barcelona";
-                    station %d on train enter { train set speed 0 };
+                    station %d on train enter { train set speed 0; };
                     create itinerary "Ruta" {
                         add station "Madrid"
                         add station "Barcelona"

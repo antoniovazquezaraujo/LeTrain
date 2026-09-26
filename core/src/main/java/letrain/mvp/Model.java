@@ -333,6 +333,19 @@ public interface Model {
 
     public String getProgram();
 
+    /**
+     * Sink for DSL problem notices that must reach the player (D1: warnings from programs,
+     * itineraries and missions are never log-only when there is a player). The clients wire it to
+     * their visible message channel; headless contexts ({@code letrain-check}, tests) leave it null
+     * and the engine only logs.
+     */
+    default void setUserMessageSink(java.util.function.BiConsumer<String, String> sink) {}
+
+    /** See {@link #setUserMessageSink}. */
+    default java.util.function.BiConsumer<String, String> getUserMessageSink() {
+        return null;
+    }
+
     public EconomyManager getEconomyManager();
 
 
