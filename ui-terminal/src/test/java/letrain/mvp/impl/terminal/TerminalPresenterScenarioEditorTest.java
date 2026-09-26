@@ -79,7 +79,7 @@ class TerminalPresenterScenarioEditorTest {
         TerminalPresenter presenter = presenterWith(model);
         java.nio.file.Path file = java.nio.file.Files.createTempFile("program", ".txt");
         String program = "create itinerary \"r\" {\n"
-                + "  add station 1 arrival 9:20, load, departure 9:30\n}\n";
+                + "  add station 1, arrival 9:20, load, departure 9:30\n}\n";
         java.nio.file.Files.writeString(file, program);
         try {
             presenter.onLoadCommands(file.toFile());

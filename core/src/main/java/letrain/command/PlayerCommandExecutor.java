@@ -310,12 +310,13 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             hour = Integer.parseInt(parts[0]);
             minute = Integer.parseInt(parts[1]);
         } else {
+            // U8: `time set 9` = 09:00; `time set 9:5` keeps the two-number form.
             hour = Integer.parseInt(ctx.NUMBER(0).getText());
-            minute = Integer.parseInt(ctx.NUMBER(1).getText());
+            minute = ctx.NUMBER().size() > 1 ? Integer.parseInt(ctx.NUMBER(1).getText()) : 0;
         }
         if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
             // D1 / U8: `time set 25:99` used to wrap silently; it is an error with a visible
-            // warning now.
+            // warning now, and the clock stays untouched.
             warn("Time", "Invalid time " + hour + ":" + minute
                     + " (expected 00:00..23:59); the clock is unchanged");
             return null;

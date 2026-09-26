@@ -305,7 +305,7 @@ class AutoPilotIntegrationTest {
                     station %d set name "B";
                     create itinerary "Ruta" {
                         add station "A"
-                        add station "B" SPEED 0
+                        add station "B", SPEED 0
                     }
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
@@ -339,7 +339,7 @@ class AutoPilotIntegrationTest {
                     station %d set name "B";
                     create itinerary "Ruta" {
                         add station "A"
-                        add station "B" SPEED 0, WAIT 3, SPEED 3
+                        add station "B", SPEED 0, WAIT 3, SPEED 3
                     }
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
@@ -394,7 +394,7 @@ class AutoPilotIntegrationTest {
                     station %d set name "B";
                     create itinerary "Ruta" {
                         add station "A"
-                        add station "B" SPEED 0, WAIT 2, SPEED 5
+                        add station "B", SPEED 0, WAIT 2, SPEED 5
                     }
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
@@ -429,7 +429,7 @@ class AutoPilotIntegrationTest {
                     sensor %d set name "S1";
                     create itinerary "Ruta" {
                         add station "A"
-                        add sensor "S1" LOAD
+                        add sensor "S1", LOAD
                     }
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
@@ -464,7 +464,7 @@ class AutoPilotIntegrationTest {
                     station %d set name "B";
                     create itinerary "Ruta" {
                         add station "A"
-                        add station "B" REVERSE
+                        add station "B", REVERSE
                     }
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
@@ -502,7 +502,7 @@ class AutoPilotIntegrationTest {
                     station %d set name "B";
                     create itinerary "Ruta" {
                         add station "A"
-                        add station "B" STOP
+                        add station "B", STOP
                     }
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
@@ -860,7 +860,7 @@ class AutoPilotIntegrationTest {
         m.setProgram("""
                 create itinerary "21" {
                     add station 2
-                    add station 1 STOP
+                    add station 1, STOP
                 }
                 assign itinerary "21" to train 1;
                 train 1 set autopilot true;
@@ -887,7 +887,7 @@ class AutoPilotIntegrationTest {
         m.setProgram("""
                 create itinerary "21" {
                     add station 2
-                    add station 1 STOP
+                    add station 1, STOP
                 }
                 assign itinerary "21" to train 1;
                 train 1 set autopilot true;

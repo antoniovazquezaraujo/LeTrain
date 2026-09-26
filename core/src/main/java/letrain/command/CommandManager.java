@@ -23,6 +23,7 @@ import letrain.track.StationEventListener;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.Tractor;
 import letrain.vehicle.rail.ScriptTrainEventListener;
+import letrain.vehicle.rail.TrainCouplingManager;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
 import org.slf4j.Logger;
@@ -303,22 +304,6 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                             commands.forEach(c -> c.execute(train));
                         }
                     }
-
-                    @Override
-                    public void onLink(Train train) {
-                        if ("link".equals(event)
-                                && (filterTrainId == null || filterTrainId == train.getId())) {
-                            commands.forEach(c -> c.execute(train));
-                        }
-                    }
-
-                    @Override
-                    public void onUnlink(Train train) {
-                        if ("unlink".equals(event)
-                                && (filterTrainId == null || filterTrainId == train.getId())) {
-                            commands.forEach(c -> c.execute(train));
-                        }
-                    }
                 });
             } else if (ctx.getChildCount() >= 3) {
                 String event = ctx.getChild(2).getText();
@@ -380,18 +365,17 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
         } else if (ctx.forkAction() != null) {
             int id = Integer.parseInt(ctx.forkSelector().NUMBER().getText());
             String dirText = ctx.forkAction().forkDirection() != null
-                    ? ctx.forkAction().forkDirection().getText()
-                    : null;
+                    ? ctx.forkAction().forkDirection().getText().toLowerCase(java.util.Locale.ROOT)
+                    : "flip";
             return (ExecutableCommand) (contextTrain) -> {
                 ForkRailTrack f = model.getFork(id);
                 if (f == null) {
                     warnDeferred("Fork", "Fork " + id + " not found; action ignored");
-                } else if ("straight".equals(dirText)) {
-                    f.setStraightRoute();
-                } else if ("curved".equals(dirText)) {
-                    f.setCurvedRoute();
-                } else {
-                    f.flipRoute();
+                } else if (!applyForkDirection(f, dirText)) {
+                    // D3: the same mapping as the console; the old implicit flip on an unknown
+                    // direction is gone, and it is never a silent no-op.
+                    warnDeferred("Fork",
+                            "Fork " + id + " has no route towards " + dirText + "; unchanged");
                 }
             };
         } else if (ctx.trainAction() != null) {
@@ -435,10 +419,10 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
     }
 
     private ExecutableCommand buildTrainAction(ScriptLogicParser.TrainActionContext ctx) {
-        String actionText = ctx.getText();
         if (ctx.stopOrder() != null) {
             return buildStopOrder(ctx.stopOrder());
         } else if (ctx.trainSpeed() != null) {
+            // U1: only `set speed N`; the old `set N` shortcut is gone.
             int speed = Integer.parseInt(ctx.trainSpeed().getText());
             int clampedSpeed = clampSpeed(speed);
             if (clampedSpeed != speed) {
@@ -448,14 +432,14 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             return (t) -> {
                 t.setSpeed(clampedSpeed);
             };
-        } else if (actionText.contains("accelerate")) {
+        } else if (ctx.ACCELERATE() != null) {
             return (t) -> {
                 Tractor tractor = t.getDirectorLinker();
                 if (tractor != null) {
                     tractor.incSpeed();
                 }
             };
-        } else if (actionText.contains("decelerate")) {
+        } else if (ctx.DECELERATE() != null) {
             return (t) -> {
                 Tractor tractor = t.getDirectorLinker();
                 if (tractor != null) {
@@ -470,17 +454,35 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                     tractor.toggleReversed();
                 }
             };
-        } else if (actionText.contains("invert")) {
+        } else if (ctx.INVERT() != null) {
+            // U2: `invert` and `reverse` are the same token; both flip the travel sense.
             return (t) -> {
                 Tractor tractor = t.getDirectorLinker();
                 if (tractor != null) {
                     tractor.toggleReversed();
                 }
             };
+        } else if (ctx.PARK() != null) {
+            // U3: same semantics as the waypoint action — brake, engine off, autopilot kept.
+            return (t) -> parkTrain(t);
+        } else if (ctx.STOP() != null) {
+            // Waypoint STOP semantics as a direct order: brake and leave the autopilot off.
+            return (t) -> {
+                t.getMovementManager().initiateBraking();
+                t.setPendingManualMode(true);
+                if (t.getAutopilot() != null) {
+                    t.getAutopilot().deactivate();
+                }
+            };
         } else if (ctx.coupleAction() != null) {
             ScriptLogicParser.CoupleActionContext lCtx = ctx.coupleAction();
             boolean forward = lCtx.sense().getText().startsWith("f");
-            int count = resolveVehicleCount(lCtx.vehicleCount(), 0);
+            Integer count = resolveVehicleCount(lCtx.vehicleCount(), TrainCouplingManager.ALL,
+                    couplingText("couple", forward, lCtx.vehicleCount()));
+            if (count == null) {
+                return (t) -> {
+                };
+            }
             return (t) -> {
                 t.getTrainCouplingManager().prepareLink(t, forward, count);
                 t.getTrainCouplingManager().joinLinkers(t);
@@ -488,7 +490,13 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
         } else if (ctx.uncoupleAction() != null) {
             ScriptLogicParser.UncoupleActionContext uCtx = ctx.uncoupleAction();
             boolean forward = uCtx.sense().getText().startsWith("f");
-            int count = resolveVehicleCount(uCtx.vehicleCount(), 1);
+            // U6: no count means every vehicle on that side, exactly like `couple`.
+            Integer count = resolveVehicleCount(uCtx.vehicleCount(), TrainCouplingManager.ALL,
+                    couplingText("uncouple", forward, uCtx.vehicleCount()));
+            if (count == null) {
+                return (t) -> {
+                };
+            }
             return (t) -> {
                 t.getTrainCouplingManager().prepareUnlink(t, forward, count);
                 t.getTrainCouplingManager().divideTrain(t, () -> model.nextTrainId());
@@ -503,7 +511,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                     }
                 });
             };
-        } else if (actionText.contains("unload")) {
+        } else if (ctx.UNLOAD() != null) {
 
             return (t) -> {
                 letrain.track.Station s = t.getLogisticsManager().getStationAtTrain();
@@ -511,7 +519,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                     t.getLogisticsManager().startUnloadProcess(s);
                 }
             };
-        } else if (actionText.contains("load")) {
+        } else if (ctx.LOAD() != null) {
             return (t) -> {
                 letrain.track.Station s = t.getLogisticsManager().getStationAtTrain();
                 if (s != null) {
@@ -531,15 +539,69 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
         }
     }
 
-    /** Couple/uncouple count: a number, or {@code all} (every vehicle on that side). */
-    private int resolveVehicleCount(ScriptLogicParser.VehicleCountContext ctx, int defaultValue) {
+    /**
+     * `train N park;` (U3): brake, switch the engine off and keep the autopilot. A moving train
+     * brakes by inertia; the engine is switched off as soon as it halts (bounded scheduler
+     * re-check, mirroring the waypoint action's deferred {@code PARK}).
+     */
+    private void parkTrain(Train t) {
+        Tractor director = t.getDirectorLinker();
+        if (director != null && director.getSpeed() > 0) {
+            t.getMovementManager().initiateBraking();
+            scheduleEngineOffWhenStopped(t, PARK_RECHECKS);
+            return;
+        }
+        turnEnginesOff(t);
+    }
+
+    /** Re-checks every few ticks while the parked train brakes; never polls forever. */
+    private static final int PARK_RECHECKS = 100;
+
+    private void scheduleEngineOffWhenStopped(Train t, int remainingChecks) {
+        Tractor director = t.getDirectorLinker();
+        if (director == null || remainingChecks <= 0 || director.getSpeed() == 0
+                || model.getScheduler() == null) {
+            turnEnginesOff(t);
+            return;
+        }
+        model.getScheduler().schedule(2,
+                () -> scheduleEngineOffWhenStopped(t, remainingChecks - 1));
+    }
+
+    /** Explicit engine off for the whole consist; the autopilot is left untouched. */
+    private void turnEnginesOff(Train t) {
+        t.getLocomotives().forEach(l -> l.setEngineOn(false));
+        log.info("[DSL] Train {} parked: engine off, autopilot kept", t.getId());
+    }
+
+    /**
+     * Couple/uncouple count (U6): a number {@code >= 1}, or {@code all} (every vehicle on that
+     * side). No count uses {@code defaultValue} (all, for both orders); {@code 0} and negative
+     * counts are invalid: they warn and the order does nothing (never a silent no-op). Returns
+     * {@code null} when the count is invalid.
+     */
+    private Integer resolveVehicleCount(ScriptLogicParser.VehicleCountContext ctx, int defaultValue,
+            String orderText) {
         if (ctx == null) {
             return defaultValue;
         }
         if (ctx.ALL() != null) {
             return letrain.vehicle.rail.TrainCouplingManager.ALL;
         }
-        return Integer.parseInt(ctx.NUMBER().getText());
+        int count = Integer.parseInt(ctx.NUMBER().getText());
+        if (count < 1) {
+            warnUser("Coupling", "Invalid vehicle count " + count + " in '" + orderText
+                    + "'; use a number >= 1 or 'all'");
+            return null;
+        }
+        return count;
+    }
+
+    /** Readable form of a couple/uncouple action for notices ("uncouple backward 2"). */
+    private static String couplingText(String verb, boolean forward,
+            ScriptLogicParser.VehicleCountContext count) {
+        return verb + (forward ? " forward" : " backward")
+                + (count == null ? "" : " " + count.getText());
     }
 
     /**
@@ -721,26 +783,37 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
 
     private Optional<LocalTime> resolveArrival(ScriptLogicParser.WaypointContext ctx) {
         ScriptLogicParser.WaypointPlanContext plan = ctx.waypointPlan();
-        if (plan == null || plan.arrivalAttr() == null || plan.arrivalAttr().TIME() == null) {
-            // TIME() is null only after parser error recovery; the diagnostic is already reported.
+        if (plan == null || plan.arrivalAttr() == null) {
             return Optional.empty();
         }
-        return Optional.of(parseTime(plan.arrivalAttr().TIME().getText()));
+        return parseTime(plan.arrivalAttr().waypointTime(), "arrival");
     }
 
     private Optional<LocalTime> resolveDeparture(ScriptLogicParser.WaypointContext ctx) {
         ScriptLogicParser.WaypointPlanContext plan = ctx.waypointPlan();
-        if (plan == null || plan.departureAttr() == null || plan.departureAttr().TIME() == null) {
-            // TIME() is null only after parser error recovery; the diagnostic is already reported.
+        if (plan == null || plan.departureAttr() == null) {
             return Optional.empty();
         }
-        return Optional.of(parseTime(plan.departureAttr().TIME().getText()));
+        return parseTime(plan.departureAttr().waypointTime(), "departure");
     }
 
-    /** Parses a grammar-validated {@code H:MM} / {@code HH:MM} literal into a time of day. */
-    private static LocalTime parseTime(String text) {
+    /**
+     * Parses a grammar-validated time into a time of day. U8: `9` means 09:00 and `9:20` the full
+     * form; TIME already restricts `HH:MM` to 00:00..23:59, so the range check here only rejects a
+     * bare hour out of 0..23 (`arrival 25`). A bad time makes the waypoint unknown and the whole
+     * itinerary is rejected with the notice (D1: no plan runs with a broken stop).
+     */
+    private Optional<LocalTime> parseTime(ScriptLogicParser.WaypointTimeContext ctx, String attr) {
+        String text = ctx.getText();
         String[] parts = text.split(":");
-        return LocalTime.of(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
+        int hour = Integer.parseInt(parts[0]);
+        int minute = parts.length > 1 ? Integer.parseInt(parts[1]) : 0;
+        if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+            itineraryProblems.add(attr + " " + text
+                    + " is out of range (expected 0..23 hours and 0..59 minutes)");
+            return Optional.empty();
+        }
+        return Optional.of(LocalTime.of(hour, minute));
     }
 
     private List<WaypointCommand> resolveCommands(ScriptLogicParser.WaypointContext ctx) {
@@ -858,50 +931,59 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
     public Object visitDirectForkCommand(ScriptLogicParser.DirectForkCommandContext ctx) {
         int id = Integer.parseInt(ctx.forkSelector().NUMBER().getText());
         letrain.track.rail.ForkRailTrack fork = model.getFork(id);
-        if (fork != null) {
-            if (ctx.forkAction().FLIP() != null) {
-                fork.flipRoute();
-                log.info("[DSL] Direct fork toggle {}", id);
-                return null;
-            }
-
-            String dir = ctx.forkAction().forkDirection().getText().toLowerCase();
-            if ("straight".equals(dir)) {
-                fork.setNormalRoute();
-            } else if ("curved".equals(dir)) {
-                fork.setAlternativeRoute();
-            } else if ("left".equals(dir)) {
-                if (fork.getCreationDir() == letrain.map.Dir.N) {
-                    // example logic for left/right mapping
-                    fork.setAlternativeRoute(); // Just an example, assuming alternate is curve
-                } else {
-                    fork.setAlternativeRoute();
-                }
-            } else if ("right".equals(dir)) {
-                fork.setAlternativeRoute();
-            } else {
-                letrain.map.Dir direction = letrain.map.Dir.valueOf(dir.toUpperCase());
-                // A fork with a single route has no original/alternative pair (O4): asking for a
-                // direction it does not have warns instead of throwing NPE.
-                letrain.utils.Pair<letrain.map.Dir, letrain.map.Dir> originalRoute =
-                        fork.getOriginalRoute();
-                letrain.utils.Pair<letrain.map.Dir, letrain.map.Dir> alternativeRoute =
-                        fork.getAlternativeRoute();
-                if (originalRoute != null && originalRoute.getValue() == direction) {
-                    fork.setNormalRoute();
-                } else if (alternativeRoute != null && alternativeRoute.getValue() == direction) {
-                    fork.setAlternativeRoute();
-                } else {
-                    // The console did nothing here before; the three behaviours of
-                    // `fork set <direction>` are unified in a later batch, but never silently (D1).
-                    warnUser("Fork", "Fork " + id + " has no route towards " + dir + "; unchanged");
-                }
-            }
-            log.info("[DSL] Direct fork {} set towards {}", id, dir);
-        } else {
+        if (fork == null) {
             warnUser("Fork", "Fork " + id + " not found; order ignored");
+            return null;
+        }
+        String dir = ctx.forkAction().forkDirection() != null
+                ? ctx.forkAction().forkDirection().getText().toLowerCase(java.util.Locale.ROOT)
+                : "flip";
+        if (!applyForkDirection(fork, dir)) {
+            warnUser("Fork", "Fork " + id + " has no route towards " + dir + "; unchanged");
+        } else {
+            log.info("[DSL] Direct fork {} set towards {}", id, dir);
         }
         return null;
+    }
+
+    /**
+     * Maps `fork set <direction>` to the physical route, with the same behaviour in console,
+     * trigger and waypoint orders (D3): `straight` / `curved` force those routes, `flip` toggles,
+     * and a compass direction selects the route that leaves towards it. Returns false when the fork
+     * has no such route (the caller warns); the dead `left`/`right` spellings are gone.
+     */
+    private boolean applyForkDirection(ForkRailTrack fork, String direction) {
+        if ("straight".equals(direction)) {
+            fork.setStraightRoute();
+            return true;
+        }
+        if ("curved".equals(direction)) {
+            fork.setCurvedRoute();
+            return true;
+        }
+        if ("flip".equals(direction)) {
+            fork.flipRoute();
+            return true;
+        }
+        try {
+            letrain.map.Dir dir =
+                    letrain.map.Dir.valueOf(direction.toUpperCase(java.util.Locale.ROOT));
+            letrain.utils.Pair<letrain.map.Dir, letrain.map.Dir> originalRoute =
+                    fork.getOriginalRoute();
+            letrain.utils.Pair<letrain.map.Dir, letrain.map.Dir> alternativeRoute =
+                    fork.getAlternativeRoute();
+            if (originalRoute != null && originalRoute.getValue() == dir) {
+                fork.setNormalRoute();
+                return true;
+            }
+            if (alternativeRoute != null && alternativeRoute.getValue() == dir) {
+                fork.setAlternativeRoute();
+                return true;
+            }
+        } catch (IllegalArgumentException e) {
+            // Not a compass direction: falls through to "no route".
+        }
+        return false;
     }
 
 
@@ -1031,13 +1113,28 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
         if (ctx.coupleAction() != null) {
             ScriptLogicParser.CoupleActionContext couple = ctx.coupleAction();
             boolean forward = couple.sense().getText().startsWith("f");
-            int count = resolveVehicleCount(couple.vehicleCount(), 0);
+            Integer count = resolveVehicleCount(couple.vehicleCount(), TrainCouplingManager.ALL,
+                    couplingText("couple", forward, couple.vehicleCount()));
+            if (count == null) {
+                itineraryProblems.add("invalid vehicle count in '"
+                        + couplingText("couple", forward, couple.vehicleCount())
+                        + "' (use a number >= 1 or 'all')");
+                return List.of();
+            }
             return List.of(WaypointCommand.couple(forward, count));
         }
         if (ctx.uncoupleAction() != null) {
             ScriptLogicParser.UncoupleActionContext uncouple = ctx.uncoupleAction();
             boolean forward = uncouple.sense().getText().startsWith("f");
-            int count = resolveVehicleCount(uncouple.vehicleCount(), 1);
+            // U6: no count means every vehicle on that side, exactly like `couple`.
+            Integer count = resolveVehicleCount(uncouple.vehicleCount(), TrainCouplingManager.ALL,
+                    couplingText("uncouple", forward, uncouple.vehicleCount()));
+            if (count == null) {
+                itineraryProblems.add("invalid vehicle count in '"
+                        + couplingText("uncouple", forward, uncouple.vehicleCount())
+                        + "' (use a number >= 1 or 'all')");
+                return List.of();
+            }
             return List.of(WaypointCommand.uncouple(forward, count));
         }
         if (ctx.stopOrder() != null) {
@@ -1051,18 +1148,26 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
         if (ctx.forkSelector() != null) {
             int forkId = Integer.parseInt(ctx.forkSelector().NUMBER().getText());
             String direction = ctx.forkAction().forkDirection() != null
-                    ? ctx.forkAction().forkDirection().getText().toLowerCase()
+                    ? ctx.forkAction().forkDirection().getText().toLowerCase(java.util.Locale.ROOT)
                     : "flip";
+            letrain.track.rail.ForkRailTrack fork = model.getFork(forkId);
+            if (fork != null && !forkHasRoute(fork, direction)) {
+                // D3: same mapping and same warning as the console and the trigger; the action is
+                // kept so the itinerary still parses, but the author sees the problem now.
+                warnUser("Fork", "Fork " + forkId + " has no route towards " + direction
+                        + "; action will do nothing");
+            }
             if ("flip".equals(direction)) {
                 return List.of(WaypointCommand.forkFlip(forkId));
             }
             return List.of(WaypointCommand.forkSetDirection(forkId, direction));
         }
-        String text = ctx.getText().toLowerCase();
+        String text = ctx.getText().toLowerCase(java.util.Locale.ROOT);
         return switch (text) {
             case "load" -> List.of(WaypointCommand.LOAD);
             case "unload" -> List.of(WaypointCommand.UNLOAD);
-            case "reverse" -> List.of(WaypointCommand.REVERSE);
+            // U2: `reverse` and `invert` are synonyms; both are the same waypoint action.
+            case "reverse", "invert" -> List.of(WaypointCommand.REVERSE);
             case "stop" -> List.of(WaypointCommand.STOP);
             case "park" -> List.of(WaypointCommand.PARK);
             default -> {
@@ -1081,6 +1186,29 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                 yield List.of();
             }
         };
+    }
+
+    /**
+     * True when `fork set <direction>` can select a route: `straight`/`curved`/`flip` always map
+     * (with geometric fallbacks) and a compass direction needs a route leaving towards it.
+     */
+    private boolean forkHasRoute(ForkRailTrack fork, String direction) {
+        if ("straight".equals(direction) || "curved".equals(direction)
+                || "flip".equals(direction)) {
+            return true;
+        }
+        try {
+            letrain.map.Dir dir =
+                    letrain.map.Dir.valueOf(direction.toUpperCase(java.util.Locale.ROOT));
+            letrain.utils.Pair<letrain.map.Dir, letrain.map.Dir> originalRoute =
+                    fork.getOriginalRoute();
+            letrain.utils.Pair<letrain.map.Dir, letrain.map.Dir> alternativeRoute =
+                    fork.getAlternativeRoute();
+            return (originalRoute != null && originalRoute.getValue() == dir)
+                    || (alternativeRoute != null && alternativeRoute.getValue() == dir);
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 
     private static String stripQuotes(String s) {

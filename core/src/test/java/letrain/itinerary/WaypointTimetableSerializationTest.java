@@ -23,8 +23,8 @@ class WaypointTimetableSerializationTest {
 
     private static final String PROGRAM = """
             create itinerary "Ruta" {
-                add station 1 arrival 09:00, load, departure 09:20;
-                add station 2 arrival 10:23, unload, departure 10:30;
+                add station 1, arrival 09:00, load, departure 09:20;
+                add station 2, arrival 10:23, unload, departure 10:30;
             }
             assign itinerary "Ruta" to train 1;
             """;
