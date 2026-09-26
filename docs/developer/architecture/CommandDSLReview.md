@@ -50,8 +50,9 @@ directCommand  : assignItinerary | setAutopilot | setNameCommand
 `train <n | "nombre">` + una acción:
 
 - Sentido: `set forward` / `set backward`.
-- Velocidad: `set speed N` (o `set N`) · `accelerate` · `decelerate`.
-- Girar sentido: `invert`.
+- Velocidad: `set speed N` (el atajo `set N` se **elimina** — U1, §7b) · `accelerate` ·
+  `decelerate`.
+- Girar sentido: `invert` o `reverse`, en todas partes (U2, §7b).
 - Maniobras: `couple forward|backward [N|all]` · `uncouple forward|backward [N|all]`.
 - Nombre: `set name "X"`.
 - Motor: `set engine on|off`.
@@ -59,9 +60,10 @@ directCommand  : assignItinerary | setAutopilot | setNameCommand
 - Misiones: `stop at station|sensor <ref>|end [speed N]` · `stop when blocked [speed N]` ·
   `stop on contact [speed N]`.
 
-**No existen**: `train N stop;`, `train N reverse;` (el directo es `invert`), `park` suelto.
-`ref` = número o **nombre entrecomillado** (solo estación/sensor; los selectores de trigger
-y `train at` son **solo número**).
+**No existen hoy**: `train N stop;` ni `park` suelto (U3 lo añade); `train N reverse;`
+(U2 lo añade como alias de `invert`).
+`ref` = número o **nombre entrecomillado**; la idea es que los nombres valgan en **todas**
+las referencias, triggers y `train at` incluidos (U4, §7b).
 
 ### 2.3 Misiones (`stopOrder`, issue #619)
 
@@ -71,6 +73,7 @@ y `train at` son **solo número**).
 - `speed N` opcional y **detrás** del destino; sin `speed`, se usa la velocidad actual.
 - Orden suelta: auto-invierte una vez si el destino está detrás. Acción de waypoint:
   **no** auto-invierte (hay que escribir el `reverse`).
+  Punto confuso a unificar: ver **U5** (§7b).
 
 ### 2.4 Maniobras
 
@@ -81,7 +84,9 @@ vehicleCount   : NUMBER | ALL
 ```
 
 - `sense` obligatorio (`forward|fw`, `backward|bw`).
-- Sin contador: `couple` engancha **todo**; `uncouple` desengancha **1**.
+- Sin contador: `couple` engancha **todo**; `uncouple` desengancha **1**. Propuesta: que
+  `uncouple` sin número desenganche **todo**, igual que `couple` (**U6**, §7b), y definir
+  qué significa `0`.
 - `all` = centinela (`Integer.MAX_VALUE`); `all` es palabra reservada (documentado).
 
 ### 2.5 Infraestructura (directo y en bloques)
@@ -103,6 +108,8 @@ waypoint : add station|sensor <ref> [dirección] [arrival H:MM] , acciones , [de
 
 - Orden **obligatorio**: `arrival` → acciones (en orden de escritura) → `departure`.
 - Comas **obligatorias** entre ítems del plan; la referencia y su dirección **no** llevan coma.
+  Propuesta: coma también entre `<ref> [dirección]` y el primer atributo, para una regla
+  uniforme (**U7**, §7b).
 - `;` opcional tras cada waypoint y tras `}`.
 - Mínimo **2 waypoints** (validación de ejecución, no de gramática): un itinerario es un bucle.
 - Acciones: `load`, `unload`, `reverse`, `stop`, `park`, `wait N`, `speed N`,
@@ -134,7 +141,8 @@ tortuga (`write/move/del/clear`), `help`.
   colores, `time`, `end`, `mode`, `limit`…) que rompen identificadores desnudos.
 - `STRING "…"` sin escapes y admite saltos de línea.
 - `NUMBER` entero con signo opcional; sin decimales.
-- `TIME H:MM` / `HH:MM` estricto en waypoints.
+- `TIME H:MM` / `HH:MM` estricto en waypoints. Propuesta: admitir también `HH` sin minutos
+  (`arrival 9` = 09:00) (**U8**, §7b).
 - Sensibilidad a mayúsculas: keywords en minúsculas; consola case-sensitive;
   `program` pasa **todo** a minúsculas (también los strings).
 
@@ -175,9 +183,9 @@ tortuga (`write/move/del/clear`), `help`.
 ### 🟡 Asimetrías a decidir (confunden aunque «funcionen»)
 
 13. Girar sentido: `reverse` (waypoint) / `invert` (directo) / `set forward|backward`;
-    auto-reverse solo en órdenes sueltas.
+    auto-reverse solo en órdenes sueltas. → **U2** y **U5** (§7b).
 14. `couple` sin número = todos; `uncouple` sin número = 1; y `0` significa «todos» en
-    couple pero «1» en uncouple.
+    couple pero «1» en uncouple. → **U6** (§7b).
 15. `fork N set <dirección>` tiene **tres comportamientos**: consola no-op si no mapea,
     trigger hace `flip`, waypoint mapea.
 16. `train at` es un token con un **espacio exacto**: doble espacio o tab lo rompen.
@@ -242,8 +250,41 @@ verde en `mvn test`.
 - **D3. Saneamiento de sintaxis** — PENDIENTE.
   ¿Se retira la sintaxis muerta (`LEFT/RIGHT`, `link/unlink`, eventos `couple`, `stop`
   suelto en ayuda)? ¿Se alinean ayuda y chuletas y se validan con un test?
+  Incluirá las decisiones **U1–U8** (§7b) una vez confirmadas.
 - **D4. Casos de error, uno a uno** — PENDIENTE.
   Recorrer la lista de §4 y decidir el comportamiento esperado de cada caso.
+
+## 7b. Decisiones de sintaxis propuestas (anotadas por el usuario, 2026-09-26)
+
+Notas del usuario sobre esta revisión, pasadas a propuestas numeradas (su texto, literal,
+entre comillas). Estado: **pendientes de confirmar** salvo indicación.
+
+- **U1. Fuera el atajo `set N`** — «VAMOS A PROHIBIR LO DE set N, que ponga siempre "speed"».
+  Siempre `set speed N`. Coste: bajo (gramática, docs y tests). Sin compatibilidad legacy.
+- **U2. `invert` y `reverse` como sinónimos** — «invert|reverse» / «permitamos invert ó reverse».
+  Aceptar ambos en orden directa y en waypoint; hoy `reverse` es acción de waypoint e `invert`
+  orden directa, y unificar elimina esa asimetría. Coste: bajo.
+- **U3. `park` como orden directa** — «agreguemos park». `train N park;` con la misma semántica
+  que la acción de waypoint (frena, apaga motor, mantiene autopilot). Coste: bajo.
+- **U4. Nombres en todas las referencias** — «Permitamos nombre también». Triggers, `train at`
+  y selectores aceptan nombre además de número. Coste: medio. **Depende de D2** (política de
+  mayúsculas/nombres: hoy `program` pasa todo a minúsculas y los nombres se buscan
+  case-sensitive).
+- **U5. Unificar el auto-reverse** — «Esto es un poco confuso. Cuánto nos costaría unificarlo?».
+  Hoy: orden suelta auto-invierte una vez si el destino está detrás; la misión de waypoint no.
+  Opciones: **(a)** auto-reverse en todo (código barato; semántica media: convive con los
+  `reverse` explícitos de la coreografía y hay que rehacer expectativas y tests);
+  **(b)** auto-reverse en nada (más explícito, más pasos); **(c)** dejarlo y documentarlo
+  mejor. **Pendiente: análisis de coste y decisión.**
+- **U6. `uncouple` sin número = todo** — «unifiquemos esto: uncouple sin número desengancha todo».
+  Iguala el default de `couple`; además, definir qué significa `0` (hoy: todos en couple, 1 en
+  uncouple). Coste: bajo.
+- **U7. Coma también tras `<ref> [dirección]`** — «Me parece que entre la <ref> [dirección] y
+  arrival debería ir también coma». Regla uniforme: cada ítem del plan separado por comas; la
+  ref+dirección es un bloque. Ej.: `add station 1 ne, arrival 10:00, uncouple backward all,
+  departure 10:30;`. Coste: bajo-medio (gramática, ejemplos, docs y tests). Sin legacy.
+- **U8. Horas sin minutos** — «debería admitirse también HH sin minutos?». `arrival 9` = 09:00.
+  Decidir si también en `time set` y cerrar de paso el coladero `25:99` (hallazgo 10).
 
 ## 8. Principios propuestos (para discutir)
 
