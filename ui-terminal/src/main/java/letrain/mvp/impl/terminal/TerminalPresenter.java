@@ -153,6 +153,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         this.ambience = ambience;
         setModel(model);
         this.view = view != null ? view : new TerminalView(this);
+        wireUserMessageSink();
         renderer = new RenderVisitor(this.view);
         informer = new InfoVisitor(this.view);
         railTrackMaker = new RailTrackMaker(this);
@@ -277,6 +278,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         } else {
             this.model = new letrain.mvp.impl.Model();
         }
+        wireUserMessageSink();
         // Re-create audio controller for the new model
         if (this.audioController != null) {
             this.audioController.stop();
@@ -310,6 +312,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         // reload / mixer restart) and rebuild only the cheap simulation controller. The view reads
         // the model field every frame.
         this.model = newModel;
+        wireUserMessageSink();
         if (this.audioController == null) {
             this.audioController = new letrain.audio.AudioController(this.model);
         } else {
@@ -339,6 +342,16 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             view.centerOn(focus.getX(), focus.getY());
         }
         this.model.updateGroundMap(view.getScrollOffset(), view.getCols(), view.getRows());
+    }
+
+    /**
+     * Points the model's DSL message sink at the visible overlay (D1). Programs, itineraries and
+     * missions then report their problems where the player can see them, not only in the log.
+     */
+    private void wireUserMessageSink() {
+        if (view != null && model != null) {
+            model.setUserMessageSink((title, message) -> view.showMessage(title, message));
+        }
     }
 
     private boolean stopped = false;

@@ -322,16 +322,45 @@ public interface Model {
 
     public void removeDestroyedTrains();
 
+    /**
+     * Installs a program: the engine parses it strictly and applies it. The returned list carries
+     * the syntax errors (empty when it applied). A rejected text is stored anyway so the program
+     * editor can show it for fixing; {@link #isProgramValid()} then reports it was not applied.
+     */
     public List<String> setProgram(String program);
 
     /**
      * Installs a program that came from disk (a savegame, a program file…): the single load path
      * shared by {@code postLoadInit} and the clients. The text is parsed strictly like any other
-     * program (ADR-022: the old comma-less waypoint syntax is not migrated).
+     * program (ADR-022: the old comma-less waypoint syntax is not migrated). Its problem notices
+     * are routed through the model's visible channel; while no sink is wired yet (a savegame
+     * re-applied by {@code postLoadInit} before the presenter exists) they are queued and delivered
+     * when the client wires its sink, so a loaded program never warns only in the log.
      */
     public List<String> setProgramFromDisk(String program);
 
     public String getProgram();
+
+    /**
+     * True when the text returned by {@link #getProgram()} parsed and applied on the last attempt;
+     * false when the engine rejected it (the text is kept for editing). See {@link #setProgram}.
+     */
+    default boolean isProgramValid() {
+        return true;
+    }
+
+    /**
+     * Sink for DSL problem notices that must reach the player (D1: warnings from programs,
+     * itineraries and missions are never log-only when there is a player). The clients wire it to
+     * their visible message channel; headless contexts ({@code letrain-check}, tests) leave it null
+     * and the engine only logs.
+     */
+    default void setUserMessageSink(java.util.function.BiConsumer<String, String> sink) {}
+
+    /** See {@link #setUserMessageSink}. */
+    default java.util.function.BiConsumer<String, String> getUserMessageSink() {
+        return null;
+    }
 
     public EconomyManager getEconomyManager();
 

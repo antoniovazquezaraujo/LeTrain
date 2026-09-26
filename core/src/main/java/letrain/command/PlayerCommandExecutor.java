@@ -66,6 +66,14 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         this(model, null, null, null);
     }
 
+    /** User-facing problem notice: visible channel when wired, log otherwise (D1). */
+    private void warn(String title, String text) {
+        log.warn("[DSL] {}", text);
+        if (onMessage != null) {
+            onMessage.accept(title, text);
+        }
+    }
+
     public static String execute(String commandText, Model model) {
         return execute(commandText, model, null, null, null, null, null, null, null);
     }
@@ -252,6 +260,13 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             hour = Integer.parseInt(ctx.NUMBER(0).getText());
             minute = Integer.parseInt(ctx.NUMBER(1).getText());
         }
+        if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+            // D1 / U8: `time set 25:99` used to wrap silently; it is an error with a visible
+            // warning now.
+            warn("Time", "Invalid time " + hour + ":" + minute
+                    + " (expected 00:00..23:59); the clock is unchanged");
+            return null;
+        }
         letrain.time.GameTime target = new letrain.time.GameTime(clock.now().day(), hour, minute);
         clock.setTime(target);
         log.info("[time] set to {}", clock.now());
@@ -345,6 +360,16 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
 
         // info; -> everything
         if (type == null) {
+            if (ctx.NUMBER() != null || ctx.identifier() != null) {
+                // `info 5` has no entity type: the number used to be ignored in silence.
+                String ref =
+                        ctx.NUMBER() != null ? ctx.NUMBER().getText() : ctx.identifier().getText();
+                onMessage.accept("Info",
+                        "'info " + ref
+                                + "' ignores the reference (no entity type); use e.g. 'info train "
+                                + ref + "' or 'info;' for everything");
+                return null;
+            }
             onMessage.accept("Info", model.getGameObjectsReport());
             return null;
         }
@@ -443,7 +468,9 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                     return null;
                 }
             }
-            return "Train not found";
+            warn("Name", "Train " + (name != null ? "'" + name + "'" : id)
+                    + " not found; name unchanged");
+            return null;
         } else if (ctx.entityType().STATION() != null) {
             for (letrain.track.Station s : model.getStations()) {
                 if ((name != null && name.equals(s.getName())) || (id != -1 && s.getId() == id)) {
@@ -451,7 +478,9 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                     return null;
                 }
             }
-            return "Station not found";
+            warn("Name", "Station " + (name != null ? "'" + name + "'" : id)
+                    + " not found; name unchanged");
+            return null;
         } else if (ctx.entityType().SENSOR() != null) {
             for (letrain.track.Sensor s : model.getSensors()) {
                 if ((name != null && name.equals(s.getName())) || (id != -1 && s.getId() == id)) {
@@ -459,11 +488,19 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                     return null;
                 }
             }
-            return "Sensor not found";
+            warn("Name", "Sensor " + (name != null ? "'" + name + "'" : id)
+                    + " not found; name unchanged");
+            return null;
         } else if (ctx.entityType().SEMAPHORE() != null) {
-            return "Semaphores cannot be renamed";
+            // The message used to be returned and discarded: now it reaches the console (D1).
+            warn("Name", "Semaphores cannot be renamed; name unchanged");
+            return null;
+        } else if (ctx.entityType().SIGNAL() != null) {
+            warn("Name", "Signals cannot be renamed; name unchanged");
+            return null;
         }
-        return "Entity type not supported for renaming";
+        warn("Name", "Entity type not supported for renaming");
+        return null;
     }
 
     public Object visitQuitCommand(PlayerCommandsParser.QuitCommandContext ctx) {
@@ -477,6 +514,13 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
 
     @Override
     public Object visitStatement(PlayerCommandsParser.StatementContext ctx) {
+        // `PlayerCommandsParser` overrides `setNameCommand` so the console accepts a STRING
+        // reference (`station "old" set name "new"`), which the strict ScriptLogicParser does not.
+        // Handle it here: re-parsing would reject it and the rename would be lost in silence.
+        if (ctx.directCommand() != null && ctx.directCommand().setNameCommand() != null) {
+            return visitSetNameCommand(ctx.directCommand().setNameCommand());
+        }
+
         // Since it's a script logic statement, we can re-parse it with ScriptLogicParser
         // This avoids duplicating all the visitor logic for trains, semaphores, etc.
         // Wait, ANTLR4 tokens contain the start and stop index!
@@ -485,9 +529,34 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         String originalText = ctx.getStart().getInputStream()
                 .getText(new org.antlr.v4.runtime.misc.Interval(start, stop));
 
-        ScriptLogicParser scriptParser = new ScriptLogicParser(
-                new CommonTokenStream(new LeTrainLexer(CharStreams.fromString(originalText))));
+        List<String> innerErrors = new ArrayList<>();
+        LeTrainLexer innerLexer = new LeTrainLexer(CharStreams.fromString(originalText));
+        innerLexer.removeErrorListeners();
+        innerLexer.addErrorListener(new org.antlr.v4.runtime.BaseErrorListener() {
+            @Override
+            public void syntaxError(org.antlr.v4.runtime.Recognizer<?, ?> recognizer,
+                    Object offendingSymbol, int line, int charPositionInLine, String msg,
+                    org.antlr.v4.runtime.RecognitionException e) {
+                innerErrors.add("Token error at " + line + ":" + charPositionInLine + " " + msg);
+            }
+        });
+        ScriptLogicParser scriptParser = new ScriptLogicParser(new CommonTokenStream(innerLexer));
+        scriptParser.removeErrorListeners();
+        scriptParser.addErrorListener(new org.antlr.v4.runtime.BaseErrorListener() {
+            @Override
+            public void syntaxError(org.antlr.v4.runtime.Recognizer<?, ?> recognizer,
+                    Object offendingSymbol, int line, int charPositionInLine, String msg,
+                    org.antlr.v4.runtime.RecognitionException e) {
+                innerErrors.add("Syntax error at " + line + ":" + charPositionInLine + " " + msg);
+            }
+        });
         ScriptLogicParser.ScriptStartContext scriptTree = scriptParser.scriptStart();
+        if (!innerErrors.isEmpty()) {
+            // D1: a statement the script engine cannot execute is never a silent no-op.
+            warn("Command",
+                    "Not supported by the script engine: " + String.join(" | ", innerErrors));
+            return null;
+        }
         CommandManager scriptManager = new CommandManager(model);
         scriptManager.setWarningSink(onMessage);
         scriptManager.visit(scriptTree);
@@ -1099,6 +1168,12 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                             } else
                                 turtleDelegate.moveForward();
                         }
+                    } else {
+                        // Steps with an identifier / `m name` / `mark name` parse but do nothing
+                        // yet: named marks in turtle sequences are not implemented (D1: no silent
+                        // no-ops). Implementing them is a separate batch.
+                        warn("Turtle", "Step " + (i + 1) + " ('" + stepCtx.getText()
+                                + "') ignored: named steps/marks are not implemented");
                     }
                 }
             } else {

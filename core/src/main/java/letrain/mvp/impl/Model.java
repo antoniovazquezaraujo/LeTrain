@@ -195,6 +195,25 @@ public class Model implements letrain.mvp.Model {
     private transient SimulationService internalSimService;
     private transient letrain.time.impl.SimpleGameClock gameClock =
             new letrain.time.impl.SimpleGameClock();
+    /** Visible message sink for DSL problem notices; wired by the clients (see Model). */
+    private transient java.util.function.BiConsumer<String, String> userMessageSink;
+
+    /**
+     * D1 ordering fix (O3): notices produced before the client wires its sink (a savegame is loaded
+     * by {@code postLoadInit} before its presenter exists) wait here and are flushed by
+     * {@link #setUserMessageSink}, so a rejection never stays log-only.
+     */
+    private transient List<PendingUserMessage> pendingUserMessages;
+
+    /**
+     * Result of the last program load attempt: false when {@link #setProgram} kept a text the
+     * engine rejected. The text is kept anyway (the editor shows it so the player can fix it); this
+     * only marks it as not applied.
+     */
+    private transient boolean programValid = true;
+
+    /** A visible DSL notice produced before the client wired its sink (D1/O3). */
+    private record PendingUserMessage(String title, String text) {}
 
     private AutomationEngine getAutomationEngine() {
         if (automationEngine == null) {
@@ -392,8 +411,18 @@ public class Model implements letrain.mvp.Model {
         reestablishSystemListeners();
         if (this.program != null && !this.program.isEmpty()) {
             // Single load path, shared with the clients' program files. The text is parsed
-            // strictly: ADR-022 does not migrate the old comma-less waypoint syntax.
-            this.setProgramFromDisk(this.program);
+            // strictly: ADR-022 does not migrate the old comma-less waypoint syntax. A rejected
+            // text is kept (the editor shows it so the player can fix it) and the rejection is
+            // reported to the visible channel. At this point the presenter does not exist yet
+            // (the sink is wired after this model is applied), so the notice is queued and
+            // delivered by setUserMessageSink (O3). A valid program's semantic warnings follow
+            // the same route: setProgramFromDisk wires the engine to reportUserMessage (D1).
+            List<String> errors = this.setProgramFromDisk(this.program);
+            if (errors != null && !errors.isEmpty()) {
+                reportUserMessage("Program",
+                        "Saved program not applied; fix it in the program editor:\n"
+                                + String.join("\n", errors));
+            }
         }
 
         if (this.mode == letrain.mvp.Model.GameMode.COMMAND) {
@@ -915,13 +944,30 @@ public class Model implements letrain.mvp.Model {
 
     @Override
     public List<String> setProgram(String program) {
+        // The text is stored even when it does not parse: the editor must show what the player
+        // wrote so it can be fixed. `programValid` marks that the engine rejected it (nothing was
+        // applied).
         this.program = program;
-        return getAutomationEngine().setProgram(program);
+        return markProgramApplied(getAutomationEngine().setProgram(program));
     }
 
     @Override
     public List<String> setProgramFromDisk(String program) {
-        return setProgram(program);
+        // The disk path (savegame, program file) routes the program's warnings through the model's
+        // visible channel: a savegame is re-applied by postLoadInit before the presenter exists,
+        // so reportUserMessage queues the notice until the client wires its sink (D1).
+        this.program = program;
+        return markProgramApplied(getAutomationEngine().setProgramFromDisk(program));
+    }
+
+    private List<String> markProgramApplied(List<String> errors) {
+        this.programValid = errors == null || errors.isEmpty();
+        return errors;
+    }
+
+    @Override
+    public boolean isProgramValid() {
+        return this.programValid;
     }
 
     public void reestablishSystemListeners() {
@@ -931,6 +977,45 @@ public class Model implements letrain.mvp.Model {
     @Override
     public String getProgram() {
         return this.program;
+    }
+
+    @Override
+    public void setUserMessageSink(java.util.function.BiConsumer<String, String> sink) {
+        this.userMessageSink = sink;
+        if (sink == null || pendingUserMessages == null || pendingUserMessages.isEmpty()) {
+            return;
+        }
+        // Flush what was produced while no presenter existed (D1/O3). Detach the list first so a
+        // sink callback that reports another problem cannot loop over the same messages.
+        List<PendingUserMessage> pending = pendingUserMessages;
+        pendingUserMessages = null;
+        for (PendingUserMessage message : pending) {
+            sink.accept(message.title(), message.text());
+        }
+    }
+
+    /**
+     * D1: reports a DSL problem through the visible message channel. When the client has not wired
+     * its sink yet (a savegame is loaded by {@code postLoadInit} before its presenter exists) the
+     * notice is queued and delivered by {@link #setUserMessageSink}, so no problem stays log-only.
+     */
+    public void reportUserMessage(String title, String text) {
+        if (text == null || text.isEmpty()) {
+            return;
+        }
+        if (userMessageSink != null) {
+            userMessageSink.accept(title, text);
+            return;
+        }
+        if (pendingUserMessages == null) {
+            pendingUserMessages = new ArrayList<>();
+        }
+        pendingUserMessages.add(new PendingUserMessage(title, text));
+    }
+
+    @Override
+    public java.util.function.BiConsumer<String, String> getUserMessageSink() {
+        return this.userMessageSink;
     }
 
     @Override

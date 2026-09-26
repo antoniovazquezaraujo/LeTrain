@@ -39,6 +39,13 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
     private ItineraryImpl currentItinerary;
 
     /**
+     * Problems found while building the itinerary being parsed (unknown waypoint destination,
+     * unknown mission target…). A non-empty list rejects the itinerary (D1: a plan must not run
+     * with a stop missing).
+     */
+    private final List<String> itineraryProblems = new ArrayList<>();
+
+    /**
      * Sink for user-facing problem notices (rejection, unreachable, lost route, stall). The console
      * sets it (typed orders warn on screen); scripts and the program replay leave it null, so their
      * messages go to the log only. Mission success never uses it (issue #619).
@@ -63,6 +70,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
     public Object visitScriptStart(ScriptLogicParser.ScriptStartContext ctx) {
         itineraries.clear();
         currentItinerary = null;
+        itineraryProblems.clear();
         return super.visitScriptStart(ctx);
     }
 
@@ -131,6 +139,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                         }
                     }
                 });
+            } else {
+                warnUser("Trigger", "Sensor " + id + " not found; trigger ignored");
             }
         } else if (ctx.stationSelector() != null) {
             int id = Integer.parseInt(ctx.stationSelector().NUMBER().getText());
@@ -169,6 +179,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                         }
                     });
                 }
+            } else {
+                warnUser("Trigger", "Station " + id + " not found; trigger ignored");
             }
         } else if (ctx.forkSelector() != null) {
             int id = Integer.parseInt(ctx.forkSelector().NUMBER().getText());
@@ -207,6 +219,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                         }
                     });
                 }
+            } else {
+                warnUser("Trigger", "Fork " + id + " not found; trigger ignored");
             }
         } else if (ctx.semaphoreSelector() != null) {
             int id = Integer.parseInt(ctx.semaphoreSelector().NUMBER().getText());
@@ -245,6 +259,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                         }
                     });
                 }
+            } else {
+                warnUser("Trigger", "Semaphore " + id + " not found; trigger ignored");
             }
         } else if (ctx.trainSelector() != null) {
             Integer filterTrainId = (ctx.trainSelector().NUMBER() != null)
@@ -319,11 +335,34 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
     public Object visitCommandItem(ScriptLogicParser.CommandItemContext ctx) {
         if (ctx.semaphoreAction() != null) {
             int id = Integer.parseInt(ctx.semaphoreSelector().NUMBER().getText());
-            String status = ctx.semaphoreAction().semaphoreStatus().getText();
+            ScriptLogicParser.SemaphoreActionContext act = ctx.semaphoreAction();
+            if (act.INVERT() != null) {
+                return (ExecutableCommand) (contextTrain) -> {
+                    RailSemaphore s = model.getSemaphore(id);
+                    if (s != null) {
+                        s.setCreationDir(s.getCreationDir().inverse());
+                    } else {
+                        warnUser("Semaphore", "Semaphore " + id + " not found; action ignored");
+                    }
+                };
+            }
+            // `semaphoreStatus()` is null for the bare OPEN/CLOSE/CLOSED forms: reading it blindly
+            // used to NPE here (review finding 4).
+            boolean open;
+            if (act.OPEN() != null) {
+                open = true;
+            } else if (act.CLOSE() != null || act.CLOSED() != null) {
+                open = false;
+            } else {
+                open = act.semaphoreStatus() != null
+                        && "open".equals(act.semaphoreStatus().getText());
+            }
             return (ExecutableCommand) (contextTrain) -> {
                 RailSemaphore s = model.getSemaphore(id);
                 if (s != null) {
-                    s.setOpen("open".equals(status));
+                    s.setOpen(open);
+                } else {
+                    warnUser("Semaphore", "Semaphore " + id + " not found; action ignored");
                 }
             };
         } else if (ctx.forkAction() != null) {
@@ -333,14 +372,14 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                     : null;
             return (ExecutableCommand) (contextTrain) -> {
                 ForkRailTrack f = model.getFork(id);
-                if (f != null) {
-                    if ("straight".equals(dirText)) {
-                        f.setStraightRoute();
-                    } else if ("curved".equals(dirText)) {
-                        f.setCurvedRoute();
-                    } else {
-                        f.flipRoute();
-                    }
+                if (f == null) {
+                    warnUser("Fork", "Fork " + id + " not found; action ignored");
+                } else if ("straight".equals(dirText)) {
+                    f.setStraightRoute();
+                } else if ("curved".equals(dirText)) {
+                    f.setCurvedRoute();
+                } else {
+                    f.flipRoute();
                 }
             };
         } else if (ctx.trainAction() != null) {
@@ -353,6 +392,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                         Train target = model.getTrainFromLocomotiveId(id);
                         if (target != null) {
                             baseAction.execute(target);
+                        } else {
+                            warnUser("Train", "Train " + id + " not found; action ignored");
                         }
                     };
                 } else {
@@ -368,6 +409,11 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                     Train target = findTrainAtPlace(pCtx);
                     if (target != null) {
                         baseAction.execute(target);
+                    } else {
+                        // `getText()` glues the tokens ("station1"): describe the selector by hand
+                        // so the notice reads like the order the user wrote (O1).
+                        warnUser("Trigger",
+                                "No train at " + describePlace(pCtx) + "; action ignored");
                     }
                 };
             }
@@ -382,7 +428,11 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             return buildStopOrder(ctx.stopOrder());
         } else if (ctx.trainSpeed() != null) {
             int speed = Integer.parseInt(ctx.trainSpeed().getText());
-            int clampedSpeed = Math.max(0, Math.min(10, speed));
+            int clampedSpeed = clampSpeed(speed);
+            if (clampedSpeed != speed) {
+                warnUser("Speed",
+                        "Speed " + speed + " is out of range 0-10; using " + clampedSpeed);
+            }
             return (t) -> {
                 t.setSpeed(clampedSpeed);
             };
@@ -456,6 +506,13 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                     t.getLogisticsManager().startLoadProcess(s);
                 }
             };
+        } else if (ctx.NAME() != null && ctx.STRING() != null) {
+            // `train N set name "X"` (direct order and inside a block) used to be a silent no-op.
+            String newName = stripQuotes(ctx.STRING().getText());
+            return (t) -> {
+                t.setName(newName);
+                log.info("[DSL] Train {} named '{}'", t.getId(), newName);
+            };
         } else {
             return (t) -> {
             };
@@ -486,7 +543,10 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
         int speed = ctx.missionSpeed() != null
                 ? Integer.parseInt(ctx.missionSpeed().trainSpeed().getText())
                 : 0;
-        int clamped = Math.max(0, Math.min(10, speed));
+        int clamped = clampSpeed(speed);
+        if (clamped != speed) {
+            warnUser("Speed", "Mission speed " + speed + " is out of range 0-10; using " + clamped);
+        }
         if (ctx.stopTarget().WHEN() != null) {
             return new MissionSpec(TrainMission.Kind.WHEN_BLOCKED, -1, clamped);
         }
@@ -530,11 +590,27 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             if (t.getAutopilot() == null) {
                 return;
             }
-            java.util.function.BiConsumer<String, String> sink = this.warningSink;
-            t.getAutopilot().setMissionNotifier(
-                    sink != null ? text -> sink.accept("Autopilot", text) : null);
+            installMissionNotifier(t);
             t.getAutopilot().startMission(mission);
         };
+    }
+
+    /**
+     * Wires the autopilot mission notifier to the user message sink (D1: itinerary maneuver
+     * problems must reach the console too). Without a sink the notifier is left untouched, so a
+     * caller-provided one (headless tests) survives.
+     */
+    private void installMissionNotifier(Train train) {
+        if (train.getAutopilot() == null || warningSink == null) {
+            return;
+        }
+        java.util.function.BiConsumer<String, String> sink = warningSink;
+        train.getAutopilot().setMissionNotifier(text -> sink.accept("Autopilot", text));
+    }
+
+    /** Clamps a requested speed to the engine range 0..MAX_SPEED (0 disables speed actions). */
+    private static int clampSpeed(int speed) {
+        return Math.max(0, Math.min(letrain.vehicle.rail.impl.Locomotive.MAX_SPEED, speed));
     }
 
     /** Immediate user notice: console when there is a sink, log otherwise (issue #619). */
@@ -556,10 +632,16 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
     public Object visitCreateItinerary(ScriptLogicParser.CreateItineraryContext ctx) {
         String name = stripQuotes(ctx.STRING().getText());
         currentItinerary = new ItineraryImpl();
+        itineraryProblems.clear();
         for (ScriptLogicParser.WaypointContext wp : ctx.waypoint()) {
             visit(wp);
         }
-        if (currentItinerary.isValid()) {
+        if (!itineraryProblems.isEmpty()) {
+            // D1: a waypoint with an unknown destination used to be dropped in silence and the
+            // plan ran with a missing stop. Reject the whole itinerary instead.
+            warnUser("Itinerary", "Itinerary '" + name + "' not created: "
+                    + String.join("; ", itineraryProblems));
+        } else if (currentItinerary.isValid()) {
             itineraries.put(name, currentItinerary);
             log.info("[DSL] Created itinerary '{}' with {} waypoints", name,
                     currentItinerary.waypoints().size());
@@ -581,6 +663,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
         if (ctx.stationRef() != null) {
             Station st = resolveStation(ctx.stationRef());
             if (st == null) {
+                itineraryProblems.add("station " + ctx.stationRef().getText() + " not found");
                 return null;
             }
             wp = new WaypointImpl(Waypoint.Type.STATION, st.getId(),
@@ -589,6 +672,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
         } else if (ctx.sensorRef() != null) {
             Sensor se = resolveSensor(ctx.sensorRef());
             if (se == null) {
+                itineraryProblems.add("sensor " + ctx.sensorRef().getText() + " not found");
                 return null;
             }
             wp = new WaypointImpl(Waypoint.Type.SENSOR, se.getId(),
@@ -653,7 +737,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
         }
         Train train = resolveTrain(ctx.trainRef());
         if (train == null) {
-            log.warn("[DSL] Train not found for '{}'", ctx.trainRef().getText());
+            warnUser("Train",
+                    "Train " + ctx.trainRef().getText() + " not found; itinerary not assigned");
             return null;
         }
         // Autopilot is always instantiated. Set pathfinder and assign itinerary
@@ -662,6 +747,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                     model.getRailwayGraph(), model.getBlockManager(), train));
         }
         train.getAutopilot().setItinerary(it);
+        // D1: waypoint maneuver problems must reach the user too, not only loose orders.
+        installMissionNotifier(train);
         // Re-activate if autopilot was on (itinerary change resets to IDLE)
         if (train.isAutoMode()) {
             train.getAutopilot().activate();
@@ -684,6 +771,9 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                         + " has no itinerary assigned (or it is invalid); the autopilot stays off");
             }
             log.info("[DSL] Train {} autopilot = {}", train.getId(), on);
+        } else {
+            warnUser("Train",
+                    "Train " + ctx.trainRef().getText() + " not found; autopilot unchanged");
         }
         return null;
     }
@@ -696,8 +786,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             action.execute(train);
             log.info("[DSL] Direct command executed on Train {}", train.getId());
         } else {
-            log.warn("[DSL] Direct command failed: Train not found for '{}'",
-                    ctx.trainRef().getText());
+            warnUser("Train", "Train " + ctx.trainRef().getText() + " not found; order ignored");
         }
         return null;
     }
@@ -706,23 +795,31 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
     public Object visitSetNameCommand(ScriptLogicParser.SetNameCommandContext ctx) {
         String name = stripQuotes(ctx.STRING().getText());
         int id = Integer.parseInt(ctx.NUMBER().getText());
-        if (ctx.getChild(0).getText().equals("station")) {
+        // Compare by token type, not by text: `st`/`sn` are the same tokens as `station`/`sensor`
+        // and the old getText() comparison made `st 1 set name "X"` a silent no-op.
+        if (ctx.STATION() != null) {
             Station s = model.getStation(id);
             if (s != null) {
                 s.setName(name);
                 log.info("[DSL] Station {} named '{}'", id, name);
+            } else {
+                warnUser("Station", "Station " + id + " not found; name unchanged");
             }
-        } else if (ctx.getChild(0).getText().equals("sensor")) {
+        } else if (ctx.SENSOR() != null) {
             Sensor s = model.getSensor(id);
             if (s != null) {
                 s.setName(name);
                 log.info("[DSL] Sensor {} named '{}'", id, name);
+            } else {
+                warnUser("Sensor", "Sensor " + id + " not found; name unchanged");
             }
-        } else if (ctx.getChild(0).getText().equals("train")) {
+        } else if (ctx.TRAIN() != null) {
             Train t = model.getTrainFromLocomotiveId(id);
             if (t != null) {
                 t.setName(name);
                 log.info("[DSL] Train {} named '{}'", id, name);
+            } else {
+                warnUser("Train", "Train " + id + " not found; name unchanged");
             }
         }
         return null;
@@ -757,13 +854,25 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                 fork.setAlternativeRoute();
             } else {
                 letrain.map.Dir direction = letrain.map.Dir.valueOf(dir.toUpperCase());
-                if (fork.getOriginalRoute().getValue() == direction) {
+                // A fork with a single route has no original/alternative pair (O4): asking for a
+                // direction it does not have warns instead of throwing NPE.
+                letrain.utils.Pair<letrain.map.Dir, letrain.map.Dir> originalRoute =
+                        fork.getOriginalRoute();
+                letrain.utils.Pair<letrain.map.Dir, letrain.map.Dir> alternativeRoute =
+                        fork.getAlternativeRoute();
+                if (originalRoute != null && originalRoute.getValue() == direction) {
                     fork.setNormalRoute();
-                } else if (fork.getAlternativeRoute().getValue() == direction) {
+                } else if (alternativeRoute != null && alternativeRoute.getValue() == direction) {
                     fork.setAlternativeRoute();
+                } else {
+                    // The console did nothing here before; the three behaviours of
+                    // `fork set <direction>` are unified in a later batch, but never silently (D1).
+                    warnUser("Fork", "Fork " + id + " has no route towards " + dir + "; unchanged");
                 }
             }
             log.info("[DSL] Direct fork {} set towards {}", id, dir);
+        } else {
+            warnUser("Fork", "Fork " + id + " not found; order ignored");
         }
         return null;
     }
@@ -788,6 +897,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                 sem.setOpen(false);
                 log.info("[DSL] Direct semaphore {} set to closed", id);
             }
+        } else {
+            warnUser("Semaphore", "Semaphore " + id + " not found; order ignored");
         }
         return null;
     }
@@ -818,6 +929,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                 signal.setMax(isMax);
                 log.info("[DSL] Direct signal {} mode set to {}", id, isMax ? "MAX" : "MIN");
             }
+        } else {
+            warnUser("Signal", "Signal " + id + " not found; order ignored");
         }
         return null;
     }
@@ -831,7 +944,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             station.flipOrientation();
             log.info("[DSL] Direct station {} inverted", id);
         } else {
-            log.warn("[DSL] Direct station invert: station {} not found", id);
+            warnUser("Station", "Station " + id + " not found; order ignored");
         }
         return null;
     }
@@ -850,7 +963,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             sensor.setCreationDir(sensor.getCreationDir().inverse());
             log.info("[DSL] Direct sensor {} inverted", id);
         } else {
-            log.warn("[DSL] Direct sensor invert: plain sensor {} not found", id);
+            warnUser("Sensor", "Plain sensor " + id + " not found; order ignored");
         }
         return null;
     }
@@ -862,9 +975,20 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
     }
 
     private Sensor resolveSensor(ScriptLogicParser.SensorRefContext ctx) {
-        if (ctx.STRING() != null)
-            return model.findSensorByName(stripQuotes(ctx.STRING().getText()));
-        return model.getSensor(Integer.parseInt(ctx.NUMBER().getText()));
+        Sensor resolved;
+        if (ctx.STRING() != null) {
+            resolved = model.findSensorByName(stripQuotes(ctx.STRING().getText()));
+        } else {
+            resolved = model.getSensor(Integer.parseInt(ctx.NUMBER().getText()));
+        }
+        if (resolved != null && resolved.getClass() != letrain.track.Sensor.class) {
+            // Ids collide with stations and speed signals; those never match a "plain sensor"
+            // mission, which then never completes (review item 18). Reject it loudly.
+            warnUser("Sensor", "Sensor " + ctx.getText()
+                    + " is not a plain sensor (station or speed signal); order ignored");
+            return null;
+        }
+        return resolved;
     }
 
     private Train resolveTrain(ScriptLogicParser.TrainRefContext ctx) {
@@ -892,6 +1016,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
         if (ctx.stopOrder() != null) {
             MissionSpec spec = resolveMissionSpec(ctx.stopOrder());
             if (spec == null) {
+                itineraryProblems.add("unknown destination in '" + ctx.stopOrder().getText() + "'");
                 return List.of();
             }
             return List.of(WaypointCommand.mission(spec.kind(), spec.targetId(), spec.speed()));
@@ -919,7 +1044,12 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                     yield List.of(WaypointCommand.waitSeconds(seconds));
                 } else if (text.startsWith("speed")) {
                     int speed = Integer.parseInt(ctx.NUMBER().getText());
-                    yield List.of(WaypointCommand.speed(speed));
+                    int clamped = clampSpeed(speed);
+                    if (clamped != speed) {
+                        warnUser("Speed", "Waypoint speed " + speed + " is out of range 0-10; using "
+                                + clamped);
+                    }
+                    yield List.of(WaypointCommand.speed(clamped));
                 }
                 yield List.of();
             }
@@ -958,5 +1088,25 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             }
         }
         return null;
+    }
+
+    /**
+     * Human-readable place selector ("station 1") for notices. ANTLR's {@code getText()} glues the
+     * tokens without spaces ("station1"), which made the {@code train at} warning unreadable (O1).
+     */
+    private static String describePlace(ScriptLogicParser.PlaceSelectorContext ctx) {
+        if (ctx.stationSelector() != null) {
+            return "station " + ctx.stationSelector().NUMBER().getText();
+        }
+        if (ctx.sensorSelector() != null) {
+            return "sensor " + ctx.sensorSelector().NUMBER().getText();
+        }
+        if (ctx.forkSelector() != null) {
+            return "fork " + ctx.forkSelector().NUMBER().getText();
+        }
+        if (ctx.semaphoreSelector() != null) {
+            return "semaphore " + ctx.semaphoreSelector().NUMBER().getText();
+        }
+        return ctx.getText();
     }
 }
