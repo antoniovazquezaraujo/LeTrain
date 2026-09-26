@@ -2,6 +2,14 @@
 
 LeTrain includes its own lexer/parser (based on ANTLR4) that allows you to automate the railway network using a domain-specific language. Scripts are executed line by line. The same language is used from the console (direct commands) and inside the `program { ... }` section of a scenario file (see **[scenarios.md](scenarios.md)**).
 
+## ⚠️ Warnings and errors (D1 policy)
+
+**"Every problem warns; success stays silent."** Language problems are always shown in the game's message panel (not only in the log):
+
+- A **syntax error** is shown with line/column and **executes nothing**. Inside `program { ... }` the whole program is rejected (the previous one stays applied); in the console, that single order does not run.
+- A **semantic rejection** (unknown entity, unknown waypoint destination, mission with no route…) also warns. An itinerary with an unknown destination is **not created**: a plan missing a stop never runs.
+- A **mechanical adjustment** warns before it is applied (e.g. a speed outside `0..10` is clamped and the applied value is reported).
+
 ## ⚙️ Language Structure
 
 The language supports three main types of statements: direct commands, itinerary creation/assignment (Autopilot), and event-triggered blocks (*triggers*).
@@ -12,7 +20,7 @@ These are executed immediately. **They require a semicolon (`;`) at the end**.
 **Train Actions (`trainRef` can be a number or a name in quotes):**
 - `train [ID] accelerate;`
 - `train [ID] decelerate;`
-- `train [ID] set speed [NUM];` or `train [ID] set [NUM];`
+- `train [ID] set speed [NUM];` or `train [ID] set [NUM];` (the useful range is `0..10`; a value outside it is clamped to the limit and the applied value is reported)
 - `train [ID] invert;`
 - `train [ID] stop at station [ID|"name"] [speed NUM];`
 - `train [ID] stop at sensor [ID|"name"] [speed NUM];`
@@ -48,9 +56,11 @@ signals and blocks keep ruling on top: the mission's braking curve only lowers t
 raises it. A new order replaces the running mission.
 
 **Naming Elements:**
-- `station [ID] set name "My Station";`
-- `sensor [ID] set name "North Sensor";`
-- `train [ID] set name "Freight Train";`
+- `station [ID] set name "My Station";` (the `st` alias works too)
+- `sensor [ID] set name "North Sensor";` (the `sn` alias works too)
+- `train [ID] set name "Freight Train";` (works as a direct order and inside a trigger block)
+- Semaphores and signals **cannot be renamed**: the attempt warns.
+- An entity that does not exist warns and changes no name.
 
 ### 2. Autopilot and Itineraries
 Allows you to program a list of destinations (waypoints) so the train can find its path using A*.
@@ -70,6 +80,7 @@ create itinerary "CoalRoute" {
 *Waypoint rules:*
 
 - **At least two waypoints**: an itinerary is a loop, so a plan with a single waypoint is rejected with a warning and never assigned (the autopilot stays off). For a single destination use a loose `stop at …` order (or a waypoint action inside a service); repeating the same station is allowed.
+- **Known destinations**: if a station/sensor of a waypoint (or the target of a `stop at …` / `stop at sensor …` mission inside a waypoint) does not exist, the itinerary is **not created**, with a warning: a plan missing a stop never runs. A `stop at sensor N` whose id belongs to a station or a speed signal also warns (it is not a plain sensor).
 - **Commas are mandatory** between the waypoint's actions. The station/sensor reference and the optional entry direction (a compass direction such as `n`, `e`, `s`, `w`) take **no** comma.
 - The **order is mandatory**: `arrival` first, then the actions in execution order (`load`, `unload`, `reverse`, `stop`, `park`, `wait [NUM]`, `speed [NUM]`, `uncouple forward|backward [NUM|all]`, `couple forward|backward [NUM|all]`, `stop at station|sensor [REF] [speed NUM]`, `stop at end [speed NUM]`, `stop when blocked [speed NUM]`, `fork [ID] set straight|curved`, `fork [ID] flip`), and `departure` last. Writing an attribute out of order is a syntax error.
 - **Maneuvers**: movement orders (`stop at …`, `stop when blocked …`) are **missions** that run when the waypoint is reached and must complete before the next action: the train drives and ends stopped. `stop at` uses the current sense and **does not auto-reverse**: write the `reverse` you need or the order is rejected with a "no route from the current sense" warning. A rejected maneuver **aborts the remaining actions of that waypoint** (the departure and the route to the next waypoint still run) so the choreography never continues in a wrong state. Fork actions force or prepare a switch; the autopilot keeps orienting the switches along the route it computes. The `departure` releases once the maneuver is done (if it ends late, the train leaves late and the delay is measured); afterwards the route to the next waypoint is recalculated from where the train ended up.
@@ -105,9 +116,10 @@ Responds to game events in real-time.
 - Accidents: `train 1 on crash`, `train on contact forward`.
 
 **Special actions inside blocks (must end with `;`):**
-- *Semaphores:* `semaphore [ID] set open;` / `semaphore [ID] set closed;`
+- *Semaphores:* `semaphore [ID] open;` / `semaphore [ID] close|closed;` / `semaphore [ID] set open|closed;` / `semaphore [ID] invert;`
 - *Forks:* `fork [ID] set flip;` / `fork [ID] set straight;` / `fork [ID] set curved;`
-- *Conditional Train:* You can use `train at station [ID]`, `train at sensor [ID]`, `train at fork [ID]`, or `train at semaphore [ID]` instead of a fixed train number to apply actions to the specific train that triggered the event or is located there.
+- *Conditional Train:* You can use `train at station [ID]`, `train at sensor [ID]`, `train at fork [ID]`, or `train at semaphore [ID]` instead of a fixed train number to apply actions to the specific train that triggered the event or is located there. (`train at` is an exact one-space token: `train  at` with two spaces is a syntax error.)
+- If a trigger selector (sensor/fork/semaphore/station) does not exist when it is registered, the trigger warns and is not installed.
 
 ### 4. Game & Editor Commands (Console)
 You can type these commands directly into the CLI to manage the game state, cursor, and files.
@@ -120,7 +132,7 @@ You can type these commands directly into the CLI to manage the game state, curs
 **Information & Help:**
 - `help;` - Show every command group (`CONSOLE`, `BUILD`, `PROGRAM`, `CONFIG`). Filter it with `help console;`, `help build;`, `help program;`, `help config;`, or a single topic such as `help ls;`.
 - `ls;` - List every entity. `ls [entityType];` lists one type (e.g. `ls station;`).
-- `info;` - Show an overview of the whole world. `info [entityType];` lists that type; `info [entityType] [ID|name];` details a single entity.
+- `info;` - Show an overview of the whole world. `info [entityType];` lists that type; `info [entityType] [ID|name];` details a single entity. `info [ID];` without a type warns that the number is ignored (name the type: `info train 5;`).
 
 **Deletion:**
 - `del [entityType] [ID];` - Delete specific infrastructure (e.g., `del station 1;`). *Note: Cannot be used for trains.*
@@ -160,6 +172,7 @@ While **recording** is on, every edit is recorded in the command journal so it c
 **Turtle Mode (Scripted Building):**
 You can use `write`, `move`, `del`, or `clear` to script sequential cursor movements and track construction.
 - `write 5, r, 5, l, 10;` - Draw tracks: advance 5, turn right, advance 5, turn left, advance 10.
+- Steps with a name or mark (`write 1, m name;`, `write 1, mark name;`) and bare identifiers are **not implemented yet**: the console warns that the step is ignored (numeric steps and `l`/`r` do work).
 
 ---
 
