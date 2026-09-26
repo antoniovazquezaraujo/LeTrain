@@ -173,7 +173,8 @@ public class InfoVisitor implements Visitor {
         view.setInfoBarText(richInfo.toString());
 
         if (model.getMode() == letrain.mvp.Model.GameMode.COMMAND) {
-            view.drawCommandLine(model.getCommandText(), model.getCommandError());
+            view.drawCommandLine(model.getCommandText(), model.getCommandError(),
+                    model.getCommandNotice());
         }
     }
 

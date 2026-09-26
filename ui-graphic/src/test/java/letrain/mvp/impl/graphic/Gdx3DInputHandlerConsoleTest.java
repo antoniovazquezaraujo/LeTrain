@@ -1,6 +1,7 @@
 package letrain.mvp.impl.graphic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -451,6 +452,45 @@ class Gdx3DInputHandlerConsoleTest {
         handler.onChar(key(KeyType.Enter));
 
         assertEquals(Model.GameMode.TRAINS, model.getMode());
+    }
+
+    @Test
+    @DisplayName("a short warning stays on the command bar and keeps the console open")
+    void shortNotice_keepsConsoleOpenWithNotice() {
+        executeInConsole("train 99 set speed 3;");
+
+        assertEquals("Train 99 not found; order ignored", model.getCommandNotice());
+        assertEquals(Model.GameMode.COMMAND, model.getMode(),
+                "the console must stay open so the notice is readable");
+        assertEquals("", model.getCommandText(), "the executed command clears the input");
+        verify(view, never()).showMessage(org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.anyString());
+    }
+
+    @Test
+    @DisplayName("a long warning opens the panel and does not duplicate on the command bar")
+    void longNotice_opensPanel() {
+        model.setUserMessageSink((title, text) -> view.showMessage(title, text));
+
+        executeInConsole("time set 25:99;");
+
+        assertTrue(model.getCommandNotice().isEmpty(),
+                "a long notice must not duplicate on the line: " + model.getCommandNotice());
+        assertEquals(Model.GameMode.RAILS, model.getMode(),
+                "without a line notice the console closes as usual");
+        verify(view).showMessage(org.mockito.ArgumentMatchers.eq("Command notice"),
+                org.mockito.ArgumentMatchers.contains("Invalid time 25:99"));
+    }
+
+    @Test
+    @DisplayName("typing the next command clears the previous notice")
+    void typing_clearsTheNotice() {
+        executeInConsole("train 99 set speed 3;");
+        assertFalse(model.getCommandNotice().isEmpty());
+
+        handler.onChar(charKey('x'));
+
+        assertEquals("", model.getCommandNotice());
     }
 
     @Test

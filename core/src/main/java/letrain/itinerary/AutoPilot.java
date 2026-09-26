@@ -66,8 +66,9 @@ public interface AutoPilot {
 
     /**
      * Sink for mission problem messages (rejection, unreachable, lost route, stall). The console
-     * sets it so typed orders warn on screen; scripts leave it null and warnings go to the log
-     * only. Success notices are log-only and never reach this sink (user UX decision).
+     * sets it so typed orders warn on screen; when it is not set, warnings fall back to the model's
+     * user message sink (programs, loaded savegames) and only log when there is none (headless
+     * contexts). Success notices are log-only and never reach this sink (issue #619).
      */
     default void setMissionNotifier(java.util.function.Consumer<String> notifier) {}
 

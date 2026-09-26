@@ -87,4 +87,13 @@ public interface View {
     void showMessage(String title, String message);
 
     default void drawCommandLine(String text, String error) {}
+
+    /**
+     * Command bar with its short feedback (D1 contextual channel): {@code notice} is the last typed
+     * command's warning when it fits on one line. A long/multiline notice is not painted here; it
+     * opens the scrollable message panel instead.
+     */
+    default void drawCommandLine(String text, String error, String notice) {
+        drawCommandLine(text, error);
+    }
 }
