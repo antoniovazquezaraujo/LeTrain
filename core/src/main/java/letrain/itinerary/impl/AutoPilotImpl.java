@@ -63,6 +63,11 @@ public class AutoPilotImpl implements AutoPilot {
     // survives a reload; the command journal keeps the order so a replay can start it again).
     /** Active or last finished mission. */
     private transient TrainMission mission;
+    /**
+     * The current waypoint has been reached and its actions are running (issue #645 follow-up): its
+     * segment is already served and must not block a parallel bypass.
+     */
+    private transient boolean currentWaypointReached;
     /** The mission reversed the train at start because the destination was only reachable back. */
     private transient boolean missionReversed;
     /** Last plan failure was because the destination is physically behind the current sense. */
@@ -111,6 +116,8 @@ public class AutoPilotImpl implements AutoPilot {
 
     public void reinitialize(Train train, TrainActionManager actionManager) {
         this.train = train;
+        // The reached flag does not survive a reload: the waypoint must be reached again.
+        this.currentWaypointReached = false;
         if (mission == null && mode == Mode.FOLLOWING && itinerary == null) {
             // Missions are not serialized: a train saved in the middle of one would load "auto"
             // with nothing to follow. Fall back to manual instead of staying stuck.
@@ -189,6 +196,8 @@ public class AutoPilotImpl implements AutoPilot {
         if (currentIndex >= itinerary.waypoints().size()) {
             currentIndex = 0;
         }
+        // The next waypoint has not been reached yet: its segment counts as pending again.
+        currentWaypointReached = false;
     }
 
     @Override
@@ -218,6 +227,7 @@ public class AutoPilotImpl implements AutoPilot {
         this.lastDepartureTarget = NO_SCHEDULE_EVENT;
         this.punctuality.clear();
         this.retentionSerial++;
+        this.currentWaypointReached = false;
     }
 
     @Override
@@ -240,6 +250,7 @@ public class AutoPilotImpl implements AutoPilot {
         waitTicks = 0;
         pendingCommands.clear();
         currentIndex = 0;
+        currentWaypointReached = false;
         log.info("[AP] activate → FOLLOWING");
 
         // Actuación inicial reactiva
@@ -588,6 +599,7 @@ public class AutoPilotImpl implements AutoPilot {
         mode = Mode.IDLE;
         waitTicks = 0;
         pendingCommands.clear();
+        currentWaypointReached = false;
     }
 
     private Port getTrainExitPort(Segment currentSeg) {
@@ -686,7 +698,8 @@ public class AutoPilotImpl implements AutoPilot {
     }
 
     /***********************************************************
-     * Issue #619: one-shot missions (stop at / stop when blocked)
+     * Issue #619: one-shot missions (stop at / stop when blocked) Issue #645: stop on contact
+     * (coupling approach)
      **********************************************************/
 
     @Override
@@ -705,6 +718,16 @@ public class AutoPilotImpl implements AutoPilot {
             return Optional.empty();
         }
         return Optional.ofNullable(getMissionTargetSegment(mission));
+    }
+
+    @Override
+    public boolean currentWaypointReached() {
+        return currentWaypointReached;
+    }
+
+    @Override
+    public void markCurrentWaypointReached() {
+        this.currentWaypointReached = true;
     }
 
     @Override
@@ -745,7 +768,10 @@ public class AutoPilotImpl implements AutoPilot {
         boolean reverse = false;
         currentRoute = List.of();
         missionReversed = false;
-        if (m.kind() == TrainMission.Kind.STATION || m.kind() == TrainMission.Kind.SENSOR) {
+        if (m.kind() == TrainMission.Kind.ON_CONTACT) {
+            // Issue #645: no route, no brake plan and no auto-reversal; the train drives straight
+            // at the ordered speed until the physical contact (onContact/onCrash).
+        } else if (m.kind() == TrainMission.Kind.STATION || m.kind() == TrainMission.Kind.SENSOR) {
             if (getTrainCurrentSegment() == null || getMissionTargetSegment(m) == null) {
                 m.fail();
                 warnMission("Train " + train.getId() + ": " + m.description() + " not found");
@@ -779,6 +805,15 @@ public class AutoPilotImpl implements AutoPilot {
         missionStalledTicks = 0;
         if (headOnTarget()) {
             completeMission("already at " + m.description());
+            return true;
+        }
+        if (m.kind() == TrainMission.Kind.ON_CONTACT && !hasRailAhead()) {
+            // Issue #645 review M2: repeating the order while already pressed against the buffer
+            // (no rail ahead) must complete again: the train cannot drive into anything, no
+            // contact event will ever fire and the mission would stay active forever. Being
+            // already pressed against a vehicle is completed by the instant contact check at
+            // start (Locomotive.update).
+            completeMission("already at the contact");
             return true;
         }
         // On the first switch there is no re-entry event: orient it before moving.
@@ -843,6 +878,11 @@ public class AutoPilotImpl implements AutoPilot {
                     applyStopPlan(rails);
                 }
             }
+            case ON_CONTACT -> {
+                // Issue #645: no braking curve. The coupling approach drives at the ordered speed
+                // until the physical contact stops it; the mission completes in onContact (or
+                // fails in onCrash at or above the crash threshold, normal physics).
+            }
         }
     }
 
@@ -871,6 +911,36 @@ public class AutoPilotImpl implements AutoPilot {
         missionStalledTicks++;
         if (missionStalledTicks >= MISSION_STALL_TICKS) {
             failMission("could not reach " + mission.description() + " (stalled)");
+        }
+    }
+
+    /**
+     * Issue #645: the coupling approach completes on the first low-speed physical contact. The
+     * train is already emergency-stopped by {@code Train.notifyContact} and stays pressed against
+     * the vehicle ahead, ready for {@code couple}. A contact with the buffer ahead (dead end) also
+     * completes it: the physical stop is the goal of the order.
+     */
+    @Override
+    public void onContact(letrain.map.Point pos, int speed) {
+        if (mission == null || !mission.isActive() || mode != Mode.FOLLOWING) {
+            return;
+        }
+        if (mission.kind() == TrainMission.Kind.ON_CONTACT) {
+            completeMission("contact ahead");
+        }
+    }
+
+    /**
+     * Issue #645: at or above the crash threshold the contact is a crash (normal physics, no
+     * shield); the mission fails with a warning instead of waiting for a train being destroyed.
+     */
+    @Override
+    public void onCrash(letrain.map.Point pos, int speed) {
+        if (mission == null || !mission.isActive() || mode != Mode.FOLLOWING) {
+            return;
+        }
+        if (mission.kind() == TrainMission.Kind.ON_CONTACT) {
+            failMission("crashed before touching the vehicle ahead");
         }
     }
 
@@ -1018,6 +1088,10 @@ public class AutoPilotImpl implements AutoPilot {
      * switches as they are now. {@code -1} when it cannot be determined (target not on the walk,
      * loop, head without direction). For end of track / blocked it returns the standoff one rail
      * before the buffer, so the train does not contact it.
+     *
+     * <p>
+     * {@code stop on contact} has no stop point: it intentionally drives up to the physical contact
+     * (issue #645), so it always returns {@code -1} and no braking curve is applied.
      */
     private int missionRailsToStop() {
         if (mission == null || train == null || train.isPendingReverse()) {
@@ -1025,6 +1099,9 @@ public class AutoPilotImpl implements AutoPilot {
         }
         Dir dir = travelDir();
         if (dir == null) {
+            return -1;
+        }
+        if (mission.kind() == TrainMission.Kind.ON_CONTACT) {
             return -1;
         }
         if (mission.kind() == TrainMission.Kind.STATION
@@ -1150,6 +1227,41 @@ public class AutoPilotImpl implements AutoPilot {
             letrain.track.Sensor se = model.getSensor(m.targetId());
             return se != null ? segmentAtPosition(se.getPosition()) : null;
         }
+        if (m.kind() == TrainMission.Kind.ON_CONTACT) {
+            // Issue #645: the approach target is resolved dynamically to the first vehicle ahead
+            // (the physical walk with the switches as they are now). The safety layer uses it to
+            // let the maneuver enter the canton occupied by loco-less trains (e.g. its own
+            // detached part).
+            return approachedVehicleSegment();
+        }
+        return null;
+    }
+
+    /**
+     * Canton of the first vehicle ahead on the physical walk (issue #645), or null when there is
+     * none in sight. Only vehicles of other trains count: a link of our own consist ahead is not a
+     * contact target.
+     */
+    private Segment approachedVehicleSegment() {
+        if (train == null || train.getModel() == null) {
+            return null;
+        }
+        RailwayGraph graph = train.getModel().getRailwayGraph();
+        Linker head = train.getPhysicalFront();
+        Dir dir = travelDir();
+        if (graph == null || head == null || dir == null
+                || !(head.getTrack() instanceof RailTrack headTrack)) {
+            return null;
+        }
+        RailIterator it = new RailIterator(headTrack, dir);
+        int steps = 0;
+        while (steps < MISSION_MAX_WALK && it.advance()) {
+            steps++;
+            Linker occupant = it.getTrack().getLinker();
+            if (occupant != null && occupant.getTrain() != null && occupant.getTrain() != train) {
+                return it.getTrack() instanceof RailTrack rail ? graph.getSegment(rail) : null;
+            }
+        }
         return null;
     }
 
@@ -1219,8 +1331,13 @@ public class AutoPilotImpl implements AutoPilot {
         if (train == null) {
             return;
         }
+        // Issue #645 follow-up: the mission is not the owner of the plan's cruise speed. Keep the
+        // programmed speed so a waypoint without departure can resume after its actions; only the
+        // applied target is zeroed (the mission semantics still end with the train stopped).
+        int cruise = train.getProgrammedSpeed();
         train.setSavedTargetSpeed(-1);
         train.setSpeed(0);
+        train.setProgrammedSpeed(cruise);
         // A "stop when blocked" mission may end while the safety layer holds a block wait. The
         // autopilot is now IDLE, so onBlockReleased would never clear it and the wait gate would
         // swallow later manual speed orders. Clearing it here is inert: the target is already 0
@@ -1238,6 +1355,17 @@ public class AutoPilotImpl implements AutoPilot {
     private Dir travelDir() {
         Linker head = train != null ? train.getPhysicalFront() : null;
         return head != null ? head.getRealDir() : null;
+    }
+
+    /**
+     * True when the physical front has a rail connected ahead (issue #645 review M2): when it has
+     * none the train is pressed against a buffer and cannot drive into anything, so a contact
+     * approach is already satisfied.
+     */
+    private boolean hasRailAhead() {
+        Linker head = train != null ? train.getPhysicalFront() : null;
+        return head != null && head.getTrack() != null
+                && head.getTrack().getConnected(head.getDir()) != null;
     }
 
     /** The other port of the current segment (the one not used by the current sense). */

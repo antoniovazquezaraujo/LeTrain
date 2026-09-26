@@ -18,6 +18,7 @@ These are executed immediately. **They require a semicolon (`;`) at the end**.
 - `train [ID] stop at sensor [ID|"name"] [speed NUM];`
 - `train [ID] stop at end [speed NUM];`
 - `train [ID] stop when blocked [speed NUM];`
+- `train [ID] stop on contact [speed NUM];`
 - `train [ID] set engine on;` / `train [ID] set engine off;`
 - `train [ID] set forward;` / `train [ID] set backward;`
 - `train [ID] load;`
@@ -35,17 +36,25 @@ does not start before receiving the destination. The speed is applied when the m
 (without `speed`, or with `speed 0`, the train keeps its current target; if that is 0 the order is
 rejected with a warning) and the train always ends stopped. The destination can be a station, a
 sensor, the end of track **ahead of the train** (the train brakes on the last rail, without touching
-the buffer; a closed loop with no end ahead warns and does not move) or the first block
+the buffer; a closed loop with no end ahead warns and does not move), the first block
 (`stop when blocked` rolls to the last rail of its canton before the block and completes stopped
 there; it does **not** resume when it is released, and if the block is freed before it stops it keeps
-going). If
-the destination is only reachable in the opposite sense, the order reverses the train once at the
-start. An order received while the train is running an itinerary is rejected with a warning (nothing
+going) or the **vehicle ahead** (`stop on contact`): it drives at the ordered speed and completes on
+the **first low-speed physical contact**, staying **pressed** against the vehicle, ready for
+`couple`. At or above the crash speed (≥ 5) the contact is a **crash** (normal physics: the train is
+destroyed and the mission fails with a warning). If the train is **already pressed** (against the
+vehicle or the buffer), the order completes in place: the real contact is at speed 0 (the event
+reports that speed, not the ordered one), so ordering a high speed does not invent a crash. If the
+destination is only reachable in the
+opposite sense, the order reverses the train once at the start (`stop on contact` is excluded: it
+does not auto-reverse, it drives forward until touching). An order received while the train is
+running an itinerary is rejected with a warning (nothing
 is paused): use `train N set autopilot false;` or write the maneuver in the itinerary. If the
 destination becomes unreachable mid-mission (the route is lost) or the train stays stopped without a
 block/schedule/loading reason for about one game hour, the mission fails with a warning. Speed
 signals and blocks keep ruling on top: the mission's braking curve only lowers the speed, never
-raises it. A new order replaces the running mission.
+raises it (`stop on contact` does not brake at all: the touch is its goal). A new order replaces the
+running mission.
 
 **Naming Elements:**
 - `station [ID] set name "My Station";`
@@ -71,9 +80,10 @@ create itinerary "CoalRoute" {
 
 - **At least two waypoints**: an itinerary is a loop, so a plan with a single waypoint is rejected with a warning and never assigned (the autopilot stays off). For a single destination use a loose `stop at …` order (or a waypoint action inside a service); repeating the same station is allowed.
 - **Commas are mandatory** between the waypoint's actions. The station/sensor reference and the optional entry direction (a compass direction such as `n`, `e`, `s`, `w`) take **no** comma.
-- The **order is mandatory**: `arrival` first, then the actions in execution order (`load`, `unload`, `reverse`, `stop`, `park`, `wait [NUM]`, `speed [NUM]`, `uncouple forward|backward [NUM|all]`, `couple forward|backward [NUM|all]`, `stop at station|sensor [REF] [speed NUM]`, `stop at end [speed NUM]`, `stop when blocked [speed NUM]`, `fork [ID] set straight|curved`, `fork [ID] flip`), and `departure` last. Writing an attribute out of order is a syntax error.
-- **Maneuvers**: movement orders (`stop at …`, `stop when blocked …`) are **missions** that run when the waypoint is reached and must complete before the next action: the train drives and ends stopped. `stop at` uses the current sense and **does not auto-reverse**: write the `reverse` you need or the order is rejected with a "no route from the current sense" warning. A rejected maneuver **aborts the remaining actions of that waypoint** (the departure and the route to the next waypoint still run) so the choreography never continues in a wrong state. Fork actions force or prepare a switch; the autopilot keeps orienting the switches along the route it computes. The `departure` releases once the maneuver is done (if it ends late, the train leaves late and the delay is measured); afterwards the route to the next waypoint is recalculated from where the train ended up.
-- **Shunting and blocks**: a maneuver whose destination is inside a canton occupied by **its own detached part** (coupling to the wagons it just left) may enter that canton like a manual shunting move; the physical checks still stop the train before any vehicle. A canton held by an unrelated train keeps the block: the maneuver waits at the boundary and resumes when it is released.
+- The **order is mandatory**: `arrival` first, then the actions in execution order (`load`, `unload`, `reverse`, `stop`, `park`, `wait [NUM]`, `speed [NUM]`, `uncouple forward|backward [NUM|all]`, `couple forward|backward [NUM|all]`, `stop at station|sensor [REF] [speed NUM]`, `stop at end [speed NUM]`, `stop when blocked [speed NUM]`, `stop on contact [speed NUM]`, `fork [ID] set straight|curved`, `fork [ID] flip`), and `departure` last. Writing an attribute out of order is a syntax error.
+- **Maneuvers**: movement orders (`stop at …`, `stop when blocked …`, `stop on contact …`) are **missions** that run when the waypoint is reached and must complete before the next action: the train drives and ends stopped. `stop at` uses the current sense and **does not auto-reverse**: write the `reverse` you need or the order is rejected with a "no route from the current sense" warning. `stop on contact` does not auto-reverse either: it drives until touching the vehicle ahead at the ordered speed and stays pressed against it, ready for the `couple` of the next action (touching at crash speed is a real crash and the maneuver fails with a warning). A rejected maneuver **aborts the remaining actions of that waypoint** (the departure and the route to the next waypoint still run) so the choreography never continues in a wrong state. Fork actions force or prepare a switch; the autopilot keeps orienting the switches along the route it computes. The `departure` releases once the maneuver is done (if it ends late, the train leaves late and the delay is measured); afterwards the route to the next waypoint is recalculated from where the train ended up.
+- **Shunting and blocks**: a maneuver whose destination is inside a blocked canton **whose other occupants are all loco-less** (e.g. the wagons it just detached: coupling to them, or approaching them with `stop on contact`) may enter that canton like a manual shunting move; the physical checks still stop the train before any vehicle. A canton held by an unrelated train (with a locomotive) keeps the block: the maneuver waits at the boundary and resumes when it is released. The exemption applies the same to the loose `stop on contact` order (the console/script run-around).
+- **Plan cruise after the actions**: the waypoint missions and maneuvers are not the owners of the plan's cruise. When the actions end and the waypoint has no `departure` (or it is already due), the train **resumes the programmed speed** and follows the plan to the next waypoint. Deliberate states win: a `park` without a later departure stays parked and a block wait keeps waiting.
 - **`uncouple` direction**: `uncouple forward` detaches at the **head side** of the train and `uncouple backward` at the tail. With the locomotive leading and pulling the wagons, the wagons are behind: the run-around is written `uncouple backward 1`.
 - `arrival` is measured when the waypoint is reached; `departure` is the scheduled leaving time: on arrival the actions run, the train waits until that time and a scheduled departure starts the engine. The dwell is `departure − arrival` in game time. Times are read in sequence: a smaller time than the previous one belongs to the next day (`arrival 23:50, departure 00:10`). If the train arrives late it leaves immediately and the deviation is measured. Without times, a waypoint behaves exactly as before.
 - `park` brakes, switches the engine off and **keeps the autopilot running** (unlike `stop`, which brakes and turns the autopilot off). The next scheduled departure starts the engine and resumes the cruise speed, so a repeating daily service can end with `park` and leave again the next morning. A `park` with **no later scheduled departure** simply leaves the train parked (engine off, plan kept): it will not move again until a scheduled departure starts it or you drive it manually.

@@ -922,10 +922,16 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
     }
 
     /**
-     * True when the blocked segment is the destination of the active itinerary maneuver and every
-     * other occupant is our own detached part (a train with no locomotive). An unrelated train must
+     * True when the blocked segment is the destination of the active shunting mission and every
+     * other occupant is a loco-less train (e.g. our own detached part). An unrelated train must
      * keep the block exclusivity, so the maneuver waits for it instead of invading (ADR-022 phase
      * 2f).
+     *
+     * <p>
+     * The itinerary maneuver is the choreographed case. The coupling approach ({@code stop on
+     * contact}, issue #645) is also accepted as a loose order: performing the run-around by hand
+     * from the console/script is the same shunting movement, and the safety criterion (no
+     * locomotive among the other occupants) does not depend on the order's origin.
      */
     private boolean isShuntingMissionTarget(Segment segment) {
         if (segment == null || train.getAutopilot() == null) {
@@ -933,7 +939,11 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         }
         letrain.itinerary.AutoPilot autopilot = train.getAutopilot();
         letrain.itinerary.TrainMission mission = autopilot.mission().orElse(null);
-        if (mission == null || !mission.isActive() || !mission.isItineraryManeuver()) {
+        if (mission == null || !mission.isActive()) {
+            return false;
+        }
+        if (!mission.isItineraryManeuver()
+                && mission.kind() != letrain.itinerary.TrainMission.Kind.ON_CONTACT) {
             return false;
         }
         if (!autopilot.missionTargetSegment().map(segment::equals).orElse(false)) {
@@ -1057,6 +1067,12 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         return false;
     }
 
+    /**
+     * True when the segment still holds a waypoint the service has to serve. The current waypoint
+     * counts only while it has not been reached yet (issue #645 follow-up): once its actions run,
+     * its stop is already served and its segment must not block a parallel bypass (the train may
+     * legitimately drive away from it, e.g. after uncoupling there).
+     */
     private boolean segmentHasPendingWaypoints(Segment segment) {
         letrain.itinerary.AutoPilot ap = train.getAutopilot();
         java.util.Optional<letrain.itinerary.Itinerary> itinOpt = ap.itinerary();
@@ -1065,6 +1081,9 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         }
         letrain.itinerary.Itinerary itin = itinOpt.get();
         int currentIndex = ap.currentWaypointIndex();
+        if (ap.currentWaypointReached()) {
+            currentIndex++;
+        }
         List<letrain.itinerary.Waypoint> waypoints = itin.waypoints();
         for (int i = currentIndex; i < waypoints.size(); i++) {
             letrain.itinerary.Waypoint wp = waypoints.get(i);

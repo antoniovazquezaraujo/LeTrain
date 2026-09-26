@@ -46,6 +46,10 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
         pendingMission = null;
         letrain.itinerary.AutoPilot autopilot = train.getAutopilot();
         if (autopilot != null && autopilot.itinerary().isPresent()) {
+            // Issue #645 follow-up: the waypoint is reached now, so its segment no longer counts
+            // as pending even if the actions drive the train away from it (the safety layer uses
+            // this to allow a parallel bypass of an occupied segment, e.g. own detached wagons).
+            autopilot.markCurrentWaypointReached();
             // ADR-022 phase 2b: measure the arrival and, when the stop has a departure, start
             // braking now so the train waits at the waypoint instead of rolling past it.
             autopilot.measureArrival(waypoint);
@@ -157,6 +161,41 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
             this.train.notifyAutopilotSegmentEntered(this.train.resolveCurrentSegmentFromGraph());
             this.train.getSafetyManager().acquireInitialLocks();
         }
+        resumePlanCruiseIfStopped(autopilot);
+    }
+
+    /**
+     * Issue #645 follow-up: a waypoint without departure must not leave the plan's cruise dead.
+     * After the actions end and the flow advanced to the next (not yet reached) waypoint, resume
+     * the programmed speed when the train ended fully stopped. Deliberate states win: a park
+     * (engines explicitly off) stays parked and a block wait keeps waiting; a train that is still
+     * rolling (or already has a target) is left untouched.
+     */
+    private void resumePlanCruiseIfStopped(letrain.itinerary.AutoPilot autopilot) {
+        if (autopilot.mode() != letrain.itinerary.AutoPilot.Mode.FOLLOWING
+                || autopilot.currentWaypointReached()) {
+            return;
+        }
+        if (train.getDirectorLinker() == null || train.getDirectorLinker().getTargetSpeed() != 0
+                || train.getSpeed() != 0 || train.getProgrammedSpeed() <= 0) {
+            return;
+        }
+        if (train.getSafetyManager() != null && train.getSafetyManager().isWaitingForBlock()) {
+            return;
+        }
+        if (train.isPendingManualMode()) {
+            // An invasion/emergency stop is switching the train to manual: never override it.
+            return;
+        }
+        for (Locomotive locomotive : train.getLocomotives()) {
+            if (!locomotive.isEngineOn()) {
+                // Deliberate park without a later departure: keep the train parked.
+                return;
+            }
+        }
+        log.info("Train {} resumes the plan cruise {} after the waypoint actions", train.getId(),
+                train.getProgrammedSpeed());
+        train.setSpeed(train.getProgrammedSpeed());
     }
 
     /**

@@ -487,6 +487,9 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                 ? Integer.parseInt(ctx.missionSpeed().trainSpeed().getText())
                 : 0;
         int clamped = Math.max(0, Math.min(10, speed));
+        if (ctx.stopTarget().ON() != null) {
+            return new MissionSpec(TrainMission.Kind.ON_CONTACT, -1, clamped);
+        }
         if (ctx.stopTarget().WHEN() != null) {
             return new MissionSpec(TrainMission.Kind.WHEN_BLOCKED, -1, clamped);
         }
@@ -511,8 +514,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
 
     /**
      * Builds a loose one-shot mission order (issue #619): {@code stop at sensor 5 speed 2},
-     * {@code stop at station "A"}, {@code stop at end}, {@code stop when blocked}. Speed 0 (or
-     * absent) means "keep the train's current speed".
+     * {@code stop at station "A"}, {@code stop at end}, {@code stop when blocked} and (issue #645)
+     * {@code stop on contact}. Speed 0 (or absent) means "keep the train's current speed".
      */
     private ExecutableCommand buildStopOrder(ScriptLogicParser.StopOrderContext ctx) {
         MissionSpec spec = resolveMissionSpec(ctx);
@@ -521,6 +524,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             };
         }
         TrainMission mission = switch (spec.kind()) {
+            case ON_CONTACT -> TrainMission.stopOnContact(spec.speed());
             case WHEN_BLOCKED -> TrainMission.stopWhenBlocked(spec.speed());
             case END_OF_TRACK -> TrainMission.stopAtEndOfTrack(spec.speed());
             case STATION -> TrainMission.stopAtStation(spec.targetId(), spec.speed());

@@ -115,6 +115,7 @@
 | `train <id> stop at sensor <id\|"name"> [speed <n>];` | Drives to the sensor and stops on it. | `train 1 stop at sensor 5 speed 2;` |
 | `train <id> stop at end [speed <n>];` | Drives to the end of track and brakes on the last rail. | `train 1 stop at end speed 2;` |
 | `train <id> stop when blocked [speed <n>];` | Advances and stops at the first block (does not resume). | `train 1 stop when blocked speed 2;` |
+| `train <id> stop on contact [speed <n>];` | Drives until touching the vehicle ahead and stays pressed (ready for `couple`); at crash speed the touch is a crash. | `train 1 stop on contact speed 2;` |
 | `train <id> reverse;` | Reverse direction of travel. | `train 1 reverse;` |
 | `train <id> set engine on;` / `off;` | Turn locomotive engine on or off. | `train 1 set engine on;` |
 | `train <id> set autopilot true;` | Enable autopilot mode. | `train 1 set autopilot true;` |

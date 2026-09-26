@@ -50,12 +50,28 @@ public interface AutoPilot {
 
     /**
      * Segment the active mission drives to, if any (ADR-022 phase 2f). The safety layer uses it to
-     * let a shunting maneuver enter the canton where its destination is (the wagons it must couple
-     * to), instead of waiting forever for that block.
+     * let a shunting maneuver enter the canton where its destination is (e.g. the loco-less part it
+     * must couple to), instead of waiting forever for that block.
      */
     default java.util.Optional<Segment> missionTargetSegment() {
         return java.util.Optional.empty();
     }
+
+    /**
+     * True when the train has already reached the current waypoint and is running its actions
+     * (issue #645 follow-up). The safety layer uses it so the current waypoint's segment does not
+     * block a parallel bypass: its stop is already served even if the train drives away from it
+     * (e.g. uncoupling at the station and then bypassing the occupied main line).
+     */
+    default boolean currentWaypointReached() {
+        return false;
+    }
+
+    /**
+     * Marks the current waypoint as reached. Called by the action manager when the waypoint's
+     * actions start; cleared when the plan advances to the next waypoint.
+     */
+    default void markCurrentWaypointReached() {}
 
     /**
      * One simulation tick of the train (issue #619). Missions use it as a stall watchdog: a mission
@@ -63,6 +79,20 @@ public interface AutoPilot {
      * there is no mission running.
      */
     default void onTick() {}
+
+    /**
+     * Low-speed physical contact of the train (issue #645). {@code stop on contact} missions
+     * complete here: the train ends stopped pressed against the vehicle (or buffer) ahead, ready
+     * for {@code couple}. No-op when the contact is not the target of the running mission.
+     */
+    default void onContact(letrain.map.Point pos, int speed) {}
+
+    /**
+     * Crash of the train (issue #645): the contact happened at or above the crash threshold and the
+     * normal physics (destruction) applies. A running {@code stop on contact} mission fails with a
+     * warning instead of waiting for a train that no longer exists.
+     */
+    default void onCrash(letrain.map.Point pos, int speed) {}
 
     /**
      * Sink for mission problem messages (rejection, unreachable, lost route, stall). The console
