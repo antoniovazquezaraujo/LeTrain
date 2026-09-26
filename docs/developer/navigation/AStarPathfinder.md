@@ -109,6 +109,11 @@ de fork (`fork N set straight|curved`, `fork N flip`). Detalles de implementaci�
   captura el tren ocupante **antes** de notificar y no frena al propio tren si el `couple` de la
   cadena ya lo ha absorbido. El chequeo instantáneo de arranque (`Locomotive.update`) para al tren
   antes de notificar, por el mismo motivo.
+- **Waypoint sin departure (#645 follow-up)**: la misión no es dueña del crucero del plan:
+  `AutoPilotImpl.stopTrainForMission` conserva `programmedSpeed` (solo pone el target a 0) y
+  `TrainActionManager.resumePlanCruiseIfStopped`, tras avanzar de waypoint, reanuda ese crucero si
+  el tren quedó parado y el plan sigue viajando a un waypoint no alcanzado. Nunca despierta un
+  `park` deliberado (motores apagados), ni una espera de bloque, ni un cambio a manual pendiente.
 - Tras la maniobra, `advanceWaypoint` + `clearRoute` recalculan la ruta al siguiente waypoint desde
   la posición y el sentido en que haya quedado el tren.
 - **Itinerarios desde consola**: cada sentencia tecleada se ejecuta con un `CommandManager` nuevo,
