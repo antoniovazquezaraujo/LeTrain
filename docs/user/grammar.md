@@ -9,6 +9,7 @@ LeTrain includes its own lexer/parser (based on ANTLR4) that allows you to autom
 - A **syntax error** is shown with line/column and **executes nothing**. Inside `program { ... }` the whole program is rejected (the previous one stays applied); in the console, that single order does not run.
 - A **semantic rejection** (unknown entity, unknown waypoint destination, mission with no route…) also warns. An itinerary with an unknown destination is **not created**: a plan missing a stop never runs.
 - A **mechanical adjustment** warns before it is applied (e.g. a speed outside `0..10` is clamped and the applied value is reported).
+- When a **savegame is loaded**, its stored program is re-applied. If it no longer parses, the rejection is reported in the message panel when the load finishes (it does not stay in the log) and the text is **kept** in the editor, marked as not applied, so it can be fixed.
 
 ## ⚙️ Language Structure
 

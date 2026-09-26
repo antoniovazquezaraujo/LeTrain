@@ -621,7 +621,8 @@ public class GraphicPresenter extends ApplicationAdapter
         }
         boolean wasPaused = model.isPauseEditing();
         this.model = newModel;
-        wireUserMessageSink();
+        // The sink is wired after the new HUD exists (see applyLoadedModel): wiring flushes the
+        // notices queued by a snapshot restore (D1/O3) into the visible panel.
         if (audioController == null) {
             this.audioController = new letrain.audio.AudioController(newModel);
         } else {
@@ -641,6 +642,7 @@ public class GraphicPresenter extends ApplicationAdapter
             hud.dispose();
         }
         this.hud = new Gdx3DHud(newModel, this);
+        wireUserMessageSink();
         com.badlogic.gdx.InputMultiplexer multiplexer =
                 Gdx.input.getInputProcessor() instanceof com.badlogic.gdx.InputMultiplexer
                         ? (com.badlogic.gdx.InputMultiplexer) Gdx.input.getInputProcessor()
@@ -1009,7 +1011,9 @@ public class GraphicPresenter extends ApplicationAdapter
 
     private void applyLoadedModel(letrain.mvp.impl.Model loadedModel, File file) {
         this.model = ValidationUtils.requireNonNull(loadedModel, "loadedModel");
-        wireUserMessageSink();
+        // The message sink is wired only after the new HUD exists: setUserMessageSink flushes the
+        // notices queued while the savegame was replayed (D1/O3), and they must reach the visible
+        // panel, not the old HUD this method is about to dispose.
 
         log.info("Game loaded successfully from {}",
                 file != null ? file.getAbsolutePath() : "(editor)");
@@ -1042,6 +1046,7 @@ public class GraphicPresenter extends ApplicationAdapter
 
         // Re-initialize HUD with new model
         this.hud = new Gdx3DHud(model, this);
+        wireUserMessageSink();
         InputMultiplexer multiplexer = (InputMultiplexer) Gdx.input.getInputProcessor();
         multiplexer.getProcessors().clear();
         multiplexer.addProcessor(hud.getStage());

@@ -13,6 +13,7 @@ import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.mvp.Presenter;
 import letrain.mvp.View;
+import letrain.mvp.impl.GameSaveService;
 import letrain.mvp.impl.Model;
 import letrain.mvp.impl.RailTrackMaker;
 import letrain.track.Sensor;
@@ -558,6 +559,55 @@ class DslVisibilityTest {
             String error = run("sensor 1 on train enter { train  at station 1 set speed 0; };");
 
             assertNotNull(error, "the exact 'train at' token gap must be a visible error");
+        }
+
+        @Test
+        @DisplayName("loading a savegame re-applies its valid program")
+        void loadValidProgram_reapplies() {
+            Station two = new Station(2);
+            two.setName("B");
+            model.addStation(two);
+            String program = """
+                    create itinerary "ok" {
+                        add station 1
+                        add station 2
+                    }
+                    assign itinerary "ok" to train 1;
+                    """;
+            List<String> errors = model.setProgram(program);
+            assertTrue(errors.isEmpty(), errors.toString());
+
+            Model loaded = new GameSaveService().fromBytes(new GameSaveService().toBytes(model));
+
+            assertNotNull(loaded);
+            assertTrue(loaded.isProgramValid(), "the saved program must re-apply cleanly");
+            assertEquals(program, loaded.getProgram(),
+                    "the stored text must survive the round-trip");
+            assertTrue(loaded.getTrainFromLocomotiveId(1).getAutopilot().itinerary().isPresent(),
+                    "the saved program must run again on load");
+        }
+
+        @Test
+        @DisplayName("a savegame with a broken program keeps and marks the text and warns (O3)")
+        void loadBrokenProgram_warnsVisiblyAndKeepsText() {
+            // What a player leaves in the editor is stored even when the engine rejects it.
+            model.setProgram("create itinerary \"broken\" {");
+            assertFalse(model.isProgramValid(), "the broken text must be marked as invalid");
+
+            Model loaded = new GameSaveService().fromBytes(new GameSaveService().toBytes(model));
+
+            assertNotNull(loaded);
+            assertEquals("create itinerary \"broken\" {", loaded.getProgram(),
+                    "the invalid text must survive the load so it stays editable");
+            assertFalse(loaded.isProgramValid(), "the rejection must be marked after the load");
+
+            // The load happened before any presenter existed: the notice is queued, not log-only,
+            // and must reach the game console as soon as the client wires its sink.
+            List<String> visible = new ArrayList<>();
+            loaded.setUserMessageSink((title, text) -> visible.add(title + ": " + text));
+
+            assertTrue(visible.stream().anyMatch(m -> m.contains("Saved program not applied")),
+                    "the rejection must reach the visible channel, got: " + visible);
         }
     }
 }

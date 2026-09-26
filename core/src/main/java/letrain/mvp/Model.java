@@ -322,6 +322,11 @@ public interface Model {
 
     public void removeDestroyedTrains();
 
+    /**
+     * Installs a program: the engine parses it strictly and applies it. The returned list carries
+     * the syntax errors (empty when it applied). A rejected text is stored anyway so the program
+     * editor can show it for fixing; {@link #isProgramValid()} then reports it was not applied.
+     */
     public List<String> setProgram(String program);
 
     /**
@@ -332,6 +337,14 @@ public interface Model {
     public List<String> setProgramFromDisk(String program);
 
     public String getProgram();
+
+    /**
+     * True when the text returned by {@link #getProgram()} parsed and applied on the last attempt;
+     * false when the engine rejected it (the text is kept for editing). See {@link #setProgram}.
+     */
+    default boolean isProgramValid() {
+        return true;
+    }
 
     /**
      * Sink for DSL problem notices that must reach the player (D1: warnings from programs,

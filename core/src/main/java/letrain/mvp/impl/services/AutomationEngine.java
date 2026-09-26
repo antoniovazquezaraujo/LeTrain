@@ -77,7 +77,9 @@ public class AutomationEngine {
             java.util.function.BiConsumer<String, String> sink = model.getUserMessageSink();
             if (sink != null) {
                 // D1: program warnings (unknown entity, dropped waypoint, clamped speed…) reach the
-                // same visible channel as console warnings.
+                // same visible channel as console warnings. Without a wired sink the notifier of a
+                // headless caller stays in place (a savegame's load rejection is reported by
+                // Model.postLoadInit through the queued channel instead).
                 manager.setWarningSink(sink);
             }
             manager.visit(sintaxTree);
