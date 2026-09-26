@@ -241,9 +241,11 @@ verde en `mvn test`.
 
 ## 7. Decisiones a tomar (registro)
 
-- **D1. Política de errores y silencios** — PENDIENTE.
-  ¿Qué debe avisar siempre y por qué canal? ¿Se formaliza «todo problema avisa, el éxito
-  calla» y se aplica a la familia C? ¿Los avisos de misión llegan al juego?
+- **D1. Política de errores y silencios** — **CONFIRMADA (2026-09-26)**.
+  Principio: «todo problema avisa; el éxito calla», con tres niveles: *sintaxis* → mensaje
+  visible y no ejecutar (validar antes de ejecutar); *rechazo semántico* → aviso visible;
+  *ajustes mecánicos* → avisar o dejar de ajustar. El log nunca es el único canal de un
+  problema. El detalle caso a caso se cierra en D4.
 - **D2. Unificación consola ↔ programa** — PENDIENTE.
   ¿Un solo comportamiento para el mismo texto (case, fail-fast, avisos)? ¿Se arregla
   `create`+`assign` en consola (#632)? ¿Qué pasa con el lowercasing y los strings?
