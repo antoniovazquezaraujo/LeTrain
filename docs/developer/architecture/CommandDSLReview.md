@@ -246,6 +246,10 @@ verde en `mvn test`.
   visible y no ejecutar (validar antes de ejecutar); *rechazo semántico* → aviso visible;
   *ajustes mecánicos* → avisar o dejar de ajustar. El log nunca es el único canal de un
   problema. El detalle caso a caso se cierra en D4.
+  **Refinamiento (2026-09-26, tras prueba del usuario)**: el canal es contextual —
+  *comando tecleado* → aviso en la **línea de la consola** (forma corta; si es largo o
+  multilínea, panel); *eventos asíncronos* (programa al cargar/aplicar, misiones,
+  triggers) → **panel de mensajes**. El log sigue siendo solo trazas.
 - **D2. Unificación consola ↔ programa** — PENDIENTE.
   ¿Un solo comportamiento para el mismo texto (case, fail-fast, avisos)? ¿Se arregla
   `create`+`assign` en consola (#632)? ¿Qué pasa con el lowercasing y los strings?
@@ -302,12 +306,13 @@ política de mayúsculas (D2).
 ## 9. Estado de la implementación (por lotes)
 
 - **Lote 1 — Visibilidad (D1)** — implementado y verificado: PR **#655**
-  (`fix/dsl-visibility`, head `bf1f6516`; 986 tests; CI 7/7 verde). **Pendiente del OK del
-  usuario** para merge.
+  (`fix/dsl-visibility`, head `36060a5a`; 1010 tests; CI verde). Incluye el **canal
+  contextual** pedido por el usuario (tecleado → línea de consola; programa/misiones/
+  triggers → panel). **Pendiente del OK del usuario** para merge.
   - Residuales anotados: O2 (trigger `train N on …` con tren inexistente no avisa al
     registrar → D4); N1–N3 (minúsculas/strings, `sm/sg set name` en programa, colisión
-    sensor/SpeedSignal → D2/D3); borde headless de `setProgramFromDisk` (informativo, sin
-    consumidor real hoy).
+    sensor/SpeedSignal → D2/D3); bordes cosméticos del canal (aviso invisible en headless;
+    título «Command notice» durante replay) → segunda iteración si molesta.
 - **Lote 2 — Sintaxis** (U1–U3, U5b, U6, U7, U8 + limpieza de sintaxis muerta + ayuda
   validada): pendiente; se abrirá desde `develop` tras mergear el lote 1.
 - **Lote 3 — Unificación consola ↔ programa** (D2; U4 depende de la política de
