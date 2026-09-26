@@ -661,6 +661,19 @@ class DslVisibilityTest {
         }
 
         @Test
+        @DisplayName("lexer errors are reported with line/column too")
+        void lexerError_isReported() {
+            // `@` matches no token and, unlike `#`, is not a comment: the lexer rejects the
+            // program.
+            List<String> errors = model.setProgram("train 1 set speed 4;\n@");
+
+            assertFalse(errors.isEmpty(), "the lexer error must be reported");
+            assertTrue(errors.get(0).contains("line 2:0"), errors.toString());
+            assertEquals(0, ((Locomotive) train.getDirectorLinker()).getTargetSpeed(),
+                    "nothing may execute when a character has no token");
+        }
+
+        @Test
         @DisplayName("comments start with '#' and are ignored inside a program")
         void comment_isIgnoredInProgram() {
             List<String> errors = model.setProgram("train 1 set speed 4;\n# comment");

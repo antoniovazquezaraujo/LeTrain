@@ -21,9 +21,10 @@ import org.junit.jupiter.api.Test;
 
 /**
  * D3: the human-facing command metadata is checked against the real grammar. Every command snippet
- * of {@link GrammarReference} (console, build and program groups) and every complete-statement
- * example of the user cheat sheets must parse; the snippets that are prose (not commands) are
- * listed explicitly so the gap is a decision, not an accident.
+ * of {@link GrammarReference} (console, build and program groups), every complete-statement example
+ * of the user cheat sheets and every complete {@code letrain} block of the grammar pages must
+ * parse; the snippets that are prose (not commands) are listed explicitly so the gap is a decision,
+ * not an accident.
  */
 @DisplayName("D3: help and cheat-sheet examples parse against the grammar")
 class DslDocumentationSyntaxTest {
@@ -104,6 +105,29 @@ class DslDocumentationSyntaxTest {
                 "cheat-sheet examples that do not parse:\n" + String.join("\n", failures));
     }
 
+    @Test
+    @DisplayName("every complete `letrain` block of the grammar pages parses (EN and ES)")
+    void grammarPageBlocks_parse() throws IOException {
+        List<String> failures = new ArrayList<>();
+        int checked = 0;
+        for (String page : List.of("grammar.md", "grammar_es.md")) {
+            List<String> blocks = letrainBlocks(page);
+            assertTrue(blocks.size() >= 2,
+                    page + " must contribute complete `letrain` blocks, got " + blocks.size());
+            for (String block : blocks) {
+                String error = firstSyntaxErrorInProgram(block);
+                checked++;
+                if (error != null) {
+                    failures.add(page + " [" + firstLine(block) + "] -> " + error);
+                }
+            }
+        }
+        assertTrue(checked >= 4,
+                "expected the grammar pages to contribute examples, got " + checked);
+        assertTrue(failures.isEmpty(),
+                "grammar-page blocks that do not parse:\n" + String.join("\n", failures));
+    }
+
     /**
      * Extracts complete statements from the cheat sheets: every backticked text in a table row that
      * ends with {@code ;} and has no placeholders ({@code <}, {@code [}, {@code |}, …). Examples
@@ -144,6 +168,43 @@ class DslDocumentationSyntaxTest {
     }
 
     /**
+     * Extracts the fenced {@code ```letrain} blocks of a documentation page. Blocks that still
+     * carry placeholders ({@code <}, {@code [}, {@code ]}, {@code |}) are prose templates, not
+     * programs, and are skipped explicitly — the same best-effort approach as the cheat sheets.
+     */
+    private static List<String> letrainBlocks(String fileName) throws IOException {
+        Path path = Path.of("..", "docs", "user", fileName).normalize();
+        Assumptions.assumeTrue(Files.exists(path), "documentation page not found: " + path);
+        List<String> blocks = new ArrayList<>();
+        List<String> current = null;
+        for (String line : Files.readAllLines(path, StandardCharsets.UTF_8)) {
+            String trimmed = line.trim();
+            if (current == null) {
+                if (trimmed.equals("```letrain")) {
+                    current = new ArrayList<>();
+                }
+            } else if (trimmed.equals("```")) {
+                String block = String.join("\n", current);
+                if (blockHasNoPlaceholders(block)) {
+                    blocks.add(block);
+                }
+                current = null;
+            } else {
+                current.add(line);
+            }
+        }
+        return blocks;
+    }
+
+    private static boolean blockHasNoPlaceholders(String block) {
+        return block.chars().noneMatch(c -> c == '<' || c == '[' || c == ']' || c == '|');
+    }
+
+    private static String firstLine(String block) {
+        return block.lines().findFirst().orElse("");
+    }
+
+    /**
      * Parses one snippet as console input; returns the first diagnostic, or null when it parses.
      */
     private static String firstSyntaxError(String snippet) {
@@ -155,13 +216,7 @@ class DslDocumentationSyntaxTest {
         List<String> errors = new ArrayList<>();
         LeTrainLexer lexer = new LeTrainLexer(CharStreams.fromString(wrapped.text()));
         lexer.removeErrorListeners();
-        lexer.addErrorListener(new BaseErrorListener() {
-            @Override
-            public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line,
-                    int charPositionInLine, String msg, RecognitionException e) {
-                errors.add("lexer " + line + ":" + charPositionInLine + " " + msg);
-            }
-        });
+        lexer.addErrorListener(lexerListener(errors));
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         if (wrapped.waypoint()) {
             // Waypoint snippets are fragments of a create-itinerary block: the standalone rule is
@@ -177,6 +232,32 @@ class DslDocumentationSyntaxTest {
             parser.playerStart();
         }
         return errors.isEmpty() ? null : String.join(" | ", errors);
+    }
+
+    /**
+     * Parses a whole {@code letrain} documentation block as console input (comments included);
+     * returns the first diagnostic, or null when every statement parses.
+     */
+    private static String firstSyntaxErrorInProgram(String block) {
+        List<String> errors = new ArrayList<>();
+        LeTrainLexer lexer = new LeTrainLexer(CharStreams.fromString(block));
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(lexerListener(errors));
+        PlayerCommandsParser parser = new PlayerCommandsParser(new CommonTokenStream(lexer));
+        parser.removeErrorListeners();
+        parser.addErrorListener(collector(errors));
+        parser.playerStart();
+        return errors.isEmpty() ? null : String.join(" | ", errors);
+    }
+
+    private static BaseErrorListener lexerListener(List<String> errors) {
+        return new BaseErrorListener() {
+            @Override
+            public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line,
+                    int charPositionInLine, String msg, RecognitionException e) {
+                errors.add("lexer " + line + ":" + charPositionInLine + " " + msg);
+            }
+        };
     }
 
     private record Wrapped(String text, boolean waypoint) {}

@@ -212,8 +212,18 @@ class TimetableGrammarTest {
         @Test
         @DisplayName("times outside the TIME token range are a syntax error")
         void outOfRangeTime_isRejected() {
-            assertFalse(assertProgramRejected("add station 1, arrival 25:00").isEmpty());
-            assertFalse(assertProgramRejected("add station 1, departure 9:60").isEmpty());
+            assertOutOfRangeTimeRejected("add station 1, arrival 25:00");
+            assertOutOfRangeTimeRejected("add station 1, departure 9:60");
+        }
+
+        /**
+         * The out-of-range time does not lex as one TIME token, so the parser reports the orphan
+         * time separator on the offending line. The diagnostic must name both, not merely reject.
+         */
+        private void assertOutOfRangeTimeRejected(String waypointLine) {
+            String diagnostic = assertProgramRejected(waypointLine);
+            assertTrue(diagnostic.contains("line 2") && diagnostic.contains("extraneous input ':'"),
+                    "the diagnostic must point at the out-of-range time, got: " + diagnostic);
         }
 
         @Test
