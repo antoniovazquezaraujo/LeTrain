@@ -415,7 +415,8 @@ public class Model implements letrain.mvp.Model {
             // text is kept (the editor shows it so the player can fix it) and the rejection is
             // reported to the visible channel. At this point the presenter does not exist yet
             // (the sink is wired after this model is applied), so the notice is queued and
-            // delivered by setUserMessageSink (O3).
+            // delivered by setUserMessageSink (O3). A valid program's semantic warnings follow
+            // the same route: setProgramFromDisk wires the engine to reportUserMessage (D1).
             List<String> errors = this.setProgramFromDisk(this.program);
             if (errors != null && !errors.isEmpty()) {
                 reportUserMessage("Program",
@@ -947,14 +948,21 @@ public class Model implements letrain.mvp.Model {
         // wrote so it can be fixed. `programValid` marks that the engine rejected it (nothing was
         // applied).
         this.program = program;
-        List<String> errors = getAutomationEngine().setProgram(program);
-        this.programValid = errors == null || errors.isEmpty();
-        return errors;
+        return markProgramApplied(getAutomationEngine().setProgram(program));
     }
 
     @Override
     public List<String> setProgramFromDisk(String program) {
-        return setProgram(program);
+        // The disk path (savegame, program file) routes the program's warnings through the model's
+        // visible channel: a savegame is re-applied by postLoadInit before the presenter exists,
+        // so reportUserMessage queues the notice until the client wires its sink (D1).
+        this.program = program;
+        return markProgramApplied(getAutomationEngine().setProgramFromDisk(program));
+    }
+
+    private List<String> markProgramApplied(List<String> errors) {
+        this.programValid = errors == null || errors.isEmpty();
+        return errors;
     }
 
     @Override

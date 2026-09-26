@@ -609,5 +609,47 @@ class DslVisibilityTest {
             assertTrue(visible.stream().anyMatch(m -> m.contains("Saved program not applied")),
                     "the rejection must reach the visible channel, got: " + visible);
         }
+
+        @Test
+        @DisplayName("a savegame's valid program with a rejected order warns when the sink is wired")
+        void loadValidProgramWithSemanticProblem_warnsAfterLoad() {
+            // `fork 99 set n;` parses and applies, but no fork 99 exists: the engine warns. While
+            // the savegame is re-applied there is no presenter, so the notice must be queued for
+            // the visible channel instead of staying in the log (D1 residual).
+            model.setProgram("fork 99 set n;");
+            assertTrue(model.isProgramValid(), "a semantic warning does not reject the program");
+
+            Model loaded = new GameSaveService().fromBytes(new GameSaveService().toBytes(model));
+
+            assertNotNull(loaded);
+            assertTrue(loaded.isProgramValid(), "the saved program must re-apply cleanly");
+
+            List<String> visible = new ArrayList<>();
+            loaded.setUserMessageSink((title, text) -> visible.add(title + ": " + text));
+
+            assertTrue(visible.stream().anyMatch(m -> m.contains("Fork 99 not found")),
+                    "the semantic warning must reach the visible channel, got: " + visible);
+        }
+
+        @Test
+        @DisplayName("headless load (no sink): the program applies and the caller's channel works")
+        void loadValidProgramWithSemanticProblem_headlessKeepsOldBehavior() {
+            model.setProgram("fork 99 set n;");
+
+            Model loaded = new GameSaveService().fromBytes(new GameSaveService().toBytes(model));
+
+            assertNotNull(loaded);
+            assertNull(loaded.getUserMessageSink(), "a headless load must not invent a channel");
+            assertTrue(loaded.isProgramValid(), "the ignored order must not reject the program");
+            assertNull(loaded.getFork(99), "the order must stay ignored, exactly as before");
+
+            // A headless client owns its problem channel: its mission notifier keeps the warnings.
+            List<String> messages = new ArrayList<>();
+            loaded.getTrainFromLocomotiveId(1).getAutopilot().setMissionNotifier(messages::add);
+            assertFalse(loaded.getTrainFromLocomotiveId(1).getAutopilot()
+                    .startMission(TrainMission.stopAtSensor(99, 2)));
+            assertTrue(messages.stream().anyMatch(m -> m.contains("sensor 99 not found")),
+                    "the headless caller's notifier must keep working, got: " + messages);
+        }
     }
 }

@@ -27,7 +27,29 @@ public class AutomationEngine {
         this.model = model;
     }
 
+    /**
+     * Applies a program built in the console or the program editor. Its problem notices (unknown
+     * entity, dropped waypoint, clamped speed…) reach the model's visible channel when the client
+     * has wired its sink; without one they stay log-only and a caller-provided mission notifier is
+     * left in place, so headless callers keep working (D1 contract).
+     */
     public List<String> setProgram(String program) {
+        return applyProgram(program, model.getUserMessageSink() != null);
+    }
+
+    /**
+     * Applies a program that came from disk (a savegame, a program file — see
+     * {@link Model#setProgramFromDisk}). A savegame's program is re-applied by
+     * {@link Model#postLoadInit} while the presenter (and its sink) does not exist yet, so its
+     * notices always go through {@link Model#reportUserMessage}: delivered to the client's current
+     * channel, or queued until one is wired. A valid program's semantic warnings must not stay in
+     * the log (D1 residual).
+     */
+    public List<String> setProgramFromDisk(String program) {
+        return applyProgram(program, true);
+    }
+
+    private List<String> applyProgram(String program, boolean userChannel) {
         List<String> errors = new ArrayList<>();
         if (program == null || program.trim().isEmpty()) {
             clearAllAutomationListeners();
@@ -74,13 +96,13 @@ public class AutomationEngine {
             }
             clearAllAutomationListeners();
             CommandManager manager = new CommandManager(model);
-            java.util.function.BiConsumer<String, String> sink = model.getUserMessageSink();
-            if (sink != null) {
-                // D1: program warnings (unknown entity, dropped waypoint, clamped speed…) reach the
-                // same visible channel as console warnings. Without a wired sink the notifier of a
-                // headless caller stays in place (a savegame's load rejection is reported by
-                // Model.postLoadInit through the queued channel instead).
-                manager.setWarningSink(sink);
+            if (userChannel) {
+                // Route through the model, not a captured sink: reportUserMessage resolves the
+                // client's current channel and queues the notice while no sink is wired yet. The
+                // disk path wires even when headless, where it can only queue: its program is a
+                // savegame's, re-applied before any caller notifier exists (missionNotifier is
+                // transient and a loaded train starts without one).
+                manager.setWarningSink(model::reportUserMessage);
             }
             manager.visit(sintaxTree);
         } catch (Exception e) {

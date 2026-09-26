@@ -332,7 +332,10 @@ public interface Model {
     /**
      * Installs a program that came from disk (a savegame, a program file…): the single load path
      * shared by {@code postLoadInit} and the clients. The text is parsed strictly like any other
-     * program (ADR-022: the old comma-less waypoint syntax is not migrated).
+     * program (ADR-022: the old comma-less waypoint syntax is not migrated). Its problem notices
+     * are routed through the model's visible channel; while no sink is wired yet (a savegame
+     * re-applied by {@code postLoadInit} before the presenter exists) they are queued and delivered
+     * when the client wires its sink, so a loaded program never warns only in the log.
      */
     public List<String> setProgramFromDisk(String program);
 

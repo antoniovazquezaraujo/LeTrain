@@ -9,7 +9,7 @@ LeTrain incluye su propio analizador léxico/sintáctico (basado en ANTLR4) que 
 - Un **error de sintaxis** se muestra con línea/columna y **no ejecuta nada**. Dentro de `program { ... }` el programa completo se rechaza (el anterior sigue aplicado); en la consola, la orden concreta no se ejecuta.
 - Un **rechazo semántico** (entidad inexistente, destino de waypoint desconocido, misión sin ruta…) también avisa. Un itinerario con un destino desconocido **no se crea**: no se ejecuta un plan al que le falta una parada.
 - Un **ajuste mecánico** avisa antes de aplicarse (p. ej. una velocidad fuera de `0..10` se recorta y se dice cuál se aplicó).
-- Al **cargar una partida**, su programa guardado se re-aplica. Si ya no se parsea, el rechazo avisa en el panel al terminar la carga (no se queda solo en el log) y el texto **se conserva** en el editor marcado como no aplicado, para poder corregirlo.
+- Al **cargar una partida**, su programa guardado se re-aplica. Si ya no se parsea, el rechazo avisa en el panel al terminar la carga (no se queda solo en el log) y el texto **se conserva** en el editor marcado como no aplicado, para poder corregirlo. Ese mismo panel recibe todos los problemas del programa re-aplicado (entidad inexistente, itinerario rechazado…).
 
 ## ⚙️ Estructura del Lenguaje
 
