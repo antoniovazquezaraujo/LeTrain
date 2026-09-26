@@ -999,6 +999,7 @@ public class Model implements letrain.mvp.Model {
      * its sink yet (a savegame is loaded by {@code postLoadInit} before its presenter exists) the
      * notice is queued and delivered by {@link #setUserMessageSink}, so no problem stays log-only.
      */
+    @Override
     public void reportUserMessage(String title, String text) {
         if (text == null || text.isEmpty()) {
             return;
@@ -1277,6 +1278,7 @@ public class Model implements letrain.mvp.Model {
 
     private String commandText = "";
     private String commandError = "";
+    private String commandNotice = "";
 
     @Override
     public String getCommandText() {
@@ -1296,6 +1298,16 @@ public class Model implements letrain.mvp.Model {
     @Override
     public void setCommandError(String error) {
         this.commandError = error;
+    }
+
+    @Override
+    public String getCommandNotice() {
+        return commandNotice;
+    }
+
+    @Override
+    public void setCommandNotice(String notice) {
+        this.commandNotice = notice;
     }
 
     @Override

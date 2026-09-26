@@ -76,4 +76,32 @@ class InfoVisitorTest {
                 "[PgUp/Dn]: Scroll | [z/Z]: Camera | [a/r/d/f/s/t/c/u/p/n]: Modes | [Tab]: Toggle Info | [Esc]: Exit"),
                 "Global help should be in English");
     }
+
+    @Test
+    @DisplayName("in COMMAND mode the command bar receives text, error and the short notice")
+    void commandMode_drawsCommandLineWithNotice() {
+        TerminalView view = mock(TerminalView.class);
+        when(view.getCols()).thenReturn(100);
+        when(view.getMapScrollPage()).thenReturn(new Point(0, 0));
+
+        Model model = mock(Model.class);
+        when(model.getMode()).thenReturn(Model.GameMode.COMMAND);
+        when(model.getMenuModel()).thenReturn(Collections.emptyList());
+        when(model.getCommandText()).thenReturn("train 99 set speed 3;");
+        when(model.getCommandError()).thenReturn("");
+        when(model.getCommandNotice()).thenReturn("Train 99 not found; order ignored");
+
+        Cursor cursor = mock(Cursor.class);
+        when(cursor.getPosition()).thenReturn(new Point(10, 20));
+        when(model.getCursor()).thenReturn(cursor);
+        when(model.getQuantifierSteps()).thenReturn(1);
+        when(model.getQuantifier()).thenReturn(1);
+
+        InfoVisitor visitor = new InfoVisitor(view);
+        visitor.visitModel(model);
+
+        // D1 contextual channel: the short notice travels with the command bar.
+        verify(view).drawCommandLine("train 99 set speed 3;", "",
+                "Train 99 not found; order ignored");
+    }
 }

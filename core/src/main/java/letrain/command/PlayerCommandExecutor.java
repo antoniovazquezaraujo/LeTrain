@@ -22,6 +22,15 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     private java.util.function.Consumer<java.io.File> onExport;
     private java.util.function.Consumer<java.io.File> onImport;
 
+    /** Problem notices gathered while this typed command runs (D1 contextual channel). */
+    private final letrain.command.CommandNotices commandNotices =
+            new letrain.command.CommandNotices();
+
+    /**
+     * True once {@link #finishCommand()} ran: deferred notices become asynchronous from then on.
+     */
+    private boolean commandFinished;
+
     public PlayerCommandExecutor(Model model, java.util.function.Consumer<java.io.File> onSave,
             java.util.function.Consumer<java.io.File> onLoad,
             letrain.command.TurtleDelegate turtleDelegate) {
@@ -66,11 +75,49 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         this(model, null, null, null);
     }
 
-    /** User-facing problem notice: visible channel when wired, log otherwise (D1). */
+    /**
+     * User-facing problem notice produced while this typed command runs. It is gathered for the
+     * console channel (D1 contextual): the command line when the whole set fits, the scrollable
+     * panel otherwise. {@link #finishCommand()} routes it when the command ends.
+     */
     private void warn(String title, String text) {
         log.warn("[DSL] {}", text);
-        if (onMessage != null) {
-            onMessage.accept(title, text);
+        commandNotices.add(title, text);
+    }
+
+    /**
+     * Ends the typed command: routes the gathered notices to their contextual channel (D1). A
+     * short, single-line set goes to the command bar; a long or multiline one opens the scrollable
+     * panel (same rule as syntax errors) and is not duplicated on the bar. Deferred notices fired
+     * from now on belong to asynchronous events and report to the panel.
+     */
+    private void finishCommand() {
+        commandFinished = true;
+        if (model == null) {
+            return;
+        }
+        if (commandNotices.isEmpty()) {
+            model.setCommandNotice("");
+            return;
+        }
+        if (commandNotices.needsPanel()) {
+            model.setCommandNotice("");
+            model.reportUserMessage("Command notice", commandNotices.panelText());
+        } else {
+            model.setCommandNotice(commandNotices.shortText());
+        }
+    }
+
+    /**
+     * Deferred problem notice (trigger action, mission rejected/failed). While the typed command
+     * that armed it is still running it belongs to the console feedback; afterwards it is an
+     * asynchronous event, so it goes to the visible panel like programs and itineraries.
+     */
+    private void onDeferredNotice(String title, String text) {
+        if (!commandFinished) {
+            commandNotices.add(title, text);
+        } else if (model != null) {
+            model.reportUserMessage(title, text);
         }
     }
 
@@ -192,14 +239,20 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             PlayerCommandExecutor executor = new PlayerCommandExecutor(model, onSave, onLoad,
                     turtleDelegate, onMessage, onQuit, onUndo, onRedo, onExport, onImport);
             executor.setAutoRecordJournal(autoRecordJournal);
-            executor.visit(tree);
-            if (autoRecordJournal && !executor.toggledRecording && model != null) {
-                letrain.command.CommandJournal journal = model.getCommandJournal();
-                if (journal != null && journal.isRecording()) {
-                    journal.record(commandText.trim());
+            try {
+                executor.visit(tree);
+                if (autoRecordJournal && !executor.toggledRecording && model != null) {
+                    letrain.command.CommandJournal journal = model.getCommandJournal();
+                    if (journal != null && journal.isRecording()) {
+                        journal.record(commandText.trim());
+                    }
                 }
+                return null; // No errors
+            } finally {
+                // Flush on success and on a mid-command failure alike, so a notice already
+                // produced is never lost.
+                executor.finishCommand();
             }
-            return null; // No errors
         } catch (Exception e) {
             log.error("Command execution error", e);
             return e.getMessage();
@@ -558,7 +611,15 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             return null;
         }
         CommandManager scriptManager = new CommandManager(model);
-        scriptManager.setWarningSink(onMessage);
+        // Immediate problems (unknown entity, rejected itinerary…) are console feedback for a
+        // typed command (D1 contextual channel).
+        scriptManager.setWarningSink((title, text) -> commandNotices.add(title, text));
+        if (onMessage != null && model != null) {
+            // Deferred blocks (triggers) and mission notices: they fire later, so they report to
+            // the panel; while this command is still running they are folded into its feedback.
+            // Without a visible channel the notifier is left untouched (headless contract).
+            scriptManager.setDeferredWarningSink(this::onDeferredNotice);
+        }
         scriptManager.visit(scriptTree);
         return null;
     }

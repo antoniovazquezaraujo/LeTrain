@@ -362,6 +362,14 @@ public interface Model {
         return null;
     }
 
+    /**
+     * Reports a DSL problem through the visible message channel (D1). When no sink is wired yet the
+     * notice is queued and delivered by {@link #setUserMessageSink}, so it never stays log-only.
+     * Asynchronous events (programs being applied, missions, triggers) and long/multiline console
+     * notices use this channel; short typed-command notices use {@link #setCommandNotice}.
+     */
+    default void reportUserMessage(String title, String text) {}
+
     public EconomyManager getEconomyManager();
 
 
@@ -431,6 +439,15 @@ public interface Model {
     String getCommandError();
 
     void setCommandError(String error);
+
+    /**
+     * Short, single-line console notice of the last typed command (D1 contextual channel). The
+     * command bar paints it next to the command line; long/multiline notices are never set here:
+     * they open the scrollable panel through {@link #reportUserMessage}.
+     */
+    String getCommandNotice();
+
+    void setCommandNotice(String notice);
 
     CargoTypes getSelectedWagonType();
 

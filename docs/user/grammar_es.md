@@ -4,12 +4,21 @@ LeTrain incluye su propio analizador léxico/sintáctico (basado en ANTLR4) que 
 
 ## ⚠️ Avisos y errores (política D1)
 
-**«Todo problema avisa; el éxito calla»**. Los problemas del lenguaje se muestran siempre en el panel de mensajes del juego (no solo en el log):
+**«Todo problema avisa; el éxito calla»**. Los problemas del lenguaje llegan siempre al canal visible del jugador (nunca solo al log):
 
 - Un **error de sintaxis** se muestra con línea/columna y **no ejecuta nada**. Dentro de `program { ... }` el programa completo se rechaza (el anterior sigue aplicado); en la consola, la orden concreta no se ejecuta.
 - Un **rechazo semántico** (entidad inexistente, destino de waypoint desconocido, misión sin ruta…) también avisa. Un itinerario con un destino desconocido **no se crea**: no se ejecuta un plan al que le falta una parada.
 - Un **ajuste mecánico** avisa antes de aplicarse (p. ej. una velocidad fuera de `0..10` se recorta y se dice cuál se aplicó).
 - Al **cargar una partida**, su programa guardado se re-aplica. Si ya no se parsea, el rechazo avisa en el panel al terminar la carga (no se queda solo en el log) y el texto **se conserva** en el editor marcado como no aplicado, para poder corregirlo. Ese mismo panel recibe todos los problemas del programa re-aplicado (entidad inexistente, itinerario rechazado…).
+
+### Canal del aviso: comando tecleado vs evento asíncrono
+
+El canal es **contextual**:
+
+- Una orden **tecleada en la consola** avisa **en la propia consola**: la línea de comandos muestra el aviso corto (se queda abierta para que lo leas). Si el conjunto de avisos es largo o multilínea (más de 60 caracteres o con salto de línea, el mismo umbral que los errores de sintaxis), se abre el panel desplazable y el aviso **no se duplica** en la línea.
+- Los **eventos asíncronos** (programa al cargar/aplicar, misiones de itinerario, triggers al dispararse) avisan siempre en el **panel**, como antes.
+
+El log sigue siendo solo trazas: los avisos que ves nunca dependen de él.
 
 ## ⚙️ Estructura del Lenguaje
 

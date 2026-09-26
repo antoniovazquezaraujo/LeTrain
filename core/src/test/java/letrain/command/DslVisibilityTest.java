@@ -31,6 +31,11 @@ import org.junit.jupiter.api.Test;
  * D1 (batch 1, visibility): every DSL problem warns on the visible channel (never log-only) and a
  * syntax error executes nothing. Covers console orders, triggers, itineraries/waypoints, naming,
  * turtle steps, {@code info}, speed clamps, program validation and waypoint mission notices.
+ *
+ * <p>
+ * Contextual channel (D1): a typed command warns on the console (short command-line notice, long
+ * texts open the panel); asynchronous events (programs, triggers firing, missions) always report to
+ * the panel.
  */
 @DisplayName("D1 batch 1: DSL problem visibility")
 class DslVisibilityTest {
@@ -38,6 +43,9 @@ class DslVisibilityTest {
     private Model model;
     private Train train;
     private List<String> messages;
+
+    /** Short notices produced by typed commands (the console command-line channel). */
+    private final List<String> consoleNotices = new ArrayList<>();
 
     @BeforeEach
     void setUp() {
@@ -56,20 +64,34 @@ class DslVisibilityTest {
         train.setDirectorLinker(loco);
         model.addLocomotive(loco);
         messages = new ArrayList<>();
+        // The panel channel: async notices (triggers, missions, programs) resolve it at fire time.
+        model.setUserMessageSink((title, text) -> messages.add(title + ": " + text));
     }
 
     /** Runs a console script capturing the visible message channel (the game console). */
     private String run(String script) {
-        return PlayerCommandExecutor.execute(script, model, null, null, null,
+        String error = PlayerCommandExecutor.execute(script, model, null, null, null,
                 (title, text) -> messages.add(title + ": " + text), null, null, null, null, null,
                 false);
+        captureConsoleNotice();
+        return error;
     }
 
     private String runWithTurtle(String script) {
-        return PlayerCommandExecutor.execute(script, model, null, null,
+        String error = PlayerCommandExecutor.execute(script, model, null, null,
                 new TurtleBuilder(model, headlessMaker(model)),
                 (title, text) -> messages.add(title + ": " + text), null, null, null, null, null,
                 false);
+        captureConsoleNotice();
+        return error;
+    }
+
+    /** Collects the command-line notice the typed command left (empty for silent successes). */
+    private void captureConsoleNotice() {
+        String notice = model.getCommandNotice();
+        if (notice != null && !notice.isEmpty()) {
+            consoleNotices.add(notice);
+        }
     }
 
     private static RailTrackMaker headlessMaker(Model m) {
@@ -82,6 +104,16 @@ class DslVisibilityTest {
     }
 
     private boolean warned(String fragment) {
+        return consoleWarned(fragment) || panelWarned(fragment);
+    }
+
+    /** True when the short console channel carried {@code fragment}. */
+    private boolean consoleWarned(String fragment) {
+        return consoleNotices.stream().anyMatch(m -> m.contains(fragment));
+    }
+
+    /** True when the scrollable panel carried {@code fragment}. */
+    private boolean panelWarned(String fragment) {
         return messages.stream().anyMatch(m -> m.contains(fragment));
     }
 
@@ -114,8 +146,10 @@ class DslVisibilityTest {
             run("train 99 stop at sensor 1;");
             run("train 99 set autopilot true;");
 
-            assertEquals(3, messages.size(), messages.toString());
-            assertTrue(warned("Train 99 not found"), messages.toString());
+            assertEquals(3, consoleNotices.size(), consoleNotices.toString());
+            assertTrue(messages.isEmpty(),
+                    "typed short notices must not open the panel: " + messages);
+            assertTrue(consoleWarned("Train 99 not found"), consoleNotices.toString());
         }
 
         @Test
@@ -124,8 +158,9 @@ class DslVisibilityTest {
             run("station 99 invert;");
             run("sensor 99 invert;");
 
-            assertTrue(warned("Station 99 not found"), messages.toString());
-            assertTrue(warned("Plain sensor 99 not found"), messages.toString());
+            assertTrue(consoleWarned("Station 99 not found"), consoleNotices.toString());
+            assertTrue(consoleWarned("Plain sensor 99 not found"), consoleNotices.toString());
+            assertTrue(messages.isEmpty(), messages.toString());
         }
 
         @Test
@@ -135,9 +170,9 @@ class DslVisibilityTest {
             run("semaphore 99 open;");
             run("signal 99 invert;");
 
-            assertTrue(warned("Fork 99 not found"), messages.toString());
-            assertTrue(warned("Semaphore 99 not found"), messages.toString());
-            assertTrue(warned("Signal 99 not found"), messages.toString());
+            assertTrue(consoleWarned("Fork 99 not found"), consoleNotices.toString());
+            assertTrue(consoleWarned("Semaphore 99 not found"), consoleNotices.toString());
+            assertTrue(consoleWarned("Signal 99 not found"), consoleNotices.toString());
         }
 
         @Test
@@ -147,6 +182,8 @@ class DslVisibilityTest {
 
             assertNull(error, error);
             assertTrue(messages.isEmpty(), "unexpected notices: " + messages);
+            assertTrue(model.getCommandNotice().isEmpty(),
+                    "a silent success must clear the command line: " + model.getCommandNotice());
         }
 
         @Test
@@ -156,12 +193,13 @@ class DslVisibilityTest {
 
             run("train 1 set speed 99;");
             assertEquals(10, loco.getTargetSpeed());
-            assertTrue(warned("out of range 0-10"), messages.toString());
+            assertTrue(consoleWarned("out of range 0-10"), consoleNotices.toString());
 
             messages.clear();
+            consoleNotices.clear();
             run("train 1 set speed -4;");
             assertEquals(0, loco.getTargetSpeed());
-            assertTrue(warned("out of range 0-10"), messages.toString());
+            assertTrue(consoleWarned("out of range 0-10"), consoleNotices.toString());
         }
 
         @Test
@@ -169,7 +207,10 @@ class DslVisibilityTest {
         void missionSpeedClamp_warns() {
             run("train 1 stop at end speed 99;");
 
-            assertTrue(warned("Mission speed 99"), messages.toString());
+            // The clamp warning and the failed end-of-track mission share the command feedback;
+            // their joined set is long, so it opens the panel.
+            assertTrue(warned("Mission speed 99"),
+                    "console: " + consoleNotices + " panel: " + messages);
         }
 
         @Test
@@ -179,7 +220,7 @@ class DslVisibilityTest {
 
             run("fork 1 set n;");
 
-            assertTrue(warned("no route towards n"), messages.toString());
+            assertTrue(consoleWarned("no route towards n"), consoleNotices.toString());
         }
 
         @Test
@@ -197,7 +238,8 @@ class DslVisibilityTest {
             String error = run("fork 1 set n;");
 
             assertNull(error, "the order must not crash: " + error);
-            assertTrue(warned("Fork 1 has no route towards n; unchanged"), messages.toString());
+            assertTrue(consoleWarned("Fork 1 has no route towards n; unchanged"),
+                    consoleNotices.toString());
         }
 
         @Test
@@ -207,7 +249,9 @@ class DslVisibilityTest {
 
             run("train 1 stop at sensor 7;");
 
-            assertTrue(warned("not a plain sensor"), messages.toString());
+            // The text is over 60 chars: it opens the panel instead of the command line.
+            assertTrue(panelWarned("not a plain sensor"), messages.toString());
+            assertTrue(model.getCommandNotice().isEmpty(), model.getCommandNotice());
         }
     }
 
@@ -227,11 +271,16 @@ class DslVisibilityTest {
             run("semaphore 99 on train enter { semaphore 1 open; };");
             run("station 99 on train enter { semaphore 1 open; };");
 
-            assertEquals(4, messages.size(), messages.toString());
-            assertTrue(warned("Sensor 99 not found; trigger ignored"), messages.toString());
-            assertTrue(warned("Fork 99 not found; trigger ignored"), messages.toString());
-            assertTrue(warned("Semaphore 99 not found; trigger ignored"), messages.toString());
-            assertTrue(warned("Station 99 not found; trigger ignored"), messages.toString());
+            assertEquals(4, consoleNotices.size(), consoleNotices.toString());
+            assertTrue(messages.isEmpty(), "registration problems are typed feedback: " + messages);
+            assertTrue(consoleWarned("Sensor 99 not found; trigger ignored"),
+                    consoleNotices.toString());
+            assertTrue(consoleWarned("Fork 99 not found; trigger ignored"),
+                    consoleNotices.toString());
+            assertTrue(consoleWarned("Semaphore 99 not found; trigger ignored"),
+                    consoleNotices.toString());
+            assertTrue(consoleWarned("Station 99 not found; trigger ignored"),
+                    consoleNotices.toString());
         }
 
         @Test
@@ -241,6 +290,7 @@ class DslVisibilityTest {
 
             assertNull(error, error);
             assertTrue(messages.isEmpty(), "unexpected notices: " + messages);
+            assertTrue(consoleNotices.isEmpty(), "unexpected notices: " + consoleNotices);
         }
 
         @Test
@@ -252,8 +302,12 @@ class DslVisibilityTest {
 
             model.getSensor(1).onEnterTrain(train);
 
-            assertTrue(warned("No train at station 1; action ignored"), messages.toString());
-            assertFalse(warned("station1"), "tokens must not be glued: " + messages);
+            // The trigger fired after the command: asynchronous, so it reports to the panel.
+            assertTrue(panelWarned("No train at station 1; action ignored"), messages.toString());
+            assertFalse(messages.stream().anyMatch(m -> m.contains("station1")),
+                    "tokens must not be glued: " + messages);
+            assertTrue(consoleNotices.isEmpty(),
+                    "a notice fired later is not console feedback: " + consoleNotices);
         }
 
         @Test
@@ -295,8 +349,9 @@ class DslVisibilityTest {
             String error = run("create itinerary \"x\" { add station 99; add station 1; }");
 
             assertNull(error, error);
-            assertTrue(warned("Itinerary 'x' not created: station 99 not found"),
-                    messages.toString());
+            assertTrue(consoleWarned("Itinerary 'x' not created: station 99 not found"),
+                    consoleNotices.toString());
+            assertTrue(messages.isEmpty(), messages.toString());
         }
 
         @Test
@@ -374,6 +429,7 @@ class DslVisibilityTest {
             assertEquals("Renamed", model.getStation(1).getName());
             assertEquals("S2", model.getSensor(1).getName());
             assertTrue(messages.isEmpty(), "unexpected notices: " + messages);
+            assertTrue(consoleNotices.isEmpty(), "unexpected notices: " + consoleNotices);
         }
 
         @Test
@@ -404,7 +460,8 @@ class DslVisibilityTest {
         void unknownStationRename_warns() {
             run("st 99 set name \"X\";");
 
-            assertTrue(warned("Station 99 not found; name unchanged"), messages.toString());
+            assertTrue(consoleWarned("Station 99 not found; name unchanged"),
+                    consoleNotices.toString());
         }
 
         @Test
@@ -413,8 +470,8 @@ class DslVisibilityTest {
             run("sm 1 set name \"X\";");
             run("sg 1 set name \"X\";");
 
-            assertTrue(warned("Semaphores cannot be renamed"), messages.toString());
-            assertTrue(warned("Signals cannot be renamed"), messages.toString());
+            assertTrue(consoleWarned("Semaphores cannot be renamed"), consoleNotices.toString());
+            assertTrue(consoleWarned("Signals cannot be renamed"), consoleNotices.toString());
         }
     }
 
@@ -433,7 +490,7 @@ class DslVisibilityTest {
 
             assertNull(error, error);
             assertTrue(warned("ignored: named steps/marks are not implemented"),
-                    messages.toString());
+                    "console: " + consoleNotices + " panel: " + messages);
         }
 
         @Test
@@ -443,7 +500,7 @@ class DslVisibilityTest {
 
             assertNull(error, error);
             assertTrue(warned("ignored: named steps/marks are not implemented"),
-                    messages.toString());
+                    "console: " + consoleNotices + " panel: " + messages);
         }
 
         @Test
@@ -452,18 +509,100 @@ class DslVisibilityTest {
             String error = run("info 5;");
 
             assertNull(error, error);
-            assertTrue(warned("'info 5' ignores the reference"), messages.toString());
+            // `info` is data output, not a problem notice: its report keeps the panel.
+            assertTrue(panelWarned("'info 5' ignores the reference"), messages.toString());
         }
 
         @Test
-        @DisplayName("time set outside the clock range warns and leaves the clock unchanged")
+        @DisplayName("time set outside the clock range warns on the panel (long text)")
         void invalidTime_warns() {
             String error = run("time set 25:99;");
 
             assertNull(error, error);
-            assertTrue(warned("Invalid time 25:99"), messages.toString());
+            assertTrue(panelWarned("Invalid time 25:99"), messages.toString());
+            assertTrue(model.getCommandNotice().isEmpty(),
+                    "a long notice must not duplicate on the command line: "
+                            + model.getCommandNotice());
             assertEquals(8, model.getGameClock().now().hour());
             assertEquals(0, model.getGameClock().now().minute());
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Contextual channel: typed command vs asynchronous event
+    // ═══════════════════════════════════════════════════════════════════
+
+    @Nested
+    @DisplayName("Contextual warning channel (typed command vs async event)")
+    class ContextualChannels {
+
+        @Test
+        @DisplayName("a typed command's short warning goes to the command line, not the panel")
+        void typedShortNotice_goesToConsole() {
+            run("train 99 set speed 3;");
+
+            assertEquals("Train 99 not found; order ignored", model.getCommandNotice());
+            assertTrue(messages.isEmpty(),
+                    "a short typed notice must not open the panel: " + messages);
+        }
+
+        @Test
+        @DisplayName("the short notice is cleared by a later silent success")
+        void silentSuccess_clearsTheNotice() {
+            run("train 99 set speed 3;");
+            assertFalse(model.getCommandNotice().isEmpty());
+
+            run("train 1 set speed 3;");
+
+            assertTrue(model.getCommandNotice().isEmpty(),
+                    "the notice must not outlive the command: " + model.getCommandNotice());
+            assertTrue(messages.isEmpty(), messages.toString());
+        }
+
+        @Test
+        @DisplayName("a typed command's long warning opens the panel and is not repeated")
+        void typedLongNotice_opensThePanel() {
+            run("train 99 set speed 3; time set 25:99;");
+
+            assertTrue(model.getCommandNotice().isEmpty(),
+                    "a long notice must not duplicate on the line: " + model.getCommandNotice());
+            assertEquals(1, messages.size(),
+                    "the whole set is one panel message: " + messages.toString());
+            assertTrue(panelWarned("Train 99 not found"), messages.toString());
+            assertTrue(panelWarned("Invalid time 25:99"), messages.toString());
+        }
+
+        @Test
+        @DisplayName("two short warnings whose set does not fit the line open the panel")
+        void accumulatedShortNoticeSet_opensThePanel() {
+            run("train 98 set speed 3; train 99 set speed 3;");
+
+            assertTrue(model.getCommandNotice().isEmpty(),
+                    "the joined set is over 60 chars: " + model.getCommandNotice());
+            assertEquals(1, messages.size(), messages.toString());
+            assertTrue(panelWarned("Train 98 not found") && panelWarned("Train 99 not found"),
+                    messages.toString());
+        }
+
+        @Test
+        @DisplayName("a mission target missing when the typed order runs warns on the command line")
+        void typedMissionProblem_goesToConsole() {
+            run("train 1 stop at sensor 99 speed 2;");
+
+            assertTrue(consoleWarned("Sensor not found in 'stop at' order"),
+                    consoleNotices.toString());
+            assertTrue(messages.isEmpty(), messages.toString());
+        }
+
+        @Test
+        @DisplayName("program warnings keep reporting to the panel, never to the command line")
+        void programNotices_stayOnThePanel() {
+            List<String> errors = model.setProgram("train 99 set speed 3;");
+
+            assertTrue(errors.isEmpty(), errors.toString());
+            assertTrue(panelWarned("Train 99 not found"), messages.toString());
+            assertTrue(model.getCommandNotice().isEmpty(),
+                    "a program is async: " + model.getCommandNotice());
         }
     }
 

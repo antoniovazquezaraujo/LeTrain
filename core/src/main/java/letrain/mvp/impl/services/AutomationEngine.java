@@ -103,6 +103,8 @@ public class AutomationEngine {
                 // savegame's, re-applied before any caller notifier exists (missionNotifier is
                 // transient and a loaded train starts without one).
                 manager.setWarningSink(model::reportUserMessage);
+                // Deferred blocks (triggers) and mission notices are asynchronous: panel too.
+                manager.setDeferredWarningSink(model::reportUserMessage);
             }
             manager.visit(sintaxTree);
         } catch (Exception e) {

@@ -52,12 +52,24 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
      */
     private java.util.function.BiConsumer<String, String> warningSink;
 
+    /**
+     * Sink for notices produced by deferred command blocks (a trigger firing) and by the autopilot
+     * mission notifier. Those are asynchronous events: the console routes them to the panel
+     * ({@code Model.reportUserMessage}); programs do the same. Without one, the block warnings stay
+     * in the log and a caller-provided mission notifier is left untouched (headless contract).
+     */
+    private java.util.function.BiConsumer<String, String> deferredWarningSink;
+
     public CommandManager(Model model) {
         this.model = model;
     }
 
     public void setWarningSink(java.util.function.BiConsumer<String, String> sink) {
         this.warningSink = sink;
+    }
+
+    public void setDeferredWarningSink(java.util.function.BiConsumer<String, String> sink) {
+        this.deferredWarningSink = sink;
     }
 
     interface ExecutableCommand {
@@ -342,7 +354,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                     if (s != null) {
                         s.setCreationDir(s.getCreationDir().inverse());
                     } else {
-                        warnUser("Semaphore", "Semaphore " + id + " not found; action ignored");
+                        warnDeferred("Semaphore", "Semaphore " + id + " not found; action ignored");
                     }
                 };
             }
@@ -362,7 +374,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                 if (s != null) {
                     s.setOpen(open);
                 } else {
-                    warnUser("Semaphore", "Semaphore " + id + " not found; action ignored");
+                    warnDeferred("Semaphore", "Semaphore " + id + " not found; action ignored");
                 }
             };
         } else if (ctx.forkAction() != null) {
@@ -373,7 +385,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             return (ExecutableCommand) (contextTrain) -> {
                 ForkRailTrack f = model.getFork(id);
                 if (f == null) {
-                    warnUser("Fork", "Fork " + id + " not found; action ignored");
+                    warnDeferred("Fork", "Fork " + id + " not found; action ignored");
                 } else if ("straight".equals(dirText)) {
                     f.setStraightRoute();
                 } else if ("curved".equals(dirText)) {
@@ -393,7 +405,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                         if (target != null) {
                             baseAction.execute(target);
                         } else {
-                            warnUser("Train", "Train " + id + " not found; action ignored");
+                            warnDeferred("Train", "Train " + id + " not found; action ignored");
                         }
                     };
                 } else {
@@ -412,7 +424,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                     } else {
                         // `getText()` glues the tokens ("station1"): describe the selector by hand
                         // so the notice reads like the order the user wrote (O1).
-                        warnUser("Trigger",
+                        warnDeferred("Trigger",
                                 "No train at " + describePlace(pCtx) + "; action ignored");
                     }
                 };
@@ -596,15 +608,17 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
     }
 
     /**
-     * Wires the autopilot mission notifier to the user message sink (D1: itinerary maneuver
-     * problems must reach the console too). Without a sink the notifier is left untouched, so a
-     * caller-provided one (headless tests) survives.
+     * Wires the autopilot mission notifier to the asynchronous (deferred) user channel (D1:
+     * itinerary maneuver problems must reach the panel, never the command line). While the typed
+     * command that started the mission is still running, the console's deferred sink folds those
+     * notices into the command feedback; later failures go to the panel. Without a deferred sink
+     * the notifier is left untouched, so a caller-provided one (headless tests) survives.
      */
     private void installMissionNotifier(Train train) {
-        if (train.getAutopilot() == null || warningSink == null) {
+        if (train.getAutopilot() == null || deferredWarningSink == null) {
             return;
         }
-        java.util.function.BiConsumer<String, String> sink = warningSink;
+        java.util.function.BiConsumer<String, String> sink = deferredWarningSink;
         train.getAutopilot().setMissionNotifier(text -> sink.accept("Autopilot", text));
     }
 
@@ -623,6 +637,19 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
         log.warn("[DSL] {}", text);
         if (warningSink != null) {
             warningSink.accept(title, text);
+        }
+    }
+
+    /**
+     * Deferred user notice: a trigger block or a mission problem that fires after the statement
+     * that armed it. It travels on the asynchronous channel (panel); while a typed command is still
+     * running, the console folds it into that command's feedback instead. Without a deferred sink
+     * it stays in the log (headless callers keep their own notifier).
+     */
+    private void warnDeferred(String title, String text) {
+        log.warn("[DSL] {}", text);
+        if (deferredWarningSink != null) {
+            deferredWarningSink.accept(title, text);
         }
     }
 

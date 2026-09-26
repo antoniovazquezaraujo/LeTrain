@@ -819,16 +819,15 @@ class WaypointManeuverIntegrationTest {
         void autopilotWithoutItinerary_warns() {
             Train train = worldAndTrain();
             List<String> messages = new ArrayList<>();
-            String error = PlayerCommandExecutor.execute(
-                    "train " + train.getId() + " set autopilot true;", model, null, null, null,
-                    (title, text) -> messages.add(text), null, null, null);
+            model.setUserMessageSink((title, text) -> messages.add(text));
+            String error = PlayerCommandExecutor
+                    .execute("train " + train.getId() + " set autopilot true;", model);
             assertNull(error, error);
+            // The text is over 60 chars: the panel, not the command line.
             assertTrue(messages.stream().anyMatch(m -> m.contains("has no itinerary assigned")),
                     "expected the no-itinerary warning, got: " + messages);
 
-            messages.clear();
-            PlayerCommandExecutor.execute("create itinerary \"x\" { add station \"s\" }", model,
-                    null, null, null, (title, text) -> messages.add(text), null, null, null);
+            PlayerCommandExecutor.execute("create itinerary \"x\" { add station \"s\" }", model);
             assertTrue(messages.stream().anyMatch(m -> m.contains("at least 2 waypoints")),
                     "expected the invalid-itinerary warning, got: " + messages);
         }

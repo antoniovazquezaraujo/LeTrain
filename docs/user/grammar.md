@@ -4,12 +4,21 @@ LeTrain includes its own lexer/parser (based on ANTLR4) that allows you to autom
 
 ## ⚠️ Warnings and errors (D1 policy)
 
-**"Every problem warns; success stays silent."** Language problems are always shown in the game's message panel (not only in the log):
+**"Every problem warns; success stays silent."** Language problems always reach the player's visible channel (never only the log):
 
 - A **syntax error** is shown with line/column and **executes nothing**. Inside `program { ... }` the whole program is rejected (the previous one stays applied); in the console, that single order does not run.
 - A **semantic rejection** (unknown entity, unknown waypoint destination, mission with no route…) also warns. An itinerary with an unknown destination is **not created**: a plan missing a stop never runs.
 - A **mechanical adjustment** warns before it is applied (e.g. a speed outside `0..10` is clamped and the applied value is reported).
 - When a **savegame is loaded**, its stored program is re-applied. If it no longer parses, the rejection is reported in the message panel when the load finishes (it does not stay in the log) and the text is **kept** in the editor, marked as not applied, so it can be fixed. The same panel receives every problem of the re-applied program (unknown entity, rejected itinerary…).
+
+### Notice channel: typed command vs asynchronous event
+
+The channel is **contextual**:
+
+- An order **typed in the console** warns **on the console itself**: the command line shows the short notice (and stays open so you can read it). When the notice set is long or multiline (over 60 characters or containing a newline — the same threshold syntax errors use), the scrollable panel opens instead and the notice is **not duplicated** on the line.
+- **Asynchronous events** (a program being loaded/applied, itinerary missions, triggers firing) always report to the **panel**, as before.
+
+The log remains traces only: the warnings you see never depend on it.
 
 ## ⚙️ Language Structure
 

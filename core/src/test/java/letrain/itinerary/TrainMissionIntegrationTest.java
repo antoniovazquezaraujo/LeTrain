@@ -37,6 +37,12 @@ class TrainMissionIntegrationTest {
 
     private Model model;
 
+    /**
+     * Both contextual channels of a typed command, for tests that only care that the player saw a
+     * notice: the short command-line notice (console) and the panel (async mission problems).
+     */
+    private final List<String> messages = new ArrayList<>();
+
     @BeforeEach
     void setUp() {
         model = new Model(1);
@@ -758,11 +764,20 @@ class TrainMissionIntegrationTest {
         return train;
     }
 
-    /** Runs a console command (typed form) and returns the notices shown to the user. */
+    /**
+     * Runs a console command (typed form) and returns the notices shown to the user, from both
+     * contextual channels: the short command-line notice and the panel (async mission problems).
+     * The panel sink is (re)wired to the shared list so a mission warning fired while the
+     * simulation advances lands here.
+     */
     private List<String> console(String command) {
-        List<String> messages = new ArrayList<>();
+        model.setUserMessageSink((title, text) -> messages.add(text));
         PlayerCommandExecutor.execute(command, model, null, null, null,
                 (title, text) -> messages.add(text), null, null, null);
+        String notice = model.getCommandNotice();
+        if (notice != null && !notice.isEmpty()) {
+            messages.add(notice);
+        }
         return messages;
     }
 
