@@ -272,12 +272,9 @@ entre comillas). Estado: **pendientes de confirmar** salvo indicación.
   y selectores aceptan nombre además de número. Coste: medio. **Depende de D2** (política de
   mayúsculas/nombres: hoy `program` pasa todo a minúsculas y los nombres se buscan
   case-sensitive).
-- **U5. Unificar el auto-reverse** — «Esto es un poco confuso. Cuánto nos costaría unificarlo?».
-  Hoy: orden suelta auto-invierte una vez si el destino está detrás; la misión de waypoint no.
-  Opciones: **(a)** auto-reverse en todo (código barato; semántica media: convive con los
-  `reverse` explícitos de la coreografía y hay que rehacer expectativas y tests);
-  **(b)** auto-reverse en nada (más explícito, más pasos); **(c)** dejarlo y documentarlo
-  mejor. **Pendiente: análisis de coste y decisión.**
+- **U5. Unificar el auto-reverse** — **DECIDIDA (2026-09-26): (b) auto-giro en ningún sitio.**
+  Todo explícito: también las órdenes sueltas exigirán girar el tren a mano (`invert`/`reverse`)
+  antes de ir a un destino que está detrás. Sin giros automáticos en ningún contexto.
 - **U6. `uncouple` sin número = todo** — «unifiquemos esto: uncouple sin número desengancha todo».
   Iguala el default de `couple`; además, definir qué significa `0` (hoy: todos en couple, 1 en
   uncouple). Coste: bajo.
@@ -285,8 +282,9 @@ entre comillas). Estado: **pendientes de confirmar** salvo indicación.
   arrival debería ir también coma». Regla uniforme: cada ítem del plan separado por comas; la
   ref+dirección es un bloque. Ej.: `add station 1 ne, arrival 10:00, uncouple backward all,
   departure 10:30;`. Coste: bajo-medio (gramática, ejemplos, docs y tests). Sin legacy.
-- **U8. Horas sin minutos** — «debería admitirse también HH sin minutos?». `arrival 9` = 09:00.
-  Decidir si también en `time set` y cerrar de paso el coladero `25:99` (hallazgo 10).
+- **U8. Horas sin minutos** — **DECIDIDA (2026-09-26)**: admitir `HH` sin minutos en waypoints
+  (`arrival 9` = 09:00) y también en `time set` (`time set 9` = 09:00). Además, `time set`
+  fuera de rango (`25:99`) pasa de normalizar en silencio a **error con aviso** (D1).
 
 ## 8. Principios propuestos (para discutir)
 
