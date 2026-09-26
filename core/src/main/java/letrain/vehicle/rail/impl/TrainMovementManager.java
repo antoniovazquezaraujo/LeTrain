@@ -277,14 +277,12 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
                     train.crashDestroy(impactPos, speed);
                 }
             } else {
+                // Issue #645 follow-up: no speed is written after notifying the contact. The
+                // contact chain (mission completion -> waypoint actions -> departure) may
+                // legitimately restore a speed, and the internal emergencyStop of notifyContact
+                // already stopped the train and set the idle sound. Zeroing here would silently
+                // undo a scheduled departure that released during the notify.
                 train.notifyContact(impactPos, speed);
-                train.getTractors().forEach(t -> {
-                    t.setCurrentSpeed(0);
-                    t.setTargetSpeed(0);
-                    if (t instanceof Locomotive) {
-                        ((Locomotive) t).setForceIdleSound(true);
-                    }
-                });
             }
         }
 
@@ -318,9 +316,13 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
 
     private void contactDetected(Linker headOccupant, int speed) {
         Point collisionPos = headOccupant.getPosition();
-        train.notifyContact(collisionPos, speed);
+        // Issue #645 follow-up: capture the other train before notifying. The contact chain may
+        // couple the occupant during notifyContact (couple waypoint action), and then
+        // headOccupant.getTrain() would be our own train: emergency-stopping it would kill the
+        // speed the same chain just restored (e.g. the scheduled departure).
         Train otherTrain = headOccupant.getTrain();
-        if (otherTrain != null) {
+        train.notifyContact(collisionPos, speed);
+        if (otherTrain != null && otherTrain != train) {
             otherTrain.emergencyStop();
         }
     }

@@ -1067,6 +1067,12 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         return false;
     }
 
+    /**
+     * True when the segment still holds a waypoint the service has to serve. The current waypoint
+     * counts only while it has not been reached yet (issue #645 follow-up): once its actions run,
+     * its stop is already served and its segment must not block a parallel bypass (the train may
+     * legitimately drive away from it, e.g. after uncoupling there).
+     */
     private boolean segmentHasPendingWaypoints(Segment segment) {
         letrain.itinerary.AutoPilot ap = train.getAutopilot();
         java.util.Optional<letrain.itinerary.Itinerary> itinOpt = ap.itinerary();
@@ -1075,6 +1081,9 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         }
         letrain.itinerary.Itinerary itin = itinOpt.get();
         int currentIndex = ap.currentWaypointIndex();
+        if (ap.currentWaypointReached()) {
+            currentIndex++;
+        }
         List<letrain.itinerary.Waypoint> waypoints = itin.waypoints();
         for (int i = currentIndex; i < waypoints.size(); i++) {
             letrain.itinerary.Waypoint wp = waypoints.get(i);

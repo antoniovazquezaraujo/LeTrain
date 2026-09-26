@@ -63,6 +63,11 @@ public class AutoPilotImpl implements AutoPilot {
     // survives a reload; the command journal keeps the order so a replay can start it again).
     /** Active or last finished mission. */
     private transient TrainMission mission;
+    /**
+     * The current waypoint has been reached and its actions are running (issue #645 follow-up): its
+     * segment is already served and must not block a parallel bypass.
+     */
+    private transient boolean currentWaypointReached;
     /** The mission reversed the train at start because the destination was only reachable back. */
     private transient boolean missionReversed;
     /** Last plan failure was because the destination is physically behind the current sense. */
@@ -111,6 +116,8 @@ public class AutoPilotImpl implements AutoPilot {
 
     public void reinitialize(Train train, TrainActionManager actionManager) {
         this.train = train;
+        // The reached flag does not survive a reload: the waypoint must be reached again.
+        this.currentWaypointReached = false;
         if (mission == null && mode == Mode.FOLLOWING && itinerary == null) {
             // Missions are not serialized: a train saved in the middle of one would load "auto"
             // with nothing to follow. Fall back to manual instead of staying stuck.
@@ -189,6 +196,8 @@ public class AutoPilotImpl implements AutoPilot {
         if (currentIndex >= itinerary.waypoints().size()) {
             currentIndex = 0;
         }
+        // The next waypoint has not been reached yet: its segment counts as pending again.
+        currentWaypointReached = false;
     }
 
     @Override
@@ -218,6 +227,7 @@ public class AutoPilotImpl implements AutoPilot {
         this.lastDepartureTarget = NO_SCHEDULE_EVENT;
         this.punctuality.clear();
         this.retentionSerial++;
+        this.currentWaypointReached = false;
     }
 
     @Override
@@ -240,6 +250,7 @@ public class AutoPilotImpl implements AutoPilot {
         waitTicks = 0;
         pendingCommands.clear();
         currentIndex = 0;
+        currentWaypointReached = false;
         log.info("[AP] activate → FOLLOWING");
 
         // Actuación inicial reactiva
@@ -588,6 +599,7 @@ public class AutoPilotImpl implements AutoPilot {
         mode = Mode.IDLE;
         waitTicks = 0;
         pendingCommands.clear();
+        currentWaypointReached = false;
     }
 
     private Port getTrainExitPort(Segment currentSeg) {
@@ -706,6 +718,16 @@ public class AutoPilotImpl implements AutoPilot {
             return Optional.empty();
         }
         return Optional.ofNullable(getMissionTargetSegment(mission));
+    }
+
+    @Override
+    public boolean currentWaypointReached() {
+        return currentWaypointReached;
+    }
+
+    @Override
+    public void markCurrentWaypointReached() {
+        this.currentWaypointReached = true;
     }
 
     @Override

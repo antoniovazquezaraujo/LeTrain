@@ -46,6 +46,10 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
         pendingMission = null;
         letrain.itinerary.AutoPilot autopilot = train.getAutopilot();
         if (autopilot != null && autopilot.itinerary().isPresent()) {
+            // Issue #645 follow-up: the waypoint is reached now, so its segment no longer counts
+            // as pending even if the actions drive the train away from it (the safety layer uses
+            // this to allow a parallel bypass of an occupied segment, e.g. own detached wagons).
+            autopilot.markCurrentWaypointReached();
             // ADR-022 phase 2b: measure the arrival and, when the stop has a departure, start
             // braking now so the train waits at the waypoint instead of rolling past it.
             autopilot.measureArrival(waypoint);

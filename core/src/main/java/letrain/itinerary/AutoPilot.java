@@ -58,6 +58,22 @@ public interface AutoPilot {
     }
 
     /**
+     * True when the train has already reached the current waypoint and is running its actions
+     * (issue #645 follow-up). The safety layer uses it so the current waypoint's segment does not
+     * block a parallel bypass: its stop is already served even if the train drives away from it
+     * (e.g. uncoupling at the station and then bypassing the occupied main line).
+     */
+    default boolean currentWaypointReached() {
+        return false;
+    }
+
+    /**
+     * Marks the current waypoint as reached. Called by the action manager when the waypoint's
+     * actions start; cleared when the plan advances to the next waypoint.
+     */
+    default void markCurrentWaypointReached() {}
+
+    /**
      * One simulation tick of the train (issue #619). Missions use it as a stall watchdog: a mission
      * train stopped without a block/schedule/loading reason fails after a grace period. No-op when
      * there is no mission running.
