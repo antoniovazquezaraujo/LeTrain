@@ -1331,8 +1331,13 @@ public class AutoPilotImpl implements AutoPilot {
         if (train == null) {
             return;
         }
+        // Issue #645 follow-up: the mission is not the owner of the plan's cruise speed. Keep the
+        // programmed speed so a waypoint without departure can resume after its actions; only the
+        // applied target is zeroed (the mission semantics still end with the train stopped).
+        int cruise = train.getProgrammedSpeed();
         train.setSavedTargetSpeed(-1);
         train.setSpeed(0);
+        train.setProgrammedSpeed(cruise);
         // A "stop when blocked" mission may end while the safety layer holds a block wait. The
         // autopilot is now IDLE, so onBlockReleased would never clear it and the wait gate would
         // swallow later manual speed orders. Clearing it here is inert: the target is already 0

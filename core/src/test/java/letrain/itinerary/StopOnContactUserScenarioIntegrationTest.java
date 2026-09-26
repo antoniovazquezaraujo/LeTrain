@@ -54,6 +54,7 @@ class StopOnContactUserScenarioIntegrationTest {
         ForkRailTrack eastJunction;
         Station station3;
         Station station4;
+        Station station5;
         Sensor sensor2;
         Sensor sensor3;
     }
@@ -99,6 +100,7 @@ class StopOnContactUserScenarioIntegrationTest {
         w.sensor3 = sensor(w.westTail.get(6), "sensor3"); // x = -12
         w.station4 = station(w.main.get(5), "station4"); // x = 2
         w.sensor2 = sensor(w.eastTail.get(6), "sensor2"); // x = 18
+        w.station5 = station(w.eastTail.get(10), "station5"); // x = 22
         return w;
     }
 
@@ -173,10 +175,205 @@ class StopOnContactUserScenarioIntegrationTest {
                             s -> s.departure().isPresent() && s.departure().getAsInt() > 0),
                     "the late departure must be measured: " + punctuality.describe());
         }
+
+        @Test
+        @DisplayName("the same run-around without departure resumes the cruise and reaches station 3")
+        void runAround_withoutDeparture_completes() {
+            World w = buildWorld();
+            Train subject = placeConsist(w.westTail, 13, 2);
+            Locomotive loco = (Locomotive) subject.getDirectorLinker();
+            int locoId = loco.getId();
+            setTime(12, 45);
+
+            // Same plan as the user's, but with no departure attribute: the waypoint must still
+            // end with the plan's cruise resumed (the mission must not leave it dead).
+            List<String> errors = model.setProgram("""
+                    create itinerary "c" {
+                        add station %d arrival 12:00,
+                            uncouple backward all,
+                            stop at sensor %d speed 3,
+                            reverse,
+                            stop at sensor %d speed 3,
+                            reverse,
+                            stop on contact speed 3,
+                            couple forward all,
+                            reverse;
+                        add station %d arrival 14:00,
+                            park
+                    }
+                    assign itinerary "c" to train %d;
+                    train %d set autopilot true;
+                    train %d set speed 3;
+                    """.formatted(w.station4.getId(), w.sensor2.getId(), w.sensor3.getId(),
+                    w.station3.getId(), locoId, locoId, locoId));
+            assertTrue(errors.isEmpty(), "unexpected errors: " + errors);
+
+            Segment variant = model.getRailwayGraph().getSegment(w.bypass.get(0));
+            boolean[] usedVariant = {false};
+            boolean[] reachedStation3 = {false};
+            runUntil(() -> {
+                Segment current = subject.getSafetyManager().getCurrentSegment();
+                if (variant.equals(current)) {
+                    usedVariant[0] = true;
+                }
+                if (subject.getStationId() == w.station3.getId()) {
+                    reachedStation3[0] = true;
+                }
+                return !loco.isEngineOn();
+            }, 12000);
+
+            assertTrue(usedVariant[0], "the bypass must still work without departure");
+            assertEquals(3, subject.getLinkers().size(),
+                    "couple forward all must rejoin the two wagons");
+            assertEquals(TrainMission.State.COMPLETED,
+                    subject.getAutopilot().mission().orElseThrow().state());
+            assertTrue(reachedStation3[0],
+                    "without departure the plan must still reach station 3 (no silent freeze)");
+            assertEquals(0, subject.getSpeed());
+            assertFalse(loco.isEngineOn(), "park must switch the engine off at station 3");
+            assertFalse(subject.isPendingManualMode());
+            assertFalse(subject.isStalled());
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // 2. segmentHasPendingWaypoints: reached vs pending
+    // 2. Minimal plans without departure (issue #645 follow-up)
+    // ═══════════════════════════════════════════════════════════════════
+
+    @Nested
+    @DisplayName("Minimal without departure")
+    class MinimalWithoutDeparture {
+
+        @Test
+        @DisplayName("the diagnostic minimal resumes the cruise instead of freezing silently")
+        void minimalWithoutDeparture_resumesCruise() {
+            World w = buildWorld();
+            Train subject = placeConsist(w.westTail, 13, 1);
+            Locomotive loco = (Locomotive) subject.getDirectorLinker();
+            int locoId = loco.getId();
+            setTime(13, 0);
+
+            // The return to station 4 needs a reverse the plan does not write (same shape as
+            // Bicho's minimal diagnostic): the fix under test is that the plan does not stay
+            // frozen with targetSpeed 0 after the waypoint actions.
+            List<String> errors = model.setProgram("""
+                    create itinerary "m" {
+                        add station %d arrival 12:00,
+                            stop at sensor %d speed 3,
+                            uncouple backward all;
+                        add station %d arrival 14:00,
+                            park
+                    }
+                    assign itinerary "m" to train %d;
+                    train %d set autopilot true;
+                    train %d set speed 3;
+                    """.formatted(w.station4.getId(), w.sensor2.getId(), w.station4.getId(), locoId,
+                    locoId, locoId));
+            assertTrue(errors.isEmpty(), "unexpected errors: " + errors);
+
+            runUntil(() -> subject.getAutopilot().currentWaypointIndex() == 1, 4000);
+
+            assertEquals(1, subject.getAutopilot().currentWaypointIndex(),
+                    "the plan must advance to the next waypoint");
+            assertEquals(3, subject.getProgrammedSpeed(),
+                    "the mission must not destroy the plan's cruise speed");
+            assertEquals(3, loco.getTargetSpeed(),
+                    "the resumed cruise must be applied after the waypoint actions");
+            assertFalse(subject.getSafetyManager().isWaitingForBlock());
+
+            int xAtTransition = loco.getPosition().getX();
+            runUntil(() -> loco.getPosition().getX() != xAtTransition, 600);
+            assertTrue(loco.getPosition().getX() != xAtTransition,
+                    "the train must continue moving instead of staying frozen");
+            assertFalse(subject.isPendingManualMode());
+        }
+
+        @Test
+        @DisplayName("a minimal plan with a reachable next stop drives on and parks")
+        void minimalReachable_completesToPark() {
+            World w = buildWorld();
+            Train subject = placeConsist(w.westTail, 13, 1);
+            Locomotive loco = (Locomotive) subject.getDirectorLinker();
+            int locoId = loco.getId();
+            setTime(13, 0);
+
+            List<String> errors = model.setProgram("""
+                    create itinerary "m" {
+                        add station %d arrival 12:00,
+                            stop at sensor %d speed 3,
+                            uncouple backward all;
+                        add station %d arrival 14:00,
+                            park
+                    }
+                    assign itinerary "m" to train %d;
+                    train %d set autopilot true;
+                    train %d set speed 3;
+                    """.formatted(w.station4.getId(), w.sensor2.getId(), w.station5.getId(), locoId,
+                    locoId, locoId));
+            assertTrue(errors.isEmpty(), "unexpected errors: " + errors);
+
+            boolean[] reachedStation5 = {false};
+            runUntil(() -> {
+                if (subject.getStationId() == w.station5.getId()) {
+                    reachedStation5[0] = true;
+                }
+                return !loco.isEngineOn();
+            }, 6000);
+
+            assertTrue(reachedStation5[0],
+                    "the resumed cruise must carry the plan to the next stop");
+            assertEquals(0, subject.getSpeed());
+            assertFalse(loco.isEngineOn(), "the final park must switch the engine off");
+            assertFalse(subject.isStalled());
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 3. Deliberate park must not be woken by the cruise resume
+    // ═══════════════════════════════════════════════════════════════════
+
+    @Nested
+    @DisplayName("Deliberate park")
+    class DeliberatePark {
+
+        @Test
+        @DisplayName("a park without a later departure stays parked")
+        void parkWithoutDeparture_staysParked() {
+            World w = buildWorld();
+            Train subject = placeConsist(w.westTail, 13, 1);
+            Locomotive loco = (Locomotive) subject.getDirectorLinker();
+            setTime(13, 0);
+
+            List<String> errors = model.setProgram("""
+                    create itinerary "p" {
+                        add station %d park
+                        add station %d
+                    }
+                    assign itinerary "p" to train %d;
+                    train %d set autopilot true;
+                    train %d set speed 3;
+                    """.formatted(w.station4.getId(), w.station3.getId(), loco.getId(),
+                    loco.getId(), loco.getId()));
+            assertTrue(errors.isEmpty(), "unexpected errors: " + errors);
+
+            runUntil(() -> !loco.isEngineOn(), 4000);
+            assertFalse(loco.isEngineOn(), "the park action must switch the engine off");
+            assertEquals(0, loco.getTargetSpeed());
+
+            int parkedX = loco.getPosition().getX();
+            runTicks(2500); // well past the stall/retention windows
+
+            assertFalse(loco.isEngineOn(),
+                    "a deliberate park without departure must stay parked (no auto-resume)");
+            assertEquals(0, loco.getTargetSpeed(), "the parked train must not be given a target");
+            assertEquals(0, loco.getSpeed());
+            assertEquals(parkedX, loco.getPosition().getX(),
+                    "the parked train must not be woken by the plan cruise");
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 4. segmentHasPendingWaypoints: reached vs pending
     // ═══════════════════════════════════════════════════════════════════
 
     @Nested
