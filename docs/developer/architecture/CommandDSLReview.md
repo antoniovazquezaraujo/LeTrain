@@ -305,16 +305,15 @@ política de mayúsculas (D2).
 
 ## 9. Estado de la implementación (por lotes)
 
-- **Lote 1 — Visibilidad (D1)** — implementado y verificado: PR **#655**
-  (`fix/dsl-visibility`, head `36060a5a`; 1010 tests; CI verde). Incluye el **canal
-  contextual** pedido por el usuario (tecleado → línea de consola; programa/misiones/
-  triggers → panel). **Pendiente del OK del usuario** para merge.
+- **Lote 1 — Visibilidad (D1)** — **mergeado** en `develop` (PR #655, merge `ddd8c07a`;
+  1010 tests; CI verde). Incluye el **canal contextual** pedido por el usuario (tecleado →
+  línea de consola; programa/misiones/triggers → panel).
   - Residuales anotados: O2 (trigger `train N on …` con tren inexistente no avisa al
     registrar → D4); N1–N3 (minúsculas/strings, `sm/sg set name` en programa, colisión
     sensor/SpeedSignal → D2/D3); bordes cosméticos del canal (aviso invisible en headless;
     título «Command notice» durante replay) → segunda iteración si molesta.
 - **Lote 2 — Sintaxis** (U1–U3, U5b, U6, U7, U8 + limpieza de sintaxis muerta + ayuda
-  validada): pendiente; se abrirá desde `develop` tras mergear el lote 1.
+  validada): **en marcha** (rama `feat/dsl-syntax` desde `ddd8c07a`).
 - **Lote 3 — Unificación consola ↔ programa** (D2; U4 depende de la política de
   mayúsculas): pendiente.
 - **Lote 4 — Casos de error restantes** (D4): pendiente.
