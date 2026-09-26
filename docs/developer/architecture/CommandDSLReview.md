@@ -259,7 +259,9 @@ verde en `mvn test`.
 ## 7b. Decisiones de sintaxis propuestas (anotadas por el usuario, 2026-09-26)
 
 Notas del usuario sobre esta revisión, pasadas a propuestas numeradas (su texto, literal,
-entre comillas). Estado: **pendientes de confirmar** salvo indicación.
+entre comillas). Estado: **U1–U3, U5, U6 y U8 confirmadas** (U5 = b; U8 también para
+`time set`); **U7 propuesta firme** (pendiente de confirmar); **U4 aparcada** hasta la
+política de mayúsculas (D2).
 
 - **U1. Fuera el atajo `set N`** — «VAMOS A PROHIBIR LO DE set N, que ponga siempre "speed"».
   Siempre `set speed N`. Coste: bajo (gramática, docs y tests). Sin compatibilidad legacy.
@@ -296,3 +298,18 @@ entre comillas). Estado: **pendientes de confirmar** salvo indicación.
    gramática y ayuda.
 4. **La ayuda y las chuletas se validan contra la gramática** en un test (evita promesas
    que no parsean).
+
+## 9. Estado de la implementación (por lotes)
+
+- **Lote 1 — Visibilidad (D1)** — implementado y verificado: PR **#655**
+  (`fix/dsl-visibility`, head `bf1f6516`; 986 tests; CI 7/7 verde). **Pendiente del OK del
+  usuario** para merge.
+  - Residuales anotados: O2 (trigger `train N on …` con tren inexistente no avisa al
+    registrar → D4); N1–N3 (minúsculas/strings, `sm/sg set name` en programa, colisión
+    sensor/SpeedSignal → D2/D3); borde headless de `setProgramFromDisk` (informativo, sin
+    consumidor real hoy).
+- **Lote 2 — Sintaxis** (U1–U3, U5b, U6, U7, U8 + limpieza de sintaxis muerta + ayuda
+  validada): pendiente; se abrirá desde `develop` tras mergear el lote 1.
+- **Lote 3 — Unificación consola ↔ programa** (D2; U4 depende de la política de
+  mayúsculas): pendiente.
+- **Lote 4 — Casos de error restantes** (D4): pendiente.
