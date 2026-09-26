@@ -410,7 +410,10 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                     if (target != null) {
                         baseAction.execute(target);
                     } else {
-                        warnUser("Trigger", "No train at " + pCtx.getText() + "; action ignored");
+                        // `getText()` glues the tokens ("station1"): describe the selector by hand
+                        // so the notice reads like the order the user wrote (O1).
+                        warnUser("Trigger",
+                                "No train at " + describePlace(pCtx) + "; action ignored");
                     }
                 };
             }
@@ -851,9 +854,15 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                 fork.setAlternativeRoute();
             } else {
                 letrain.map.Dir direction = letrain.map.Dir.valueOf(dir.toUpperCase());
-                if (fork.getOriginalRoute().getValue() == direction) {
+                // A fork with a single route has no original/alternative pair (O4): asking for a
+                // direction it does not have warns instead of throwing NPE.
+                letrain.utils.Pair<letrain.map.Dir, letrain.map.Dir> originalRoute =
+                        fork.getOriginalRoute();
+                letrain.utils.Pair<letrain.map.Dir, letrain.map.Dir> alternativeRoute =
+                        fork.getAlternativeRoute();
+                if (originalRoute != null && originalRoute.getValue() == direction) {
                     fork.setNormalRoute();
-                } else if (fork.getAlternativeRoute().getValue() == direction) {
+                } else if (alternativeRoute != null && alternativeRoute.getValue() == direction) {
                     fork.setAlternativeRoute();
                 } else {
                     // The console did nothing here before; the three behaviours of
@@ -1079,5 +1088,25 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             }
         }
         return null;
+    }
+
+    /**
+     * Human-readable place selector ("station 1") for notices. ANTLR's {@code getText()} glues the
+     * tokens without spaces ("station1"), which made the {@code train at} warning unreadable (O1).
+     */
+    private static String describePlace(ScriptLogicParser.PlaceSelectorContext ctx) {
+        if (ctx.stationSelector() != null) {
+            return "station " + ctx.stationSelector().NUMBER().getText();
+        }
+        if (ctx.sensorSelector() != null) {
+            return "sensor " + ctx.sensorSelector().NUMBER().getText();
+        }
+        if (ctx.forkSelector() != null) {
+            return "fork " + ctx.forkSelector().NUMBER().getText();
+        }
+        if (ctx.semaphoreSelector() != null) {
+            return "semaphore " + ctx.semaphoreSelector().NUMBER().getText();
+        }
+        return ctx.getText();
     }
 }

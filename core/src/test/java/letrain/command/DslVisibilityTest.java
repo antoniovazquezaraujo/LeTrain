@@ -182,6 +182,24 @@ class DslVisibilityTest {
         }
 
         @Test
+        @DisplayName("fork set <direction> with a single-route fork warns instead of NPE (O4)")
+        void singleRouteForkDirection_warnsInsteadOfNpe() {
+            // A fork with one route has no original/alternative pair: getOriginalRoute() is null.
+            ForkRailTrack fork = new ForkRailTrack(model.nextForkId());
+            fork.setPosition(new Point(0, 0));
+            fork.setCreationDir(Dir.E);
+            fork.addRoute(Dir.W, Dir.E);
+            fork.setNormalRoute();
+            model.getRailMap().addTrack(fork.getPosition(), fork);
+            model.addFork(fork);
+
+            String error = run("fork 1 set n;");
+
+            assertNull(error, "the order must not crash: " + error);
+            assertTrue(warned("Fork 1 has no route towards n; unchanged"), messages.toString());
+        }
+
+        @Test
         @DisplayName("stop at sensor N resolving to a speed signal warns (shared id)")
         void stopAtSensorResolvingToSpeedSignal_warns() {
             model.addSensor(new SpeedSignal(7, Dir.E, 3, true));
@@ -222,6 +240,19 @@ class DslVisibilityTest {
 
             assertNull(error, error);
             assertTrue(messages.isEmpty(), "unexpected notices: " + messages);
+        }
+
+        @Test
+        @DisplayName("'train at' with no train at the place names the selector readably (O1)")
+        void trainAtWithoutTrain_warnsReadableSelector() {
+            // Repro from the review: the notice used to concatenate tokens ("No train at
+            // station1").
+            assertNull(run("sensor 1 on train enter { train at station 1 set speed 2; };"));
+
+            model.getSensor(1).onEnterTrain(train);
+
+            assertTrue(warned("No train at station 1; action ignored"), messages.toString());
+            assertFalse(warned("station1"), "tokens must not be glued: " + messages);
         }
 
         @Test
