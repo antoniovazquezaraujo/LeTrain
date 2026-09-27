@@ -33,7 +33,11 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
     static Logger log = LoggerFactory.getLogger(CommandManager.class);
     Model model;
 
-    /** Stores itineraries created during parsing, keyed by name. */
+    /**
+     * Stores itineraries created during parsing, keyed by name. A full script parse starts with a
+     * fresh registry ({@link #visitScriptStart}); the console keeps one manager per world (#632),
+     * so the definitions survive from one typed statement to the next.
+     */
     private final Map<String, Itinerary> itineraries = new HashMap<>();
 
     /** Current itinerary being constructed. */

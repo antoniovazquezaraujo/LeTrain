@@ -109,6 +109,7 @@ create itinerary "RutaCarbon" {
 **Asignar y Activar:**
 - `assign itinerary "RutaCarbon" to train 1;`
 - `train 1 set autopilot true;`
+- Desde la **consola** las definiciones viven en la sesión: puedes `create` el itinerario en una línea y `assign` en otra (o ambos en la misma). El registro pertenece al mundo vigente, así que un undo/load/replay de escenario que cambie el mundo empieza vacío. Solo los itinerarios asignados a un tren se guardan en la partida; una definición que nunca se asignó es un artefacto de sesión.
 
 ### 3. Automatización por Eventos (Triggers)
 Responde a eventos del juego en tiempo real. 
