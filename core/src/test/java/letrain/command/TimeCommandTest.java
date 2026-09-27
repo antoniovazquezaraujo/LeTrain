@@ -54,4 +54,30 @@ class TimeCommandTest {
         assertEquals(9, model.getGameClock().now().hour());
         assertEquals(5, model.getGameClock().now().minute());
     }
+
+    @Test
+    @DisplayName("U8: `time set 9` means 09:00")
+    void timeSet_hourOnly_meansOClock() {
+        Model model = new Model(1);
+
+        run(model, "time set 9;");
+
+        assertEquals(9, model.getGameClock().now().hour());
+        assertEquals(0, model.getGameClock().now().minute());
+    }
+
+    @Test
+    @DisplayName("U8: an out-of-range hour warns and leaves the clock untouched")
+    void timeSet_outOfRange_warnsAndKeepsTheClock() {
+        Model model = new Model(1);
+        java.util.List<String> panel = new java.util.ArrayList<>();
+        model.setUserMessageSink((title, text) -> panel.add(text));
+
+        run(model, "time set 25;");
+
+        assertTrue(panel.stream().anyMatch(m -> m.contains("Invalid time 25:0")),
+                "expected the range notice, got: " + panel);
+        assertEquals(8, model.getGameClock().now().hour());
+        assertEquals(0, model.getGameClock().now().minute());
+    }
 }

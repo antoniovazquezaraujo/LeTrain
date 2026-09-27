@@ -30,8 +30,10 @@ These are executed immediately. **They require a semicolon (`;`) at the end**.
 **Train Actions (`trainRef` can be a number or a name in quotes):**
 - `train [ID] accelerate;`
 - `train [ID] decelerate;`
-- `train [ID] set speed [NUM];` or `train [ID] set [NUM];` (the useful range is `0..10`; a value outside it is clamped to the limit and the applied value is reported)
-- `train [ID] invert;`
+- `train [ID] set speed [NUM];` (the useful range is `0..10`; a value outside it is clamped to the limit and the applied value is reported)
+- `train [ID] invert;` / `train [ID] reverse;` (synonyms: flip the travel sense)
+- `train [ID] stop;` (brakes and turns the autopilot off)
+- `train [ID] park;` (brakes, switches the engine off and **keeps** the autopilot)
 - `train [ID] stop at station [ID|"name"] [speed NUM];`
 - `train [ID] stop at sensor [ID|"name"] [speed NUM];`
 - `train [ID] stop at end [speed NUM];`
@@ -41,8 +43,8 @@ These are executed immediately. **They require a semicolon (`;`) at the end**.
 - `train [ID] load;`
 - `train [ID] unload;`
 - `train [ID] couple forward [NUM|all];` / `train [ID] uncouple backward [NUM|all];`
-  (`all` couples or detaches every vehicle on that side; `uncouple backward all` leaves the
-  locomotive alone with the wagons on their own train)`
+  (with no count, **both** `couple` and `uncouple` act on every vehicle on that side; a count must
+  be `>= 1` or `all`, and `0` warns and does nothing)
 
 **Reserved word `all`**: `all` is the count for `couple`/`uncouple` (`uncouple backward all`), so a bare
 `all` name in any other order is a syntax error (`info station all;`); quote it to use it as a name:
@@ -56,9 +58,11 @@ sensor, the end of track **ahead of the train** (the train brakes on the last ra
 the buffer; a closed loop with no end ahead warns and does not move) or the first block
 (`stop when blocked` rolls to the last rail of its canton before the block and completes stopped
 there; it does **not** resume when it is released, and if the block is freed before it stops it keeps
-going). If
-the destination is only reachable in the opposite sense, the order reverses the train once at the
-start. An order received while the train is running an itinerary is rejected with a warning (nothing
+going). **Nothing auto-reverses**: if
+the destination is only reachable in the opposite sense, the order is **rejected with a warning**
+("no route from the current sense") and you must turn the train by hand (`train N invert;` or
+`reverse;`) before repeating it. An order received while the train is running an itinerary is
+rejected with a warning (nothing
 is paused): use `train N set autopilot false;` or write the maneuver in the itinerary. If the
 destination becomes unreachable mid-mission (the route is lost) or the train stays stopped without a
 block/schedule/loading reason for about one game hour, the mission fails with a warning. Speed
@@ -76,28 +80,29 @@ raises it. A new order replaces the running mission.
 Allows you to program a list of destinations (waypoints) so the train can find its path using A*.
 Itinerary blocks use curly braces `{ }`; the `;` after a waypoint is optional, and the closing `}`
 ends the block (a `;` after it is also optional; the console adds one automatically when you type
-the block). A waypoint can also carry a timetable: `arrival HH:MM` and/or `departure HH:MM` (24 h
-clock, `H:MM` or `HH:MM`).
+the block). A waypoint can also carry a timetable: `arrival HH` / `arrival H:MM` and/or
+`departure HH` / `departure H:MM` (24 h clock; `9` means 09:00 and `09:20` is twenty past nine).
 
 **Create Itinerary:**
 ```letrain
 create itinerary "CoalRoute" {
-    add station 1 load
-    add station 2 arrival 10:23, reverse, unload, departure 10:30
-    add sensor 5 speed 20
+    add station 1, load
+    add station 2, arrival 10:23, reverse, unload, departure 10:30
+    add sensor 5, speed 20
 }
 ```
 *Waypoint rules:*
 
 - **At least two waypoints**: an itinerary is a loop, so a plan with a single waypoint is rejected with a warning and never assigned (the autopilot stays off). For a single destination use a loose `stop at …` order (or a waypoint action inside a service); repeating the same station is allowed.
 - **Known destinations**: if a station/sensor of a waypoint (or the target of a `stop at …` / `stop at sensor …` mission inside a waypoint) does not exist, the itinerary is **not created**, with a warning: a plan missing a stop never runs. A `stop at sensor N` whose id belongs to a station or a speed signal also warns (it is not a plain sensor).
-- **Commas are mandatory** between the waypoint's actions. The station/sensor reference and the optional entry direction (a compass direction such as `n`, `e`, `s`, `w`) take **no** comma.
-- The **order is mandatory**: `arrival` first, then the actions in execution order (`load`, `unload`, `reverse`, `stop`, `park`, `wait [NUM]`, `speed [NUM]`, `uncouple forward|backward [NUM|all]`, `couple forward|backward [NUM|all]`, `stop at station|sensor [REF] [speed NUM]`, `stop at end [speed NUM]`, `stop when blocked [speed NUM]`, `fork [ID] set straight|curved`, `fork [ID] flip`), and `departure` last. Writing an attribute out of order is a syntax error.
-- **Maneuvers**: movement orders (`stop at …`, `stop when blocked …`) are **missions** that run when the waypoint is reached and must complete before the next action: the train drives and ends stopped. `stop at` uses the current sense and **does not auto-reverse**: write the `reverse` you need or the order is rejected with a "no route from the current sense" warning. A rejected maneuver **aborts the remaining actions of that waypoint** (the departure and the route to the next waypoint still run) so the choreography never continues in a wrong state. Fork actions force or prepare a switch; the autopilot keeps orienting the switches along the route it computes. The `departure` releases once the maneuver is done (if it ends late, the train leaves late and the delay is measured); afterwards the route to the next waypoint is recalculated from where the train ended up.
+- **Commas are mandatory**: every plan item is separated by commas, and when the waypoint has a plan the **reference (and its optional direction) is also separated by a comma** from the first item: `add station 1 ne, arrival 9:00, uncouple backward all, departure 10:30;`. Without a plan the bare form is unchanged: `add station 1;`. The old comma-less form is not accepted.
+- The **order is mandatory**: `arrival` first, then the actions in execution order (`load`, `unload`, `reverse`/`invert`, `stop`, `park`, `wait [NUM]`, `speed [NUM]`, `uncouple forward|backward [NUM|all]`, `couple forward|backward [NUM|all]`, `stop at station|sensor [REF] [speed NUM]`, `stop at end [speed NUM]`, `stop when blocked [speed NUM]`, `fork [ID] set straight|curved|<dir>|flip`), and `departure` last. Writing an attribute out of order is a syntax error.
+- **Out-of-range times**: a bare hour outside `0..23` (`arrival 25`) rejects the itinerary with a warning; a full time outside range (`25:00`, `9:60`) is a plain syntax error.
+- **Maneuvers**: movement orders (`stop at …`, `stop when blocked …`) are **missions** that run when the waypoint is reached and must complete before the next action: the train drives and ends stopped. `stop at` uses the current sense and **does not auto-reverse either** (nothing auto-reverses): write the `reverse`/`invert` you need or the order is rejected with a "no route from the current sense" warning. A rejected maneuver **aborts the remaining actions of that waypoint** (the departure and the route to the next waypoint still run) so the choreography never continues in a wrong state. Fork actions force or prepare a switch with the same mapping as the console and triggers; the autopilot keeps orienting the switches along the route it computes. The `departure` releases once the maneuver is done (if it ends late, the train leaves late and the delay is measured); afterwards the route to the next waypoint is recalculated from where the train ended up.
 - **Shunting and blocks**: a maneuver whose destination is inside a canton occupied by **its own detached part** (coupling to the wagons it just left) may enter that canton like a manual shunting move; the physical checks still stop the train before any vehicle. A canton held by an unrelated train keeps the block: the maneuver waits at the boundary and resumes when it is released.
-- **`uncouple` direction**: `uncouple forward` detaches at the **head side** of the train and `uncouple backward` at the tail. With the locomotive leading and pulling the wagons, the wagons are behind: the run-around is written `uncouple backward 1`.
+- **`uncouple` direction**: `uncouple forward` detaches at the **head side** of the train and `uncouple backward` at the tail. With the locomotive leading and pulling the wagons, the wagons are behind: the run-around is written `uncouple backward 1` (with no count it detaches every vehicle on that side, like `couple`).
 - `arrival` is measured when the waypoint is reached; `departure` is the scheduled leaving time: on arrival the actions run, the train waits until that time and a scheduled departure starts the engine. The dwell is `departure − arrival` in game time. Times are read in sequence: a smaller time than the previous one belongs to the next day (`arrival 23:50, departure 00:10`). If the train arrives late it leaves immediately and the deviation is measured. Without times, a waypoint behaves exactly as before.
-- `park` brakes, switches the engine off and **keeps the autopilot running** (unlike `stop`, which brakes and turns the autopilot off). The next scheduled departure starts the engine and resumes the cruise speed, so a repeating daily service can end with `park` and leave again the next morning. A `park` with **no later scheduled departure** simply leaves the train parked (engine off, plan kept): it will not move again until a scheduled departure starts it or you drive it manually.
+- `park` brakes, switches the engine off and **keeps the autopilot running** (unlike `stop`, which brakes and turns the autopilot off). It also exists as a direct order (`train N park;`). The next scheduled departure starts the engine and resumes the cruise speed, so a repeating daily service can end with `park` and leave again the next morning. A `park` with **no later scheduled departure** simply leaves the train parked (engine off, plan kept): it will not move again until a scheduled departure starts it or you drive it manually.
 - The train reports its punctuality in `info train N`: arrival and departure deltas per stop in game minutes (`+` = late, `−` = early), plus the current, average and maximum deviation. A train without times shows nothing.
 - Safety wins: retention never overrides blocks; if the next block is occupied, the train waits and the delay shows up in the next measurement.
 - Times are validated, saved and exported.
@@ -122,14 +127,17 @@ Responds to game events in real-time.
 - `sensor [ID]`, `fork [ID]`, `semaphore [ID]`, `station [ID]`, `train [ID]` (or generic `train`).
 
 **Events:**
-- Trains: `on train enter`, `on train exit`, `on train couple`, `on train uncouple` (optionally with direction `forward`/`backward`).
+- Trains: `on train enter`, `on train exit` (optionally with direction `forward`/`backward`).
+- Train (any sensor the train steps on): `train [ID] on enter` / `train [ID] on exit`.
 - Accidents: `train 1 on crash`, `train on contact forward`.
 
 **Special actions inside blocks (must end with `;`):**
 - *Semaphores:* `semaphore [ID] open;` / `semaphore [ID] close|closed;` / `semaphore [ID] set open|closed;` / `semaphore [ID] invert;`
-- *Forks:* `fork [ID] set flip;` / `fork [ID] set straight;` / `fork [ID] set curved;`
-- *Conditional Train:* You can use `train at station [ID]`, `train at sensor [ID]`, `train at fork [ID]`, or `train at semaphore [ID]` instead of a fixed train number to apply actions to the specific train that triggered the event or is located there. (`train at` is an exact one-space token: `train  at` with two spaces is a syntax error.)
+- *Forks:* `fork [ID] set straight;` / `fork [ID] set curved;` / `fork [ID] set <dir>;` / `fork [ID] set flip;` / `fork [ID] flip;` (same behaviour as the console and waypoints: the direction maps to the route leaving towards it and, if there is none, it warns)
+- *Conditional Train:* You can use `train at station [ID]`, `train at sensor [ID]`, `train at fork [ID]`, or `train at semaphore [ID]` instead of a fixed train number to apply actions to the specific train that triggered the event or is located there.
 - If a trigger selector (sensor/fork/semaphore/station) does not exist when it is registered, the trigger warns and is not installed.
+
+**Comments:** `#` starts a line comment anywhere in the language (console, `program { … }`, triggers and scenarios). Everything after the `#` up to the end of the line is ignored.
 
 ### 4. Game & Editor Commands (Console)
 You can type these commands directly into the CLI to manage the game state, cursor, and files.
@@ -154,12 +162,12 @@ You can type these commands directly into the CLI to manage the game state, curs
 - `go next [entityType];` / `go prev [entityType];` - Cycle cursor through entities.
 - `mark [ID];` or `m [ID];` - Save the current cursor position to a mark.
 - `go mark [ID];` or `go m [ID];` - Jump cursor to a previously saved mark.
-- `face [DIR];` - Turn cursor to face a direction (`dir_n`, `dir_s`, `dir_e`, `dir_w`, etc.).
+- `face [DIR];` - Turn cursor to face a direction (`n`, `s`, `e`, `w`, `ne`, `nw`, `se`, `sw`).
 
 **Infrastructure Actions (Direct):**
 You can directly command infrastructure outside of triggers:
 - `semaphore [ID] set open;` / `semaphore [ID] set closed;` / `semaphore [ID] invert;`
-- `fork [ID] set straight;` / `fork [ID] set curved;` / `fork [ID] flip;`
+- `fork [ID] set straight;` / `fork [ID] set curved;` / `fork [ID] set <dir>;` / `fork [ID] set flip;` / `fork [ID] flip;`
 - `signal [ID] set limit [NUM];` / `signal [ID] set mode (max|min);` / `signal [ID] invert;`
 - `station [ID] invert;` - Flip a station to face the opposite direction along the rail (platform side switches, same as Space in STATIONS mode).
 - `sensor [ID] invert;` - Flip a plain sensor's detection direction (same as Space in SENSORS mode).
@@ -189,20 +197,20 @@ You can use `write`, `move`, `del`, or `clear` to script sequential cursor movem
 ### Complete Example
 
 ```letrain
-// Name the station
+# Name the station
 station 1 set name "Central Mine";
 
-// Create the train route
+# Create the train route
 create itinerary "MainRoute" {
-    add station 1 load
-    add station 2 unload
+    add station 1, load
+    add station 2, unload
 }
 
-// Activate the route
+# Activate the route
 assign itinerary "MainRoute" to train 1;
 train 1 set autopilot true;
 
-// Automate the junction for any train stepping on the sensor
+# Automate the junction for any train stepping on the sensor
 sensor 4 on train enter {
     fork 2 set straight;
     semaphore 1 set open;

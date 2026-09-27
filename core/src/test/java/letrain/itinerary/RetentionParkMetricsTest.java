@@ -65,7 +65,7 @@ class RetentionParkMetricsTest {
 
             List<String> errors = model.setProgram("""
                     create itinerary "Ruta" {
-                        add station %d departure 08:05
+                        add station %d, departure 08:05
                         add station %d
                     }
                     assign itinerary "Ruta" to train %d;
@@ -106,7 +106,7 @@ class RetentionParkMetricsTest {
 
             List<String> errors = model.setProgram("""
                     create itinerary "Ruta" {
-                        add station %d arrival 08:05, departure 08:05
+                        add station %d, arrival 08:05, departure 08:05
                         add station %d
                     }
                     assign itinerary "Ruta" to train %d;
@@ -144,7 +144,7 @@ class RetentionParkMetricsTest {
 
             List<String> errors = model.setProgram("""
                     create itinerary "Ruta" {
-                        add sensor %d departure 08:10
+                        add sensor %d, departure 08:10
                         add station %d
                     }
                     assign itinerary "Ruta" to train %d;
@@ -196,7 +196,7 @@ class RetentionParkMetricsTest {
             setTime(8, 0);
             List<String> errors = model.setProgram("""
                     create itinerary "Ruta" {
-                        add station %d departure 08:05
+                        add station %d, departure 08:05
                         add station %d
                     }
                     assign itinerary "Ruta" to train %d;
@@ -229,8 +229,8 @@ class RetentionParkMetricsTest {
 
             List<String> errors = model.setProgram("""
                     create itinerary "Ruta" {
-                        add station %d arrival 22:50, park
-                        add station %d departure 06:00
+                        add station %d, arrival 22:50, park
+                        add station %d, departure 06:00
                         add station %d
                     }
                     assign itinerary "Ruta" to train %d;
@@ -270,7 +270,7 @@ class RetentionParkMetricsTest {
 
             List<String> errors = model.setProgram("""
                     create itinerary "Ruta" {
-                        add station %d arrival 23:50, departure 00:10
+                        add station %d, arrival 23:50, departure 00:10
                         add station %d
                     }
                     assign itinerary "Ruta" to train %d;
@@ -340,7 +340,7 @@ class RetentionParkMetricsTest {
 
             List<String> errors = model.setProgram("""
                     create itinerary "Ruta" {
-                        add station %d park, departure 08:03
+                        add station %d, park, departure 08:03
                         add station %d
                     }
                     assign itinerary "Ruta" to train %d;
@@ -376,7 +376,7 @@ class RetentionParkMetricsTest {
             List<String> errors = model.setProgram("""
                     create itinerary "Ruta" {
                         add station %d
-                        add station %d park
+                        add station %d, park
                     }
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
@@ -406,7 +406,7 @@ class RetentionParkMetricsTest {
             List<String> errors = model.setProgram("""
                     create itinerary "Ruta" {
                         add station %d
-                        add station %d park, departure 08:10
+                        add station %d, park, departure 08:10
                     }
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
@@ -445,7 +445,7 @@ class RetentionParkMetricsTest {
             List<String> errors = model.setProgram("""
                     create itinerary "Ruta" {
                         add station %d
-                        add station %d load
+                        add station %d, load
                     }
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
@@ -479,7 +479,7 @@ class RetentionParkMetricsTest {
             List<String> errors = model.setProgram("""
                     create itinerary "Ruta" {
                         add station %d
-                        add station %d unload
+                        add station %d, unload
                     }
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
@@ -508,7 +508,7 @@ class RetentionParkMetricsTest {
             List<String> errors = model.setProgram("""
                     create itinerary "Ruta" {
                         add station %d
-                        add station %d park
+                        add station %d, park
                         add station %d
                     }
                     assign itinerary "Ruta" to train %d;
@@ -554,7 +554,7 @@ class RetentionParkMetricsTest {
 
             List<String> errors = m.setProgram("""
                     create itinerary "Ruta" {
-                        add station %d arrival 08:05, departure 08:05
+                        add station %d, arrival 08:05, departure 08:05
                         add station %d
                     }
                     assign itinerary "Ruta" to train %d;

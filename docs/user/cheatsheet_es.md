@@ -98,9 +98,9 @@ Si no se incluye una distancia después de un giro, se avanza por defecto un pas
 
 | Entidad | Comando | Ejemplo |
 | :--- | :--- | :--- |
-| **Fork** (Desvíos) | `fork <id> set left;` / `set right;` / `flip;` | `fork 1 flip;` |
+| **Fork** (Desvíos) | `fork <id> set straight;` / `set curved;` / `set <dirección>;` / `flip;` | `fork 1 set curved;` |
 | **Semaphore** (Semáforos) | `semaphore <id> open;` / `close;` / `invert;` | `semaphore 2 invert;` |
-| **Speed Signal** (Velocidad) | `signal <id> limit <número>;` <br> `signal <id> set mode max;` / `set mode min;` <br> `signal <id> invert;` | `signal 3 limit 120;` <br> `signal 3 set mode max;` |
+| **Speed Signal** (Velocidad) | `signal <id> set limit <número>;` <br> `signal <id> set mode max;` / `set mode min;` <br> `signal <id> invert;` | `signal 3 set limit 120;` <br> `signal 3 set mode max;` |
 | **Station** (Estaciones) | `station <id> invert;` | `station 1 invert;` |
 | **Sensor** | `sensor <id> invert;` | `sensor 2 invert;` |
 
@@ -112,13 +112,15 @@ Si no se incluye una distancia después de un giro, se avanza por defecto un pas
 | Comando Base | Acción | Ejemplo |
 | :--- | :--- | :--- |
 | `train <id> couple <dir> [n\|all];` | Engancha vagones en la dirección indicada (`forward`/`fw` o `backward`/`bw`). Si no se indica `n`, engancha todos; `all` es explícito. | `train 1 couple forward 2;` o `train 1 couple backward all;` |
-| `train <id> uncouple <dir> [n\|all];` | Desengancha vagones en la dirección indicada (`forward`/`fw` o `backward`/`bw`); `all` desengancha todos los de ese lado. | `train 1 uncouple backward all;` |
+| `train <id> uncouple <dir> [n\|all];` | Desengancha vagones en la dirección indicada (`forward`/`fw` o `backward`/`bw`); sin número desengancha todos los de ese lado (igual que `couple`), `all` es explícito. | `train 1 uncouple backward 1;` |
 | `train <id> set speed <n>;` | Asigna velocidad. | `train 1 set speed 5;` |
 | `train <id> stop at station <id\|"nombre"> [speed <n>];` | Va a la estación y para en ella; la velocidad va en la orden. | `train 1 stop at station "B" speed 3;` |
 | `train <id> stop at sensor <id\|"nombre"> [speed <n>];` | Va al sensor y para encima de él. | `train 1 stop at sensor 5 speed 2;` |
 | `train <id> stop at end [speed <n>];` | Va al fin de vía y frena en la última vía. | `train 1 stop at end speed 2;` |
 | `train <id> stop when blocked [speed <n>];` | Avanza y para en el primer bloqueo (no reanuda). | `train 1 stop when blocked speed 2;` |
-| `train <id> reverse;` | Invierte la dirección de la marcha. | `train 1 reverse;` |
+| `train <id> reverse;` | Invierte la dirección de la marcha (`invert` es sinónimo). | `train 1 reverse;` |
+| `train <id> stop;` | Frena y desactiva el autopilot. | `train 1 stop;` |
+| `train <id> park;` | Frena, apaga el motor y mantiene el autopilot. | `train 1 park;` |
 | `train <id> set engine on;` / `off;` | Enciende o apaga el motor de la locomotora . | `train 1 set engine on;` |
 | `train <id> set autopilot true;` | Activa el autopiloto. | `train 1 set autopilot true;` |
 | `train <id> load;` / `unload;` | Carga o descarga mercancías (requiere estar en estación). | `train 1 load;` |

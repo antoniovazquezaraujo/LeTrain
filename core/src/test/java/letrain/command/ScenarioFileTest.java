@@ -18,7 +18,7 @@ class ScenarioFileTest {
     @DisplayName("a program with waypoint times round-trips through render/parse and compiles")
     void programWithTimetable_roundTrip() {
         String program = "create itinerary \"r\" {\n"
-                + "  add station 1 arrival 9:20, load, departure 9:30\n}\n";
+                + "  add station 1, arrival 9:20, load, departure 9:30\n}\n";
         String text = ScenarioFile.render(7, List.of("go 0,0; face e; write 1;"), null, program);
 
         ScenarioFile.Scenario s = ScenarioFile.parse(text);

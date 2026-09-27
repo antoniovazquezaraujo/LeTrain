@@ -27,7 +27,7 @@ class BlockTrailingSemicolonTest {
 
     private static final String ITINERARY_BLOCK = """
             create itinerary "x" {
-                add station 1 arrival 08:00, departure 08:05
+                add station 1, arrival 08:00, departure 08:05
                 add station 2
             }""";
 

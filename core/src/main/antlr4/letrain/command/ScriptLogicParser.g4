@@ -40,21 +40,29 @@ bool : TRUE | FALSE ;
 
 trainRef : NUMBER | STRING ;
 
-waypoint : ADD STATION stationRef direction? waypointPlan? SEMI?
-         | ADD SENSOR  sensorRef  direction? waypointPlan? SEMI?
+/**
+ * A waypoint with a plan separates the reference (and its optional direction) from the first plan
+ * item with a comma (U7): `add station 1 ne, arrival 9:00, load, departure 10:30;`. A waypoint
+ * without a plan keeps the bare form: `add station 1;`. There is no legacy comma-less form.
+ */
+waypoint : ADD STATION stationRef direction? (COMMA waypointPlan)? SEMI?
+         | ADD SENSOR  sensorRef  direction? (COMMA waypointPlan)? SEMI?
          ;
 
 /**
- * ADR-022 timetable attributes. Commas are mandatory between the plan items, but the waypoint
- * reference and its direction take no comma. The order is mandatory: `arrival` first, then the
- * actions in execution order, `departure` last. A single `departure` needs no comma either.
+ * ADR-022 timetable attributes. Commas are mandatory between the plan items (the reference block
+ * is the first item). The order is mandatory: `arrival` first, then the actions in execution
+ * order, `departure` last.
  */
 waypointPlan : departureAttr
              | (arrivalAttr | action) (COMMA action)* (COMMA departureAttr)?
              ;
 
-arrivalAttr   : ARRIVAL TIME ;
-departureAttr : DEPARTURE TIME ;
+/** U8: `arrival 9` is 09:00; `arrival 9:20` (TIME) keeps the full form. */
+arrivalAttr   : ARRIVAL waypointTime ;
+departureAttr : DEPARTURE waypointTime ;
+
+waypointTime : TIME | NUMBER ;
 
 stationRef : STRING | NUMBER ;
 sensorRef  : STRING | NUMBER ;
@@ -67,7 +75,7 @@ direction : dir ;
  * before the next action; fork actions force or prepare switches; `couple`/`uncouple` leave or
  * pick up vehicles. Commas are mandatory between actions.
  */
-action : LOAD | UNLOAD | REVERSE | STOP | PARK
+action : LOAD | UNLOAD | INVERT | STOP | PARK
        | WAIT NUMBER
        | SPEED NUMBER
        | coupleAction
@@ -81,6 +89,7 @@ trigger :
     | forkSelector      ON trainSelector trainEvent
     | semaphoreSelector ON trainSelector trainEvent
     | stationSelector   ON (trainSelector trainEvent | trainEvent trainSelector)
+    | trainSelector     ON trainEvent
     | trainSelector     ON (CRASH | CONTACT) (sense)?
     ;
 
@@ -90,7 +99,7 @@ semaphoreSelector : SEMAPHORE NUMBER;
 stationSelector   : STATION NUMBER;
 trainSelector     : TRAIN (NUMBER)?;
 
-trainEvent   : (ENTER | EXIT | COUPLE | UNCOUPLE) (sense)?;
+trainEvent   : (ENTER | EXIT) (sense)?;
 
 commandBlock : LBRACE commandItem* RBRACE;
 
@@ -102,13 +111,17 @@ commandItem : (
     SEMI
     ;
 
-trainExtractor : TRAIN_AT placeSelector;
+/**
+ * `train at <place>` is two tokens (`TRAIN AT`), not a single literal with an exact space: the old
+ * `'train at'` token made `train  at` (two spaces/tab) a syntax error (D3).
+ */
+trainExtractor : TRAIN AT placeSelector;
 placeSelector  : forkSelector | semaphoreSelector | stationSelector | sensorSelector;
 
 semaphoreAction : OPEN | CLOSED | CLOSE | SET semaphoreStatus | INVERT ;
 forkAction      : SET forkDirection | FLIP ;
 engineAction    : SET ENGINE (ON | OFF);
-trainAction     : SET trainSense | ACCELERATE | DECELERATE | SET SPEED? trainSpeed | INVERT | coupleAction | uncoupleAction | SET NAME STRING | LOAD | UNLOAD | engineAction | stopOrder;
+trainAction     : SET trainSense | ACCELERATE | DECELERATE | SET SPEED trainSpeed | INVERT | PARK | STOP | coupleAction | uncoupleAction | SET NAME STRING | LOAD | UNLOAD | engineAction | stopOrder;
 /**
  * Issue #619: one-shot "advance until X and stop" order. The destination is a station or sensor
  * (by number or quoted name), the end of the track, or the first block that stops the train. The

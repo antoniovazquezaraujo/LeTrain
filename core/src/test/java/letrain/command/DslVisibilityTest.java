@@ -294,6 +294,41 @@ class DslVisibilityTest {
         }
 
         @Test
+        @DisplayName("`train N on enter` parses and fires on the sensor event (D3)")
+        void trainOnEnter_parsesAndFires() {
+            String error = run("train 1 on enter { train 1 set speed 3; };");
+
+            assertNull(error, "the train event must parse: " + error);
+            train.notifyEnterSensor(model.getSensor(1), true);
+            assertEquals(3, ((Locomotive) train.getDirectorLinker()).getTargetSpeed(),
+                    "the trigger must fire when the train steps on a sensor");
+        }
+
+        @Test
+        @DisplayName("fork set <direction> in a trigger maps the route like the console (D3)")
+        void forkDirectionInTrigger_mapsRoute() {
+            ForkRailTrack fork = addFork(); // normal W→E, alternative W→S
+            assertFalse(fork.isUsingAlternativeRoute(), "the fork starts on the normal route");
+
+            assertNull(run("sensor 1 on train enter { fork 1 set s; };"));
+            model.getSensor(1).onEnterTrain(train);
+
+            assertTrue(fork.isUsingAlternativeRoute(),
+                    "the direction must map to the alternative route, not flip blindly");
+        }
+
+        @Test
+        @DisplayName("fork set <direction> with no such route warns when the trigger fires (D3)")
+        void forkDirectionWithoutRouteInTrigger_warns() {
+            addFork();
+
+            assertNull(run("sensor 1 on train enter { fork 1 set n; };"));
+            model.getSensor(1).onEnterTrain(train);
+
+            assertTrue(panelWarned("no route towards n"), messages.toString());
+        }
+
+        @Test
         @DisplayName("'train at' with no train at the place names the selector readably (O1)")
         void trainAtWithoutTrain_warnsReadableSelector() {
             // Repro from the review: the notice used to concatenate tokens ("No train at
@@ -382,7 +417,7 @@ class DslVisibilityTest {
 
             List<String> errors = model.setProgram("""
                     create itinerary "y" {
-                        add station 1 stop at sensor 99 speed 2
+                        add station 1, stop at sensor 99 speed 2
                         add station 1
                     }
                     """);
@@ -628,11 +663,33 @@ class DslVisibilityTest {
         @Test
         @DisplayName("lexer errors are reported with line/column too")
         void lexerError_isReported() {
-            List<String> errors = model.setProgram("train 1 set speed 4;\n# comment");
+            // `@` matches no token and, unlike `#`, is not a comment: the lexer rejects the
+            // program.
+            List<String> errors = model.setProgram("train 1 set speed 4;\n@");
 
             assertFalse(errors.isEmpty(), "the lexer error must be reported");
-            assertTrue(errors.stream().anyMatch(e -> e.contains("line 2")), errors.toString());
-            assertEquals(0, ((Locomotive) train.getDirectorLinker()).getTargetSpeed());
+            assertTrue(errors.get(0).contains("line 2:0"), errors.toString());
+            assertEquals(0, ((Locomotive) train.getDirectorLinker()).getTargetSpeed(),
+                    "nothing may execute when a character has no token");
+        }
+
+        @Test
+        @DisplayName("comments start with '#' and are ignored inside a program")
+        void comment_isIgnoredInProgram() {
+            List<String> errors = model.setProgram("train 1 set speed 4;\n# comment");
+
+            assertTrue(errors.isEmpty(), "a comment is not an error: " + errors);
+            assertEquals(4, ((Locomotive) train.getDirectorLinker()).getTargetSpeed(),
+                    "the statement before the comment must run");
+        }
+
+        @Test
+        @DisplayName("comments are ignored in console orders too")
+        void comment_isIgnoredInConsole() {
+            String error = run("train 1 set speed 3; # raise it later");
+
+            assertNull(error, error);
+            assertEquals(3, ((Locomotive) train.getDirectorLinker()).getTargetSpeed());
         }
 
         @Test
@@ -693,11 +750,11 @@ class DslVisibilityTest {
         }
 
         @Test
-        @DisplayName("'train  at' with two spaces is a visible syntax error (exact-token gap)")
-        void doubleSpaceTrainAt_isVisibleSyntaxError() {
+        @DisplayName("'train  at' with two spaces parses now (D3: TRAIN AT is two tokens)")
+        void doubleSpaceTrainAt_parses() {
             String error = run("sensor 1 on train enter { train  at station 1 set speed 0; };");
 
-            assertNotNull(error, "the exact 'train at' token gap must be a visible error");
+            assertNull(error, "the extra space must not break the order: " + error);
         }
 
         @Test

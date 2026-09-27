@@ -63,8 +63,6 @@ public class AutoPilotImpl implements AutoPilot {
     // survives a reload; the command journal keeps the order so a replay can start it again).
     /** Active or last finished mission. */
     private transient TrainMission mission;
-    /** The mission reversed the train at start because the destination was only reachable back. */
-    private transient boolean missionReversed;
     /** Last plan failure was because the destination is physically behind the current sense. */
     private transient boolean missionPlanFailedBehind;
     /** Console sink for mission messages; null in scripts (log only). */
@@ -742,9 +740,7 @@ public class AutoPilotImpl implements AutoPilot {
             train.getSafetyManager().cancelBlockWait();
         }
 
-        boolean reverse = false;
         currentRoute = List.of();
-        missionReversed = false;
         if (m.kind() == TrainMission.Kind.STATION || m.kind() == TrainMission.Kind.SENSOR) {
             if (getTrainCurrentSegment() == null || getMissionTargetSegment(m) == null) {
                 m.fail();
@@ -753,18 +749,23 @@ public class AutoPilotImpl implements AutoPilot {
             }
             if (!planMissionRoute(m)) {
                 m.fail();
-                if (m.isItineraryManeuver() && missionPlanFailedBehind) {
-                    warnMission("Train " + train.getId() + ": no route to " + m.description()
-                            + " from the current sense; add 'reverse' to the itinerary");
-                } else if (m.isItineraryManeuver()) {
-                    warnMission("Train " + train.getId() + ": no route to " + m.description());
+                if (missionPlanFailedBehind) {
+                    // U5b: no context auto-reverses. The order names the explicit fix for the
+                    // context: the itinerary author writes the action, the console player turns
+                    // the locomotive first.
+                    if (m.isItineraryManeuver()) {
+                        warnMission("Train " + train.getId() + ": no route to " + m.description()
+                                + " from the current sense; add 'reverse' to the itinerary");
+                    } else {
+                        warnMission("Train " + train.getId() + ": no route to " + m.description()
+                                + " from the current sense; turn the train with 'invert'/'reverse'"
+                                + " first");
+                    }
                 } else {
-                    warnMission("Train " + train.getId() + ": no route to " + m.description()
-                            + " in either direction");
+                    warnMission("Train " + train.getId() + ": no route to " + m.description());
                 }
                 return false;
             }
-            reverse = missionReversed;
         } else if (m.kind() == TrainMission.Kind.END_OF_TRACK) {
             if (walkRailsToEnd(travelDir()) < 0) {
                 m.fail();
@@ -786,9 +787,6 @@ public class AutoPilotImpl implements AutoPilot {
             ensureForkRoute(currentRoute.get(0), currentRoute.get(1));
         }
         train.setSpeed(desired);
-        if (reverse) {
-            train.reverse();
-        }
         applyMissionStopPlan();
         if (m.kind() == TrainMission.Kind.WHEN_BLOCKED && train.getSpeed() == 0
                 && train.getSafetyManager() != null
@@ -876,9 +874,11 @@ public class AutoPilotImpl implements AutoPilot {
 
     /**
      * Plans the route to a station/sensor. The physical walk decides first (the destination may be
-     * inside the current segment, where A* cannot tell the sense): ahead → forward; only behind →
-     * the order reverses once. When neither walk sees the destination, A* decides trusting that
-     * switches will be oriented on the way.
+     * inside the current segment, where A* cannot tell the sense): ahead → forward. A destination
+     * only behind the current sense is a plan failure (U5b): no context auto-reverses, so the
+     * caller warns the explicit fix (a waypoint {@code reverse}/{@code invert} action or a direct
+     * {@code train N invert;} before repeating the order). When neither walk sees the destination,
+     * A* decides trusting that switches will be oriented on the way.
      */
     private boolean planMissionRoute(TrainMission m) {
         ensurePathfinder();
@@ -890,8 +890,6 @@ public class AutoPilotImpl implements AutoPilot {
         }
         RailTrack targetTrack = missionTargetTrack(m);
         Dir dir = travelDir();
-        // Itinerary maneuvers never auto-reverse: the author writes the 'reverse' explicitly.
-        boolean allowReverse = !m.isItineraryManeuver();
         boolean sameSegment = currentSeg.equals(targetSeg);
         boolean ahead =
                 targetTrack != null && dir != null && walkRailsToTrack(targetTrack, dir) >= 0;
@@ -916,17 +914,9 @@ public class AutoPilotImpl implements AutoPilot {
             // beyond a switch it would have to orient): fall through so the order fails loudly
             // instead of starting a mission that cannot be followed (review m3).
         }
-        if (allowReverse && behind) {
-            currentRoute = pathfinder.find(currentSeg,
-                    Optional.ofNullable(oppositePort(currentSeg)), targetSeg, Optional.empty());
-            if (!currentRoute.isEmpty() || sameSegment) {
-                missionReversed = true;
-                return true;
-            }
-        }
-        if (!allowReverse && behind) {
+        if (behind) {
             // The destination is physically behind the current sense (inside the same segment A*
-            // cannot tell): an itinerary maneuver needs an explicit 'reverse' (ADR-022 phase 2f).
+            // cannot tell): fail the plan so the user gets the explicit-turn notice (U5b).
             missionPlanFailedBehind = true;
             currentRoute = List.of();
             return false;
@@ -935,14 +925,6 @@ public class AutoPilotImpl implements AutoPilot {
             currentRoute = pathfinder.find(currentSeg,
                     Optional.ofNullable(getTrainExitPort(currentSeg)), targetSeg, Optional.empty());
             if (!currentRoute.isEmpty()) {
-                return true;
-            }
-        }
-        if (allowReverse) {
-            currentRoute = pathfinder.find(currentSeg,
-                    Optional.ofNullable(oppositePort(currentSeg)), targetSeg, Optional.empty());
-            if (!currentRoute.isEmpty()) {
-                missionReversed = true;
                 return true;
             }
         }
@@ -1238,29 +1220,6 @@ public class AutoPilotImpl implements AutoPilot {
     private Dir travelDir() {
         Linker head = train != null ? train.getPhysicalFront() : null;
         return head != null ? head.getRealDir() : null;
-    }
-
-    /** The other port of the current segment (the one not used by the current sense). */
-    private Port oppositePort(Segment seg) {
-        if (seg == null) {
-            return null;
-        }
-        var ports = seg.getPorts();
-        if (ports == null) {
-            return null;
-        }
-        Port first = ports.getFirst();
-        Port second = ports.getSecond();
-        Port exit = getTrainExitPort(seg);
-        if (exit != null) {
-            if (first != null && first.getNode().equals(exit.getNode())) {
-                return second;
-            }
-            if (second != null && second.getNode().equals(exit.getNode())) {
-                return first;
-            }
-        }
-        return second != null ? second : first;
     }
 
     private void ensurePathfinder() {

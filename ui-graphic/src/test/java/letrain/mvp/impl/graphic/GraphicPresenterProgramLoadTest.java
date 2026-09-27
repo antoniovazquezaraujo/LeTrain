@@ -33,7 +33,7 @@ class GraphicPresenterProgramLoadTest {
 
         Path file = Files.createTempFile("program", ".txt");
         String program = "create itinerary \"r\" {\n"
-                + "  add station 1 arrival 9:20, load, departure 9:30\n}\n";
+                + "  add station 1, arrival 9:20, load, departure 9:30\n}\n";
         Files.writeString(file, program);
         try {
             presenter.onLoadCommands(file.toFile());
