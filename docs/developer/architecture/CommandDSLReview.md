@@ -259,6 +259,8 @@ verde en `mvn test`.
   Incluirá las decisiones **U1–U8** (§7b) una vez confirmadas.
 - **D4. Casos de error, uno a uno** — PENDIENTE.
   Recorrer la lista de §4 y decidir el comportamiento esperado de cada caso.
+  Pendiente detectado en la verificación del lote 2: el diagnóstico de `arrival 25:00`
+  («extraneous input ':'») ancla línea pero explica poco; revisar aquí.
 
 ## 7b. Decisiones de sintaxis propuestas (anotadas por el usuario, 2026-09-26)
 
@@ -313,7 +315,8 @@ política de mayúsculas (D2).
     sensor/SpeedSignal → D2/D3); bordes cosméticos del canal (aviso invisible en headless;
     título «Command notice» durante replay) → segunda iteración si molesta.
 - **Lote 2 — Sintaxis** (U1–U3, U5b, U6, U7, U8 + limpieza de sintaxis muerta + ayuda
-  validada): **en marcha** (rama `feat/dsl-syntax` desde `ddd8c07a`).
-- **Lote 3 — Unificación consola ↔ programa** (D2; U4 depende de la política de
-  mayúsculas): pendiente.
+  validada): **mergeado** en `develop` (PR #656, merge `0420b3a8`; 1036 tests; CI verde).
+- **Lote 3 — Unificación consola ↔ programa** (D2): **en marcha** (rama
+  `feat/dsl-unification`). Incluye el arreglo de `create`+`assign` en consola (#632); la
+  política de mayúsculas (y U4) queda pendiente de decisión del usuario.
 - **Lote 4 — Casos de error restantes** (D4): pendiente.
