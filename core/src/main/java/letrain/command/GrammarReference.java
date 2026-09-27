@@ -256,6 +256,7 @@ public class GrammarReference {
         snOn.add(new Node("exit", "sensor # on train exit {\n  \n}"));
         snOn.add(new Node("enter fwd", "sensor # on train enter forward {\n  \n}"));
         snOn.add(new Node("exit bwd", "sensor # on train exit backward {\n  \n}"));
+        snOn.add(new Node("enter by name", "sensor \"Norte\" on train enter {\n  \n}"));
         sensor.add(snOn);
         root.add(sensor);
 
@@ -265,6 +266,7 @@ public class GrammarReference {
         stOn.add(new Node("exit", "station # on train exit {\n  \n}"));
         stOn.add(new Node("enter fwd", "station # on train enter forward {\n  \n}"));
         stOn.add(new Node("exit bwd", "station # on train exit backward {\n  \n}"));
+        stOn.add(new Node("enter by name", "station \"Central\" on train enter {\n  \n}"));
         station.add(stOn);
         root.add(station);
 
@@ -323,6 +325,8 @@ public class GrammarReference {
         Node trainAt = new Node("train at");
         trainAt.add(new Node("station", "train at station # stop;"));
         trainAt.add(new Node("sensor", "train at sensor # stop;"));
+        trainAt.add(new Node("station by name", "train at station \"Central\" stop;"));
+        trainAt.add(new Node("sensor by name", "train at sensor \"Norte\" stop;"));
         trainAt.add(new Node("fork", "train at fork # stop;"));
         trainAt.add(new Node("semaphore", "train at semaphore # stop;"));
         root.add(trainAt);

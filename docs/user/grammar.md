@@ -20,6 +20,13 @@ The channel is **contextual**:
 
 The log remains traces only: the warnings you see never depend on it.
 
+## 🔤 Keywords and names: strict case
+
+The language is **case-sensitive in every entry point** (console, triggers and `program { ... }`). A program runs **verbatim**: nothing is lowercased, neither keywords nor strings.
+
+- **Keywords are strictly lowercase** (`train`, `sensor`, `create`, `assign`, `speed`, `wait`…). `TRAIN 1 set speed 3;` is a syntax error with line/column in the console and inside `program { ... }`; a program is checked before executing, so a wrong-case keyword rejects the whole text and **nothing runs** (the previous automation stays applied).
+- **Names keep their case and are matched exactly**: `station 1 set name "Central";` stores `Central`, and `station "Central"` is not the same as `station "central"`. A wrong-case reference is not found, **warns** (`not found`) and does nothing: the itinerary is not created, the trigger is not installed, the order is ignored. Always quote the name.
+
 ## ⚙️ Language Structure
 
 The language supports three main types of statements: direct commands, itinerary creation/assignment (Autopilot), and event-triggered blocks (*triggers*).
@@ -125,7 +132,8 @@ Responds to game events in real-time.
 ```
 
 **Selectors:**
-- `sensor [ID]`, `fork [ID]`, `semaphore [ID]`, `station [ID]`, `train [ID]` (or generic `train`).
+- `sensor [ID|"name"]`, `fork [ID]`, `semaphore [ID]`, `station [ID|"name"]`, `train [ID]` (or generic `train`).
+- Only stations and sensors have names: `fork`, `semaphore` and `signal` selectors stay numeric. A named selector is resolved when the trigger is registered; a wrong/unknown name warns and the trigger is not installed.
 
 **Events:**
 - Trains: `on train enter`, `on train exit` (optionally with direction `forward`/`backward`).
@@ -135,7 +143,7 @@ Responds to game events in real-time.
 **Special actions inside blocks (must end with `;`):**
 - *Semaphores:* `semaphore [ID] open;` / `semaphore [ID] close|closed;` / `semaphore [ID] set open|closed;` / `semaphore [ID] invert;`
 - *Forks:* `fork [ID] set straight;` / `fork [ID] set curved;` / `fork [ID] set <dir>;` / `fork [ID] set flip;` / `fork [ID] flip;` (same behaviour as the console and waypoints: the direction maps to the route leaving towards it and, if there is none, it warns)
-- *Conditional Train:* You can use `train at station [ID]`, `train at sensor [ID]`, `train at fork [ID]`, or `train at semaphore [ID]` instead of a fixed train number to apply actions to the specific train that triggered the event or is located there.
+- *Conditional Train:* You can use `train at station [ID|"name"]`, `train at sensor [ID|"name"]`, `train at fork [ID]`, or `train at semaphore [ID]` instead of a fixed train number to apply actions to the specific train that triggered the event or is located there. The place is resolved when the action runs; an unknown name warns and nothing runs.
 - If a trigger selector (sensor/fork/semaphore/station) does not exist when it is registered, the trigger warns and is not installed.
 
 **Comments:** `#` starts a line comment anywhere in the language (console, `program { … }`, triggers and scenarios). Everything after the `#` up to the end of the line is ignored.
@@ -198,13 +206,15 @@ You can use `write`, `move`, `del`, or `clear` to script sequential cursor movem
 ### Complete Example
 
 ```letrain
-# Name the station
+# Name the stations and the entry sensor
 station 1 set name "Central Mine";
+station 2 set name "Harbor";
+sensor 4 set name "Approach";
 
 # Create the train route
 create itinerary "MainRoute" {
-    add station 1, load
-    add station 2, unload
+    add station "Central Mine", load
+    add station "Harbor", unload
 }
 
 # Activate the route
@@ -212,7 +222,7 @@ assign itinerary "MainRoute" to train 1;
 train 1 set autopilot true;
 
 # Automate the junction for any train stepping on the sensor
-sensor 4 on train enter {
+sensor "Approach" on train enter {
     fork 2 set straight;
     semaphore 1 set open;
 }
