@@ -731,7 +731,10 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
         }
         if (!itineraryProblems.isEmpty()) {
             // D1: a waypoint with an unknown destination used to be dropped in silence and the
-            // plan ran with a missing stop. Reject the whole itinerary instead.
+            // plan ran with a missing stop. Reject the whole itinerary instead. A rejected
+            // (re)definition also retires any previous definition of that name, so a later
+            // `assign` warns "not found" instead of silently assigning a stale plan.
+            itineraries.remove(name);
             warnUser("Itinerary", "Itinerary '" + name + "' not created: "
                     + String.join("; ", itineraryProblems));
         } else if (currentItinerary.isValid()) {
@@ -739,6 +742,9 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             log.info("[DSL] Created itinerary '{}' with {} waypoints", name,
                     currentItinerary.waypoints().size());
         } else {
+            // A definition with fewer than two waypoints is rejected too: it retires the previous
+            // plan under that name (same rule as the problem rejection above).
+            itineraries.remove(name);
             warnUser("Itinerary",
                     "Itinerary '" + name + "' is invalid: an itinerary needs at least 2 waypoints");
         }

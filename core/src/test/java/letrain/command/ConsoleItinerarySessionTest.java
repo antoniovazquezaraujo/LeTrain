@@ -133,6 +133,43 @@ class ConsoleItinerarySessionTest {
     }
 
     @Test
+    @DisplayName("a rejected redefinition retires the previous definition (no stale plan)")
+    void rejectedRedefinition_retiresThePreviousDefinition() {
+        assertNull(console(CREATE), "the first definition must be accepted");
+
+        String rejected = """
+                create itinerary "c" {
+                    add station 99
+                    add station 2
+                }""";
+        assertNull(console(rejected));
+        assertTrue(model.getCommandNotice().contains("not created"),
+                "the redefine must warn: " + model.getCommandNotice());
+
+        assertNull(console(ASSIGN));
+        assertTrue(model.getCommandNotice().contains("Itinerary 'c' not found"),
+                "the old plan must not stay assignable: " + model.getCommandNotice());
+        assertTrue(model.getTrainFromLocomotiveId(1).getAutopilot().itinerary().isEmpty(),
+                "nothing may be assigned after the reject");
+    }
+
+    @Test
+    @DisplayName("a redefinition with fewer than two waypoints retires the previous definition too")
+    void invalidRedefinition_retiresThePreviousDefinition() {
+        assertNull(console(CREATE), "the first definition must be accepted");
+
+        assertNull(console("create itinerary \"c\" { add station 1 }"));
+        assertTrue(panelMessages.stream().anyMatch(m -> m.contains("invalid")),
+                "the redefine must warn (long notice -> panel): " + panelMessages);
+
+        assertNull(console(ASSIGN));
+        assertTrue(model.getCommandNotice().contains("Itinerary 'c' not found"),
+                "the old plan must not stay assignable: " + model.getCommandNotice());
+        assertTrue(model.getTrainFromLocomotiveId(1).getAutopilot().itinerary().isEmpty(),
+                "nothing may be assigned after the reject");
+    }
+
+    @Test
     @DisplayName("the shared manager keeps the D1 channels: a long notice opens the panel")
     void longNotice_stillOpensThePanel() {
         // Two unknown destinations: the combined notice is over the command-bar limit.

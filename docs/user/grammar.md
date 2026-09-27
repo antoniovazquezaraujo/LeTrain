@@ -111,7 +111,7 @@ create itinerary "CoalRoute" {
 **Assign and Activate:**
 - `assign itinerary "CoalRoute" to train 1;`
 - `train 1 set autopilot true;`
-- From the **console** the definitions live in the session: `create` the itinerary in one line and `assign` it in another (or both in the same line). The registry belongs to the current world, so an undo/load/scenario replay that swaps the world starts empty. Only itineraries assigned to a train are stored in the savegame; a definition that was never assigned is a session artifact.
+- From the **console** the definitions live in the session: `create` the itinerary in one line and `assign` it in another (or both in the same line). The registry belongs to the current world, so an undo/load/scenario replay that swaps the world starts empty. Only itineraries assigned to a train are stored in the savegame; a definition that was never assigned is a session artifact. A new `create` replaces the previous definition of a name **only when it is accepted**: a rejected `create` (unknown destination, out-of-range time, fewer than two waypoints) **retires** the previous definition, so a later `assign` warns `Itinerary 'x' not found` instead of silently assigning a stale plan.
 
 ### 3. Event-Triggered Automation (Triggers)
 Responds to game events in real-time.
