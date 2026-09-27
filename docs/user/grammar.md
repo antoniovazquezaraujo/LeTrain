@@ -6,7 +6,7 @@ LeTrain includes its own lexer/parser (based on ANTLR4) that allows you to autom
 
 **"Every problem warns; success stays silent."** Language problems always reach the player's visible channel (never only the log):
 
-- A **syntax error** is shown with line/column and **executes nothing**. Inside `program { ... }` the whole program is rejected (the previous one stays applied); in the console, that single order does not run.
+- A **syntax error** is shown with the failing position (column on the console; line:column inside `program { ... }`) and **executes nothing**: inside `program { ... }` the whole program is rejected (the previous one stays applied); in the console, that single order does not run.
 - A **semantic rejection** (unknown entity, unknown waypoint destination, mission with no route…) also warns. An itinerary with an unknown destination is **not created**: a plan missing a stop never runs.
 - A **mechanical adjustment** warns before it is applied (e.g. a speed outside `0..10` is clamped and the applied value is reported).
 - When a **savegame is loaded**, its stored program is re-applied. If it no longer parses, the rejection is reported in the message panel when the load finishes (it does not stay in the log) and the text is **kept** in the editor, marked as not applied, so it can be fixed. The same panel receives every problem of the re-applied program (unknown entity, rejected itinerary…).
@@ -24,7 +24,7 @@ The log remains traces only: the warnings you see never depend on it.
 
 The language is **case-sensitive in every entry point** (console, triggers and `program { ... }`). A program runs **verbatim**: nothing is lowercased, neither keywords nor strings.
 
-- **Keywords are strictly lowercase** (`train`, `sensor`, `create`, `assign`, `speed`, `wait`…). `TRAIN 1 set speed 3;` is a syntax error with line/column in the console and inside `program { ... }`; a program is checked before executing, so a wrong-case keyword rejects the whole text and **nothing runs** (the previous automation stays applied).
+- **Keywords are strictly lowercase** (`train`, `sensor`, `create`, `assign`, `speed`, `wait`…). `TRAIN 1 set speed 3;` is a syntax error (column on the console, line:column inside `program { ... }`); a program is checked before executing, so a wrong-case keyword rejects the whole text and **nothing runs** (the previous automation stays applied).
 - **Names keep their case and are matched exactly**: `station 1 set name "Central";` stores `Central`, and `station "Central"` is not the same as `station "central"`. A wrong-case reference is not found, **warns** (`not found`) and does nothing: the itinerary is not created, the trigger is not installed, the order is ignored. Always quote the name.
 
 ## ⚙️ Language Structure

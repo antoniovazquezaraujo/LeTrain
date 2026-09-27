@@ -6,7 +6,7 @@ LeTrain incluye su propio analizador léxico/sintáctico (basado en ANTLR4) que 
 
 **«Todo problema avisa; el éxito calla»**. Los problemas del lenguaje llegan siempre al canal visible del jugador (nunca solo al log):
 
-- Un **error de sintaxis** se muestra con línea/columna y **no ejecuta nada**. Dentro de `program { ... }` el programa completo se rechaza (el anterior sigue aplicado); en la consola, la orden concreta no se ejecuta.
+- Un **error de sintaxis** se muestra con la posición del fallo (columna en la consola; línea:columna dentro de `program { ... }`) y **no ejecuta nada**: dentro de `program { ... }` el programa completo se rechaza (el anterior sigue aplicado); en la consola, la orden concreta no se ejecuta.
 - Un **rechazo semántico** (entidad inexistente, destino de waypoint desconocido, misión sin ruta…) también avisa. Un itinerario con un destino desconocido **no se crea**: no se ejecuta un plan al que le falta una parada.
 - Un **ajuste mecánico** avisa antes de aplicarse (p. ej. una velocidad fuera de `0..10` se recorta y se dice cuál se aplicó).
 - Al **cargar una partida**, su programa guardado se re-aplica. Si ya no se parsea, el rechazo avisa en el panel al terminar la carga (no se queda solo en el log) y el texto **se conserva** en el editor marcado como no aplicado, para poder corregirlo. Ese mismo panel recibe todos los problemas del programa re-aplicado (entidad inexistente, itinerario rechazado…).
@@ -24,7 +24,7 @@ El log sigue siendo solo trazas: los avisos que ves nunca dependen de él.
 
 El lenguaje es **sensible a mayúsculas en todos los puntos de entrada** (consola, triggers y `program { ... }`). Un programa se ejecuta **tal cual**: no se pasa nada a minúsculas, ni las keywords ni los strings.
 
-- **Las keywords son estrictamente minúsculas** (`train`, `sensor`, `create`, `assign`, `speed`, `wait`…). `TRAIN 1 set speed 3;` es un error de sintaxis con línea/columna en la consola y dentro de `program { ... }`; el programa se valida antes de ejecutar, así que una keyword con mayúsculas rechaza el texto completo y **no se ejecuta nada** (la automatización anterior sigue aplicada).
+- **Las keywords son estrictamente minúsculas** (`train`, `sensor`, `create`, `assign`, `speed`, `wait`…). `TRAIN 1 set speed 3;` es un error de sintaxis (columna en la consola; línea:columna dentro de `program { ... }`); el programa se valida antes de ejecutar, así que una keyword con mayúsculas rechaza el texto completo y **no se ejecuta nada** (la automatización anterior sigue aplicada).
 - **Los nombres conservan su caja y se buscan exactos**: `station 1 set name "Central";` guarda `Central`, y `station "Central"` no es lo mismo que `station "central"`. Una referencia con la caja equivocada no se encuentra, **avisa** (`not found`) y no hace nada: el itinerario no se crea, el trigger no se instala, la orden se ignora. Entrecomilla siempre el nombre.
 
 ## ⚙️ Estructura del Lenguaje
