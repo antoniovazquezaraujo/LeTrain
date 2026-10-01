@@ -62,6 +62,7 @@ Bienvenido a la documentación técnica de **LeTrain**. Esta wiki está diseñad
 - [[adr/ADR-021-Model-Decomposition-Strategy|ADR-021: Estrategia de Descomposición de Model.java]]
 - [[adr/ADR-022-Game-Time|ADR-022: Tiempo de Juego (Reloj, Día/Noche y Horarios)]]
 - [[adr/ADR-023-Soundscape-Isolation|ADR-023: Decorado Sonoro como Componente Aislado]]
+- [[adr/ADR-028-Sound-Packs-Externos-Cifrados|ADR-028: Packs de Sonido Externos Cifrados (contenido propietario bajo EULA)]]
 
 ## 📦 Release y Distribución
 - [[release/Release_Process|Proceso de Release y Despliegue]]
