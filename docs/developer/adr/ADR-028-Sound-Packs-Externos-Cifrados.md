@@ -39,6 +39,11 @@
   - **Objetivo**: encarecer la extracción **casual** (abrir el pack, sacar los WAV y reutilizarlos)
     y detectar manipulación. La técnica **complementa** al acuerdo de licencia/EULA; **no lo
     sustituye**. Frente a un atacante motivado, la protección real es el contrato.
+  - **Algoritmo público por diseño (Kerckhoffs).** La seguridad descansa en la clave y en los
+    fragmentos generados por release, no en el secreto del algoritmo, del formato ni del código de
+    las herramientas. El empaquetador es software abierto y auditable; conocerlo no permite
+    descifrar sin la clave. El objetivo real de un atacante es el binario de release, que es quien
+    necesariamente sabe descifrar.
 
 ## Decisión (propuesta)
 
@@ -92,6 +97,9 @@
      - cada pieza va **codificada** (rotaciones/XOR/máscaras derivadas de otras constantes del
        propio código), nunca como bytes de clave reconocibles;
      - el **layout es aleatorio por release** y se intercalan **constantes señuelo**;
+     - el empaquetador **LeCript** (punto 5) es público y **nunca incrusta la clave**: la recibe
+       en runtime por entorno o `--key-file` (punto 6), igual que el build de release; N1 aplica
+       también a la herramienta;
      - el repositorio público no contiene la clave ni fragmentos reales: sin secreto se compila
        igual y el soporte de pack queda deshabilitado con un aviso (el repo se compila y testea
        sin secretos).
@@ -153,21 +161,22 @@
    - **Módulo nuevo `soundpack`**: lector del contenedor, descifrado y ensamblado de fragmentos +
      KDF (punto 3). Depende de `soundscape` (la interfaz) y de la JDK (JCA); **no** conoce el juego
      ni las UIs. Es el único punto con criptografía.
-   - **`soundpack-tool`** (módulo aparte, no empaquetado con el juego): empaquetador y validador
-     CLI; comparte las constantes del formato con `soundpack`.
+   - **`lecript`** (LeCript; módulo aparte, no empaquetado con el juego, artefacto
+     `JLeTrain-lecript`): empaquetador y validador CLI; comparte las constantes del formato con
+     `soundpack`.
    - **`game-audio`**: glue; decide si hay pack (configuración), construye
      `SoundPackProvider` + `FallbackSoundProvider` y los inyecta en el player. Las UIs siguen sin
      depender de `soundscape` (ADR-025).
 
-6. **Herramienta CLI de empaquetado**:
-   - `soundpack-tool package --input <carpeta WAV> --manifest <manifiesto> --out <pack.ltsp>`,
+6. **Herramienta CLI de empaquetado (LeCript, `lecript`)**:
+   - `lecript package --input <carpeta WAV> --manifest <manifiesto> --out <pack.ltsp>`,
      con la clave por entorno o `--key-file` (nunca en git). El empaquetador **genera el
      `kdfSalt`** (32 B `SecureRandom`) y lo escribe en el manifiesto.
    - El manifiesto declara por entrada: ID lógico, fichero, procedencia/licencia y, opcionalmente,
      ejes de ADR-024 (`character`, `intensity`, `distance`, `tone`, `modulation`).
    - Validaciones: WAV canónico 44.1 kHz mono 16 bits (o conversión explícita), IDs duplicados,
      nonces únicos, orden determinista de entradas.
-   - `soundpack-tool validate` verifica el pack con la misma KDF (secretos + `kdfSalt` del
+   - `lecript validate` verifica el pack con la misma KDF (secretos + `kdfSalt` del
      manifiesto) y, opcionalmente, lo cruza con un estilo `.sound`, listando los materiales del
      estilo que no están en el pack (caerán a classpath).
 
@@ -235,6 +244,10 @@
   ficheros; no cumple el objetivo de disuasión ni aporta integridad.
 - **Contenedor ofuscado sin cifrar** (ZIP con nombres opacos, XOR, cabeceras falsas): se revienta
   con `unzip` o un editor hexadecimal; no protege nada y complica el formato.
+- **Ocultar la herramienta (código cerrado)**: descartado. Sería seguridad por obscuridad: la
+  herramienta no contiene la clave y el atacante puede atacar directamente el binario de release
+  (decompilable). Además impediría al licenciante auditar la herramienta que procesa sus
+  grabaciones, y complicaría portabilidad y mantenimiento.
 - **Cifrado en nativo / JNI** (nivel N4, C++/Rust): eleva el coste de extracción, pero rompe el
   "Java puro", multiplica plataformas y build para un beneficio marginal frente a la decompilación
   del resto.
@@ -251,7 +264,7 @@
 ## Plan por fases
 
 1. **Este PR: solo ADR-028** (documentación; sin código ni assets).
-2. `soundpack` + `soundpack-tool`: formato, lector/escritor, CLI, **generador de fragmentos de
+2. `soundpack` + `lecript` (LeCript): formato, lector/escritor, CLI, **generador de fragmentos de
    clave en el build de release** (`target/generated-sources`), **KDF HMAC-SHA256** e **higiene de
    memoria**, con tests con WAVs sintéticos y claves de prueba (ALEX/BICHO).
 3. Seam en `soundscape`: `SoundProvider`, classpath, fallback e inyección en `AmbientPlayer`, con
@@ -259,7 +272,7 @@
 4. Integración en `game-audio`: configuración, detección de pack, build de release (environment
    protegido y **ofuscación N2**) y flujo de aviso/EULA (a decidir en las preguntas abiertas).
 5. Pack real (fuera del repo) solo tras firmar el acuerdo: empaquetado, validación con
-   `soundpack-tool validate` y publicación.
+   `lecript validate` y publicación.
 6. Futuro: watermarking por usuario, sonidos de tren vía ADR-026 y hosting con control de acceso.
    Como documentación posterior quedan la plantilla de EULA y la guía de autoría/empaquetado.
 
