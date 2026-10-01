@@ -154,3 +154,5 @@ Once named, **you can use the name enclosed in quotes** (or without quotes if it
 - `train "HighSpeed" set engine on;`
 - `go st "Central";`
 - `clear tr "HighSpeed";`
+
+> **Strict case**: keywords are always lowercase (`train`, `station`, `sensor`…), and names are matched **exactly** as written: `"Central"` and `"central"` are different names. A wrong-case reference warns `not found` and does nothing. Inside `program { ... }` the text runs verbatim, strings included — there is no lowercasing.

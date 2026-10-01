@@ -6,7 +6,7 @@ LeTrain incluye su propio analizador léxico/sintáctico (basado en ANTLR4) que 
 
 **«Todo problema avisa; el éxito calla»**. Los problemas del lenguaje llegan siempre al canal visible del jugador (nunca solo al log):
 
-- Un **error de sintaxis** se muestra con línea/columna y **no ejecuta nada**. Dentro de `program { ... }` el programa completo se rechaza (el anterior sigue aplicado); en la consola, la orden concreta no se ejecuta.
+- Un **error de sintaxis** se muestra con la posición del fallo (columna en la consola; línea:columna dentro de `program { ... }`) y **no ejecuta nada**: dentro de `program { ... }` el programa completo se rechaza (el anterior sigue aplicado); en la consola, la orden concreta no se ejecuta.
 - Un **rechazo semántico** (entidad inexistente, destino de waypoint desconocido, misión sin ruta…) también avisa. Un itinerario con un destino desconocido **no se crea**: no se ejecuta un plan al que le falta una parada.
 - Un **ajuste mecánico** avisa antes de aplicarse (p. ej. una velocidad fuera de `0..10` se recorta y se dice cuál se aplicó).
 - Al **cargar una partida**, su programa guardado se re-aplica. Si ya no se parsea, el rechazo avisa en el panel al terminar la carga (no se queda solo en el log) y el texto **se conserva** en el editor marcado como no aplicado, para poder corregirlo. Ese mismo panel recibe todos los problemas del programa re-aplicado (entidad inexistente, itinerario rechazado…).
@@ -19,6 +19,13 @@ El canal es **contextual**:
 - Los **eventos asíncronos** (programa al cargar/aplicar, misiones de itinerario, triggers al dispararse) avisan siempre en el **panel**, como antes.
 
 El log sigue siendo solo trazas: los avisos que ves nunca dependen de él.
+
+## 🔤 Keywords y nombres: mayúsculas estrictas
+
+El lenguaje es **sensible a mayúsculas en todos los puntos de entrada** (consola, triggers y `program { ... }`). Un programa se ejecuta **tal cual**: no se pasa nada a minúsculas, ni las keywords ni los strings.
+
+- **Las keywords son estrictamente minúsculas** (`train`, `sensor`, `create`, `assign`, `speed`, `wait`…). `TRAIN 1 set speed 3;` es un error de sintaxis (columna en la consola; línea:columna dentro de `program { ... }`); el programa se valida antes de ejecutar, así que una keyword con mayúsculas rechaza el texto completo y **no se ejecuta nada** (la automatización anterior sigue aplicada).
+- **Los nombres conservan su caja y se buscan exactos**: `station 1 set name "Central";` guarda `Central`, y `station "Central"` no es lo mismo que `station "central"`. Una referencia con la caja equivocada no se encuentra, **avisa** (`not found`) y no hace nada: el itinerario no se crea, el trigger no se instala, la orden se ignora. Entrecomilla siempre el nombre.
 
 ## ⚙️ Estructura del Lenguaje
 
@@ -109,6 +116,7 @@ create itinerary "RutaCarbon" {
 **Asignar y Activar:**
 - `assign itinerary "RutaCarbon" to train 1;`
 - `train 1 set autopilot true;`
+- Desde la **consola** las definiciones viven en la sesión: puedes `create` el itinerario en una línea y `assign` en otra (o ambos en la misma). El registro pertenece al mundo vigente, así que un undo/load/replay de escenario que cambie el mundo empieza vacío. Solo los itinerarios asignados a un tren se guardan en la partida; una definición que nunca se asignó es un artefacto de sesión. Un `create` nuevo sustituye la definición previa de un nombre **solo si se acepta**: un `create` rechazado (destino desconocido, hora fuera de rango, menos de dos waypoints) **retira** la definición anterior, así que un `assign` posterior avisa `Itinerary 'x' not found` en vez de asignar en silencio un plan viejo.
 
 ### 3. Automatización por Eventos (Triggers)
 Responde a eventos del juego en tiempo real. 
@@ -122,7 +130,8 @@ Responde a eventos del juego en tiempo real.
 ```
 
 **Selectores:**
-- `sensor [ID]`, `fork [ID]`, `semaphore [ID]`, `station [ID]`, `train [ID]` (o `train` genérico).
+- `sensor [ID|"nombre"]`, `fork [ID]`, `semaphore [ID]`, `station [ID|"nombre"]`, `train [ID]` (o `train` genérico).
+- Solo las estaciones y los sensores tienen nombre: los selectores `fork`, `semaphore` y `signal` siguen siendo numéricos. Un selector con nombre se resuelve al registrar el trigger; un nombre desconocido (o con la caja equivocada) avisa y el trigger no se instala.
 
 **Eventos:**
 - Trenes: `on train enter`, `on train exit` (opcionalmente con dirección `forward`/`backward`).
@@ -132,7 +141,7 @@ Responde a eventos del juego en tiempo real.
 **Acciones especiales dentro de bloques (terminan en `;`):**
 - *Semáforos:* `semaphore [ID] open;` / `semaphore [ID] close|closed;` / `semaphore [ID] set open|closed;` / `semaphore [ID] invert;`
 - *Cambios de Aguja (Forks):* `fork [ID] set straight;` / `fork [ID] set curved;` / `fork [ID] set <dirección>;` / `fork [ID] set flip;` / `fork [ID] flip;` (mismo comportamiento que en consola y en waypoints: la dirección mapea a la ruta que sale hacia ella y, si no existe, avisa)
-- *Tren Condicional:* Puedes usar `train at station [ID]`, `train at sensor [ID]`, `train at fork [ID]`, o `train at semaphore [ID]` en lugar de usar un número fijo de tren para aplicar acciones al tren que disparó el evento o que se encuentre allí.
+- *Tren Condicional:* Puedes usar `train at station [ID|"nombre"]`, `train at sensor [ID|"nombre"]`, `train at fork [ID]`, o `train at semaphore [ID]` en lugar de usar un número fijo de tren para aplicar acciones al tren que disparó el evento o que se encuentre allí. El sitio se resuelve cuando la acción se ejecuta; un nombre desconocido avisa y no se ejecuta nada.
 - Si el selector del trigger (sensor/aguja/semáforo/estación) no existe al registrarlo, se avisa y el trigger no se instala.
 
 **Comentarios:** `#` inicia un comentario de línea en cualquier punto del lenguaje (consola, `program { … }`, triggers y escenarios). Todo lo que sigue al `#` hasta el final de la línea se ignora.
@@ -195,13 +204,15 @@ Puedes usar `write`, `move`, `del`, o `clear` para hacer secuencias de movimient
 ### Ejemplo Completo
 
 ```letrain
-# Nombramos la estación
+# Nombramos las estaciones y el sensor de entrada
 station 1 set name "Mina Central";
+station 2 set name "Puerto";
+sensor 4 set name "Entrada";
 
 # Creamos la ruta del tren
 create itinerary "RutaPrincipal" {
-    add station 1, load
-    add station 2, unload
+    add station "Mina Central", load
+    add station "Puerto", unload
 }
 
 # Activamos la ruta
@@ -209,7 +220,7 @@ assign itinerary "RutaPrincipal" to train 1;
 train 1 set autopilot true;
 
 # Automatizamos el cruce para cualquier tren que pise el sensor
-sensor 4 on train enter {
+sensor "Entrada" on train enter {
     fork 2 set straight;
     semaphore 1 set open;
 }

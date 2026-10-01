@@ -93,10 +93,15 @@ trigger :
     | trainSelector     ON (CRASH | CONTACT) (sense)?
     ;
 
-sensorSelector    : SENSOR NUMBER;
+/**
+ * U4: sensor and station references accept a number or an exact quoted name (strict case). Forks,
+ * semaphores and signals have no name and stay numeric. The name is resolved when the trigger is
+ * registered / the `train at` order runs; an unknown name warns and the trigger is not installed.
+ */
+sensorSelector    : SENSOR  (NUMBER | STRING);
 forkSelector      : FORK NUMBER;
 semaphoreSelector : SEMAPHORE NUMBER;
-stationSelector   : STATION NUMBER;
+stationSelector   : STATION (NUMBER | STRING);
 trainSelector     : TRAIN (NUMBER)?;
 
 trainEvent   : (ENTER | EXIT) (sense)?;

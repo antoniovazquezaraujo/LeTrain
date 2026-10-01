@@ -159,3 +159,5 @@ Una vez nombrada, **puedes usar el nombre entre comillas** (o sin ellas si no ti
 - `train "Ave" set engine on;`
 - `go st "Central";`
 - `clear tr "Ave";`
+
+> **Mayúsculas estrictas**: las keywords van siempre en minúsculas (`train`, `station`, `sensor`…) y los nombres se buscan **exactos**, tal como se escribieron: `"Central"` y `"central"` son nombres distintos. Una referencia con la caja equivocada avisa `not found` y no hace nada. Dentro de `program { ... }` el texto se ejecuta tal cual, strings incluidos: no se pasa nada a minúsculas.

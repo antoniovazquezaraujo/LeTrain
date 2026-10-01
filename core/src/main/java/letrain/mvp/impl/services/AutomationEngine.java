@@ -57,7 +57,9 @@ public class AutomationEngine {
         }
 
         try {
-            program = program.toLowerCase();
+            // The program runs verbatim (D2 strict case): keywords stay lowercase, strings and
+            // names keep the case the author wrote. A wrong-case keyword is a syntax error with
+            // line:column and nothing executes (the check below returns before visiting).
             CharStream input = CharStreams.fromString(program);
             LeTrainLexer lexer = new LeTrainLexer(input);
             lexer.removeErrorListeners();
