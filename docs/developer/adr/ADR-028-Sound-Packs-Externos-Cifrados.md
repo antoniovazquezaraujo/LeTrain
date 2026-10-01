@@ -29,8 +29,9 @@
   que permitan distribuir el juego") queda **superado para este caso**: el asset ni vive en el
   repo ni se distribuye bajo la licencia del juego. Para el catálogo abierto sigue vigente.
 - **Modelo de amenaza** (se asume explícitamente; no se intenta vencer):
-  - La JVM es decompilable: la clave embebida y la lógica de descifrado pueden recuperarse del
-    binario. Esto **no es DRM**.
+  - La JVM es decompilable y depurable: el nivel N3 (punto 3) encarece la **extracción estática**
+    (literales, `strings`, decompilación simple), pero un depurador o un volcado de heap recuperan
+    el material de clave. Esto **no es DRM**.
   - Los samples se descifran **en memoria**; un volcado de proceso o un depurador pueden
     capturarlos.
   - **Agujero analógico**: la salida de audio siempre se puede grabar. Es irreducible.
@@ -54,7 +55,7 @@
    | `flags` | u16 | reservado, `0` |
    | `entryCount` | u32 | número de entradas |
    | `manifestLen` | u32 | longitud del manifiesto UTF-8 |
-   | `manifest` | var | JSON: `packId`, `packVersion`, `createdAt`, EULA/URL, procedencia |
+   | `manifest` | var | JSON: `packId`, `packVersion`, `createdAt`, `kdfSalt`, EULA/URL, procedencia |
    | `index` | var | una entrada por muestra (detalle abajo) |
    | `payloads` | var | por entrada: ciphertext + tag GCM (16 B) |
 
@@ -62,11 +63,15 @@
    (0 = PCM16 LE, 1 = float32 LE), `sampleRate` u32, `channels` u8, `plainLength` u32,
    `nonce` 12 B y `offset` u64 + `length` u32 dentro de `payloads`.
 
+   El manifiesto incluye **`kdfSalt`** (32 B `SecureRandom`, base64) que liga la clave derivada a
+   cada pack (punto 3).
+
    Límites defensivos al parsear (id ≤ 1 KiB, entradas ≤ 10 000, payload ≤ 100 MB). El detalle fino
    puede ajustarse en implementación sin reabrir este ADR.
 
 2. **Cifrado e integridad**: **AES-256-GCM** con **nonce de 12 bytes único por entrada**
-   (`SecureRandom` en el empaquetado; nunca reutilizar con la misma clave). El tag de 128 bits
+   (`SecureRandom` en el empaquetado; nunca reutilizar con la misma clave; la clave es la derivada
+   en runtime del punto 3, nunca un literal). El tag de 128 bits
    autentica cada payload. Además, la cabecera, el manifiesto y el descriptor de cada entrada se
    pasan como **AAD**: manipular el índice, cambiar un `keyId` o mover un payload invalida el
    descifrado. Descifrado **siempre en memoria**; prohibido escribir a disco o a directorios
@@ -74,19 +79,49 @@
    integridad no revienta el juego: la entrada queda no disponible, se registra un `WARN` y se
    aplica la regla de fallback del punto 4.
 
-3. **Clave y custodia**:
-   - Clave de **32 bytes** (hex/base64) como **parámetro de build/empaquetado**: variable de
-     entorno `LETRAIN_SOUNDPACK_KEY` o `--key-file` (ruta fuera del repo). El build de release la
-     inyecta desde un secreto de CI.
-   - En el binario se embebe **ofuscada por fragmentos** (no como literal único), se ensambla en
-     runtime y no se registra en logs. La ofuscación solo retrasa a un atacante; se asume.
-   - **Nunca** en git, ni en `docs/`, ni en issues, ni en logs de CI.
-   - Sin clave disponible, el módulo compila igual: el soporte de pack queda deshabilitado con un
-     aviso y el juego funciona con el classpath. El repositorio público debe poder compilarse y
-     testearse sin secretos.
-   - La clave puede entrar en el binario público (es inseparable del modelo), pero **no en el
-     código fuente público**: la separación protege el proceso y la rotación, no la extracción
-     final.
+3. **Clave y custodia (nivel N3 acordado)**. El nivel de protección es **N3** =
+   **N1** (la clave no existe como literal en código/binario) + **N2** (build de release ofuscado)
+   + **N3** (derivación en runtime e higiene de memoria). No se sube a **N4** (nativo/JNI) ni a
+   **N5** (claves por usuario/servidor): el coste no cambia el techo real de la JVM pura (ver más
+   abajo). La clave puede acabar en el **binario público** —es inseparable del modelo—, pero
+   **nunca en el código fuente público**: la separación protege el proceso y la rotación, no la
+   extracción final.
+   - **Sin clave estática en ningún sitio (N1).** El build de release recibe el secreto por
+     entorno (`LETRAIN_SOUNDPACK_KEY`) o `--key-file` (ruta fuera del repo) y genera en
+     `target/generated-sources` fragmentos compilables (p. ej. `KeyFragments`):
+     - cada pieza va **codificada** (rotaciones/XOR/máscaras derivadas de otras constantes del
+       propio código), nunca como bytes de clave reconocibles;
+     - el **layout es aleatorio por release** y se intercalan **constantes señuelo**;
+     - el repositorio público no contiene la clave ni fragmentos reales: sin secreto se compila
+       igual y el soporte de pack queda deshabilitado con un aviso (el repo se compila y testea
+       sin secretos).
+   - **Derivación en runtime (N3).** Los fragmentos se ensamblan y la clave final se deriva con
+     JCA (`Mac`/SHA-256, sin dependencias):
+     `K = HMAC-SHA256(fragmentos, "letrain-pack-v1" || packId || versiones || keyId || kdfSalt)`.
+     Se elige HMAC-SHA256 (y no HKDF) porque una única salida de 32 B no necesita
+     extract/expand separados y evita más superficie; si en el futuro hacen falta
+     subclaves, se migrará a HKDF-SHA256.
+     `kdfSalt` son **32 B aleatorios del manifiesto del pack**: el mismo secreto produce una clave
+     distinta por pack y el prefijo fijo da **separación de dominio**. El ensamblado y la
+     derivación se **ofuscan e inlinean** en el build de release, sin una función única y obvia
+     tipo `getKey()` que sirva de punto de entrada.
+   - **Ofuscación de release (N2) como requisito acompañante.** El build de release aplica
+     renombrado y cifrado de strings (p. ej. ProGuard/R8 + transformación de strings, o
+     herramienta comercial). Sin N2, N3 pierde gran parte de su valor: localizar el breakpoint en
+     el bytecode sin ofuscar es trivial.
+   - **Higiene de memoria (N3).** El material de clave nunca pasa por `String`/`StringBuilder`
+     (inmutables, no borrables): se usan `byte[]`/`int[]`; se borran explícitamente
+     (`Arrays.fill(..., 0)`) en cuanto el `Cipher` está inicializado; no hay logs ni stack traces
+     con buffers. Sigue prohibido el volcado a disco o a temporales (punto 2).
+   - **Límites de la JVM, asumidos.** `SecretKeySpec` guarda una copia no borrable, el JIT puede
+     dejar copias en registros/pila y hay una ventana de heap dump durante el descifrado. **El
+     análisis dinámico (breakpoint en `Cipher.init`/`doFinal`, volcado de heap) es el techo real
+     en Java puro.** N3 frena la extracción estática (`strings`, `grep`, decompilación simple),
+     **no** al atacante con depurador; el agujero analógico sigue irreducible. Se acepta como
+     **riesgo residual**, sin prometer más de lo que da.
+   - **Secreto en CI.** El workflow de release usa un **environment protegido con revisores** (no
+     un secreto accesible desde cualquier rama); la clave no aparece en git, `docs/`, issues,
+     PRs ni logs.
 
 4. **Abstracción `SoundProvider` y fallback**:
 
@@ -115,9 +150,9 @@
        dependiera de `core` y rompería el aislamiento de ADR-023 (hoy `soundscape` no depende del
        juego); además ADR-026 ya prevé sacar el audio de `core`. Si en el futuro `train-audio` /
        `audio-core` necesitan packs, la interfaz se eleva a `audio-core` sin tocar el formato.
-   - **Módulo nuevo `soundpack`**: lector del contenedor, descifrado y ensamblado de la clave
-     ofuscada. Depende de `soundscape` (la interfaz) y de la JDK (JCA); **no** conoce el juego ni
-     las UIs. Es el único punto con criptografía.
+   - **Módulo nuevo `soundpack`**: lector del contenedor, descifrado y ensamblado de fragmentos +
+     KDF (punto 3). Depende de `soundscape` (la interfaz) y de la JDK (JCA); **no** conoce el juego
+     ni las UIs. Es el único punto con criptografía.
    - **`soundpack-tool`** (módulo aparte, no empaquetado con el juego): empaquetador y validador
      CLI; comparte las constantes del formato con `soundpack`.
    - **`game-audio`**: glue; decide si hay pack (configuración), construye
@@ -126,14 +161,15 @@
 
 6. **Herramienta CLI de empaquetado**:
    - `soundpack-tool package --input <carpeta WAV> --manifest <manifiesto> --out <pack.ltsp>`,
-     con la clave por entorno o `--key-file` (nunca en git).
+     con la clave por entorno o `--key-file` (nunca en git). El empaquetador **genera el
+     `kdfSalt`** (32 B `SecureRandom`) y lo escribe en el manifiesto.
    - El manifiesto declara por entrada: ID lógico, fichero, procedencia/licencia y, opcionalmente,
      ejes de ADR-024 (`character`, `intensity`, `distance`, `tone`, `modulation`).
    - Validaciones: WAV canónico 44.1 kHz mono 16 bits (o conversión explícita), IDs duplicados,
      nonces únicos, orden determinista de entradas.
-   - `soundpack-tool validate` verifica el pack con la clave y, opcionalmente, lo cruza con un
-     estilo `.sound`, listando los materiales del estilo que no están en el pack (caerán a
-     classpath).
+   - `soundpack-tool validate` verifica el pack con la misma KDF (secretos + `kdfSalt` del
+     manifiesto) y, opcionalmente, lo cruza con un estilo `.sound`, listando los materiales del
+     estilo que no están en el pack (caerán a classpath).
 
 7. **Configuración y activación**: clave nueva en `letrain.cfg` (y, por tanto, en la sección
    `configuration` del `.ltr`): `soundpack.path` apuntando al `.ltsp`. Sin configurar, classpath.
@@ -184,7 +220,8 @@
   manipulación; el formato puede alojar futuros packs (DLC, comunidad con licencia) con el mismo
   mecanismo.
 - Costes y riesgos: descarga extra y aceptación de un EULA para el usuario; complejidad de build
-  (secreto en CI, builds locales sin pack); rotación de clave que invalida packs antiguos;
+  (generador de fragmentos, ofuscación de release, secreto en CI, builds locales sin pack);
+  rotación de clave que invalida packs antiguos;
   descifrado íntegro en RAM (aceptable para tomas de 10–30 s, a vigilar si el pack crece); la
   selección aleatoria de tomas puede cambiar según qué materiales sirva el pack (no afecta a la
   simulación ni al replay de ADR-020); riesgo de falsa sensación de seguridad si no se comunica
@@ -198,27 +235,29 @@
   ficheros; no cumple el objetivo de disuasión ni aporta integridad.
 - **Contenedor ofuscado sin cifrar** (ZIP con nombres opacos, XOR, cabeceras falsas): se revienta
   con `unzip` o un editor hexadecimal; no protege nada y complica el formato.
-- **Cifrado en nativo / JNI** (C++/Rust): eleva el coste de extracción, pero rompe el "Java puro",
-  multiplica plataformas y build para un beneficio marginal frente a la decompilación del resto.
+- **Cifrado en nativo / JNI** (nivel N4, C++/Rust): eleva el coste de extracción, pero rompe el
+  "Java puro", multiplica plataformas y build para un beneficio marginal frente a la decompilación
+  del resto.
 - **Streaming desde servidor** (descifrado en servidor, samples por red): requiere infraestructura,
   caduca sin conexión y no encaja con un juego de escritorio.
 - **Incluir el pack en los binarios** (JAR/instalador): contradice la decisión vinculante de que
   los assets nunca entran en el repo/recursos y multiplica artefactos; además el binario es
   decompilable.
-- **DRM pesado, anti-debug o claves por máquina**: hostil al usuario, frágil y falsa seguridad;
-  descartado.
+- **DRM pesado, anti-debug o claves por máquina** (nivel N5): hostil al usuario, frágil y falsa
+  seguridad; descartado.
 - **Interfaz `SoundProvider` en `core`**: descartado por dependencia `soundscape → core` (ver
   punto 5).
 
 ## Plan por fases
 
 1. **Este PR: solo ADR-028** (documentación; sin código ni assets).
-2. `soundpack` + `soundpack-tool`: formato, lector/escritor, CLI y tests con WAVs sintéticos
-   (ALEX/BICHO).
+2. `soundpack` + `soundpack-tool`: formato, lector/escritor, CLI, **generador de fragmentos de
+   clave en el build de release** (`target/generated-sources`), **KDF HMAC-SHA256** e **higiene de
+   memoria**, con tests con WAVs sintéticos y claves de prueba (ALEX/BICHO).
 3. Seam en `soundscape`: `SoundProvider`, classpath, fallback e inyección en `AmbientPlayer`, con
    tests de regresión de que el catálogo actual suena igual.
-4. Integración en `game-audio`: configuración, detección de pack, ensamblado de clave en build y
-   flujo de aviso/EULA (a decidir en las preguntas abiertas).
+4. Integración en `game-audio`: configuración, detección de pack, build de release (environment
+   protegido y **ofuscación N2**) y flujo de aviso/EULA (a decidir en las preguntas abiertas).
 5. Pack real (fuera del repo) solo tras firmar el acuerdo: empaquetado, validación con
    `soundpack-tool validate` y publicación.
 6. Futuro: watermarking por usuario, sonidos de tren vía ADR-026 y hosting con control de acceso.
@@ -241,6 +280,8 @@
   invalidar packs vivos.
 - **Verificación de "nunca a disco"**: técnica de test (espía de acceso a ficheros, revisión de
   código) para que BICHO pueda blindarlo.
-- **Borrado de claves en memoria** (zeroing de `byte[]`/`ByteBuffer`): la JVM no lo garantiza,
-  ¿asumimos la limitación o hay mitigación que valga la pena?
+- **Descifrado off-heap (N3+)**: ¿merece la pena sacar los buffers de descifrado del heap gestionado
+  (`ByteBuffer` directo / FFM) para reducir la ventana de heap dump, a cambio de más complejidad?
+  El zeroing deja de ser pregunta abierta: es decisión de mejor esfuerzo con los límites de JVM
+  documentados (punto 3).
 - **Contenido extra del pack**: ¿puede incluir overrides de estilo `.sound` o solo samples?
