@@ -6,7 +6,7 @@ LeTrain incluye su propio analizador léxico/sintáctico (basado en ANTLR4) que 
 
 **«Todo problema avisa; el éxito calla»**. Los problemas del lenguaje llegan siempre al canal visible del jugador (nunca solo al log):
 
-- Un **error de sintaxis** se muestra con línea/columna y **no ejecuta nada**. Dentro de `program { ... }` el programa completo se rechaza (el anterior sigue aplicado); en la consola, la orden concreta no se ejecuta.
+- Un **error de sintaxis** se muestra con la posición del fallo (columna en la consola; línea:columna dentro de `program { ... }`) y **no ejecuta nada**: dentro de `program { ... }` el programa completo se rechaza (el anterior sigue aplicado); en la consola, la orden concreta no se ejecuta.
 - Un **rechazo semántico** (entidad inexistente, destino de waypoint desconocido, misión sin ruta…) también avisa. Un itinerario con un destino desconocido **no se crea**: no se ejecuta un plan al que le falta una parada.
 - Un **ajuste mecánico** avisa antes de aplicarse (p. ej. una velocidad fuera de `0..10` se recorta y se dice cuál se aplicó).
 - Al **cargar una partida**, su programa guardado se re-aplica. Si ya no se parsea, el rechazo avisa en el panel al terminar la carga (no se queda solo en el log) y el texto **se conserva** en el editor marcado como no aplicado, para poder corregirlo. Ese mismo panel recibe todos los problemas del programa re-aplicado (entidad inexistente, itinerario rechazado…).
@@ -19,6 +19,13 @@ El canal es **contextual**:
 - Los **eventos asíncronos** (programa al cargar/aplicar, misiones de itinerario, triggers al dispararse) avisan siempre en el **panel**, como antes.
 
 El log sigue siendo solo trazas: los avisos que ves nunca dependen de él.
+
+## 🔤 Keywords y nombres: mayúsculas estrictas
+
+El lenguaje es **sensible a mayúsculas en todos los puntos de entrada** (consola, triggers y `program { ... }`). Un programa se ejecuta **tal cual**: no se pasa nada a minúsculas, ni las keywords ni los strings.
+
+- **Las keywords son estrictamente minúsculas** (`train`, `sensor`, `create`, `assign`, `speed`, `wait`…). `TRAIN 1 set speed 3;` es un error de sintaxis (columna en la consola; línea:columna dentro de `program { ... }`); el programa se valida antes de ejecutar, así que una keyword con mayúsculas rechaza el texto completo y **no se ejecuta nada** (la automatización anterior sigue aplicada).
+- **Los nombres conservan su caja y se buscan exactos**: `station 1 set name "Central";` guarda `Central`, y `station "Central"` no es lo mismo que `station "central"`. Una referencia con la caja equivocada no se encuentra, **avisa** (`not found`) y no hace nada: el itinerario no se crea, el trigger no se instala, la orden se ignora. Entrecomilla siempre el nombre.
 
 ## ⚙️ Estructura del Lenguaje
 
@@ -38,6 +45,7 @@ Se ejecutan inmediatamente. **Requieren punto y coma (`;`) al final**.
 - `train [ID] stop at sensor [ID|"nombre"] [speed NUM];`
 - `train [ID] stop at end [speed NUM];`
 - `train [ID] stop when blocked [speed NUM];`
+- `train [ID] stop on contact [speed NUM];`
 - `train [ID] set engine on;` / `train [ID] set engine off;`
 - `train [ID] set forward;` / `train [ID] set backward;`
 - `train [ID] load;`
@@ -57,15 +65,22 @@ y el tren acaba siempre parado. El destino puede ser una estación, un sensor, e
 delante del tren** (frena en la última vía, sin tocar el tope; un bucle cerrado sin final por delante
 avisa y no mueve) o el primer bloqueo (`stop when blocked` rueda con la curva del #633 hasta la
 última vía de su cantón ante el bloqueo y completa parado ahí; **no** reanuda al liberarse y, si el
-bloqueo se libera antes de parar, sigue). **No hay auto-giro en ningún sitio**: si el destino solo
-es alcanzable en sentido contrario, la orden se **rechaza con aviso** ("sin ruta desde el sentido
-actual") y hay que girar el tren a mano (`train N invert;` o `reverse;`) antes de repetirla. Una
-orden recibida mientras el tren cumple un itinerario se rechaza con
+bloqueo se libera antes de parar, sigue) o el **vehículo de delante** (`stop on contact`): conduce a
+la velocidad de la orden y completa en el **primer contacto físico** de baja velocidad, quedándose
+**pegado** al vehículo, listo para `couple`. A la velocidad de choque o más (≥ 5) el contacto es un
+**choque** (física normal: el tren se destruye y la misión falla con aviso). Si el tren **ya está
+pegado** (al vehículo o al tope), la orden completa en el sitio: el contacto real es a velocidad 0
+(el evento reporta esa velocidad, no la pedida), así que pedir una velocidad alta no inventa un
+choque. **No hay auto-giro en ningún sitio**: si el destino solo es alcanzable en sentido contrario,
+la orden se **rechaza con aviso** ("sin ruta desde el sentido actual") y hay que girar el tren a
+mano (`train N invert;` o `reverse;`) antes de repetirla. Una orden recibida mientras el tren cumple
+un itinerario se rechaza con
 aviso (no se pausa nada): usa `train N set autopilot false;` o escribe la maniobra en el itinerario.
 Si el destino se vuelve inalcanzable a mitad de misión (se pierde la ruta) o el tren se queda parado
 sin espera de bloque/horario/carga durante aproximadamente una hora de juego, la misión falla con
 aviso. Las señales y los cantones siguen mandando: la curva de frenado de la misión solo baja la
-velocidad, nunca la sube. Una orden nueva reemplaza a la misión en curso.
+velocidad, nunca la sube (`stop on contact` no frena: su objetivo es el toque). Una orden nueva
+reemplaza a la misión en curso.
 
 **Nombrar Elementos:**
 - `station [ID] set name "Mi Estacion";` (también con el alias `st`)
@@ -94,10 +109,11 @@ create itinerary "RutaCarbon" {
 - **Al menos dos waypoints**: un itinerario es un bucle, así que un plan con un único waypoint se rechaza con aviso y no se asigna (el autopilot queda apagado). Para un único destino usa una orden suelta `stop at …` (o una acción de waypoint dentro de un servicio); repetir la misma estación está permitido.
 - **Destinos conocidos**: si una estación/sensor de un waypoint (o el destino de una misión `stop at …`/`stop at sensor …` dentro de un waypoint) no existe, el itinerario **no se crea** con un aviso: no se ejecuta un plan al que le falta una parada. Un `stop at sensor N` cuyo id pertenece a una estación o a una señal de velocidad también avisa (no es un sensor plano).
 - **Comas obligatorias**: todos los ítems del plan van separados por comas, y si el waypoint lleva plan la **referencia (con su dirección opcional) también se separa por coma** del primer ítem: `add station 1 ne, arrival 9:00, uncouple backward all, departure 10:30;`. Sin plan, la forma desnuda sigue igual: `add station 1;`. La vieja forma sin coma no se admite.
-- El **orden es obligatorio**: `arrival` primero, después las acciones en su orden de ejecución (`load`, `unload`, `reverse`/`invert`, `stop`, `park`, `wait [NUM]`, `speed [NUM]`, `uncouple forward|backward [NUM|all]`, `couple forward|backward [NUM|all]`, `stop at station|sensor [REF] [speed NUM]`, `stop at end [speed NUM]`, `stop when blocked [speed NUM]`, `fork [ID] set straight|curved|<dirección>|flip`) y `departure` al final. Escribir un atributo fuera de orden es un error de sintaxis.
+- El **orden es obligatorio**: `arrival` primero, después las acciones en su orden de ejecución (`load`, `unload`, `reverse`/`invert`, `stop`, `park`, `wait [NUM]`, `speed [NUM]`, `uncouple forward|backward [NUM|all]`, `couple forward|backward [NUM|all]`, `stop at station|sensor [REF] [speed NUM]`, `stop at end [speed NUM]`, `stop when blocked [speed NUM]`, `stop on contact [speed NUM]`, `fork [ID] set straight|curved|<dirección>|flip`) y `departure` al final. Escribir un atributo fuera de orden es un error de sintaxis.
 - **Horas fuera de rango**: una hora suelta fuera de `0..23` (`arrival 25`) rechaza el itinerario con aviso; una hora con minutos fuera de rango (`25:00`, `9:60`) es directamente un error de sintaxis.
-- **Maniobras**: las órdenes de movimiento (`stop at …`, `stop when blocked …`) son **misiones** que se ejecutan al llegar al waypoint y deben completarse antes de la siguiente acción: el tren conduce y acaba parado. `stop at` usa el sentido actual y **tampoco auto-invierte** (no hay auto-giro en ningún contexto): escribe el `reverse`/`invert` que necesites o la orden se rechaza con un aviso de "sin ruta desde el sentido actual". Una maniobra rechazada **aborta las acciones restantes de ese waypoint** (el `departure` y la ruta al siguiente waypoint siguen), para que la coreografía no continúe en un estado raro. Las acciones de fork fuerzan o preparan una aguja con el mismo mapeo que en consola y en los triggers; el autopilot sigue orientando las agujas a lo largo de la ruta que calcula. El `departure` libera cuando la maniobra ha terminado (si acaba tarde, el tren sale tarde y se mide el desfase); después, la ruta al siguiente waypoint se recalcula desde donde haya quedado el tren.
-- **Maniobras y cantones**: una maniobra cuyo destino está dentro de un cantón ocupado por **su propia parte desenganchada** (enganchar los vagones que acaba de dejar) puede entrar en ese cantón como una maniobra manual; las comprobaciones físicas siguen parando el tren antes de cualquier vehículo. Un cantón ocupado por un tren ajeno mantiene el bloqueo: la maniobra espera en la frontera y reanuda al liberarse.
+- **Maniobras**: las órdenes de movimiento (`stop at …`, `stop when blocked …`, `stop on contact …`) son **misiones** que se ejecutan al llegar al waypoint y deben completarse antes de la siguiente acción: el tren conduce y acaba parado. `stop at` usa el sentido actual y **tampoco auto-invierte** (no hay auto-giro en ningún contexto): escribe el `reverse`/`invert` que necesites o la orden se rechaza con un aviso de "sin ruta desde el sentido actual". `stop on contact` tampoco auto-invierte: conduce hasta tocar al vehículo de delante a la velocidad de la orden y queda pegado a él, listo para el `couple` de la siguiente acción (si toca a velocidad de choque, el choque es real y la maniobra falla con aviso). Una maniobra rechazada **aborta las acciones restantes de ese waypoint** (el `departure` y la ruta al siguiente waypoint siguen), para que la coreografía no continúe en un estado raro. Las acciones de fork fuerzan o preparan una aguja con el mismo mapeo que en consola y en los triggers; el autopilot sigue orientando las agujas a lo largo de la ruta que calcula. El `departure` libera cuando la maniobra ha terminado (si acaba tarde, el tren sale tarde y se mide el desfase); después, la ruta al siguiente waypoint se recalcula desde donde haya quedado el tren.
+- **Maniobras y cantones**: una maniobra cuyo destino está dentro de un cantón bloqueado **cuyos ocupantes ajenos no tienen locomotora** (p. ej. los vagones que acaba de desenganchar: engancharlos o acercarse a ellos con `stop on contact`) puede entrar en ese cantón como una maniobra manual; las comprobaciones físicas siguen parando el tren antes de cualquier vehículo. Un cantón ocupado por un tren ajeno (con locomotora) mantiene el bloqueo: la maniobra espera en la frontera y reanuda al liberarse. La exención vale igual para la orden suelta `stop on contact` (el run-around desde la consola o un script).
+- **Velocidad del plan tras las acciones**: las misiones y maniobras del waypoint no son dueñas del crucero del plan. Al terminar las acciones, si el waypoint no tiene `departure` (o ya venció), el tren **reanuda la velocidad programada** y sigue hasta el siguiente waypoint. Los estados deliberados mandan: un `park` sin salida posterior sigue aparcado y una espera de bloque mantiene la espera.
 - **Dirección de `uncouple`**: `uncouple forward` desengancha por el **lado de la cabeza** y `uncouple backward` por la cola. Con la locomotora en cabeza tirando de los vagones, los vagones van detrás: el run-around se escribe `uncouple backward 1` (sin número desengancha todos los de ese lado, igual que `couple`).
 - `arrival` se mide al llegar al waypoint; `departure` es la hora programada de salida: al llegar se ejecutan las acciones, el tren espera hasta ella y la salida programada arranca el motor. La estancia es `departure − arrival` en tiempo de juego. Las horas se leen en secuencia: una hora menor que la anterior pertenece al día siguiente (`arrival 23:50, departure 00:10`). Si el tren llega tarde, sale de inmediato y se mide el desfase. Sin horas, el waypoint se comporta exactamente como antes.
 - `park` frena, apaga el motor y **mantiene el autopilot activo** (a diferencia de `stop`, que frena y desactiva el autopilot). También existe como orden directa (`train N park;`). La siguiente salida programada arranca el motor y recupera la velocidad de crucero, de modo que un servicio diario que se repite puede terminar con `park` y volver a salir a la mañana siguiente. Un `park` **sin salida programada posterior** deja el tren aparcado (motor apagado, plan conservado): no vuelve a moverse hasta que una salida programada lo arranque o lo conduzcas manualmente.
@@ -109,6 +125,7 @@ create itinerary "RutaCarbon" {
 **Asignar y Activar:**
 - `assign itinerary "RutaCarbon" to train 1;`
 - `train 1 set autopilot true;`
+- Desde la **consola** las definiciones viven en la sesión: puedes `create` el itinerario en una línea y `assign` en otra (o ambos en la misma). El registro pertenece al mundo vigente, así que un undo/load/replay de escenario que cambie el mundo empieza vacío. Solo los itinerarios asignados a un tren se guardan en la partida; una definición que nunca se asignó es un artefacto de sesión. Un `create` nuevo sustituye la definición previa de un nombre **solo si se acepta**: un `create` rechazado (destino desconocido, hora fuera de rango, menos de dos waypoints) **retira** la definición anterior, así que un `assign` posterior avisa `Itinerary 'x' not found` en vez de asignar en silencio un plan viejo.
 
 ### 3. Automatización por Eventos (Triggers)
 Responde a eventos del juego en tiempo real. 
@@ -122,7 +139,8 @@ Responde a eventos del juego en tiempo real.
 ```
 
 **Selectores:**
-- `sensor [ID]`, `fork [ID]`, `semaphore [ID]`, `station [ID]`, `train [ID]` (o `train` genérico).
+- `sensor [ID|"nombre"]`, `fork [ID]`, `semaphore [ID]`, `station [ID|"nombre"]`, `train [ID]` (o `train` genérico).
+- Solo las estaciones y los sensores tienen nombre: los selectores `fork`, `semaphore` y `signal` siguen siendo numéricos. Un selector con nombre se resuelve al registrar el trigger; un nombre desconocido (o con la caja equivocada) avisa y el trigger no se instala.
 
 **Eventos:**
 - Trenes: `on train enter`, `on train exit` (opcionalmente con dirección `forward`/`backward`).
@@ -132,7 +150,7 @@ Responde a eventos del juego en tiempo real.
 **Acciones especiales dentro de bloques (terminan en `;`):**
 - *Semáforos:* `semaphore [ID] open;` / `semaphore [ID] close|closed;` / `semaphore [ID] set open|closed;` / `semaphore [ID] invert;`
 - *Cambios de Aguja (Forks):* `fork [ID] set straight;` / `fork [ID] set curved;` / `fork [ID] set <dirección>;` / `fork [ID] set flip;` / `fork [ID] flip;` (mismo comportamiento que en consola y en waypoints: la dirección mapea a la ruta que sale hacia ella y, si no existe, avisa)
-- *Tren Condicional:* Puedes usar `train at station [ID]`, `train at sensor [ID]`, `train at fork [ID]`, o `train at semaphore [ID]` en lugar de usar un número fijo de tren para aplicar acciones al tren que disparó el evento o que se encuentre allí.
+- *Tren Condicional:* Puedes usar `train at station [ID|"nombre"]`, `train at sensor [ID|"nombre"]`, `train at fork [ID]`, o `train at semaphore [ID]` en lugar de usar un número fijo de tren para aplicar acciones al tren que disparó el evento o que se encuentre allí. El sitio se resuelve cuando la acción se ejecuta; un nombre desconocido avisa y no se ejecuta nada.
 - Si el selector del trigger (sensor/aguja/semáforo/estación) no existe al registrarlo, se avisa y el trigger no se instala.
 
 **Comentarios:** `#` inicia un comentario de línea en cualquier punto del lenguaje (consola, `program { … }`, triggers y escenarios). Todo lo que sigue al `#` hasta el final de la línea se ignora.
@@ -195,13 +213,15 @@ Puedes usar `write`, `move`, `del`, o `clear` para hacer secuencias de movimient
 ### Ejemplo Completo
 
 ```letrain
-# Nombramos la estación
+# Nombramos las estaciones y el sensor de entrada
 station 1 set name "Mina Central";
+station 2 set name "Puerto";
+sensor 4 set name "Entrada";
 
 # Creamos la ruta del tren
 create itinerary "RutaPrincipal" {
-    add station 1, load
-    add station 2, unload
+    add station "Mina Central", load
+    add station "Puerto", unload
 }
 
 # Activamos la ruta
@@ -209,7 +229,7 @@ assign itinerary "RutaPrincipal" to train 1;
 train 1 set autopilot true;
 
 # Automatizamos el cruce para cualquier tren que pise el sensor
-sensor 4 on train enter {
+sensor "Entrada" on train enter {
     fork 2 set straight;
     semaphore 1 set open;
 }

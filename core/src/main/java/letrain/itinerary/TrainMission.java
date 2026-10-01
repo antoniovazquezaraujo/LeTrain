@@ -6,14 +6,15 @@ package letrain.itinerary;
  * maneuver.
  *
  * <p>
- * The four destinations are a station, a sensor, the end of the track and the first block that
- * stops the train ({@code stop when blocked}). The speed belongs to the order: it is applied when
- * the mission starts ({@code 0} means "use the train's current target speed").
+ * The five destinations are a station, a sensor, the end of the track, the first block that stops
+ * the train ({@code stop when blocked}) and the vehicle ahead ({@code stop on contact}, the
+ * coupling approach of issue #645). The speed belongs to the order: it is applied when the mission
+ * starts ({@code 0} means "use the train's current target speed").
  */
 public final class TrainMission {
 
     public enum Kind {
-        STATION, SENSOR, END_OF_TRACK, WHEN_BLOCKED
+        STATION, SENSOR, END_OF_TRACK, WHEN_BLOCKED, ON_CONTACT
     }
 
     public enum State {
@@ -31,7 +32,7 @@ public final class TrainMission {
     }
 
     private final Kind kind;
-    /** Station/sensor id; unused ({@code -1}) for END_OF_TRACK and WHEN_BLOCKED. */
+    /** Station/sensor id; unused ({@code -1}) for END_OF_TRACK, WHEN_BLOCKED and ON_CONTACT. */
     private final int targetId;
     /** Order speed, or 0 to keep the train's current target. */
     private final int speed;
@@ -59,6 +60,16 @@ public final class TrainMission {
 
     public static TrainMission stopWhenBlocked(int speed) {
         return new TrainMission(Kind.WHEN_BLOCKED, -1, speed, Origin.LOOSE);
+    }
+
+    /**
+     * Issue #645: coupling approach. The mission drives at the ordered speed until the first
+     * physical contact with the vehicle ahead (or the buffer ahead) and ends stopped, pressed
+     * against it, ready for {@code couple}. At or above the crash threshold the contact is a crash
+     * (the normal physics: no magic shield).
+     */
+    public static TrainMission stopOnContact(int speed) {
+        return new TrainMission(Kind.ON_CONTACT, -1, speed, Origin.LOOSE);
     }
 
     /**
@@ -122,6 +133,7 @@ public final class TrainMission {
             case SENSOR -> "sensor " + targetId;
             case END_OF_TRACK -> "the end of track";
             case WHEN_BLOCKED -> "the first block";
+            case ON_CONTACT -> "the vehicle ahead";
         };
     }
 

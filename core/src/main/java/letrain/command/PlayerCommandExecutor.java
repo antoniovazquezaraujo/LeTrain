@@ -566,6 +566,34 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         return null;
     }
 
+    /**
+     * Console session registry (issue #632): the console re-parses every typed statement with its
+     * own {@link ScriptLogicParser} pass, so itinerary definitions would be lost between statements
+     * if each one built a fresh {@link CommandManager}. One manager is kept per live world: it
+     * survives across the statements of a console session and is replaced whenever the model is
+     * swapped (undo/redo, load, scenario replay), so its registry always belongs to the world the
+     * next statement will run against.
+     */
+    private static Model sessionModel;
+    private static CommandManager sessionManager;
+
+    /**
+     * The {@link CommandManager} shared by every statement of the console session running on
+     * {@code model} (a null model gets a throwaway manager). Kept in sync with the live model: a
+     * different instance means a swapped-in world, which starts with an empty registry.
+     */
+    private static synchronized CommandManager sessionManagerFor(Model model) {
+        if (model != null && sessionModel == model && sessionManager != null) {
+            return sessionManager;
+        }
+        if (model == null) {
+            return new CommandManager(null);
+        }
+        sessionModel = model;
+        sessionManager = new CommandManager(model);
+        return sessionManager;
+    }
+
     @Override
     public Object visitStatement(PlayerCommandsParser.StatementContext ctx) {
         // `PlayerCommandsParser` overrides `setNameCommand` so the console accepts a STRING
@@ -611,17 +639,21 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                     "Not supported by the script engine: " + String.join(" | ", innerErrors));
             return null;
         }
-        CommandManager scriptManager = new CommandManager(model);
+        CommandManager scriptManager = sessionManagerFor(model);
         // Immediate problems (unknown entity, rejected itinerary…) are console feedback for a
         // typed command (D1 contextual channel).
         scriptManager.setWarningSink((title, text) -> commandNotices.add(title, text));
-        if (onMessage != null && model != null) {
-            // Deferred blocks (triggers) and mission notices: they fire later, so they report to
-            // the panel; while this command is still running they are folded into its feedback.
-            // Without a visible channel the notifier is left untouched (headless contract).
-            scriptManager.setDeferredWarningSink(this::onDeferredNotice);
+        // Deferred blocks (triggers) and mission notices: they fire later, so they report to the
+        // panel; while this command is still running they are folded into its feedback. The sink is
+        // rebound on every statement (and cleared without a visible channel) because the session
+        // manager outlives this executor: a previous call's sink must never survive into this one.
+        scriptManager.setDeferredWarningSink(
+                onMessage != null && model != null ? this::onDeferredNotice : null);
+        // Visit the statements directly instead of the parsed root: visitScriptStart resets the
+        // registry, which would drop the itineraries created by the previous console statements.
+        for (ScriptLogicParser.StatementContext statement : scriptTree.statement()) {
+            scriptManager.visit(statement);
         }
-        scriptManager.visit(scriptTree);
         return null;
     }
 

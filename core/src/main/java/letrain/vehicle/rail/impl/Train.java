@@ -778,6 +778,12 @@ public class Train implements Renderable {
     public void crashDestroy(letrain.map.Point pos, int speed) {
         guardNotify(() -> {
             this.stalled = true;
+            // Issue #645: a stop-on-contact mission fails here (a contact at or above the crash
+            // threshold is the normal crash physics). Before the dispatcher so the waypoint flow
+            // sees the finished mission.
+            if (isAutoMode() && autopilot != null) {
+                autopilot.onCrash(pos, speed);
+            }
             this.eventDispatcher.notifyCrash(pos, speed);
         });
         getLinkers().forEach(l -> {
@@ -800,6 +806,12 @@ public class Train implements Renderable {
     public void notifyContact(letrain.map.Point pos, int speed) {
         guardNotify(() -> {
             emergencyStop();
+            // Issue #645: the coupling approach completes on the physical contact, before the
+            // event dispatcher resumes the waypoint actions deferred for the mission (they need
+            // the mission already finished).
+            if (isAutoMode() && autopilot != null) {
+                autopilot.onContact(pos, speed);
+            }
             this.eventDispatcher.notifyContact(pos, speed);
         });
     }

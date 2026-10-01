@@ -33,7 +33,11 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
     static Logger log = LoggerFactory.getLogger(CommandManager.class);
     Model model;
 
-    /** Stores itineraries created during parsing, keyed by name. */
+    /**
+     * Stores itineraries created during parsing, keyed by name. A full script parse starts with a
+     * fresh registry ({@link #visitScriptStart}); the console keeps one manager per world (#632),
+     * so the definitions survive from one typed statement to the next.
+     */
     private final Map<String, Itinerary> itineraries = new HashMap<>();
 
     /** Current itinerary being constructed. */
@@ -121,8 +125,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
     private void setupTrigger(ScriptLogicParser.TriggerContext ctx,
             List<ExecutableCommand> commands) {
         if (ctx.sensorSelector() != null) {
-            int id = Integer.parseInt(ctx.sensorSelector().NUMBER().getText());
-            Sensor sensor = model.getSensor(id);
+            Sensor sensor = resolveTriggerSensor(ctx.sensorSelector());
             if (sensor != null) {
                 Integer filterTrainId =
                         (ctx.trainSelector() != null && ctx.trainSelector().NUMBER() != null)
@@ -153,11 +156,11 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                     }
                 });
             } else {
-                warnUser("Trigger", "Sensor " + id + " not found; trigger ignored");
+                warnUser("Trigger", "Sensor " + selectorRef(ctx.sensorSelector())
+                        + " not found; trigger ignored");
             }
         } else if (ctx.stationSelector() != null) {
-            int id = Integer.parseInt(ctx.stationSelector().NUMBER().getText());
-            letrain.track.Station station = model.getStation(id);
+            letrain.track.Station station = resolveTriggerStation(ctx.stationSelector());
             if (station != null) {
                 if (ctx.trainEvent() != null) {
                     Integer filterTrainId =
@@ -193,7 +196,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                     });
                 }
             } else {
-                warnUser("Trigger", "Station " + id + " not found; trigger ignored");
+                warnUser("Trigger", "Station " + selectorRef(ctx.stationSelector())
+                        + " not found; trigger ignored");
             }
         } else if (ctx.forkSelector() != null) {
             int id = Integer.parseInt(ctx.forkSelector().NUMBER().getText());
@@ -402,12 +406,13 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             } else if (ctx.trainExtractor() != null) {
                 ScriptLogicParser.PlaceSelectorContext pCtx = ctx.trainExtractor().placeSelector();
                 return (ExecutableCommand) (contextTrain) -> {
-                    Train target = findTrainAtPlace(pCtx);
-                    if (target != null) {
-                        baseAction.execute(target);
-                    } else {
+                    PlaceTrain found = findTrainAtPlace(pCtx);
+                    if (found.train() != null) {
+                        baseAction.execute(found.train());
+                    } else if (found.placeKnown()) {
                         // `getText()` glues the tokens ("station1"): describe the selector by hand
-                        // so the notice reads like the order the user wrote (O1).
+                        // so the notice reads like the order the user wrote (O1). An unknown place
+                        // already warned inside findTrainAtPlace, with its own notice.
                         warnDeferred("Trigger",
                                 "No train at " + describePlace(pCtx) + "; action ignored");
                     }
@@ -621,6 +626,9 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
         if (clamped != speed) {
             warnUser("Speed", "Mission speed " + speed + " is out of range 0-10; using " + clamped);
         }
+        if (ctx.stopTarget().ON() != null) {
+            return new MissionSpec(TrainMission.Kind.ON_CONTACT, -1, clamped);
+        }
         if (ctx.stopTarget().WHEN() != null) {
             return new MissionSpec(TrainMission.Kind.WHEN_BLOCKED, -1, clamped);
         }
@@ -645,8 +653,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
 
     /**
      * Builds a loose one-shot mission order (issue #619): {@code stop at sensor 5 speed 2},
-     * {@code stop at station "A"}, {@code stop at end}, {@code stop when blocked}. Speed 0 (or
-     * absent) means "keep the train's current speed".
+     * {@code stop at station "A"}, {@code stop at end}, {@code stop when blocked} and (issue #645)
+     * {@code stop on contact}. Speed 0 (or absent) means "keep the train's current speed".
      */
     private ExecutableCommand buildStopOrder(ScriptLogicParser.StopOrderContext ctx) {
         MissionSpec spec = resolveMissionSpec(ctx);
@@ -655,6 +663,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             };
         }
         TrainMission mission = switch (spec.kind()) {
+            case ON_CONTACT -> TrainMission.stopOnContact(spec.speed());
             case WHEN_BLOCKED -> TrainMission.stopWhenBlocked(spec.speed());
             case END_OF_TRACK -> TrainMission.stopAtEndOfTrack(spec.speed());
             case STATION -> TrainMission.stopAtStation(spec.targetId(), spec.speed());
@@ -727,7 +736,10 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
         }
         if (!itineraryProblems.isEmpty()) {
             // D1: a waypoint with an unknown destination used to be dropped in silence and the
-            // plan ran with a missing stop. Reject the whole itinerary instead.
+            // plan ran with a missing stop. Reject the whole itinerary instead. A rejected
+            // (re)definition also retires any previous definition of that name, so a later
+            // `assign` warns "not found" instead of silently assigning a stale plan.
+            itineraries.remove(name);
             warnUser("Itinerary", "Itinerary '" + name + "' not created: "
                     + String.join("; ", itineraryProblems));
         } else if (currentItinerary.isValid()) {
@@ -735,6 +747,9 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             log.info("[DSL] Created itinerary '{}' with {} waypoints", name,
                     currentItinerary.waypoints().size());
         } else {
+            // A definition with fewer than two waypoints is rejected too: it retires the previous
+            // plan under that name (same rule as the problem rejection above).
+            itineraries.remove(name);
             warnUser("Itinerary",
                     "Itinerary '" + name + "' is invalid: an itinerary needs at least 2 waypoints");
         }
@@ -1220,41 +1235,108 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
         return s;
     }
 
-    private Train findTrainAtPlace(ScriptLogicParser.PlaceSelectorContext ctx) {
+    /**
+     * Outcome of {@code train at <place>}: the train resting there (or null) and whether the place
+     * itself exists. An unknown place is warned here and reported with {@code placeKnown=false} so
+     * the caller does not add a second, misleading "no train" notice on top.
+     */
+    private record PlaceTrain(Train train, boolean placeKnown) {}
+
+    private PlaceTrain findTrainAtPlace(ScriptLogicParser.PlaceSelectorContext ctx) {
         if (ctx.stationSelector() != null) {
-            int id = Integer.parseInt(ctx.stationSelector().NUMBER().getText());
-            letrain.track.Station s = model.getStation(id);
-            if (s != null) {
-                for (Locomotive l : model.getLocomotives()) {
-                    if (l.getTrack() != null && l.getTrack().getComponent() == s) {
-                        return l.getTrain();
-                    }
-                }
+            Station s = resolveTriggerStation(ctx.stationSelector());
+            if (s == null) {
+                warnDeferred("Station", "Station " + selectorRef(ctx.stationSelector())
+                        + " not found; action ignored");
+                return new PlaceTrain(null, false);
             }
-        } else if (ctx.sensorSelector() != null) {
-            int id = Integer.parseInt(ctx.sensorSelector().NUMBER().getText());
-            Sensor s = model.getSensor(id);
-            if (s != null) {
-                for (Locomotive l : model.getLocomotives()) {
-                    if (l.getTrack() != null && l.getTrack().getComponent() == s) {
-                        return l.getTrain();
-                    }
-                }
+            return new PlaceTrain(trainAtComponent(s), true);
+        }
+        if (ctx.sensorSelector() != null) {
+            Sensor s = resolveTriggerSensor(ctx.sensorSelector());
+            if (s == null) {
+                warnDeferred("Sensor", "Sensor " + selectorRef(ctx.sensorSelector())
+                        + " not found; action ignored");
+                return new PlaceTrain(null, false);
+            }
+            return new PlaceTrain(trainAtComponent(s), true);
+        }
+        if (ctx.forkSelector() != null) {
+            int id = Integer.parseInt(ctx.forkSelector().NUMBER().getText());
+            if (model.getFork(id) == null) {
+                warnDeferred("Fork", "Fork " + id + " not found; action ignored");
+                return new PlaceTrain(null, false);
+            }
+            return new PlaceTrain(null, true); // no train lookup at forks (unchanged)
+        }
+        if (ctx.semaphoreSelector() != null) {
+            int id = Integer.parseInt(ctx.semaphoreSelector().NUMBER().getText());
+            if (model.getSemaphore(id) == null) {
+                warnDeferred("Semaphore", "Semaphore " + id + " not found; action ignored");
+                return new PlaceTrain(null, false);
+            }
+            return new PlaceTrain(null, true);
+        }
+        return new PlaceTrain(null, true);
+    }
+
+    /** The train whose head locomotive rests on the track component, or null. */
+    private Train trainAtComponent(Sensor component) {
+        for (Locomotive l : model.getLocomotives()) {
+            if (l.getTrack() != null && l.getTrack().getComponent() == component) {
+                return l.getTrain();
             }
         }
         return null;
     }
 
     /**
-     * Human-readable place selector ("station 1") for notices. ANTLR's {@code getText()} glues the
-     * tokens without spaces ("station1"), which made the {@code train at} warning unreadable (O1).
+     * U4: trigger and place selectors resolve a station reference (number or exact quoted name).
+     * The name is looked up only when the reference is a name; case matters (strict policy).
+     */
+    private Station resolveTriggerStation(ScriptLogicParser.StationSelectorContext ctx) {
+        if (ctx.STRING() != null) {
+            return model.findStationByName(stripQuotes(ctx.STRING().getText()));
+        }
+        return model.getStation(Integer.parseInt(ctx.NUMBER().getText()));
+    }
+
+    /**
+     * U4: sensor reference (number or exact quoted name), mirroring {@link #resolveTriggerStation}.
+     */
+    private Sensor resolveTriggerSensor(ScriptLogicParser.SensorSelectorContext ctx) {
+        if (ctx.STRING() != null) {
+            return model.findSensorByName(stripQuotes(ctx.STRING().getText()));
+        }
+        return model.getSensor(Integer.parseInt(ctx.NUMBER().getText()));
+    }
+
+    /** Readable trigger selector reference ("1" or "\"Norte\"") for problem notices. */
+    private static String selectorRef(ScriptLogicParser.StationSelectorContext ctx) {
+        if (ctx.STRING() != null) {
+            return "\"" + stripQuotes(ctx.STRING().getText()) + "\"";
+        }
+        return ctx.NUMBER().getText();
+    }
+
+    private static String selectorRef(ScriptLogicParser.SensorSelectorContext ctx) {
+        if (ctx.STRING() != null) {
+            return "\"" + stripQuotes(ctx.STRING().getText()) + "\"";
+        }
+        return ctx.NUMBER().getText();
+    }
+
+    /**
+     * Human-readable place selector ("station 1", "sensor \"Norte\"") for notices. ANTLR's
+     * {@code getText()} glues the tokens without spaces ("station1"), which made the
+     * {@code train at} warning unreadable (O1).
      */
     private static String describePlace(ScriptLogicParser.PlaceSelectorContext ctx) {
         if (ctx.stationSelector() != null) {
-            return "station " + ctx.stationSelector().NUMBER().getText();
+            return "station " + selectorRef(ctx.stationSelector());
         }
         if (ctx.sensorSelector() != null) {
-            return "sensor " + ctx.sensorSelector().NUMBER().getText();
+            return "sensor " + selectorRef(ctx.sensorSelector());
         }
         if (ctx.forkSelector() != null) {
             return "fork " + ctx.forkSelector().NUMBER().getText();

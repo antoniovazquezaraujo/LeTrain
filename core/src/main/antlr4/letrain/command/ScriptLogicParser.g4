@@ -93,10 +93,15 @@ trigger :
     | trainSelector     ON (CRASH | CONTACT) (sense)?
     ;
 
-sensorSelector    : SENSOR NUMBER;
+/**
+ * U4: sensor and station references accept a number or an exact quoted name (strict case). Forks,
+ * semaphores and signals have no name and stay numeric. The name is resolved when the trigger is
+ * registered / the `train at` order runs; an unknown name warns and the trigger is not installed.
+ */
+sensorSelector    : SENSOR  (NUMBER | STRING);
 forkSelector      : FORK NUMBER;
 semaphoreSelector : SEMAPHORE NUMBER;
-stationSelector   : STATION NUMBER;
+stationSelector   : STATION (NUMBER | STRING);
 trainSelector     : TRAIN (NUMBER)?;
 
 trainEvent   : (ENTER | EXIT) (sense)?;
@@ -124,12 +129,13 @@ engineAction    : SET ENGINE (ON | OFF);
 trainAction     : SET trainSense | ACCELERATE | DECELERATE | SET SPEED trainSpeed | INVERT | PARK | STOP | coupleAction | uncoupleAction | SET NAME STRING | LOAD | UNLOAD | engineAction | stopOrder;
 /**
  * Issue #619: one-shot "advance until X and stop" order. The destination is a station or sensor
- * (by number or quoted name), the end of the track, or the first block that stops the train. The
- * optional speed belongs to the order: it is set when the mission starts and the train ends
- * stopped; without it the train's current target speed is used.
+ * (by number or quoted name), the end of the track, the first block that stops the train, or the
+ * vehicle ahead (issue #645: {@code stop on contact}, the coupling approach). The optional speed
+ * belongs to the order: it is set when the mission starts and the train ends stopped; without it
+ * the train's current target speed is used.
  */
 stopOrder       : STOP stopTarget missionSpeed?;
-stopTarget      : AT (STATION stationRef | SENSOR sensorRef | END) | WHEN BLOCKED;
+stopTarget      : AT (STATION stationRef | SENSOR sensorRef | END) | WHEN BLOCKED | ON CONTACT;
 missionSpeed    : SPEED trainSpeed;
 coupleAction    : COUPLE sense vehicleCount?;
 uncoupleAction  : UNCOUPLE sense vehicleCount?;
