@@ -31,6 +31,7 @@
 - [[letrain.command.CommandJournal|CommandJournal]] (core)
 - [[letrain.command.CommandManager|CommandManager]] (core)
 - [[letrain.command.CommandMerge|CommandMerge]] (core)
+- [[letrain.command.CommandNotices|CommandNotices]] (core)
 - [[letrain.command.EditCommandFilter|EditCommandFilter]] (core)
 - [[letrain.command.ExperimentSession|ExperimentSession]] (core)
 - [[letrain.command.FileNames|FileNames]] (core)

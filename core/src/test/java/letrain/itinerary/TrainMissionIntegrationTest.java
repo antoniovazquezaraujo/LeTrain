@@ -37,6 +37,12 @@ class TrainMissionIntegrationTest {
 
     private Model model;
 
+    /**
+     * Both contextual channels of a typed command, for tests that only care that the player saw a
+     * notice: the short command-line notice (console) and the panel (async mission problems).
+     */
+    private final List<String> messages = new ArrayList<>();
+
     @BeforeEach
     void setUp() {
         model = new Model(1);
@@ -209,8 +215,8 @@ class TrainMissionIntegrationTest {
         }
 
         @Test
-        @DisplayName("a destination behind the train reverses it once and reaches it")
-        void destinationBehind_reversesOnStart() {
+        @DisplayName("a destination behind the train is rejected with the explicit-turn notice (U5b)")
+        void destinationBehind_isRejectedWithNotice() {
             // Segment A = x -4..2 (station at x=-3); ahead there is only a fork into a dead-end
             // stub, so the only way to the station is backwards.
             List<RailTrack> approach = line(-4, 7, 0);
@@ -225,10 +231,37 @@ class TrainMissionIntegrationTest {
             List<String> messages = console(
                     "train " + train.getId() + " stop at station " + behind.getId() + " speed 2;");
 
-            assertFalse(messages.stream().anyMatch(m -> m.contains("no route")),
-                    "the station is reachable backwards, got: " + messages);
+            assertTrue(messages.stream().anyMatch(m -> m.contains("from the current sense")),
+                    "the order must be rejected with the turn notice, got: " + messages);
+            assertTrue(messages.stream().anyMatch(m -> m.contains("invert")),
+                    "the notice must name the explicit turn, got: " + messages);
+            assertTrue(train.getAutopilot().mission().isEmpty(),
+                    "a rejected order must not leave a mission");
             Locomotive loco = (Locomotive) train.getDirectorLinker();
-            assertTrue(loco.isReversed(), "the order must reverse the train");
+            assertFalse(loco.isReversed(), "no context auto-reverses the train (U5b)");
+            assertEquals(approach.get(4), headTrack(train), "the train must not move");
+        }
+
+        @Test
+        @DisplayName("with the explicit turn the same order reaches the station behind")
+        void destinationBehind_withExplicitTurn_reachesIt() {
+            List<RailTrack> approach = line(-4, 7, 0);
+            ForkRailTrack fork = fork(3, 0, Dir.W, Dir.E);
+            RailTrack stub = track(4, 0);
+            connect(approach.get(approach.size() - 1), Dir.E, fork, Dir.W);
+            fork.connect(Dir.E, stub);
+            stub.connect(Dir.W, fork);
+            Station behind = station(approach.get(1), "Behind");
+            Train train = placeTrain(approach.get(4), Dir.W); // x = 0, faces east
+
+            console("train " + train.getId() + " invert;");
+            Locomotive loco = (Locomotive) train.getDirectorLinker();
+            assertTrue(loco.isReversed(), "the explicit order must turn the train");
+
+            List<String> messages = console(
+                    "train " + train.getId() + " stop at station " + behind.getId() + " speed 2;");
+            assertFalse(messages.stream().anyMatch(m -> m.contains("no route")),
+                    "the station is reachable after the turn, got: " + messages);
             runUntil(() -> missionFinished(train), 600);
 
             assertEquals(TrainMission.State.COMPLETED, mission(train).state());
@@ -758,11 +791,20 @@ class TrainMissionIntegrationTest {
         return train;
     }
 
-    /** Runs a console command (typed form) and returns the notices shown to the user. */
+    /**
+     * Runs a console command (typed form) and returns the notices shown to the user, from both
+     * contextual channels: the short command-line notice and the panel (async mission problems).
+     * The panel sink is (re)wired to the shared list so a mission warning fired while the
+     * simulation advances lands here.
+     */
     private List<String> console(String command) {
-        List<String> messages = new ArrayList<>();
+        model.setUserMessageSink((title, text) -> messages.add(text));
         PlayerCommandExecutor.execute(command, model, null, null, null,
                 (title, text) -> messages.add(text), null, null, null);
+        String notice = model.getCommandNotice();
+        if (notice != null && !notice.isEmpty()) {
+            messages.add(notice);
+        }
         return messages;
     }
 

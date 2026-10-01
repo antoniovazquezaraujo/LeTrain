@@ -18,8 +18,8 @@ El sistema permite que los trenes calculen y recorran de forma autónoma la ruta
 La automatización permite definir y asignar itinerarios mediante scripts o consola (ver [[../systems/CommandPattern|Gestión de Automatización]] y la documentación de usuario `grammar.md`):
 ```letrain
 create itinerary "RutaCarbon" {
-    add station 1 load
-    add station 2 unload
+    add station 1, load
+    add station 2, unload
 }
 assign itinerary "RutaCarbon" to train 1;
 train 1 set autopilot true;
@@ -116,10 +116,10 @@ de fork (`fork N set straight|curved`, `fork N flip`). Detalles de implementaci�
   `park` deliberado (motores apagados), ni una espera de bloque, ni un cambio a manual pendiente.
 - Tras la maniobra, `advanceWaypoint` + `clearRoute` recalculan la ruta al siguiente waypoint desde
   la posición y el sentido en que haya quedado el tren.
-- **Itinerarios desde consola**: cada sentencia tecleada se ejecuta con un `CommandManager` nuevo,
-  así que `create itinerary` y `assign itinerary` deben ir en el mismo script/programa (el editor de
-  programa y los escenarios usan un único `CommandManager`). Es un límite pre-existente, candidato a
-  issue aparte.
+- **Itinerarios desde consola**: la consola comparte un `CommandManager` por mundo (issue #632):
+  `create itinerary` y `assign itinerary` funcionan entre sentencias de la misma sesión, o en la
+  misma línea. El registro sigue al modelo vigente: undo/redo, carga y replay de escenario restauran
+  un mundo nuevo, que arranca con el registro vacío (las definiciones asignadas viajan con el tren).
 - **Un itinerario necesita ≥2 waypoints** (es un bucle): un plan de un solo waypoint se rechaza con
   aviso y no se asigna; `set autopilot true` avisa si el tren no tiene itinerario válido.
 

@@ -35,7 +35,7 @@ class TimetableCompatibilityTest {
 
     private static final String COMMA_LESS_PROGRAM = """
             create itinerary "12" {
-              add station 1 reverse unload
+              add station 1, reverse unload
               add station 2
             }
             assign itinerary "12" to train 1;
@@ -73,7 +73,7 @@ class TimetableCompatibilityTest {
     @DisplayName("the scenario compiler rejects comma-less waypoints with a diagnostic")
     void scenarioCompiler_rejectsCommaLessWaypoints() {
         String text = "# LeTrain scenario v1\nseed 1\nprogram {\n  create itinerary \"x\" {\n"
-                + "    add station 2 reverse unload\n  }\n}\n";
+                + "    add station 2, reverse unload\n  }\n}\n";
 
         ScenarioCompiler.Result result = ScenarioCompiler.compile(text);
 

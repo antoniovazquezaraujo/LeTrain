@@ -153,6 +153,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                 if (text != null) {
                     model.setCommandText(text);
                     model.setCommandError("");
+                    model.setCommandNotice("");
                 }
                 return true;
             } else if (keycode == Input.Keys.N) {
@@ -160,6 +161,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                 if (text != null) {
                     model.setCommandText(text);
                     model.setCommandError("");
+                    model.setCommandNotice("");
                 }
                 return true;
             }
@@ -357,6 +359,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                 if (t.length() > 0) {
                     model.setCommandText(t.substring(0, t.length() - 1));
                     model.setCommandError("");
+                    model.setCommandNotice("");
                 }
                 return;
             } else if (stroke.getKeyType() == KeyType.Character) {
@@ -364,6 +367,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                 if (c != null && !stroke.isCtrlDown() && !stroke.isAltDown()) {
                     model.setCommandText(model.getCommandText() + c);
                     model.setCommandError("");
+                    model.setCommandNotice("");
                 }
                 return;
             } else if (stroke.getKeyType() == KeyType.ArrowUp) {
@@ -371,6 +375,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                 if (text != null) {
                     model.setCommandText(text);
                     model.setCommandError("");
+                    model.setCommandNotice("");
                 }
                 return;
             } else if (stroke.getKeyType() == KeyType.ArrowDown) {
@@ -378,6 +383,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                 if (text != null) {
                     model.setCommandText(text);
                     model.setCommandError("");
+                    model.setCommandNotice("");
                 }
                 return;
             }
@@ -421,6 +427,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                 model.setMode(Model.GameMode.COMMAND);
                 model.setCommandText("");
                 model.setCommandError("");
+                model.setCommandNotice("");
                 view.getCommandHistory().resetToNew();
                 return;
             }
@@ -670,11 +677,22 @@ public class Gdx3DInputHandler implements InputProcessor {
             history.record(prefix + cmd);
         }
         if (fromConsole && current.getMode() == Model.GameMode.COMMAND) {
-            // Back from the console: return to the mode the player was in.
-            current.setMode(returnMode);
+            // D1 contextual channel: with a console notice the command bar stays open so the
+            // player can read it (the input is cleared below); a silent success returns to the
+            // mode the player was in.
+            String notice = current.getCommandNotice();
+            if (notice == null || notice.isEmpty()) {
+                current.setMode(returnMode);
+            }
         } else if (!fromConsole) {
             // The '.' repeat path keeps the old behaviour of landing in RAILS.
             current.setMode(Model.GameMode.RAILS);
+            String notice = current.getCommandNotice();
+            if (notice != null && !notice.isEmpty()) {
+                // Outside COMMAND mode no command bar is painted: surface the notice in the
+                // status bar.
+                view.setStatusBarText(notice);
+            }
         }
         current.setCommandText("");
         current.setCommandError("");
@@ -691,6 +709,7 @@ public class Gdx3DInputHandler implements InputProcessor {
         model.setMode(model.getPreviousMode());
         model.setCommandText("");
         model.setCommandError("");
+        model.setCommandNotice("");
     }
 
     /** Absolute cursor prefix: {@code "go x,y; face d; "} from the current cursor state. */

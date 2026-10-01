@@ -58,9 +58,14 @@ class StopOrderGrammarTest {
     }
 
     @Test
+    @DisplayName("a bare stop is a direct order too (brake and autopilot off)")
+    void acceptsBareStop() {
+        assertTrue(run("train 1 stop;\n").isEmpty());
+    }
+
+    @Test
     @DisplayName("rejects incomplete destinations and malformed speeds")
     void rejectsMalformedOrders() {
-        assertFalse(run("train 1 stop;\n").isEmpty(), "bare stop is not an order");
         assertFalse(run("train 1 stop at;\n").isEmpty(), "missing destination");
         assertFalse(run("train 1 stop at sensor;\n").isEmpty(), "missing sensor id");
         assertFalse(run("train 1 stop at end of track;\n").isEmpty(), "extra words");

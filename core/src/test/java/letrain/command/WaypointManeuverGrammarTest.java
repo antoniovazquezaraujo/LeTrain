@@ -70,7 +70,7 @@ class WaypointManeuverGrammarTest {
     void runAroundPlan_isParsedInOrder() {
         Itinerary itinerary = run("""
                 create itinerary "runaround" {
-                    add station "b" arrival 06:27,
+                    add station "b", arrival 06:27,
                                    uncouple forward 1,
                                    stop at sensor 5 speed 2,
                                    reverse,
@@ -97,7 +97,7 @@ class WaypointManeuverGrammarTest {
     void otherTrainOrders_areAccepted() {
         Itinerary itinerary = run("""
                 create itinerary "orders" {
-                    add station "a"
+                    add station "a",
                         stop at station "b" speed 3,
                         stop at end,
                         stop when blocked speed 2,
@@ -121,7 +121,7 @@ class WaypointManeuverGrammarTest {
     void stopOnContact_survivesGameSaveRoundTrip() {
         Itinerary itinerary = run("""
                 create itinerary "coupling" {
-                    add station "a"
+                    add station "a",
                         stop on contact speed 2,
                         couple forward all
                     add station "b"
@@ -147,31 +147,31 @@ class WaypointManeuverGrammarTest {
     void strictness_isKept() {
         assertFalse(errors("""
                 create itinerary "bad" {
-                    add station "a" reverse uncouple forward 1
+                    add station "a", reverse uncouple forward 1
                     add station "b"
                 }
                 """).isEmpty(), "missing comma must be rejected");
         assertFalse(errors("""
                 create itinerary "bad" {
-                    add station "a" departure 09:00, reverse
+                    add station "a", departure 09:00, reverse
                     add station "b"
                 }
                 """).isEmpty(), "action after departure must be rejected");
         assertFalse(errors("""
                 create itinerary "bad" {
-                    add station "a" reverse, arrival 09:00
+                    add station "a", reverse, arrival 09:00
                     add station "b"
                 }
                 """).isEmpty(), "action before arrival must be rejected");
         assertFalse(errors("""
                 create itinerary "bad" {
-                    add station "a" stop at
+                    add station "a", stop at
                     add station "b"
                 }
                 """).isEmpty(), "stop at without destination must be rejected");
         assertFalse(errors("""
                 create itinerary "bad" {
-                    add station "a" uncouple
+                    add station "a", uncouple
                     add station "b"
                 }
                 """).isEmpty(), "uncouple without direction must be rejected");
@@ -182,7 +182,7 @@ class WaypointManeuverGrammarTest {
     void couplingAll_isParsed() {
         Itinerary itinerary = run("""
                 create itinerary "all" {
-                    add station "a"
+                    add station "a",
                         uncouple backward all,
                         couple forward all
                     add station "b"
@@ -202,7 +202,7 @@ class WaypointManeuverGrammarTest {
     void couplingAll_survivesGameSaveRoundTrip() {
         run("""
                 create itinerary "all" {
-                    add station "a" uncouple backward all
+                    add station "a", uncouple backward all
                     add station "b"
                 }
                 assign itinerary "all" to train 1;
@@ -220,11 +220,42 @@ class WaypointManeuverGrammarTest {
     }
 
     @Test
+    @DisplayName("U2: invert is a waypoint action too (same as reverse)")
+    void invertAction_isAccepted() {
+        Itinerary itinerary = run("""
+                create itinerary "inv" {
+                    add station "a", invert
+                    add station "b"
+                }
+                assign itinerary "inv" to train 1;
+                """);
+
+        assertEquals(List.of(WaypointCommand.REVERSE), itinerary.waypoints().get(0).commands());
+    }
+
+    @Test
+    @DisplayName("U6: a waypoint uncouple without count detaches every vehicle on that side")
+    void uncoupleWithoutCount_meansAll() {
+        Itinerary itinerary = run("""
+                create itinerary "shunt" {
+                    add station "a", uncouple backward
+                    add station "b"
+                }
+                assign itinerary "shunt" to train 1;
+                """);
+
+        assertEquals(
+                List.of(WaypointCommand.uncouple(false,
+                        letrain.vehicle.rail.TrainCouplingManager.ALL)),
+                itinerary.waypoints().get(0).commands());
+    }
+
+    @Test
     @DisplayName("the new waypoint commands survive a savegame round-trip")
     void commands_surviveGameSaveRoundTrip() {
         run("""
                 create itinerary "runaround" {
-                    add station "b" arrival 06:27,
+                    add station "b", arrival 06:27,
                                    uncouple forward 1,
                                    stop at sensor 5 speed 2,
                                    reverse,

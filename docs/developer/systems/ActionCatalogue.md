@@ -105,7 +105,7 @@ cursor heading at creation time.
 | Delete a whole train | `Backspace` on a vehicle / `clear` (TRAINS) | ✅ `clear tr <id>;` / `clear train <id>;` | `Model.removeLocomotive/removeWagon` (per linker) | Frees every occupied track. |
 | Delete the vehicle under the cursor (whole train if it is one, or a single loose wagon/loco) | `Backspace` (TRAINS) | ✅ turtle `clear;` at the cell (`go <x>,<y>; clear;`) — or `clear train <id>` for a whole train by id | `clearTrainAtCursor` (`PlayerCommandExecutor`) + `Model.removeLocomotive` / `removeWagon` | `clear` at a cell is **positional and all-or-nothing**: if the linker on that cell belongs to a train it removes the whole train; if it is a loose wagon/loco (or empty train) it removes just that vehicle. This already covers the loose-vehicle case without a `del wagon`/`del loco` command. |
 | Rename a train | — | ✅ `train <id> set name "…";` | `visitSetNameCommand` | |
-| Assign an itinerary + autopilot | (PROGRAM) | ✅ `create itinerary "…" {…};` + `assign itinerary "…" to train <id>;` + `train <id> set autopilot true;` | `CommandManager` | `on start`/operator origin; waypoints on stations/sensors with load/unload/reverse/stop/wait/speed. |
+| Assign an itinerary + autopilot | (PROGRAM / console session) | ✅ `create itinerary "…" {…};` + `assign itinerary "…" to train <id>;` + `train <id> set autopilot true;` | `CommandManager` | `on start`/operator origin; waypoints on stations/sensors with load/unload/reverse/stop/wait/speed. From the console the definition lives in a per-world session manager (#632): create and assign may be different typed statements. |
 
 ## 3. Gaps found (deliverable 2 input)
 

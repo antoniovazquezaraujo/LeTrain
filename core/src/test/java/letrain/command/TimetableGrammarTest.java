@@ -69,8 +69,8 @@ class TimetableGrammarTest {
         void fullPlan_isStoredInOrder() {
             program("""
                     create itinerary "Ruta" {
-                        add station 1 arrival 09:00, load, departure 09:20;
-                        add station 2 arrival 10:23, unload, departure 10:30;
+                        add station 1, arrival 09:00, load, departure 09:20;
+                        add station 2, arrival 10:23, unload, departure 10:30;
                     }
                     assign itinerary "Ruta" to train 1;
                     """);
@@ -94,8 +94,8 @@ class TimetableGrammarTest {
         void sensorTimesAndSingleDigitHour_work() {
             program("""
                     create itinerary "Ruta" {
-                        add station 1 e departure 6:05;
-                        add sensor 1 arrival 7:00, wait 3;
+                        add station 1 e, departure 6:05;
+                        add sensor 1, arrival 7:00, wait 3;
                     }
                     assign itinerary "Ruta" to train 1;
                     """);
@@ -113,12 +113,28 @@ class TimetableGrammarTest {
         }
 
         @Test
+        @DisplayName("U8: an hour without minutes means o'clock (`arrival 9` = 09:00)")
+        void hourOnlyTime_isMidnightPlusHour() {
+            program("""
+                    create itinerary "Ruta" {
+                        add station 1, arrival 9, departure 10
+                        add station 2
+                    }
+                    assign itinerary "Ruta" to train 1;
+                    """);
+
+            Waypoint first = assignedItinerary().waypoints().get(0);
+            assertEquals(LocalTime.of(9, 0), first.arrival().orElseThrow());
+            assertEquals(LocalTime.of(10, 0), first.departure().orElseThrow());
+        }
+
+        @Test
         @DisplayName("a waypoint without times keeps behaving exactly as before")
         void noTimes_isStillValid() {
             program("""
                     create itinerary "Ruta" {
-                        add station 1 load
-                        add station 2 reverse, unload
+                        add station 1, load
+                        add station 2, reverse, unload
                     }
                     assign itinerary "Ruta" to train 1;
                     """);
@@ -136,8 +152,8 @@ class TimetableGrammarTest {
         void departureAlone_isAccepted() {
             program("""
                     create itinerary "Ruta" {
-                        add station 1 departure 6:00
-                        add station 2 departure 23:50
+                        add station 1, departure 6:00
+                        add station 2, departure 23:50
                     }
                     assign itinerary "Ruta" to train 1;
                     """);
@@ -162,20 +178,20 @@ class TimetableGrammarTest {
         @Test
         @DisplayName("missing comma between actions")
         void missingComma_isRejected() {
-            assertTrue(assertProgramRejected("add station 1 reverse unload").contains("unload"));
+            assertTrue(assertProgramRejected("add station 1, reverse unload").contains("unload"));
         }
 
         @Test
         @DisplayName("missing comma before departure")
         void missingCommaBeforeDeparture_isRejected() {
-            assertTrue(assertProgramRejected("add station 1 load departure 9:20")
+            assertTrue(assertProgramRejected("add station 1, load departure 9:20")
                     .contains("departure"));
         }
 
         @Test
         @DisplayName("arrival after an action (out of order)")
         void arrivalAfterAction_isRejected() {
-            assertTrue(assertProgramRejected("add station 1 unload, arrival 10:23")
+            assertTrue(assertProgramRejected("add station 1, unload, arrival 10:23")
                     .contains("arrival"));
         }
 
@@ -183,15 +199,49 @@ class TimetableGrammarTest {
         @DisplayName("action after departure (out of order)")
         void actionAfterDeparture_isRejected() {
             assertTrue(
-                    assertProgramRejected("add station 1 departure 9:20, load").contains("line 2"),
+                    assertProgramRejected("add station 1, departure 9:20, load").contains("line 2"),
                     "the diagnostic must point at the offending line");
         }
 
         @Test
-        @DisplayName("out-of-range times are not a TIME token")
+        @DisplayName("missing comma after the waypoint reference is rejected (U7, no legacy)")
+        void missingCommaAfterReference_isRejected() {
+            assertTrue(assertProgramRejected("add station 1 arrival 09:00").contains("arrival"));
+        }
+
+        @Test
+        @DisplayName("times outside the TIME token range are a syntax error")
         void outOfRangeTime_isRejected() {
-            assertTrue(assertProgramRejected("add station 1 arrival 25:00").contains("TIME"));
-            assertTrue(assertProgramRejected("add station 1 departure 9:60").contains("TIME"));
+            assertOutOfRangeTimeRejected("add station 1, arrival 25:00");
+            assertOutOfRangeTimeRejected("add station 1, departure 9:60");
+        }
+
+        /**
+         * The out-of-range time does not lex as one TIME token, so the parser reports the orphan
+         * time separator on the offending line. The diagnostic must name both, not merely reject.
+         */
+        private void assertOutOfRangeTimeRejected(String waypointLine) {
+            String diagnostic = assertProgramRejected(waypointLine);
+            assertTrue(diagnostic.contains("line 2") && diagnostic.contains("extraneous input ':'"),
+                    "the diagnostic must point at the out-of-range time, got: " + diagnostic);
+        }
+
+        @Test
+        @DisplayName("an hour-only time outside 0..23 rejects the itinerary with a notice (U8)")
+        void outOfRangeHourOnly_rejectsItinerary() {
+            List<String> messages = new java.util.ArrayList<>();
+            model.setUserMessageSink((title, text) -> messages.add(title + ": " + text));
+
+            List<String> errors = model.setProgram("""
+                    create itinerary "bad" {
+                        add station 1, arrival 25
+                        add station 2
+                    }
+                    """);
+
+            assertTrue(errors.isEmpty(), "it parses: " + errors);
+            assertTrue(messages.stream().anyMatch(m -> m.contains("out of range")),
+                    "expected the range notice, got: " + messages);
         }
     }
 }

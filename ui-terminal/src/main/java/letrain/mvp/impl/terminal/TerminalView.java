@@ -1477,14 +1477,31 @@ public class TerminalView implements letrain.mvp.View {
 
     @Override
     public void drawCommandLine(String text, String error) {
-        int screenRows = screen.getTerminalSize().getRows();
-        int screenCols = screen.getTerminalSize().getColumns();
+        drawCommandLine(text, error, null);
+    }
+
+    @Override
+    public void drawCommandLine(String text, String error, String notice) {
+        if (screen == null) {
+            return;
+        }
+        drawCommandLine(screen.newTextGraphics(), screen.getTerminalSize(), text, error, notice);
+    }
+
+    /**
+     * Paints the command bar: the typed text plus its short feedback. The error is red and the
+     * notice (D1 contextual channel) yellow, both on the last screen row. Static and
+     * package-visible so tests can drive it with a mocked graphics.
+     */
+    static void drawCommandLine(TextGraphics g, TerminalSize size, String text, String error,
+            String notice) {
+        int screenRows = size.getRows();
+        int screenCols = size.getColumns();
         if (screenRows < 2)
             return; // safety
 
         int drawY = screenRows - 1; // Last line of the absolute screen
 
-        TextGraphics g = screen.newTextGraphics();
         g.setBackgroundColor(TextColor.ANSI.BLACK);
         g.setForegroundColor(TextColor.ANSI.WHITE);
         g.putString(0, drawY, " ".repeat(screenCols)); // clear line
@@ -1492,19 +1509,30 @@ public class TerminalView implements letrain.mvp.View {
         String prompt = ":" + text + "_";
         g.putString(0, drawY, prompt);
 
+        int cursorX = prompt.length() + 2; // small gap after the prompt
         if (error != null && !error.isEmpty()) {
-            String errStr = " " + error.replace('\n', ' ').replace('\r', ' ') + " "; // Just the
-                                                                                     // error, not
-                                                                                     // [ERROR:]
-            int startX = prompt.length() + 2; // small gap
-            if (startX < screenCols) {
+            String errStr = " " + error.replace('\n', ' ').replace('\r', ' ') + " ";
+            if (cursorX < screenCols) {
                 // Truncate if it overflows
-                if (startX + errStr.length() > screenCols) {
-                    errStr = errStr.substring(0, screenCols - startX);
+                if (cursorX + errStr.length() > screenCols) {
+                    errStr = errStr.substring(0, screenCols - cursorX);
                 }
                 g.setBackgroundColor(TextColor.ANSI.RED);
                 g.setForegroundColor(TextColor.ANSI.WHITE);
-                g.putString(startX, drawY, errStr);
+                g.putString(cursorX, drawY, errStr);
+                cursorX += errStr.length() + 1;
+            }
+        }
+
+        if (notice != null && !notice.isEmpty()) {
+            String noticeStr = " " + notice.replace('\n', ' ').replace('\r', ' ') + " ";
+            if (cursorX < screenCols) {
+                if (cursorX + noticeStr.length() > screenCols) {
+                    noticeStr = noticeStr.substring(0, screenCols - cursorX);
+                }
+                g.setBackgroundColor(TextColor.ANSI.YELLOW);
+                g.setForegroundColor(TextColor.ANSI.BLACK);
+                g.putString(cursorX, drawY, noticeStr);
             }
         }
     }

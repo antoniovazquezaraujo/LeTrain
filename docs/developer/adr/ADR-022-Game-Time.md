@@ -1,6 +1,6 @@
 # ADR-022: Tiempo de Juego (Reloj, Día/Noche y Horarios)
 
-## Estado: PROPUESTO — fase 0 implementada (reloj, HUD y comando `time set`); fase 2a implementada (gramática y modelo de horarios); fase 2b implementada (retención, `park` y métrica de puntualidad en core; el HUD llega en 2c)
+## Estado: PROPUESTO — fase 0 implementada (reloj, HUD y comando `time set`); fase 2a implementada (gramática y modelo de horarios); fase 2b implementada (retención, `park` y métrica de puntualidad en core; el HUD llega en 2c); saneo de sintaxis del lote 2 aplicado (`time set HH`, `park`/`stop` directos, `invert`≡`reverse`, sin auto-giro, comas del plan, comentarios `#`)
 
 ## Contexto
 
@@ -64,10 +64,11 @@ elegida en cada punto:
 8. **Día/noche es visual** en esta fase (paleta del terminal y luz/faros en 3D); `isNight()` y
    `getDayNightRatio()` quedan disponibles para un futuro efecto sobre el gameplay.
 9. **Comando de consola del reloj**: `time;` muestra la hora actual (`Día 1 08:00`);
-   `time set HH:MM;` fija la hora del día actual **sin diálogo de confirmación** (el cambio ya se
-   ve en el reloj del HUD). El salto es determinista y se journaliza, así que el replay reproduce
-   la misma hora. Los instantes anteriores al origen (Día 1, 08:00) ruedan al día siguiente; no se
-   toca la duración del día (esa escala se fija al crear la partida).
+   `time set HH:MM;` o `time set HH;` fija la hora del día actual **sin diálogo de confirmación**
+   (el cambio ya se ve en el reloj del HUD). Una hora fuera de rango (`time set 25:99`, `time set
+   25`) se rechaza con aviso y **el reloj queda intacto**. El salto es determinista y se journaliza,
+   así que el replay reproduce la misma hora. Los instantes anteriores al origen (Día 1, 08:00)
+   ruedan al día siguiente; no se toca la duración del día (esa escala se fija al crear la partida).
 10. **Ciclo solar por latitud** (fase 1): `SolarModel` (core) calcula amanecer/atardecer y
     elevación/acimut del sol a partir del día del año, la hora y la latitud. `getDayNightRatio()`
     se deriva de la elevación con una banda de crepúsculo de 18°, y `world.latitude`
@@ -117,15 +118,15 @@ Referencia rápida (notch 10 = 5 ticks/celda):
 ### Horarios (fase 2): horas por parada
 
 Cada **waypoint** del itinerario puede llevar la hora de **llegada** y/o de **salida** como
-atributos, en formato de 24 h (`H:MM` o `HH:MM`). Las comas son separadores **obligatorios** entre
-acciones (una sola forma de escribir, más legible; la referencia del waypoint y su dirección no
-llevan coma):
+atributos, en formato de 24 h (`HH` o `H:MM`/`HH:MM`; `9` es 09:00). Las comas son separadores
+**obligatorios** entre todos los ítems del plan, incluida la referencia del waypoint (con su
+dirección) cuando el waypoint lleva plan (U7):
 
 ```letrain
 create itinerary "cercanías" {
-  add station 1 load, departure 9:20;
-  add station 2 arrival 10:23, unload, departure 10:30;
-  add sensor 5 arrival 10:37
+  add station 1, load, departure 9:20;
+  add station 2, arrival 10:23, unload, departure 10:30;
+  add sensor 5, arrival 10:37
 }
 ```
 
@@ -140,6 +141,9 @@ Semántica:
   `departure − arrival` en **tiempo de juego**, invariante al ritmo (`time.dayDurationSeconds`).
 - Sin `departure`, el tren sale cuando acaban sus acciones; sin `arrival`, no hay medida de
   llegada. Sin ninguna hora, el waypoint se comporta como hasta ahora.
+- Las **horas sueltas se validan al rango 0..23**: `arrival 25` parsea pero rechaza el itinerario
+  con aviso; una hora con minutos fuera de rango (`25:00`, `9:60`) no es un token `TIME` y es un
+  error de sintaxis.
 - En **sensores** las horas funcionan **igual que en una estación** (también pueden retener hasta su
   `departure`); la única diferencia es que no hay carga ni descarga. (Decidido tras revisión: un
   tren puede necesitar esperar en un sensor.)
@@ -170,7 +174,8 @@ Métrica (fase 2, solo medir; la economía horaria es la fase 4):
 
 Compatibilidad (**decidida**): la sintaxis nueva es **estricta en todos los puntos de entrada**
 (consola, editor, escenarios, partidas guardadas, journals y `letrain-check`): las acciones sin
-comas y los atributos fuera de orden son errores con diagnóstico. Al ser una beta **sin compromiso
+comas, la referencia de un waypoint con plan sin su coma (U7) y los atributos fuera de orden son
+errores con diagnóstico. Al ser una beta **sin compromiso
 de compatibilidad**, el texto viejo **no se migra**: los escenarios, programas y journals escritos
 con la sintaxis anterior (`add station 2 reverse unload`, `SPEED 0 WAIT 3 SPEED 3`) quedan inválidos
 y hay que reescribir sus itinerarios a mano; los ejemplos del repo se migran en esta entrega
@@ -209,6 +214,27 @@ siguiente medida. La métrica vive en `letrain.itinerary.Punctuality` y se expon
 servicio igualmente. Tests de referencia: `RetentionParkMetricsTest` (reloj con `time set` + ticks),
 `PunctualityTest` y `TimetableTest`.
 
+Saneo de sintaxis del **lote 2** (revisión del DSL, `CommandDSLReview.md` §7b):
+
+- **U1**: el atajo `train N set 5` desaparece; siempre `set speed N`.
+- **U2**: `invert` y `reverse` son el mismo token en orden directa y acción de waypoint.
+- **U3**: `park` existe como orden directa (`train N park;`), misma semántica que la acción de
+  waypoint.
+- **U5b**: **no hay auto-giro en ningún contexto**. Un destino detrás del sentido actual rechaza la
+  orden con aviso y exige girar a mano (`train N invert;`/`reverse;`); los tests del #619 prueban
+  ahora el rechazo y el giro explícito.
+- **U6**: `uncouple` sin número desengancha todo (como `couple`); un contador debe ser `>= 1` o
+  `all`, y `0` avisa "cantidad inválida" sin hacer nada.
+- **U7**: si un waypoint lleva plan, la referencia (con su dirección) se separa por coma del primer
+  ítem (sin plan, la forma desnuda sigue igual). Sin compatibilidad con la forma vieja.
+- **U8**: `arrival 9`/`time set 9` significan 09:00; una hora suelta fuera de `0..23` avisa
+  (`arrival`) o avisa y deja el reloj intacto (`time set`).
+- **D3**: fuera los tokens muertos `LEFT`/`RIGHT` y el literal `'train at'` (ahora dos tokens);
+  fuera los eventos `couple`/`uncouple` de los triggers (quedan `enter`/`exit`); `fork set
+  <dirección>` se comporta igual en consola, trigger y waypoint (aviso si no hay ruta); `train N
+  stop;` es orden directa; `#` inicia comentario de línea en todo el DSL; la ayuda y las chuletas se
+  validan contra la gramática real (`DslDocumentationSyntaxTest`).
+
 #### La jornada completa (ejemplo)
 
 Servicio diario entre dos estaciones, con cocheras al final de la jornada. **El autopilot ya
@@ -218,17 +244,18 @@ al primer waypoint, su hora pertenece al día siguiente (rollover).
 
 ```letrain
 create itinerary "cercanías diario" {
-  add station "Cocheras" departure 06:00;        // arranque de la jornada
-  add station "A" arrival 06:10, departure 06:15;
-  add station "B" arrival 06:27, departure 06:30;
-  ...                                            // las otras tres idas y vueltas
-  add station "Cocheras" arrival 22:50 park;     // fin de jornada: a cocheras
+  add station "Cocheras", departure 06:00;        # arranque de la jornada
+  add station "A", arrival 06:10, departure 06:15;
+  add station "B", arrival 06:27, departure 06:30;
+  ...                                             # las otras tres idas y vueltas
+  add station "Cocheras", arrival 22:50, park;    # fin de jornada: a cocheras
 }
 assign itinerary "cercanías diario" to train 1;
 ```
 
-> **Nota:** `park` ya está implementado (fase 2b); los comentarios `//` son ilustrativos (el DSL no
-> admite comentarios todavía).
+> **Nota:** `park` ya está implementado (fase 2b) y también existe como orden directa
+> (`train N park;`). Los comentarios `#` son válidos en todo el DSL (lote 2, U-limpieza); los
+> ejemplos antiguos con `//` de este documento se han migrado.
 
 - **Cómo se inicia cada mañana**: el tren pasa la noche en cocheras (el último y el primer
   waypoint son el mismo sitio) y a las 06:00 la `departure` del primer waypoint lo libera. La
@@ -263,28 +290,32 @@ fork (`fork N set straight|curved`, `fork N flip`). La issue #645 añade `stop o
 (aproximación de enganche, ver más abajo).
 
 ```letrain
-add station "B" arrival 06:27,
-               uncouple backward 1,           // los vagones quedan detrás (ver nota)
-               stop at sensor 5 speed 2,      // entra en el bucle
-               reverse,                       // el cambio de sentido lo escribe el autor
-               fork 3 set curved,             // fuerza el desvío de vuelta
-               stop at sensor 6 speed 2,      // vuelve por el otro lado del tren
+add station "B", arrival 06:27,
+               uncouple backward 1,           # los vagones quedan detrás (ver nota)
+               stop at sensor 5 speed 2,      # entra en el bucle
+               reverse,                       # el cambio de sentido lo escribe el autor
+               fork 3 set curved,             # fuerza el desvío de vuelta
+               stop at sensor 6 speed 2,      # vuelve por el otro lado del tren
                couple forward 1,
-               reverse,                       // queda mirando hacia la salida
+               reverse,                       # queda mirando hacia la salida
                departure 06:45;
 ```
 
 - **Dirección de `uncouple`**: la orden desengancha por el **frente físico** del tren
-  (`uncouple forward`) o por su cola (`uncouple backward`). Con la locomotora en cabeza tirando de
+  (`uncouple forward`) o por su cola (`uncouple backward`). Sin número desengancha **todos** los
+  vehículos de ese lado (U6, igual que `couple`); un contador debe ser `>= 1` o `all` y `0` avisa y
+  no hace nada. Con la locomotora en cabeza tirando de
   los vagones, los vagones van detrás: el run-around se escribe `uncouple backward 1` (o
   `uncouple backward all` para soltar todos los de ese lado; el ejemplo original de la issue usaba
   `forward 1`, que solo encaja si los vagones van delante). El motor solo
   divide o engancha con el tren parado: la acción frena y espera a que se detenga.
-- **Los cambios de sentido son explícitos**: cada `reverse` va escrito entre tramos. Dentro del
-  itinerario, `stop at` **no** auto-invierte: si falta un `reverse`, no hay ruta desde el sentido
-  actual y se avisa (*"no route to … from the current sense; add 'reverse' to the itinerary"*). La
-  auto-inversión (opción B de la issue #619) es para órdenes sueltas de scripts/consola, donde no
-  hay coreografía escrita.
+- **Los cambios de sentido son explícitos en todas partes**: cada `reverse` va escrito entre
+  tramos (`invert` y `reverse` son sinónimos en cualquier contexto, U2). Ni dentro del itinerario
+  ni en las órdenes sueltas hay auto-giro (U5b, lote 2): si falta
+  el giro, no hay ruta desde el sentido actual y se avisa. El aviso nombra el arreglo según el
+  contexto — el autor del itinerario recibe *"no route to … from the current sense; add 'reverse'
+  to the itinerary"*; una orden suelta tecleada recibe *"turn the train with 'invert'/'reverse'
+  first"* y el jugador gira el tren (`train N invert;`) antes de repetirla.
 - **La ruta de la maniobra respeta las agujas preparadas**: para las misiones de un waypoint la
   ruta se construye con el **paseo físico** desde la cabeza (los desvíos tal y como estén), no con
   el A* puro: un `fork N set curved` del autor no lo pisa después el autopilot al recalcular. Si el
@@ -332,8 +363,9 @@ add station "B" arrival 06:27,
   autopilot: la velocidad va en la orden (sin ella —o con `speed 0`— se usa la que el tren tenga
   puesta; si es 0 se rechaza con aviso), el tren termina parado y la llegada **solo queda en el
   log** (los avisos de problema —rechazo, inalcanzable, ruta perdida, estancamiento— sí salen por
-  consola en órdenes tecleadas y por log en scripts). Si el destino solo es alcanzable en sentido
-  contrario, la orden **auto-invierte una vez** al empezar;
+  consola en órdenes tecleadas y por panel en scripts). El destino solo puede estar **por delante
+  del sentido actual**: si está detrás la orden se **rechaza con aviso** y hay que girar el tren a
+  mano (`train N invert;`/`reverse;`) antes de repetirla (U5b: ya no hay auto-inversión);
   `stop at end` frena en la última vía antes del tope y `stop when blocked` **rueda con la curva del
   #633 hasta la última vía de su cantón** ante el primer bloqueo, donde completa parado (no reanuda
   al liberarse; si el bloqueo se libera antes de parar, el tren sigue). Una orden nueva reemplaza a

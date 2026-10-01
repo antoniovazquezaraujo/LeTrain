@@ -123,7 +123,7 @@ class StopOnContactUserScenarioIntegrationTest {
 
             List<String> errors = model.setProgram("""
                     create itinerary "c" {
-                        add station %d arrival 12:00,
+                        add station %d, arrival 12:00,
                             uncouple backward all,
                             stop at sensor %d speed 3,
                             reverse,
@@ -133,7 +133,7 @@ class StopOnContactUserScenarioIntegrationTest {
                             couple forward all,
                             reverse,
                             departure 12:30;
-                        add station %d arrival 14:00, park
+                        add station %d, arrival 14:00, park
                     }
                     assign itinerary "c" to train %d;
                     train %d set autopilot true;
@@ -189,7 +189,7 @@ class StopOnContactUserScenarioIntegrationTest {
             // end with the plan's cruise resumed (the mission must not leave it dead).
             List<String> errors = model.setProgram("""
                     create itinerary "c" {
-                        add station %d arrival 12:00,
+                        add station %d, arrival 12:00,
                             uncouple backward all,
                             stop at sensor %d speed 3,
                             reverse,
@@ -198,7 +198,7 @@ class StopOnContactUserScenarioIntegrationTest {
                             stop on contact speed 3,
                             couple forward all,
                             reverse;
-                        add station %d arrival 14:00,
+                        add station %d, arrival 14:00,
                             park
                     }
                     assign itinerary "c" to train %d;
@@ -258,10 +258,10 @@ class StopOnContactUserScenarioIntegrationTest {
             // frozen with targetSpeed 0 after the waypoint actions.
             List<String> errors = model.setProgram("""
                     create itinerary "m" {
-                        add station %d arrival 12:00,
+                        add station %d, arrival 12:00,
                             stop at sensor %d speed 3,
                             uncouple backward all;
-                        add station %d arrival 14:00,
+                        add station %d, arrival 14:00,
                             park
                     }
                     assign itinerary "m" to train %d;
@@ -299,10 +299,10 @@ class StopOnContactUserScenarioIntegrationTest {
 
             List<String> errors = model.setProgram("""
                     create itinerary "m" {
-                        add station %d arrival 12:00,
+                        add station %d, arrival 12:00,
                             stop at sensor %d speed 3,
                             uncouple backward all;
-                        add station %d arrival 14:00,
+                        add station %d, arrival 14:00,
                             park
                     }
                     assign itinerary "m" to train %d;
@@ -346,7 +346,7 @@ class StopOnContactUserScenarioIntegrationTest {
 
             List<String> errors = model.setProgram("""
                     create itinerary "p" {
-                        add station %d park
+                        add station %d, park
                         add station %d
                     }
                     assign itinerary "p" to train %d;

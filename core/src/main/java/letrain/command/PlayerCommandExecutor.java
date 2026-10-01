@@ -22,6 +22,15 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     private java.util.function.Consumer<java.io.File> onExport;
     private java.util.function.Consumer<java.io.File> onImport;
 
+    /** Problem notices gathered while this typed command runs (D1 contextual channel). */
+    private final letrain.command.CommandNotices commandNotices =
+            new letrain.command.CommandNotices();
+
+    /**
+     * True once {@link #finishCommand()} ran: deferred notices become asynchronous from then on.
+     */
+    private boolean commandFinished;
+
     public PlayerCommandExecutor(Model model, java.util.function.Consumer<java.io.File> onSave,
             java.util.function.Consumer<java.io.File> onLoad,
             letrain.command.TurtleDelegate turtleDelegate) {
@@ -64,6 +73,52 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
 
     public PlayerCommandExecutor(Model model) {
         this(model, null, null, null);
+    }
+
+    /**
+     * User-facing problem notice produced while this typed command runs. It is gathered for the
+     * console channel (D1 contextual): the command line when the whole set fits, the scrollable
+     * panel otherwise. {@link #finishCommand()} routes it when the command ends.
+     */
+    private void warn(String title, String text) {
+        log.warn("[DSL] {}", text);
+        commandNotices.add(title, text);
+    }
+
+    /**
+     * Ends the typed command: routes the gathered notices to their contextual channel (D1). A
+     * short, single-line set goes to the command bar; a long or multiline one opens the scrollable
+     * panel (same rule as syntax errors) and is not duplicated on the bar. Deferred notices fired
+     * from now on belong to asynchronous events and report to the panel.
+     */
+    private void finishCommand() {
+        commandFinished = true;
+        if (model == null) {
+            return;
+        }
+        if (commandNotices.isEmpty()) {
+            model.setCommandNotice("");
+            return;
+        }
+        if (commandNotices.needsPanel()) {
+            model.setCommandNotice("");
+            model.reportUserMessage("Command notice", commandNotices.panelText());
+        } else {
+            model.setCommandNotice(commandNotices.shortText());
+        }
+    }
+
+    /**
+     * Deferred problem notice (trigger action, mission rejected/failed). While the typed command
+     * that armed it is still running it belongs to the console feedback; afterwards it is an
+     * asynchronous event, so it goes to the visible panel like programs and itineraries.
+     */
+    private void onDeferredNotice(String title, String text) {
+        if (!commandFinished) {
+            commandNotices.add(title, text);
+        } else if (model != null) {
+            model.reportUserMessage(title, text);
+        }
     }
 
     public static String execute(String commandText, Model model) {
@@ -184,14 +239,20 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             PlayerCommandExecutor executor = new PlayerCommandExecutor(model, onSave, onLoad,
                     turtleDelegate, onMessage, onQuit, onUndo, onRedo, onExport, onImport);
             executor.setAutoRecordJournal(autoRecordJournal);
-            executor.visit(tree);
-            if (autoRecordJournal && !executor.toggledRecording && model != null) {
-                letrain.command.CommandJournal journal = model.getCommandJournal();
-                if (journal != null && journal.isRecording()) {
-                    journal.record(commandText.trim());
+            try {
+                executor.visit(tree);
+                if (autoRecordJournal && !executor.toggledRecording && model != null) {
+                    letrain.command.CommandJournal journal = model.getCommandJournal();
+                    if (journal != null && journal.isRecording()) {
+                        journal.record(commandText.trim());
+                    }
                 }
+                return null; // No errors
+            } finally {
+                // Flush on success and on a mid-command failure alike, so a notice already
+                // produced is never lost.
+                executor.finishCommand();
             }
-            return null; // No errors
         } catch (Exception e) {
             log.error("Command execution error", e);
             return e.getMessage();
@@ -249,8 +310,16 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             hour = Integer.parseInt(parts[0]);
             minute = Integer.parseInt(parts[1]);
         } else {
+            // U8: `time set 9` = 09:00; `time set 9:5` keeps the two-number form.
             hour = Integer.parseInt(ctx.NUMBER(0).getText());
-            minute = Integer.parseInt(ctx.NUMBER(1).getText());
+            minute = ctx.NUMBER().size() > 1 ? Integer.parseInt(ctx.NUMBER(1).getText()) : 0;
+        }
+        if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+            // D1 / U8: `time set 25:99` used to wrap silently; it is an error with a visible
+            // warning now, and the clock stays untouched.
+            warn("Time", "Invalid time " + hour + ":" + minute
+                    + " (expected 00:00..23:59); the clock is unchanged");
+            return null;
         }
         letrain.time.GameTime target = new letrain.time.GameTime(clock.now().day(), hour, minute);
         clock.setTime(target);
@@ -345,6 +414,16 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
 
         // info; -> everything
         if (type == null) {
+            if (ctx.NUMBER() != null || ctx.identifier() != null) {
+                // `info 5` has no entity type: the number used to be ignored in silence.
+                String ref =
+                        ctx.NUMBER() != null ? ctx.NUMBER().getText() : ctx.identifier().getText();
+                onMessage.accept("Info",
+                        "'info " + ref
+                                + "' ignores the reference (no entity type); use e.g. 'info train "
+                                + ref + "' or 'info;' for everything");
+                return null;
+            }
             onMessage.accept("Info", model.getGameObjectsReport());
             return null;
         }
@@ -443,7 +522,9 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                     return null;
                 }
             }
-            return "Train not found";
+            warn("Name", "Train " + (name != null ? "'" + name + "'" : id)
+                    + " not found; name unchanged");
+            return null;
         } else if (ctx.entityType().STATION() != null) {
             for (letrain.track.Station s : model.getStations()) {
                 if ((name != null && name.equals(s.getName())) || (id != -1 && s.getId() == id)) {
@@ -451,7 +532,9 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                     return null;
                 }
             }
-            return "Station not found";
+            warn("Name", "Station " + (name != null ? "'" + name + "'" : id)
+                    + " not found; name unchanged");
+            return null;
         } else if (ctx.entityType().SENSOR() != null) {
             for (letrain.track.Sensor s : model.getSensors()) {
                 if ((name != null && name.equals(s.getName())) || (id != -1 && s.getId() == id)) {
@@ -459,11 +542,19 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                     return null;
                 }
             }
-            return "Sensor not found";
+            warn("Name", "Sensor " + (name != null ? "'" + name + "'" : id)
+                    + " not found; name unchanged");
+            return null;
         } else if (ctx.entityType().SEMAPHORE() != null) {
-            return "Semaphores cannot be renamed";
+            // The message used to be returned and discarded: now it reaches the console (D1).
+            warn("Name", "Semaphores cannot be renamed; name unchanged");
+            return null;
+        } else if (ctx.entityType().SIGNAL() != null) {
+            warn("Name", "Signals cannot be renamed; name unchanged");
+            return null;
         }
-        return "Entity type not supported for renaming";
+        warn("Name", "Entity type not supported for renaming");
+        return null;
     }
 
     public Object visitQuitCommand(PlayerCommandsParser.QuitCommandContext ctx) {
@@ -475,8 +566,43 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         return null;
     }
 
+    /**
+     * Console session registry (issue #632): the console re-parses every typed statement with its
+     * own {@link ScriptLogicParser} pass, so itinerary definitions would be lost between statements
+     * if each one built a fresh {@link CommandManager}. One manager is kept per live world: it
+     * survives across the statements of a console session and is replaced whenever the model is
+     * swapped (undo/redo, load, scenario replay), so its registry always belongs to the world the
+     * next statement will run against.
+     */
+    private static Model sessionModel;
+    private static CommandManager sessionManager;
+
+    /**
+     * The {@link CommandManager} shared by every statement of the console session running on
+     * {@code model} (a null model gets a throwaway manager). Kept in sync with the live model: a
+     * different instance means a swapped-in world, which starts with an empty registry.
+     */
+    private static synchronized CommandManager sessionManagerFor(Model model) {
+        if (model != null && sessionModel == model && sessionManager != null) {
+            return sessionManager;
+        }
+        if (model == null) {
+            return new CommandManager(null);
+        }
+        sessionModel = model;
+        sessionManager = new CommandManager(model);
+        return sessionManager;
+    }
+
     @Override
     public Object visitStatement(PlayerCommandsParser.StatementContext ctx) {
+        // `PlayerCommandsParser` overrides `setNameCommand` so the console accepts a STRING
+        // reference (`station "old" set name "new"`), which the strict ScriptLogicParser does not.
+        // Handle it here: re-parsing would reject it and the rename would be lost in silence.
+        if (ctx.directCommand() != null && ctx.directCommand().setNameCommand() != null) {
+            return visitSetNameCommand(ctx.directCommand().setNameCommand());
+        }
+
         // Since it's a script logic statement, we can re-parse it with ScriptLogicParser
         // This avoids duplicating all the visitor logic for trains, semaphores, etc.
         // Wait, ANTLR4 tokens contain the start and stop index!
@@ -485,12 +611,49 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         String originalText = ctx.getStart().getInputStream()
                 .getText(new org.antlr.v4.runtime.misc.Interval(start, stop));
 
-        ScriptLogicParser scriptParser = new ScriptLogicParser(
-                new CommonTokenStream(new LeTrainLexer(CharStreams.fromString(originalText))));
+        List<String> innerErrors = new ArrayList<>();
+        LeTrainLexer innerLexer = new LeTrainLexer(CharStreams.fromString(originalText));
+        innerLexer.removeErrorListeners();
+        innerLexer.addErrorListener(new org.antlr.v4.runtime.BaseErrorListener() {
+            @Override
+            public void syntaxError(org.antlr.v4.runtime.Recognizer<?, ?> recognizer,
+                    Object offendingSymbol, int line, int charPositionInLine, String msg,
+                    org.antlr.v4.runtime.RecognitionException e) {
+                innerErrors.add("Token error at " + line + ":" + charPositionInLine + " " + msg);
+            }
+        });
+        ScriptLogicParser scriptParser = new ScriptLogicParser(new CommonTokenStream(innerLexer));
+        scriptParser.removeErrorListeners();
+        scriptParser.addErrorListener(new org.antlr.v4.runtime.BaseErrorListener() {
+            @Override
+            public void syntaxError(org.antlr.v4.runtime.Recognizer<?, ?> recognizer,
+                    Object offendingSymbol, int line, int charPositionInLine, String msg,
+                    org.antlr.v4.runtime.RecognitionException e) {
+                innerErrors.add("Syntax error at " + line + ":" + charPositionInLine + " " + msg);
+            }
+        });
         ScriptLogicParser.ScriptStartContext scriptTree = scriptParser.scriptStart();
-        CommandManager scriptManager = new CommandManager(model);
-        scriptManager.setWarningSink(onMessage);
-        scriptManager.visit(scriptTree);
+        if (!innerErrors.isEmpty()) {
+            // D1: a statement the script engine cannot execute is never a silent no-op.
+            warn("Command",
+                    "Not supported by the script engine: " + String.join(" | ", innerErrors));
+            return null;
+        }
+        CommandManager scriptManager = sessionManagerFor(model);
+        // Immediate problems (unknown entity, rejected itinerary…) are console feedback for a
+        // typed command (D1 contextual channel).
+        scriptManager.setWarningSink((title, text) -> commandNotices.add(title, text));
+        // Deferred blocks (triggers) and mission notices: they fire later, so they report to the
+        // panel; while this command is still running they are folded into its feedback. The sink is
+        // rebound on every statement (and cleared without a visible channel) because the session
+        // manager outlives this executor: a previous call's sink must never survive into this one.
+        scriptManager.setDeferredWarningSink(
+                onMessage != null && model != null ? this::onDeferredNotice : null);
+        // Visit the statements directly instead of the parsed root: visitScriptStart resets the
+        // registry, which would drop the itineraries created by the previous console statements.
+        for (ScriptLogicParser.StatementContext statement : scriptTree.statement()) {
+            scriptManager.visit(statement);
+        }
         return null;
     }
 
@@ -1099,6 +1262,12 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                             } else
                                 turtleDelegate.moveForward();
                         }
+                    } else {
+                        // Steps with an identifier / `m name` / `mark name` parse but do nothing
+                        // yet: named marks in turtle sequences are not implemented (D1: no silent
+                        // no-ops). Implementing them is a separate batch.
+                        warn("Turtle", "Step " + (i + 1) + " ('" + stepCtx.getText()
+                                + "') ignored: named steps/marks are not implemented");
                     }
                 }
             } else {

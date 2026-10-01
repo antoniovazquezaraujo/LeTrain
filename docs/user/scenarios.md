@@ -41,7 +41,8 @@ program {
 - `program { ... }` — the automation script (itineraries, triggers). Installed after the build, so
   it can reference the freshly built elements.
 
-All sections are optional and can appear in any order; `#` starts a comment. A flat file with just a
+All sections are optional and can appear in any order; `#` starts a comment (also inside the DSL
+itself, `program { ... }` included). A flat file with just a
 seed and commands (no braces) is valid and treated as `on build`, so older scenarios keep working.
 
 ## Creating and playing

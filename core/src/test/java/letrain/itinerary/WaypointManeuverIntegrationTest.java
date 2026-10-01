@@ -62,7 +62,7 @@ class WaypointManeuverIntegrationTest {
 
             List<String> errors = model.setProgram("""
                     create itinerary "maneuver" {
-                        add station "a"
+                        add station "a",
                             stop at sensor %d speed 3,
                             reverse
                         add station "b"
@@ -93,7 +93,7 @@ class WaypointManeuverIntegrationTest {
 
             List<String> errors = model.setProgram("""
                     create itinerary "maneuver" {
-                        add station "a"
+                        add station "a",
                             stop at sensor %d speed 2,
                             reverse
                         add station "b"
@@ -125,7 +125,7 @@ class WaypointManeuverIntegrationTest {
 
             List<String> errors = model.setProgram("""
                     create itinerary "maneuver" {
-                        add station "a" arrival 08:00,
+                        add station "a", arrival 08:00,
                             stop at station "a" speed 2,
                             reverse,
                             departure 09:00
@@ -163,9 +163,9 @@ class WaypointManeuverIntegrationTest {
 
             List<String> errors = model.setProgram("""
                     create itinerary "chain" {
-                        add station "a" reverse
+                        add station "a", reverse
                         add station "a"
-                        add station "a" reverse
+                        add station "a", reverse
                         add station "b"
                     }
                     assign itinerary "chain" to train %d;
@@ -223,7 +223,7 @@ class WaypointManeuverIntegrationTest {
 
             List<String> errors = model.setProgram("""
                     create itinerary "maneuver" {
-                        add station "a"
+                        add station "a",
                             reverse,
                             stop at sensor %d speed 2
                         add station "b"
@@ -261,7 +261,7 @@ class WaypointManeuverIntegrationTest {
 
             List<String> errors = model.setProgram("""
                     create itinerary "maneuver" {
-                        add station "a" arrival 08:00,
+                        add station "a", arrival 08:00,
                             stop at sensor %d speed 2,
                             departure 09:00
                         add station "b"
@@ -296,7 +296,7 @@ class WaypointManeuverIntegrationTest {
 
             List<String> errors = model.setProgram("""
                     create itinerary "maneuver" {
-                        add station "a" arrival 08:00,
+                        add station "a", arrival 08:00,
                             stop at sensor %d speed 2,
                             departure 08:02
                         add station "b"
@@ -348,7 +348,7 @@ class WaypointManeuverIntegrationTest {
 
             List<String> errors = model.setProgram("""
                     create itinerary "maneuver" {
-                        add station "a" arrival 08:00,
+                        add station "a", arrival 08:00,
                             fork %d set curved,
                             departure 09:00
                         add station "b"
@@ -394,7 +394,7 @@ class WaypointManeuverIntegrationTest {
 
             List<String> errors = model.setProgram("""
                     create itinerary "maneuver" {
-                        add station "a"
+                        add station "a",
                             stop at sensor %d speed 2
                         add station "b"
                     }
@@ -547,7 +547,7 @@ class WaypointManeuverIntegrationTest {
 
             List<String> errors = model.setProgram("""
                     create itinerary "runaround" {
-                        add station "b" arrival 08:00,
+                        add station "b", arrival 08:00,
                             uncouple backward 1,
                             stop at sensor %d speed 2,
                             reverse,
@@ -664,7 +664,7 @@ class WaypointManeuverIntegrationTest {
 
             List<String> errors = model.setProgram("""
                     create itinerary "shunt" {
-                        add station "a" uncouple backward all
+                        add station "a", uncouple backward all
                         add station "a"
                     }
                     assign itinerary "shunt" to train %d;
@@ -687,7 +687,7 @@ class WaypointManeuverIntegrationTest {
 
             List<String> errors = model.setProgram("""
                     create itinerary "shunt" {
-                        add station "a" couple backward all
+                        add station "a", couple backward all
                         add station "a"
                     }
                     assign itinerary "shunt" to train %d;
@@ -819,16 +819,15 @@ class WaypointManeuverIntegrationTest {
         void autopilotWithoutItinerary_warns() {
             Train train = worldAndTrain();
             List<String> messages = new ArrayList<>();
-            String error = PlayerCommandExecutor.execute(
-                    "train " + train.getId() + " set autopilot true;", model, null, null, null,
-                    (title, text) -> messages.add(text), null, null, null);
+            model.setUserMessageSink((title, text) -> messages.add(text));
+            String error = PlayerCommandExecutor
+                    .execute("train " + train.getId() + " set autopilot true;", model);
             assertNull(error, error);
+            // The text is over 60 chars: the panel, not the command line.
             assertTrue(messages.stream().anyMatch(m -> m.contains("has no itinerary assigned")),
                     "expected the no-itinerary warning, got: " + messages);
 
-            messages.clear();
-            PlayerCommandExecutor.execute("create itinerary \"x\" { add station \"s\" }", model,
-                    null, null, null, (title, text) -> messages.add(text), null, null, null);
+            PlayerCommandExecutor.execute("create itinerary \"x\" { add station \"s\" }", model);
             assertTrue(messages.stream().anyMatch(m -> m.contains("at least 2 waypoints")),
                     "expected the invalid-itinerary warning, got: " + messages);
         }

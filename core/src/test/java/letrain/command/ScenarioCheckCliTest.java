@@ -33,7 +33,7 @@ class ScenarioCheckCliTest {
     void run_commaLessWaypoints_returnsOneWithDiagnostic() throws Exception {
         Path file = Files.createTempFile("commaless", ".ltr");
         Files.writeString(file, "# LeTrain scenario v1\nseed 1\nprogram {\n"
-                + "create itinerary \"x\" {\n  add station 2 reverse unload\n}\n}\n");
+                + "create itinerary \"x\" {\n  add station 2, reverse unload\n}\n}\n");
         ByteArrayOutputStream captured = new ByteArrayOutputStream();
         PrintStream original = System.out;
         try {

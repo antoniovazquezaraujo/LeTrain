@@ -117,11 +117,13 @@ public class GrammarReference {
 
         Node time = new Node("time");
         time.add(new Node("show", "time;"));
-        time.add(new Node("set", "time set HH:MM;"));
+        time.add(new Node("set (h:m)", "time set 9:30;"));
+        time.add(new Node("set (hour)", "time set 9;"));
         root.add(time);
-        root.add(new Node("record/edit mode", "R (Shift+R)"));
+        Node recordMode = new Node("record/edit mode (R, Shift+R)");
+        root.add(recordMode);
         root.add(new Node("save / load", "save backup; load backup;"));
-        root.add(new Node("export / import", "export my-network; import my-network;"));
+        root.add(new Node("export / import", "export my_network; import my_network;"));
         root.add(new Node("quit", "quit;"));
 
         return root;
@@ -203,42 +205,43 @@ public class GrammarReference {
         itin.add(new Node("template", "create itinerary \"\" {\n  add station #\n}"));
         itin.add(new Node("block terminator", "} ends the block; a trailing ; is optional"));
         itin.add(new Node("waypoint rules",
-                "waypoints: commas between actions are mandatory; order: arrival, actions, "
-                        + "departure"));
+                "waypoints: a comma after the reference (and its direction) is mandatory when "
+                        + "there is a plan; order: arrival, actions, departure"));
         itin.setExpanded(true);
         root.add(itin);
 
         Node addSt = new Node("add station [cmd]");
-        addSt.add(new Node("load", "add station # load"));
-        addSt.add(new Node("unload", "add station # unload"));
-        addSt.add(new Node("reverse", "add station # reverse"));
-        addSt.add(new Node("stop", "add station # stop"));
-        addSt.add(new Node("park", "add station # park"));
-        addSt.add(new Node("wait n", "add station # wait #"));
-        addSt.add(new Node("speed n", "add station # speed #"));
-        addSt.add(new Node("stop at sensor", "add station # stop at sensor # speed #"));
-        addSt.add(new Node("stop when blocked", "add station # stop when blocked speed #"));
-        addSt.add(new Node("stop on contact", "add station # stop on contact speed #"));
-        addSt.add(new Node("uncouple", "add station # uncouple backward 1"));
-        addSt.add(new Node("uncouple all", "add station # uncouple backward all"));
-        addSt.add(new Node("couple", "add station # couple forward 1"));
-        addSt.add(new Node("fork curved", "add station # fork # set curved"));
-        addSt.add(new Node("fork flip", "add station # fork # flip"));
-        addSt.add(new Node("arrival hh:mm", "add station # arrival 9:20"));
-        addSt.add(new Node("departure hh:mm", "add station # departure 9:30"));
-        addSt.add(new Node("timed stop", "add station # arrival 9:20, load, departure 9:30"));
+        addSt.add(new Node("load", "add station #, load"));
+        addSt.add(new Node("unload", "add station #, unload"));
+        addSt.add(new Node("reverse", "add station #, reverse"));
+        addSt.add(new Node("stop", "add station #, stop"));
+        addSt.add(new Node("park", "add station #, park"));
+        addSt.add(new Node("wait n", "add station #, wait #"));
+        addSt.add(new Node("speed n", "add station #, speed #"));
+        addSt.add(new Node("stop at sensor", "add station #, stop at sensor # speed #"));
+        addSt.add(new Node("stop when blocked", "add station #, stop when blocked speed #"));
+        addSt.add(new Node("stop on contact", "add station #, stop on contact speed #"));
+        addSt.add(new Node("uncouple", "add station #, uncouple backward 1"));
+        addSt.add(new Node("uncouple all", "add station #, uncouple backward all"));
+        addSt.add(new Node("couple", "add station #, couple forward 1"));
+        addSt.add(new Node("fork curved", "add station #, fork # set curved"));
+        addSt.add(new Node("fork flip", "add station #, fork # flip"));
+        addSt.add(new Node("arrival hh:mm", "add station #, arrival 9:20"));
+        addSt.add(new Node("arrival hh", "add station #, arrival 9"));
+        addSt.add(new Node("departure hh:mm", "add station #, departure 9:30"));
+        addSt.add(new Node("timed stop", "add station #, arrival 9:20, load, departure 9:30"));
         root.add(addSt);
 
         Node addSe = new Node("add sensor [cmd]");
-        addSe.add(new Node("load", "add sensor # load"));
-        addSe.add(new Node("unload", "add sensor # unload"));
-        addSe.add(new Node("park", "add sensor # park"));
-        addSe.add(new Node("wait n", "add sensor # wait #"));
-        addSe.add(new Node("stop at sensor", "add sensor # stop at sensor # speed #"));
-        addSe.add(new Node("uncouple", "add sensor # uncouple backward 1"));
-        addSe.add(new Node("uncouple all", "add sensor # uncouple backward all"));
-        addSe.add(new Node("arrival hh:mm", "add sensor # arrival 10:37"));
-        addSe.add(new Node("departure hh:mm", "add sensor # departure 10:40"));
+        addSe.add(new Node("load", "add sensor #, load"));
+        addSe.add(new Node("unload", "add sensor #, unload"));
+        addSe.add(new Node("park", "add sensor #, park"));
+        addSe.add(new Node("wait n", "add sensor #, wait #"));
+        addSe.add(new Node("stop at sensor", "add sensor #, stop at sensor # speed #"));
+        addSe.add(new Node("uncouple", "add sensor #, uncouple backward 1"));
+        addSe.add(new Node("uncouple all", "add sensor #, uncouple backward all"));
+        addSe.add(new Node("arrival hh:mm", "add sensor #, arrival 10:37"));
+        addSe.add(new Node("departure hh:mm", "add sensor #, departure 10:40"));
         root.add(addSe);
 
         root.add(new Node("assign itinerary", "assign itinerary \"\" to train #;"));
@@ -254,6 +257,7 @@ public class GrammarReference {
         snOn.add(new Node("exit", "sensor # on train exit {\n  \n}"));
         snOn.add(new Node("enter fwd", "sensor # on train enter forward {\n  \n}"));
         snOn.add(new Node("exit bwd", "sensor # on train exit backward {\n  \n}"));
+        snOn.add(new Node("enter by name", "sensor \"Norte\" on train enter {\n  \n}"));
         sensor.add(snOn);
         root.add(sensor);
 
@@ -263,6 +267,7 @@ public class GrammarReference {
         stOn.add(new Node("exit", "station # on train exit {\n  \n}"));
         stOn.add(new Node("enter fwd", "station # on train enter forward {\n  \n}"));
         stOn.add(new Node("exit bwd", "station # on train exit backward {\n  \n}"));
+        stOn.add(new Node("enter by name", "station \"Central\" on train enter {\n  \n}"));
         station.add(stOn);
         root.add(station);
 
@@ -284,8 +289,6 @@ public class GrammarReference {
         Node trOn = new Node("on").setExpanded(true);
         trOn.add(new Node("enter", "train # on enter {\n  \n}"));
         trOn.add(new Node("exit", "train # on exit {\n  \n}"));
-        trOn.add(new Node("link", "train # on link {\n  \n}"));
-        trOn.add(new Node("unlink", "train # on unlink {\n  \n}"));
         trOn.add(new Node("crash", "train # on crash {\n  \n}"));
         trOn.add(new Node("contact", "train # on contact {\n  \n}"));
         trOn.add(new Node("crash fwd", "train # on crash forward {\n  \n}"));
@@ -302,12 +305,13 @@ public class GrammarReference {
         trainAct.add(new Node("accelerate", "train # accelerate;"));
         trainAct.add(new Node("decelerate", "train # decelerate;"));
         trainAct.add(new Node("stop", "train # stop;"));
+        trainAct.add(new Node("park", "train # park;"));
         trainAct.add(new Node("stop at station", "train # stop at station # speed #;"));
         trainAct.add(new Node("stop at sensor", "train # stop at sensor # speed #;"));
         trainAct.add(new Node("stop at end", "train # stop at end speed #;"));
         trainAct.add(new Node("stop when blocked", "train # stop when blocked speed #;"));
         trainAct.add(new Node("stop on contact", "train # stop on contact speed #;"));
-        trainAct.add(new Node("invert", "train # invert;"));
+        trainAct.add(new Node("invert / reverse", "train # invert;"));
         trainAct.add(new Node("set forward", "train # set forward;"));
         trainAct.add(new Node("set backward", "train # set backward;"));
         trainAct.add(new Node("engine", "train # set engine on;"));
@@ -316,12 +320,15 @@ public class GrammarReference {
         trainAct.add(new Node("couple", "train # couple forward #;"));
         trainAct.add(new Node("couple all", "train # couple forward all;"));
         trainAct.add(new Node("uncouple", "train # uncouple backward #;"));
+        trainAct.add(new Node("uncouple (no count = all)", "train # uncouple backward;"));
         trainAct.add(new Node("uncouple all", "train # uncouple backward all;"));
         root.add(trainAct);
 
         Node trainAt = new Node("train at");
         trainAt.add(new Node("station", "train at station # stop;"));
         trainAt.add(new Node("sensor", "train at sensor # stop;"));
+        trainAt.add(new Node("station by name", "train at station \"Central\" stop;"));
+        trainAt.add(new Node("sensor by name", "train at sensor \"Norte\" stop;"));
         trainAt.add(new Node("fork", "train at fork # stop;"));
         trainAt.add(new Node("semaphore", "train at semaphore # stop;"));
         root.add(trainAt);

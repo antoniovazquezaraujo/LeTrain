@@ -142,7 +142,7 @@ class StopOnContactIntegrationTest {
 
             List<String> errors = model.setProgram("""
                     create itinerary "runaround" {
-                        add station "b" arrival 08:00,
+                        add station "b", arrival 08:00,
                             uncouple backward 1,
                             stop at sensor %d speed 2,
                             reverse,
@@ -229,7 +229,7 @@ class StopOnContactIntegrationTest {
 
             List<String> errors = model.setProgram("""
                     create itinerary "maneuver" {
-                        add station "a" arrival 08:00,
+                        add station "a", arrival 08:00,
                             stop on contact speed 2,
                             departure 09:00
                         add station "b"
@@ -346,6 +346,9 @@ class StopOnContactIntegrationTest {
             Train subject = placeTrain(rails.get(0), Dir.W);
             Locomotive loco = (Locomotive) subject.getDirectorLinker();
             List<String> messages = new ArrayList<>();
+            // The crash happens after the typed order finished, so its warning is an asynchronous
+            // event: it reports to the visible panel (D1), not to the command line.
+            model.setUserMessageSink((title, text) -> messages.add(text));
             List<Integer> crashSpeeds = new ArrayList<>();
             subject.addScriptTrainEventListener(new ScriptTrainEventListener() {
                 @Override

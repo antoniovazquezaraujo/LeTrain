@@ -569,12 +569,23 @@ public class Gdx3DHud {
         }
 
         if (model.getMode() == letrain.mvp.Model.GameMode.COMMAND) {
-            String desc = ":" + model.getCommandText() + "_";
-            if (model.getCommandError() != null && !model.getCommandError().isEmpty()) {
-                desc += " [RED][ERROR: " + model.getCommandError() + "][]";
-            }
-            descLabel.setText(desc);
+            descLabel.setText(commandLineText(model));
         }
+    }
+
+    /**
+     * Command bar text plus its short feedback. Errors are red; notices (D1 contextual channel)
+     * yellow. Static and package-visible so a test can check it without a GL context.
+     */
+    static String commandLineText(letrain.mvp.Model model) {
+        String desc = ":" + model.getCommandText() + "_";
+        if (model.getCommandError() != null && !model.getCommandError().isEmpty()) {
+            desc += " [RED][ERROR: " + model.getCommandError() + "][]";
+        }
+        if (model.getCommandNotice() != null && !model.getCommandNotice().isEmpty()) {
+            desc += " [YELLOW][NOTICE: " + model.getCommandNotice() + "][]";
+        }
+        return desc;
     }
 
     /** Exit confirmation menu (opened with Esc), mirroring the 2D exit/quit prompt. */

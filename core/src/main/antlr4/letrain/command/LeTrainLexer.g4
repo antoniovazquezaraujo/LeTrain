@@ -16,7 +16,6 @@ FALSE: 'false';
 ADD: 'add';
 LOAD: 'load';
 UNLOAD: 'unload';
-REVERSE: 'reverse';
 WAIT: 'wait';
 SPEED: 'speed';
 ON: 'on';
@@ -35,7 +34,6 @@ ALL: 'all';
 FORK: 'fork' | 'fk';
 SEMAPHORE: 'semaphore' | 'sm';
 SIGNAL: 'signal' | 'sg';
-TRAIN_AT: 'train at';
 OPEN: 'open';
 CLOSED: 'closed';
 STRAIGHT: 'straight';
@@ -45,7 +43,9 @@ FORWARD: 'forward' | 'fw';
 BACKWARD: 'backward' | 'bw';
 ACCELERATE: 'accelerate';
 DECELERATE: 'decelerate';
-INVERT: 'invert';
+// U2 (DSL review): a single token for both spellings; direct orders and waypoint actions accept
+// 'invert' and 'reverse' interchangeably.
+INVERT: 'invert' | 'reverse';
 
 // New Keywords for PlayerCommands
 NEW: 'new';
@@ -119,8 +119,6 @@ LOCO: 'loco';
 WAGON: 'wagon';
 
 // Added keywords for signals and forks
-LEFT: 'left';
-RIGHT: 'right';
 CLOSE: 'close';
 MAX: 'max';
 LIMIT: 'limit';
@@ -162,6 +160,10 @@ PARK: 'park';
 AT: 'at';
 WHEN: 'when';
 BLOCKED: 'blocked';
+
+// Line comment: everything from '#' to the end of the line is ignored, in every entry point
+// (console, program, triggers, scenarios). The scenario guide already promised this.
+COMMENT : '#' ~[\r\n]* -> skip ;
 
 // Identifiers
 ID : [a-zA-Z0-9_]+ ;
