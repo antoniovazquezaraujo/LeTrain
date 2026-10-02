@@ -2,7 +2,11 @@ package letrain.audio.synth;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import letrain.audio.core.AudioSource;
+import letrain.audio.material.MaterialBank;
+import letrain.audio.material.MaterialId;
+import letrain.audio.material.MaterialProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,22 +15,72 @@ import org.slf4j.LoggerFactory;
  *
  * <p>
  * Arquitectura de un único GrainEngine para la locomotora (locoEngine), más un GrainEngine de
- * vagones (coachEngine).
+ * vagones (coachEngine), uno de frenos, uno de carga y uno de transiciones (transEngine, quinta
+ * voz, todavía sin material: lo alimenta la PR D).
  *
  * <p>
  * Estados: OFF → sin sonido STARTING → reproduce segmento 'start' una vez, luego → RALENTI RALENTI
  * → loop del segmento 'ralenti' (notch 0) CRUISE_N → loop del segmento 'cruise' con pitch del notch
  * N, con ramp entre notches STOPPING → reproduce segmento 'stop' una vez, luego → OFF
+ *
+ * <p>
+ * Desde la PR C de ADR-029 el synth también posee un bus de mezcla de {@link Voice}s (loco, coach,
+ * brake, load, trans) y un selector {@link SoundMode}. {@link SoundMode#LEGACY} es el modo por
+ * defecto y ejecuta el código de siempre sin cambios; {@link SoundMode#MATERIAL} lee cada voz en su
+ * propio buffer scratch y aplica la envolvente de ganancia por muestra (ADR-029 §4) más la ganancia
+ * de material en la suma. MATERIAL todavía no selecciona transiciones: esa integración llega en la
+ * PR D.
  */
 public class TrainSynthesizer implements AudioSource {
 
     private static final Logger log = LoggerFactory.getLogger(TrainSynthesizer.class);
+
+    /** System property that selects the train sound mode: {@code auto|material|legacy}. */
+    public static final String SOUND_MODE_PROPERTY = "letrain.audio.trainSound";
+
+    /**
+     * Mode used when the property is absent or invalid. PR C keeps LEGACY as the default so the
+     * audible result does not change; PR D flips the default to {@link SoundMode#AUTO}.
+     */
+    private static final SoundMode DEFAULT_SOUND_MODE = SoundMode.LEGACY;
+
+    /** ADR-029 §4 onset fade-in for one-shot transitions (range 10-20 ms). */
+    static final float ONSET_FADE_SECONDS = 0.015f;
+
+    /** ADR-029 §4 crossfade to a loop or between voices (range 150-300 ms). */
+    static final float CROSSFADE_SECONDS = 0.200f;
+
+    /** ADR-029 §4 cut when the physical state abandons the segment (range 50-150 ms). */
+    static final float CUT_SECONDS = 0.100f;
+
+    /**
+     * Sound engine selection (ADR-029, phase PR C).
+     *
+     * <ul>
+     * <li>{@code AUTO}: MATERIAL when the profile declares at least one {@code notch.*} material,
+     * LEGACY otherwise.</li>
+     * <li>{@code MATERIAL}: material bank path. Experimental in this PR: the voice/envelope mix bus
+     * exists, but no transition is selected yet (PR D).</li>
+     * <li>{@code LEGACY}: today's {@code train-sound.wav} behaviour, unchanged.</li>
+     * </ul>
+     */
+    public enum SoundMode {
+        AUTO, MATERIAL, LEGACY
+    }
 
     // --- Engines ---
     private GrainEngine locoEngine; // Motor: start / ralenti / cruise / stop
     private GrainEngine coachEngine; // Vagones
     private GrainEngine brakeEngine;
     private GrainEngine loadEngine;
+    private GrainEngine transEngine; // Quinta voz: one-shots de transición (PR D)
+
+    // --- Bus de mezcla (ADR-029 §2/§4, modo MATERIAL) ---
+    private Voice locoVoice;
+    private Voice coachVoice;
+    private Voice brakeVoice;
+    private Voice loadVoice;
+    private Voice transVoice;
 
     private float filterSensitivity = 1.0f;
 
@@ -88,6 +142,11 @@ public class TrainSynthesizer implements AudioSource {
         this.masterVolume = Math.max(0f, Math.min(1f, masterVolume));
     }
 
+    // --- Modo de sonido (ADR-029, PR C) ---
+    /** Injected bank for tests; a null value falls back to {@link MaterialBank#shared()}. */
+    private final MaterialBank materialBank;
+    private SoundMode soundMode;
+
     // --- Segmentos (en segundos, de las labels) ---
     private double startSegStart = 0, startSegEnd = 0;
     private double stopSegStart = 0, stopSegEnd = 0;
@@ -100,6 +159,22 @@ public class TrainSynthesizer implements AudioSource {
     // =====================================================================
 
     public TrainSynthesizer() {
+        this(resolveModeFromProperty(), null);
+    }
+
+    /** Test/integration seam: fixes the sound mode instead of reading the system property. */
+    public TrainSynthesizer(SoundMode requestedMode) {
+        this(requestedMode, null);
+    }
+
+    /**
+     * Full constructor: injects a material bank (tests) and resolves {@link SoundMode#AUTO} against
+     * its profile. A null bank falls back to {@link MaterialBank#shared()} when needed.
+     */
+    TrainSynthesizer(SoundMode requestedMode, MaterialBank materialBank) {
+        this.materialBank = materialBank;
+        this.soundMode = resolveMode(requestedMode != null ? requestedMode : DEFAULT_SOUND_MODE);
+
         locoEngine = new GrainEngine();
         locoEngine.setLoopMode(GrainEngine.LoopMode.PING_PONG);
         locoEngine.setTurnProbability(0.15f); // random reverse
@@ -118,7 +193,84 @@ public class TrainSynthesizer implements AudioSource {
         loadEngine.setLoopMode(GrainEngine.LoopMode.WRAP);
         loadEngine.setTurnProbability(0f);
 
+        transEngine = new GrainEngine();
+        transEngine.setLoopMode(GrainEngine.LoopMode.PLAY_ONCE);
+        transEngine.setTurnProbability(0f);
+
+        locoVoice = new Voice("loco", locoEngine);
+        coachVoice = new Voice("coach", coachEngine);
+        brakeVoice = new Voice("brake", brakeEngine);
+        loadVoice = new Voice("load", loadEngine);
+        transVoice = new Voice("trans", transEngine);
+
         loadResources();
+
+        // The mix bus is the only gain stage in MATERIAL mode: the legacy voices pass through at
+        // gain 1 (their engines keep shaping volume as today) and the transition voice stays
+        // silent until PR D selects a transition for it.
+        locoVoice.setGain(1.0f);
+        coachVoice.setGain(1.0f);
+        brakeVoice.setGain(1.0f);
+        loadVoice.setGain(1.0f);
+    }
+
+    // =====================================================================
+    // Modo de sonido
+    // =====================================================================
+
+    /** Effective mode after resolving {@link SoundMode#AUTO}. */
+    public SoundMode getSoundMode() {
+        return soundMode;
+    }
+
+    /** Resolves the mode from the {@link #SOUND_MODE_PROPERTY} system property. */
+    public static SoundMode resolveModeFromProperty() {
+        return resolveModeFromProperty(System.getProperty(SOUND_MODE_PROPERTY));
+    }
+
+    /** Pure property parser, visible for tests; null/blank/unknown values fall back to LEGACY. */
+    static SoundMode resolveModeFromProperty(String value) {
+        if (value == null) {
+            return DEFAULT_SOUND_MODE;
+        }
+        String normalized = value.trim().toLowerCase(Locale.ROOT);
+        switch (normalized) {
+            case "auto":
+                return SoundMode.AUTO;
+            case "material":
+                return SoundMode.MATERIAL;
+            case "legacy":
+                return SoundMode.LEGACY;
+            default:
+                if (!normalized.isEmpty()) {
+                    log.warn("unknown {}='{}'; using {}", SOUND_MODE_PROPERTY, value,
+                            DEFAULT_SOUND_MODE);
+                }
+                return DEFAULT_SOUND_MODE;
+        }
+    }
+
+    private SoundMode resolveMode(SoundMode requestedMode) {
+        if (requestedMode != SoundMode.AUTO) {
+            return requestedMode;
+        }
+        MaterialProfile profile = materialBank().profile();
+        for (MaterialId id : profile.materials().keySet()) {
+            if (id.role() == MaterialId.Role.NOTCH) {
+                log.debug("AUTO sound mode -> MATERIAL (profile '{}')", profile.name());
+                return SoundMode.MATERIAL;
+            }
+        }
+        log.debug("AUTO sound mode -> LEGACY (profile '{}' has no notch material)", profile.name());
+        return SoundMode.LEGACY;
+    }
+
+    /** Material bank in use: the injected one, or the shared classpath bank. */
+    MaterialBank materialBank() {
+        if (materialBank != null) {
+            return materialBank;
+        }
+        return MaterialBank.shared();
     }
 
     // =====================================================================
@@ -178,8 +330,13 @@ public class TrainSynthesizer implements AudioSource {
     /**
      * Permite inyectar un AudioSample externo (usado por TestSynth). Actualiza los engines y
      * re-inicializa los notches con las labels existentes.
+     *
+     * <p>
+     * Test seam: an injected single sample only makes sense on the legacy path, so this forces
+     * {@link SoundMode#LEGACY} (ADR-029, PR C).
      */
     public void setSample(AudioSample sample) {
+        soundMode = SoundMode.LEGACY;
         sharedSample = sample;
         if (sharedLabels != null) {
             initNotchesFromLabels(sharedLabels, sample);
@@ -354,6 +511,19 @@ public class TrainSynthesizer implements AudioSource {
         if (!audioRunning) {
             return false;
         }
+        if (soundMode == SoundMode.LEGACY) {
+            readLegacy(buffer);
+        } else {
+            readMixed(buffer);
+        }
+        return true;
+    }
+
+    /**
+     * Today's path, byte-for-byte: engines accumulate directly into the mix buffer and
+     * {@code masterVolume} is applied at the end.
+     */
+    private void readLegacy(float[] buffer) {
         if (state != State.LOAD_ONLY) {
             updateBrakeVolume();
             locoEngine.read(buffer);
@@ -366,12 +536,33 @@ public class TrainSynthesizer implements AudioSource {
         if (loadEngine != null) {
             loadEngine.read(buffer);
         }
+        applyMasterVolume(buffer);
+    }
+
+    /**
+     * MATERIAL path (ADR-029 §2/§4): every voice reads into its own scratch buffer and is summed
+     * with its per-sample gain envelope plus its material gain. Experimental in PR C: it runs the
+     * legacy state machine through the new mix bus; transition material selection lands in PR D.
+     */
+    private void readMixed(float[] buffer) {
+        if (state != State.LOAD_ONLY) {
+            updateBrakeVolume();
+            locoVoice.mixInto(buffer);
+            coachVoice.mixInto(buffer);
+            brakeVoice.mixInto(buffer);
+            transVoice.mixInto(buffer);
+        }
+        updateLoadVolume();
+        loadVoice.mixInto(buffer);
+        applyMasterVolume(buffer);
+    }
+
+    private void applyMasterVolume(float[] buffer) {
         if (masterVolume != 1f) {
             for (int i = 0; i < buffer.length; i++) {
                 buffer[i] *= masterVolume;
             }
         }
-        return true;
     }
 
     @Override
@@ -547,6 +738,9 @@ public class TrainSynthesizer implements AudioSource {
         coachEngine.setDistanceFilter(eff);
         if (brakeEngine != null) {
             brakeEngine.setDistanceFilter(eff);
+        }
+        if (transEngine != null) {
+            transEngine.setDistanceFilter(eff);
         }
     }
 
@@ -843,5 +1037,26 @@ public class TrainSynthesizer implements AudioSource {
 
     public GrainEngine getCoachEngine() {
         return coachEngine;
+    }
+
+    // --- Acceso a las voces del bus de mezcla (tests y selector de la PR D) ---
+    Voice getLocoVoice() {
+        return locoVoice;
+    }
+
+    Voice getCoachVoice() {
+        return coachVoice;
+    }
+
+    Voice getBrakeVoice() {
+        return brakeVoice;
+    }
+
+    Voice getLoadVoice() {
+        return loadVoice;
+    }
+
+    Voice getTransVoice() {
+        return transVoice;
     }
 }

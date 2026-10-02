@@ -8,6 +8,10 @@ public abstract class AudioGenerator {
         this.sampleRate = sampleRate;
     }
 
+    public float getSampleRate() {
+        return this.sampleRate;
+    }
+
     public void setVolume(float volume) {
         this.volume = Math.max(0.0f, Math.min(1.0f, volume));
     }

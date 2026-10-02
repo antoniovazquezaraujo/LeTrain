@@ -10,16 +10,17 @@ import letrain.audio.synth.AudioSample;
 
 /**
  * Test helper that writes short synthetic mono 44.1 kHz PCM16 WAV files, so unit tests do not
- * depend on the 25 MiB of real assets (ADR-029 §7).
+ * depend on the 25 MiB of real assets (ADR-029 §7). Public so tests of other packages can reuse it
+ * (e.g. the synth voice tests of PR C).
  */
-final class WavFixture {
+public final class WavFixture {
 
-    static final int SAMPLE_RATE = 44100;
+    public static final int SAMPLE_RATE = 44100;
 
     private WavFixture() {}
 
     /** Writes a mono 44.1 kHz PCM16 sine wave and returns the file. */
-    static Path writeSine(Path dir, String fileName, int frames, double frequencyHz)
+    public static Path writeSine(Path dir, String fileName, int frames, double frequencyHz)
             throws IOException {
         float[] samples = new float[frames];
         for (int i = 0; i < frames; i++) {
@@ -29,7 +30,8 @@ final class WavFixture {
     }
 
     /** Writes a mono 44.1 kHz PCM16 WAV with the given samples and returns the file. */
-    static Path writeMonoPcm16(Path dir, String fileName, float[] samples) throws IOException {
+    public static Path writeMonoPcm16(Path dir, String fileName, float[] samples)
+            throws IOException {
         Path file = dir.resolve(fileName);
         int dataBytes = samples.length * Short.BYTES;
         ByteBuffer buffer = ByteBuffer.allocate(44 + dataBytes).order(ByteOrder.LITTLE_ENDIAN);
@@ -55,7 +57,7 @@ final class WavFixture {
     }
 
     /** Writes a short sine and decodes it as an {@link AudioSample}. */
-    static AudioSample sample(Path dir, String fileName) throws Exception {
+    public static AudioSample sample(Path dir, String fileName) throws Exception {
         Path file = writeSine(dir, fileName, 256, 220.0);
         return new AudioSample(file.toFile());
     }

@@ -33,6 +33,7 @@
 - [[letrain.audio.synth.SpeedNotch|SpeedNotch]] (core)
 - [[letrain.audio.synth.TrainSynth|TrainSynth]] (core)
 - [[letrain.audio.synth.TrainSynthesizer|TrainSynthesizer]] (core)
+- [[letrain.audio.synth.Voice|Voice]] (core)
 - [[letrain.audio.util.AudacityLabelParser|AudacityLabelParser]] (core)
 
 ## letrain.command
