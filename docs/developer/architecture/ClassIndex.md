@@ -14,6 +14,14 @@
 - [[letrain.audio.core.AudioMixer|AudioMixer]] (core)
 - [[letrain.audio.core.AudioSource|AudioSource]] (core)
 - [[letrain.audio.core.DistanceAttenuator|DistanceAttenuator]] (core)
+- [[letrain.audio.material.ClasspathMaterialResolver|ClasspathMaterialResolver]] (core)
+- [[letrain.audio.material.LoopPoints|LoopPoints]] (core)
+- [[letrain.audio.material.MaterialBank|MaterialBank]] (core)
+- [[letrain.audio.material.MaterialId|MaterialId]] (core)
+- [[letrain.audio.material.MaterialProfile|MaterialProfile]] (core)
+- [[letrain.audio.material.MaterialProfileParser|MaterialProfileParser]] (core)
+- [[letrain.audio.material.MaterialRef|MaterialRef]] (core)
+- [[letrain.audio.material.MaterialResolver|MaterialResolver]] (core)
 - [[letrain.audio.sources.AmbientSource|AmbientSource]] (core)
 - [[letrain.audio.sources.SequencedAmbientSource|SequencedAmbientSource]] (core)
 - [[letrain.audio.sources.WavSource|WavSource]] (core)
@@ -25,6 +33,7 @@
 - [[letrain.audio.synth.SpeedNotch|SpeedNotch]] (core)
 - [[letrain.audio.synth.TrainSynth|TrainSynth]] (core)
 - [[letrain.audio.synth.TrainSynthesizer|TrainSynthesizer]] (core)
+- [[letrain.audio.synth.Voice|Voice]] (core)
 - [[letrain.audio.util.AudacityLabelParser|AudacityLabelParser]] (core)
 
 ## letrain.command
