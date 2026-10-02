@@ -8,6 +8,26 @@
 > one-shot arranca al inicio del paso físico. El ADR sigue en **PROPUESTO**: la enmienda se aplica
 > sobre el borrador antes de su merge a `develop`, por lo que no se abre ADR nuevo.
 
+> **Enmienda 2 — 2026-10-02.** Decisiones de material y hallazgos de la auditoría:
+>
+> 1. **Clics de onset**: 10 de las 18 transiciones arrancan en escalón hasta −5 dBFS → se corrigen
+>    **en el reproductor** con fade-in corto de **10–20 ms** al inicio de cada one-shot; los WAVs
+>    **no se regeneran** (§4).
+> 2. **Materiales en llegada**: `idle`, `start`, `stop` y `rodadura` los está generando el usuario a
+>    mano y se añadirán al set; hasta su entrega manda el **fallback legacy** con `train-sound.wav`
+>    (§3).
+> 3. **Procedencia**: el usuario **confirma autoría propia** de los 28 WAVs, que se commitean bajo la
+>    licencia del proyecto; `notch-6` queda documentado como **síntesis propia a partir de material
+>    del repo** (el segmento `cruise`), no como asset licenciado. `train-sound.wav` conserva su nota
+>    de procedencia por auditar hasta su retirada (§7).
+> 4. **Mono**: los 28 WAVs se convierten a **mono 44,1 kHz PCM16** antes de commitearse →
+>    **≈13,26 MB** en repo/release y **la RAM no cambia** (≈25,3 MiB decodificados), porque
+>    `AudioSample` ya descarta el canal derecho (§6).
+>
+> **Auditoría de bucles incorporada (§5)**: duraciones exactas por material, puntos
+> `loop=<inicio>,<longitud>` medidos para los 10 notches —el wrap a fichero completo **no cierra
+> limpio**, así que **`loop=auto` queda descartado**—, niveles (RMS/picos) y escalera de pitch.
+
 ## Contexto
 
 Este ADR **concreta la fase de tren** que [[ADR-026-Audio-Domains]] deja abierta (dominio
@@ -41,16 +61,25 @@ Este ADR **concreta la fase de tren** que [[ADR-026-Audio-Domains]] deja abierta
   mapea `loco.getTargetSpeed()` → `synth.setThrottle()` en cada `update()`, con el resto del estado
   (frenada, carga, posición, velocidad de movimiento). El audio no manda en la física.
 - Deuda de licencias: la procedencia de los WAV legacy de `core` (`train-sound.wav` incluido) no
-  está auditada; [[ADR-026-Audio-Domains]] ya señala la revisión como tarea pendiente.
+  está auditada; [[ADR-026-Audio-Domains]] ya señala la revisión como tarea pendiente. El set
+  `train/generic/` **no** comparte esa deuda: su autoría propia está confirmada (§Material).
 
 ### Material: propio (ya en repo) y del licenciante (pendiente)
 
-- **Material propio del proyecto (ya existe, generado a mano)**: 28 WAVs en
+- **Material propio del proyecto (autoría propia confirmada)**: 28 WAVs en
   `core/src/main/resources/sound/train/generic/` — `notch-1`…`notch-10` (bucles de marcha de
-  **8,7307 s**, la misma longitud que el segmento `cruise` legacy) y las 18 parejas adyacentes
-  `trans-1-2`…`trans-9-10` (**5,0 s** subiendo) y `trans-2-1`…`trans-10-9` (**2,0 s** bajando),
-  PCM16 44,1 kHz estéreo. Entran en el repo como **assets propios**: son la fuente de verdad del
-  algoritmo, de la escucha en desarrollo y del test contrato (§7).
+  **8,730703 s = 385.024 frames**, la misma longitud que el segmento `cruise` legacy) y las 18
+  parejas adyacentes `trans-1-2`…`trans-9-10` (**5,000000 s = 220.500 frames** subiendo) y
+  `trans-2-1`…`trans-10-9` (**2,000000 s = 88.200 frames** bajando), **PCM16 44,1 kHz mono** (el
+  set se toma en estéreo y se convierte a mono antes de commitearse, §6). El usuario **confirma su
+  autoría**: entran en el repo como **assets propios bajo la licencia del proyecto**, y `notch-6`
+  queda documentado como **síntesis propia a partir de material del repo** (el segmento `cruise` de
+  `train-sound.wav`), no como asset licenciado. Son la fuente de verdad del algoritmo, de la escucha
+  en desarrollo y del test contrato (§7).
+- **Materiales en llegada**: `idle`, `start`, `stop` y `rodadura` **los está generando el usuario a
+  mano** y se añadirán al set con el mismo tratamiento; hasta su entrega manda el fallback legacy
+  con `train-sound.wav` (§3). `frenos`, `bocina`, `trans-0-1` y las parejas compuestas siguen sin
+  material.
 - **Material del licenciante (Carlos / Railsounds)**: grabaciones reales **por marcha** (el pitch
   real de cada notch, sin pitch-shift) y grabaciones reales de **transiciones entre pares
   ordenados** (p. ej. 2→3, 3→4, 2→5). Un salto compuesto suena distinto —más esfuerzo, cambio de
@@ -103,7 +132,7 @@ compatibles con el modelo de [[ADR-028-Sound-Packs-Externos-Cifrados]]
 | Rol | ID lógico | Tipo | Notas |
 |---|---|---|---|
 | Ralentí | `idle` | loop | marcha 0 |
-| Marchas | `notch-1` … `notch-10` | loop con puntos de bucle | pitch real grabado |
+| Marchas | `notch-1` … `notch-10` | loop con puntos de bucle | pitch propio por marcha (§5); `notch-6` = síntesis propia de `cruise` (§7) |
 | Transiciones | `trans-<from>-<to>` (p. ej. `trans-2-3`, `trans-2-5`, `trans-5-2`) | one-shot | pares **ordenados**, incluidos saltos compuestos |
 | Arranque | `start` | one-shot | encendido del motor |
 | Parada | `stop` | one-shot | apagado |
@@ -115,8 +144,8 @@ compatibles con el modelo de [[ADR-028-Sound-Packs-Externos-Cifrados]]
   (`trans-2-3`, `trans-3-2`, …) son la unidad; los compuestos son material extra que el licenciante
   puede entregar por fases.
 - Cobertura actual del set propio: **10 bucles + 18 transiciones adyacentes**. Faltan `idle`,
-  `start`, `stop`, `rodadura`, `frenos`, `bocina`, `trans-0-1` y todas las compuestas → caen al
-  fallback del punto 3.
+  `start`, `stop` y `rodadura` (**en generación por el usuario**, §3) y, de forma no prevista,
+  `frenos`, `bocina`, `trans-0-1` y todas las compuestas → caen al fallback del punto 3.
 - Sin perfil específico → `generic`; sin material concreto → fallback del punto 3. Nada deja al tren
   mudo.
 - La taxonomía es el **contrato con el licenciante**: nombres, direccionalidad y metadatos.
@@ -177,13 +206,16 @@ defecto, el nivel 4. El material puede crecer por fases (primero marchas, luego 
 adyacentes, luego compuestas) **sin romper nada**: los fallbacks van entrando solos.
 
 **Retención y retirada de `train-sound.wav`.** El WAV legacy y sus labels **se mantienen** mientras
-queden materiales sin sustituir —hoy `idle` (ralenti), `start`, `stop` y `rodadura` (`wagons`), más
-el nivel 3 del fallback— **y mientras sostengan los tests de regresión existentes**
-(`AudioControllerTest` depende del segmento `stop`). La retirada es una **decisión futura
-explícita**, condicionada a: (a) recibir materiales propios de `idle`/`start`/`stop`/`rodadura`,
-(b) confirmar que el nivel 3 ya no se usa en ningún perfil soportado y (c) decidir si el pitch-shift
-de emergencia sigue necesitando `cruise`. No se borra `train-sound-labels.txt` mientras exista el
-nivel 3.
+queden materiales sin sustituir —hoy `idle` (ralenti), `start`, `stop` y `rodadura` (`wagons`),
+**ya en generación por el usuario** (§Contexto), más el nivel 3 del fallback— **y mientras
+sostengan los tests de regresión existentes** (`AudioControllerTest` depende del segmento `stop`).
+**Hasta que esos cuatro materiales lleguen, manda el fallback legacy**: la ralentía, el arranque, la
+parada y la rodadura se sirven del `train-sound.wav` con sus labels, mientras las marchas 1–10 y
+sus transiciones ya van por el material propio. La retirada es una **decisión futura explícita**,
+condicionada a: (a) la entrega efectiva de los materiales propios de `idle`/`start`/`stop`/
+`rodadura`, (b) confirmar que el nivel 3 ya no se usa en ningún perfil soportado y (c) decidir si el
+pitch-shift de emergencia sigue necesitando `cruise`. No se borra `train-sound-labels.txt` mientras
+exista el nivel 3.
 
 ### 4. Política de duración real vs inercia del juego
 
@@ -191,13 +223,19 @@ nivel 3.
 - **El one-shot se deja terminar mientras cubra el estado físico.** Al terminar —o al completarse
   el último tramo de una cadena— se hace **crossfade de 200 ms** al loop de la marcha física
   alcanzada (`notch-currentNotch`). Si la subida continúa, el siguiente paso encadena su transición
-  desde ahí, sin pasar por el loop intermedio.
+  desde ahí, sin pasar por el loop intermedio. **Ese crossfade de salida es obligatorio**: la
+  auditoría mide que **5 de las 18 transiciones terminan a nivel alto (hasta −4,6 dBFS)**, así que
+  un corte seco siempre clicaría (§5).
+- **Fade-in de onset**: cada one-shot arranca con un **fade-in de 10–20 ms**. Motivo medido: **10 de
+  las 18 transiciones empiezan en escalón hasta −5 dBFS**. Se corrige **en el reproductor** y los
+  WAVs **no se regeneran** *(decisión de la enmienda 2)*. Mismo fade en `start`/`stop` cuando
+  lleguen.
 - **Si el estado físico abandona el tramo** (cambio de destino, frenada, fin de vía, `forceIdle`) se
   **corta con fade de 100 ms** y se reevalúa; nunca se alarga ni se acorta la física para cuadrar el
   audio.
-- **Valores por defecto fijados por la enmienda**: crossfade **200 ms** (rango 150–300 ms), corte
-  **100 ms** (rango 50–150 ms). Son **política global**; declararlos por material (`cutPolicy`) queda
-  abierto (ver preguntas abiertas).
+- **Valores por defecto fijados por las enmiendas**: fade-in de onset **10–20 ms** (rango 10–30 ms),
+  crossfade **200 ms** (rango 150–300 ms) y corte **100 ms** (rango 50–150 ms). Son **política
+  global**; declararlos por material (`cutPolicy`) queda abierto (ver preguntas abiertas).
 - **Bajada**: el material dura 2,0 s y su paso físico 2,25–2,50 s, así que el audio termina antes y
   espera en el loop de la marcha actual el resto del paso. Es el comportamiento esperado, no un
   defecto.
@@ -217,33 +255,58 @@ nivel 3.
 
   ```
   # ADR-029 §5 — perfil de sonido del tren
+  # ('loop' = puntos medidos por la auditoría; 'gain'/'effort' ilustrativos hasta la PR B)
   profile     = generic
   packVersion = 0
 
-  # material               = ruta classpath                       metadatos
-  notch.1   = sound/train/generic/notch-1.wav   loop=auto   gain=0.0
-  notch.2   = sound/train/generic/notch-2.wav   loop=auto   gain=-0.5
-  ...
-  notch.10  = sound/train/generic/notch-10.wav  loop=auto   gain=0.0
+  # material  = ruta classpath                          metadatos
+  notch.1     = sound/train/generic/notch-1.wav   loop=4.478,4.253  gain=0.0
+  notch.2     = sound/train/generic/notch-2.wav   loop=6.301,2.429  gain=0.0
+  notch.3     = sound/train/generic/notch-3.wav   loop=6.684,2.046  gain=0.0
+  notch.4     = sound/train/generic/notch-4.wav   loop=6.685,2.046  gain=0.0
+  notch.5     = sound/train/generic/notch-5.wav   loop=4.734,3.997  gain=0.0
+  notch.6     = sound/train/generic/notch-6.wav   loop=3.747,4.983  gain=0.0
+  notch.7     = sound/train/generic/notch-7.wav   loop=4.630,4.101  gain=0.0
+  notch.8     = sound/train/generic/notch-8.wav   loop=7.764,0.967  gain=0.0
+  notch.9     = sound/train/generic/notch-9.wav   loop=3.643,5.088  gain=0.0
+  notch.10    = sound/train/generic/notch-10.wav  loop=7.509,1.222  gain=0.0
 
-  trans.1-2 = sound/train/generic/trans-1-2.wav              gain=0.0
-  trans.2-5 = sound/train/generic/trans-2-5.wav  effort=high torque=loaded
-  ...
+  trans.1-2   = sound/train/generic/trans-1-2.wav  effort=low  torque=free
+  trans.9-10  = sound/train/generic/trans-9-10.wav effort=high torque=loaded
+  ...                                                  # las 16 adyacentes restantes
 
-  # FALTAN hoy (→ fallback §3): idle, start, stop, rodadura, frenos, bocina,
-  #                             trans-0-1 y todas las parejas compuestas
+  # FALTAN hoy (→ fallback §3): idle, start, stop, rodadura (EN LLEGADA), frenos,
+  #   bocina, trans-0-1, las compuestas (trans.2-5, …) y sus mismos campos effort/torque
   ```
 
-  - **Campos**: `loop=<s>,<s>` con puntos de bucle en segundos; **`loop=auto`** = fichero completo
-    con el crossfade de `GrainEngine` (**es lo que se usa por defecto**: los WAV aún no declaran
-    puntos de bucle ni traen chunk `smpl`, y la costura real de cada bucle se está auditando);
-    `gain=<dB>` ganancia por material; `effort` y `torque` etiquetas opcionales que se parsean y se
-    ignoran hoy (contrato con el licenciante, §1); `packVersion` para validar que pack y perfil
-    encajan.
+  - **Campos**: **`loop=<inicio>,<longitud>`** con **puntos de bucle en segundos** respecto al
+    inicio del fichero — `inicio` = primer sample de la ventana de loop, `longitud` = duración de
+    esa ventana, sobre la que `GrainEngine` aplica su crossfade interno de **5.000 muestras**
+    (≈113 ms a 44,1 kHz); **`loop` es obligatorio en los bucles**. `gain=<dB>` ganancia por
+    material, pensada para **normalizar el RMS medido** (ver auditoría abajo); `effort` y `torque`
+    etiquetas opcionales que se parsean y se ignoran hoy (contrato con el licenciante, §1);
+    `packVersion` para validar que pack y perfil encajan.
   - **Ubicación**: el descriptor **vive con el código**, se versiona en el repo y mapea IDs lógicos
     (`train/<perfil>/<material>`) a rutas de classpath.
-  - **Validación**: ID desconocido, ruta ausente o línea malformada → **`WARN` + fallback (§3)**,
-    nunca excepción.
+  - **Validación**: ID desconocido, ruta ausente, línea malformada o **bucle sin `loop` declarado** →
+    **`WARN` + fallback (§3)**, nunca excepción.
+  - **Auditoría de los bucles (datos medidos, enmienda 2)**:
+    - Duraciones exactas: notch **385.024 frames (8,730703 s)**; trans de subida **220.500 frames
+      (5,000000 s)**; trans de bajada **88.200 frames (2,000000 s)**. Sin chunk `smpl` en los
+      ficheros, por eso los puntos viajan en el descriptor y no en el WAV.
+    - **`loop=auto` queda descartado**: el wrap a fichero completo **no cierra limpio** (z ≈ 0,27–0,46;
+      residuo −11,6…−13,6 dB). El descriptor **debe** declarar puntos.
+    - Calidad de los puntos medidos para los 10 notches (los de arriba): **z5000 = 0,74–0,89 /
+      residuo −15…−18 dB**, es decir **paridad con el `cruise` legacy (0,79 / −15,0 dB)**. Son
+      puntos de partida válidos; **refinarlos no cambia el formato**.
+    - Nivel: RMS de los notches **−9,34…−10,66 dBFS** (spread **1,32 dB**) con picos **≈0 dBFS** →
+      `gain` existe para igualarlos; sin normalizar, el paso de marcha se percibe como cambio de
+      volumen y no de esfuerzo.
+    - Escalera de pitch: **f0 39,95 → 110,25 Hz** (**≈1,12× por marcha**, 2 semitonos), sin
+      clipping, y coherente en los 10 → las marchas tienen **pitch propio grabado** (o sintetizado
+      en el caso de `notch-6`, §7), no un re-pitch de `cruise` aplicado en runtime.
+    - Transiciones: **5 de 18 terminan a nivel alto (hasta −4,6 dBFS)** → el crossfade de salida de
+      §4 es obligatorio. **10 de 18 arrancan en escalón hasta −5 dBFS** → el fade-in de onset de §4.
 - **Resolución**: el *lookup* de un material pasa por una interfaz propia, **`MaterialResolver`**
   (`MaterialId → Optional<AudioSample>`), que en esta fase resuelve contra el classpath. Esa
   interfaz es el **seam hacia el `SoundProvider` de ADR-028**: cuando el pack exista se añade la
@@ -252,15 +315,17 @@ nivel 3.
 
 ### 6. Carga y memoria
 
-Datos medidos del set de 28 ficheros (PCM16 44,1 kHz estéreo; `AudioSample` descarta el canal
-derecho, de modo que la RAM en `float[]` ≈ tamaño del fichero):
+Datos medidos del set de 28 ficheros. **El set se commitea en mono** 44,1 kHz PCM16 (enmienda 2).
+`AudioSample` decodifica a `float` **un sample por frame y descarta el canal derecho**, así que el
+cambio a mono **parte el coste en disco pero no altera la RAM decodificada**: sigue siendo
+**≈25,3 MiB** para los 28 materiales.
 
-| Conjunto | Ficheros | Duración | Tamaño |
-|---|---|---|---|
-| `notch-1`…`notch-10` | 10 | 8,7307 s | 14,7 MiB |
-| `trans` de subida | 9 | 5,0 s | 7,6 MiB |
-| `trans` de bajada | 9 | 2,0 s | 3,0 MiB |
-| **Total** | **28** | — | **≈ 25,3 MiB** |
+| Conjunto | Ficheros | Duración (frames) | En disco (mono PCM16) | RAM decodificada (`float[]`) |
+|---|---|---|---|---|
+| `notch-1`…`notch-10` | 10 | 385.024 (8,730703 s) | 7,70 MB | 15,40 MB |
+| `trans` de subida | 9 | 220.500 (5,000000 s) | 3,97 MB | 7,94 MB |
+| `trans` de bajada | 9 | 88.200 (2,000000 s) | 1,59 MB | 3,18 MB |
+| **Total** | **28** | 6.628.540 | **≈13,26 MB (≈12,64 MiB)** | **≈26,51 MB (≈25,3 MiB)** |
 
 - **Carga `EAGER`, compartida y estática al primer arranque de motor**: los 28 se decodifican una
   sola vez en el constructor del **primer** `TrainSynthesizer` (no al abrir la aplicación), igual que
@@ -269,10 +334,16 @@ derecho, de modo que la RAM en `float[]` ≈ tamaño del fichero):
 - **`ON_DEMAND` queda como política futura** (caché LRU + `prefetch` desde el cambio de palanca): la
   API del banco no cambia, solo la política, así que puede llegar en una PR aparte sin tocar la
   selección. Mientras no exista no hay que vigilar huecos de audio.
+- **El coste residente real depende de la política de carga**: con `EAGER` completo son los
+  ≈25,3 MiB de la tabla; con un **`EAGER` parcial** (p. ej. solo las marchas ±1 y sus cuatro
+  transiciones, ≈5 MiB) u **`ON_DEMAND`** baja una orden de magnitud. El disco, en cambio, es fijo:
+  los 13,26 MB están en el artefacto viva o no la carga.
 - **Sin material cargado no se dispara la transición**: se cae al fallback (§3), que ya está en
   memoria.
-- **Coste aceptado y declarado**: el artefacto de release (`mvn clean package`) crece **≈ +26 MB** de
-  WAVs en `core` (de ~76 MB a ~102 MB de recursos de sonido).
+- **Coste aceptado y declarado**: el artefacto de release (`mvn clean package`) crece **≈ +13,26 MB**
+  de WAVs en `core` (de ~76 MB a ~89 MB de recursos de sonido) —la conversión a mono lo deja en la
+  mitad del +26 MB del estéreo—. Los cuatro materiales **en llegada** (`idle`/`start`/`stop`/
+  `rodadura`, §3) sumarán a estas cifras cuando se entreguen.
 - El límite de **100 MB por payload de ADR-028** sigue vigente para el pack propietario; este set
   vive en el classpath y no entra en ese presupuesto, pero conviene mantenerlo vigilado si el perfil
   crece a más locomotoras.
@@ -280,18 +351,24 @@ derecho, de modo que la RAM en `float[]` ≈ tamaño del fichero):
 ### 7. Assets en repo + fixtures de test
 
 - **Los 28 WAVs se commitean** en `core/src/main/resources/sound/train/generic/` como **assets
-  propios** del proyecto (generados a mano; no derivan de `train-sound.wav` ni de material de
-  terceros). Son la fuente de verdad del material que suena en desarrollo.
+  propios del proyecto bajo su licencia** —autoría propia confirmada por el usuario (enmienda 2)—
+  en **mono 44,1 kHz PCM16**. Única precisión de procedencia: **`notch-6` es síntesis propia a
+  partir de material del repo** (el segmento `cruise` de `train-sound.wav`), no un asset licenciado
+  ni una copia; el resto se ha generado a mano sin tomar material de terceros. Son la fuente de
+  verdad del material que suena en desarrollo. `train-sound.wav` **conserva su nota de procedencia
+  por auditar** hasta su retirada (§3): esa deuda es del legacy y no se traspasa al set nuevo.
 - **No existe ninguna forja**: quedan descartados el módulo `material-forge`, el manifiesto
   generado, el `.ltsp` de referencia y la clave de test de material.
 - **Determinismo de los tests**, que ya no sale de una herramienta reproducible sino de dos fuentes:
   1. **Fixtures WAV sintéticos** generados en `src/test/java` (`WavFixture`: bucles sinusoidales
      cortos escritos en un `@TempDir`, sin binarios commiteados). Permiten construir escenarios
      imposibles con el set real (perfil sin `notch-3`, cadena incompleta, `gain` fuera de rango) y
-     mantienen los tests unitarios **rápidos e independientes** de los 25,3 MiB.
-  2. **Un test contrato sobre los assets reales**: presencia de los 28, duraciones esperadas
-     (8,7307 / 5,0 / 2,0 s) y resolución de todas las parejas adyacentes. Congela el material ante
-     un commit erróneo y va en la misma PR del banco de materiales.
+     mantienen los tests unitarios **rápidos e independientes** de la RAM del set (25,3 MiB).
+  2. **Un test contrato sobre los assets reales**: presencia de los 28, formato **mono 44,1 kHz
+     PCM16**, duraciones exactas en frames (**385.024 / 220.500 / 88.200**) y resolución de todas
+     las parejas adyacentes; conviene añadir **`loop` declarado en los 10 bucles** (los puntos de §5
+     pasan a ser parte del contrato). Congela el material ante un commit erróneo y va en la misma PR
+     del banco de materiales.
 - **Escucha del diseño**: los WAVs reales suenan en el juego desde la primera PR de integración, así
   que no hace falta una herramienta aparte para validar duraciones, cortes y crossfades.
 - **Retirada de `train-sound.wav`**: condicionada y futura, ver §3.
@@ -310,19 +387,24 @@ derecho, de modo que la RAM en `float[]` ≈ tamaño del fichero):
 
 ## Consecuencias
 
-- Positivas: pitch real por marcha y transiciones ordenadas con esfuerzo audible; el material entra
-  en el repo y **el swap del pack licenciado no reescribe el algoritmo**; los fallbacks permiten
-  entregas por fases; los **assets a mano + fixtures de test** hacen el modelo **testeable y
-  escuchable desde el día uno**; los packs de ADR-028 sirven al tren sin tocar el formato; el
-  classpath sigue siendo red de seguridad; el sonido queda alineado con la inercia real (§2), que es
-  lo que el jugador percibe como esfuerzo.
-- Costes y riesgos: más complejidad de estado (coalescing, cortes, crossfades) y riesgo de clics o
-  costuras si el empalme no se trabaja; **+26 MB de WAVs en el artefacto de release** (§6);
-  `train-sound.wav` se mantiene mientras dure la retirada condicionada (§3), con su procedencia aún
-  sin auditar (ADR-026); autoría de metadatos por material (un punto de bucle malo se oye — por eso
-  `loop=auto` hasta auditar la costura); si la inercia futura se acelera respecto a las grabaciones
-  habrá cortes frecuentes y habrá que validar de oído; dependencia de las fases de ADR-026/028 para
-  el enchufe definitivo.
+- Positivas: pitch propio por marcha y transiciones ordenadas con esfuerzo audible (escalera medida,
+  f0 39,95→110,25 Hz, sin clipping); **autoría propia confirmada y licencia clara** de los 28 WAVs;
+  los **puntos de bucle medidos alcanzan paridad con el `cruise` legacy** (z5000 0,74–0,89 /
+  residuo −15…−18 dB); el material entra en el repo y **el swap del pack licenciado no reescribe el
+  algoritmo**; los fallbacks permiten entregas por fases; los **assets a mano + fixtures de test**
+  hacen el modelo **testeable y escuchable desde el día uno**; los packs de ADR-028 sirven al tren
+  sin tocar el formato; el classpath sigue siendo red de seguridad; el sonido queda alineado con la
+  inercia real (§2), que es lo que el jugador percibe como esfuerzo.
+- Costes y riesgos: más complejidad de estado (coalescing, cortes, crossfades); el riesgo de clics
+  queda **mitigado pero no eliminado** — fade-in de onset 10–20 ms y crossfade de salida 200 ms son
+  ahora política obligatoria (§4) porque **10/18** transiciones arrancan en escalón y **5/18**
+  terminan a nivel alto, y la costura residual depende de que los puntos `loop` sean buenos;
+  **+13,26 MB de WAVs mono en el artefacto de release** (§6) y ≈25,3 MiB de RAM si el `EAGER` es
+  completo; **autoría de metadatos por material** (puntos y `gain` escritos a mano en el descriptor,
+  con la puerta abierta a refinarlos sin cambiar el formato); `train-sound.wav` se mantiene mientras
+  dure la retirada condicionada (§3), con su procedencia aún sin auditar (ADR-026); si la inercia
+  futura se acelera respecto a las grabaciones habrá cortes frecuentes y habrá que validar de oído;
+  dependencia de las fases de ADR-026/028 para el enchufe definitivo.
 - Dependencias: ADR-023 (aislamiento), ADR-024 (materiales y tomas), ADR-025 (sensado), ADR-026
   (`audio-core` y `train-audio`, snapshot de entrada), ADR-028 (packs/N3/LeCript). No afecta a la
   simulación.
@@ -357,15 +439,16 @@ Cada fase es una PR (`feature/...` o `fix/...` desde `develop`, nunca directo a 
 inglés; `mvn clean test` en verde antes de abrir o actualizar):
 
 1. **Este PR (PR A): enmienda del ADR-029** — solo documentación; sin código ni assets.
-2. **PR B — banco de materiales**: mover los 28 WAVs a `core/…/sound/train/generic/`, crear
-   `profiles/generic.profile` y el paquete `letrain.audio.material` (`MaterialId`,
-   `MaterialProfile` + parser, `MaterialResolver` con impl. de classpath, `MaterialBank` compartido
-   estático); tests de parser, del banco y **test contrato de los assets reales**. Cero cambio de
-   comportamiento. *Riesgo: bajo.*
+2. **PR B — banco de materiales**: convertir los 28 WAVs a **mono 44,1 kHz PCM16** y moverlos a
+   `core/…/sound/train/generic/`, crear `profiles/generic.profile` **con los puntos `loop` medidos
+   (§5)** y el paquete `letrain.audio.material` (`MaterialId`, `MaterialProfile` + parser,
+   `MaterialResolver` con impl. de classpath, `MaterialBank` compartido estático); tests de parser,
+   del banco y **test contrato de los assets reales** (28 ficheros, mono, frames 385.024/220.500/
+   88.200, `loop` declarado). Cero cambio de comportamiento. *Riesgo: bajo.*
 3. **PR C — reproductor de dos voces y modos**: segunda voz de locomotora para los one-shots, con
-   envolventes de crossfade/corte **muestra a muestra** en `read()`; modos `AUTO / MATERIAL /
-   LEGACY` con `LEGACY` por defecto (sonido actual intacto); `WavFixture` y tests de máquina de
-   estados. *Riesgo: medio (es camino caliente).*
+   **fade-in de onset 10–20 ms** y envolventes de crossfade/corte **muestra a muestra** en `read()`;
+   modos `AUTO / MATERIAL / LEGACY` con `LEGACY` por defecto (sonido actual intacto); `WavFixture` y
+   tests de máquina de estados. *Riesgo: medio (es camino caliente).*
 4. **PR D — integración event-driven**: `setCurrentNotch`, evaluación única por frame, selección
    con coalescing, cadena de fallbacks, crossfade/corte; se pasa el default a `AUTO`. *Riesgo: alto
    (es el cambio audible: el sonido deja de adelantarse a la física; requiere escucha A/B).*
@@ -398,11 +481,17 @@ inglés; `mvn clean test` en verde antes de abrir o actualizar):
   `ON_DEMAND` como política futura (§6).
 - ~~**Motor de reproducción**~~ → **`GrainEngine` con reproducción directa: loops + crossfade**. Los
   modos granular / *ping-pong* / *reverse* quedan **deshabilitados** para el material real.
+- ~~**Costura de los bucles**~~ → **respondida por la auditoría (enmienda 2)**: `loop=auto` **no
+  sirve** (el wrap a fichero completo no cierra limpio: z ≈ 0,27–0,46, residuo −11,6…−13,6 dB), así
+  que el descriptor **declara `loop=<inicio>,<longitud>` por fichero** con los 10 puntos medidos
+  (§5), que ya dan **paridad con el `cruise` legacy** (z5000 0,74–0,89 / residuo −15…−18 dB).
 
 **Aún abiertas**:
 
-- **Costura de los bucles**: ¿basta `loop=auto` o hay que declarar `loop=<s>,<s>` por fichero tras
-  auditar la costura real de `notch-1`…`notch-10`? (auditoría en curso)
+- **Refinamiento de los puntos de bucle**: los medidos ya son de paridad, pero son una
+  aproximación; ¿se re-mide algún notch concreto (p. ej. `notch-3`/`notch-4`, ambos en 6,68 s, y
+  `notch-8`/`notch-10`, con ventanas cortas de 0,967 s y 1,222 s) para mejorar el residuo? **No
+  cambia el formato**: el descriptor ya admite cualquier valor.
 - **`cutPolicy` por material**: ¿mover cortes y crossfades del descriptor en vez de política global?
 - **Tamaño máximo de pack por locomotora** (y total): ¿caben todas las parejas ordenadas o solo
   adyacentes + compuestas aprobadas?
