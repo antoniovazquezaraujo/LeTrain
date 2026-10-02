@@ -48,3 +48,14 @@ En el momento en que ejecutes el Paso 3, ve a la pestaña de **Actions** o **Rel
 2. Compilará el código de forma paralela en Windows y Linux usando `mvn package -DskipTests`.
 3. Comprimirá el resultado en `LeTrain-Windows.zip` y `LeTrain-Linux.zip`.
 4. Adjuntará esos dos archivos a la Release para que la gente los descargue con un clic.
+
+---
+
+## 3. Publicación de la Snap (Snap Store)
+
+La snap se construye y publica con `.github/workflows/snap.yml` **solo al empujar un tag `v*`** (o manualmente con `workflow_dispatch`):
+
+- **Tag `v*`** → se publica en el canal **`stable`** de la Snap Store.
+- **Ejecución manual** → se publica en el canal **`edge`** (útil para probar antes de un release).
+
+La versión de la snap se toma automáticamente del tag de git (`version: git`), así que ya no hay que editar `snap/snapcraft.yaml` en cada release. Los merges a `develop` ya no reconstruyen ni republican la snap en `edge`.
