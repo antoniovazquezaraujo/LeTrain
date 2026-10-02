@@ -91,7 +91,7 @@ class NotchAssetsContractTest {
                 Arguments.of("notch-9", 0.04), Arguments.of("notch-10", -0.40),
                 Arguments.of("idle", 1.13), Arguments.of("rolling", 6.71),
                 Arguments.of("start", 0.67), Arguments.of("stop", 0.52),
-                Arguments.of("trans-0-1", -2.19), Arguments.of("trans-1-0", -0.33),
+                Arguments.of("trans-0-1", 1.54), Arguments.of("trans-1-0", -0.67),
                 Arguments.of("trans-1-2", -2.15), Arguments.of("trans-2-1", -0.15),
                 Arguments.of("trans-2-3", -2.29), Arguments.of("trans-3-2", 0.78),
                 Arguments.of("trans-3-4", -2.06), Arguments.of("trans-4-3", -0.05),

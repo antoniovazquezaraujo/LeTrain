@@ -39,9 +39,12 @@ notch.10 = sound/train/generic/notch-10.wav loop=1.387392,6.931361  gain=-0.40
 
 # --- Adjacent transitions (one-shots, ordered pairs) ---------
 # One-shots: no loop windows. gain is BICHO's single v3 value per
-# transition. effort/torque stay reserved for hand-labelled or
-# licensor-provided metadata; not invented here.
-trans.0-1  = sound/train/generic/trans-0-1.wav  gain=-2.19
+# transition. 0<->1 are single-source ramps (trans-0-1 over 'ralenti',
+# trans-1-0 over 'cruise') so the entry has no internal timbre jump; the
+# engine crossfade covers the handover into the destination loop.
+# effort/torque stay reserved for hand-labelled or licensor-provided
+# metadata; not invented here.
+trans.0-1  = sound/train/generic/trans-0-1.wav  gain=1.54
 trans.1-2  = sound/train/generic/trans-1-2.wav  gain=-2.15
 trans.2-3  = sound/train/generic/trans-2-3.wav  gain=-2.29
 trans.3-4  = sound/train/generic/trans-3-4.wav  gain=-2.06
@@ -52,7 +55,7 @@ trans.7-8  = sound/train/generic/trans-7-8.wav  gain=-2.05
 trans.8-9  = sound/train/generic/trans-8-9.wav  gain=-1.92
 trans.9-10 = sound/train/generic/trans-9-10.wav gain=-1.97
 
-trans.1-0  = sound/train/generic/trans-1-0.wav  gain=-0.33
+trans.1-0  = sound/train/generic/trans-1-0.wav  gain=-0.67
 trans.2-1  = sound/train/generic/trans-2-1.wav  gain=-0.15
 trans.3-2  = sound/train/generic/trans-3-2.wav  gain=+0.78
 trans.4-3  = sound/train/generic/trans-4-3.wav  gain=-0.05
