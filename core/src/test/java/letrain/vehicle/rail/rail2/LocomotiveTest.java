@@ -107,6 +107,72 @@ class LocomotiveTest {
                 "the direct setter must apply the target while waiting");
     }
 
+    @Test
+    @DisplayName("from standstill the 0→1 step lands exactly on START_STEP_TICKS (100 ticks)")
+    void startFromStandstill_takesStartStepTicks() {
+        Simulation simulation = new Simulation(0);
+        simulation.loco.setTargetSpeed(1);
+
+        simulation.runTicks(Locomotive.START_STEP_TICKS - 1);
+        assertEquals(0, simulation.loco.getSpeed(),
+                "a heavy train must not jump to notch 1 while starting");
+
+        simulation.runTicks(1);
+        assertEquals(1, simulation.loco.getSpeed(),
+                "the 0→1 step must complete exactly on tick " + Locomotive.START_STEP_TICKS);
+    }
+
+    @Test
+    @DisplayName("a blocked start does not accumulate: the counter stays at 0 while stopped")
+    void blockedStart_doesNotAccumulate() {
+        Simulation simulation = new Simulation(0);
+        simulation.blockNextRail();
+        simulation.loco.setTargetSpeed(1);
+
+        simulation.runTicks(Locomotive.START_STEP_TICKS * 3);
+
+        assertEquals(0, simulation.loco.getSpeed(), "the blocked train must stay stopped");
+        assertEquals(0, simulation.loco.getRailsSinceLastSpeedChange(),
+                "the start counter must not bank stopped ticks");
+
+        simulation.unblock();
+        simulation.loco.setTargetSpeed(1); // the block gate zeroed the target
+
+        simulation.runTicks(Locomotive.START_STEP_TICKS - 1);
+        assertEquals(0, simulation.loco.getSpeed(),
+                "after the block clears the start must take the full START_STEP_TICKS");
+        simulation.runTicks(1);
+        assertEquals(1, simulation.loco.getSpeed(), "the train must start once the block is gone");
+    }
+
+    @Test
+    @DisplayName("a standing train with target speed 0 never starts nor accumulates")
+    void standingWithZeroTarget_neverStarts() {
+        Simulation simulation = new Simulation(0);
+
+        simulation.runTicks(Locomotive.START_STEP_TICKS * 5);
+
+        assertEquals(0, simulation.loco.getSpeed());
+        assertEquals(0, simulation.loco.getRailsSinceLastSpeedChange());
+    }
+
+    @Test
+    @DisplayName("0→1→2 keeps one START_STEP_TICKS (100 ticks) per notch")
+    void twoNotchesFromStandstill_keepStartStepTicksPerStep() {
+        Simulation simulation = new Simulation(0);
+        simulation.loco.setTargetSpeed(2);
+
+        simulation.runTicks(Locomotive.START_STEP_TICKS);
+        assertEquals(1, simulation.loco.getSpeed(), "notch 1 must land on tick 100");
+
+        // One move at speed 1 (50 ticks) plus the second rail (another 50) complete the 1→2 step.
+        simulation.runTicks(Locomotive.START_STEP_TICKS - 1);
+        assertEquals(1, simulation.loco.getSpeed(), "the 1→2 step must also take 100 ticks");
+
+        simulation.runTicks(1);
+        assertEquals(2, simulation.loco.getSpeed(), "notch 2 must land on tick 200");
+    }
+
     /**
      * Drives a real deceleration on a long straight line from a steady cruise (counter 0); counts
      * the successful {@code update()} moves until the loco is fully stopped.
@@ -118,9 +184,10 @@ class LocomotiveTest {
     /** Test harness: one locomotive on a long straight line with controllable inertia state. */
     private static final class Simulation {
         private final Locomotive loco;
+        private final List<RailTrack> line;
 
         private Simulation(int speed) {
-            List<RailTrack> line = straightLine(120);
+            line = straightLine(120);
             loco = new Locomotive(1, "L", "RED");
             Train train = new Train(1);
             train.pushBack(loco);
@@ -130,6 +197,26 @@ class LocomotiveTest {
             loco.setEngineOn(true);
             loco.setCurrentSpeed(speed);
             loco.setTargetSpeed(speed); // steady cruise: the rail counter starts at 0
+        }
+
+        /** Places a foreign locomotive on the next rail so the start branch detects contact. */
+        private void blockNextRail() {
+            Locomotive blocker = new Locomotive(2, "B", "RED");
+            Train blockerTrain = new Train(2);
+            blockerTrain.pushBack(blocker);
+            blockerTrain.setDirectorLinker(blocker);
+            line.get(1).enterLinkerFromDir(Dir.W, blocker);
+        }
+
+        private void unblock() {
+            line.get(1).removeLinker();
+        }
+
+        /** Drives {@code count} real engine ticks through {@link Locomotive#update()}. */
+        private void runTicks(int count) {
+            for (int i = 0; i < count; i++) {
+                loco.update();
+            }
         }
 
         /**

@@ -716,8 +716,8 @@ class AutoPilotIntegrationTest {
             // Now program Train 1 to go from Station A to B
             program("A", a.getId(), "B", b.getId(), t1.getId());
 
-            // Run physics
-            runTicks(300);
+            // Run physics: the siding detour plus the 0→1 start step need a bit over 300 ticks.
+            runUntil(model, () -> t1.getStationId() == b.getId(), 600);
 
             // Train 1 should have bypassed tMain via the siding and reached B!
             assertAtStation(t1, b);

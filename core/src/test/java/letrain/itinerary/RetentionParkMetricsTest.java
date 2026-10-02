@@ -125,7 +125,9 @@ class RetentionParkMetricsTest {
             assertTrue(info.contains("Average: +5.0 min"), info);
             assertTrue(info.contains("Max: +5 min"), info);
 
-            runTicks(20);
+            // The 0→1 start step takes START_STEP_TICKS (~5 s at 20 TPS): run it out and check that
+            // the released train really rolls instead of being silently held.
+            runTicks(Locomotive.START_STEP_TICKS);
             assertTrue(t.getSpeed() > 0, "the train must be moving right away");
         }
 
@@ -144,7 +146,7 @@ class RetentionParkMetricsTest {
 
             List<String> errors = model.setProgram("""
                     create itinerary "Ruta" {
-                        add sensor %d, departure 08:10
+                        add sensor %d, departure 08:15
                         add station %d
                     }
                     assign itinerary "Ruta" to train %d;
@@ -153,13 +155,15 @@ class RetentionParkMetricsTest {
                     """.formatted(sensor.getId(), b.getId(), t.getId(), t.getId(), t.getId()));
             assertTrue(errors.isEmpty(), "unexpected errors: " + errors);
 
+            // The sensor is reached after the 0→1 start step (~10 game minutes), so the departure
+            // must stay in the future for the hold to be observable.
             runUntil(() -> t.getAutopilot().mode() == AutoPilot.Mode.WAITING && t.getSpeed() == 0,
                     300);
             assertEquals(AutoPilot.Mode.WAITING, t.getAutopilot().mode(),
                     "the sensor must retain the train");
             assertNotEquals(b.getId(), t.getStationId(), "B must not be reached while held");
 
-            runTicks((int) model.getGameClock().ticksUntil(new GameTime(1, 8, 10)) + 1);
+            runTicks((int) model.getGameClock().ticksUntil(new GameTime(1, 8, 15)) + 1);
             assertEquals(AutoPilot.Mode.FOLLOWING, t.getAutopilot().mode(),
                     "the scheduled departure must release the sensor hold");
             runUntil(() -> t.getStationId() == b.getId(), 600);
@@ -359,7 +363,8 @@ class RetentionParkMetricsTest {
             runTicks(2);
             assertTrue(loco.isEngineOn(), "the scheduled departure must start the engine");
             assertEquals(3, loco.getTargetSpeed(), "the deferred speed must be restored");
-            runTicks(60);
+            // The train starts from standstill: the 0→1 step costs START_STEP_TICKS.
+            runTicks(Locomotive.START_STEP_TICKS);
             assertTrue(t.getSpeed() > 0, "the train must move after the departure");
         }
 
@@ -406,7 +411,7 @@ class RetentionParkMetricsTest {
             List<String> errors = model.setProgram("""
                     create itinerary "Ruta" {
                         add station %d
-                        add station %d, park, departure 08:10
+                        add station %d, park, departure 08:20
                     }
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
@@ -414,13 +419,15 @@ class RetentionParkMetricsTest {
                     """.formatted(a.getId(), b.getId(), t.getId(), t.getId(), t.getId()));
             assertTrue(errors.isEmpty(), "unexpected errors: " + errors);
 
+            // The buffer is reached after the 0→1 start step (~12.5 game minutes of travel), so
+            // the departure must stay in the future for the hold to be observable.
             runUntil(() -> t.getAutopilot().mode() == AutoPilot.Mode.WAITING && !loco.isEngineOn(),
                     600);
             assertEquals(AutoPilot.Mode.WAITING, t.getAutopilot().mode(),
                     "the schedule must hold at the buffer");
             assertFalse(loco.isEngineOn());
 
-            runTicks((int) model.getGameClock().ticksUntil(new GameTime(1, 8, 10)) + 2);
+            runTicks((int) model.getGameClock().ticksUntil(new GameTime(1, 8, 20)) + 2);
             assertTrue(loco.isEngineOn(), "the scheduled departure must start the engine");
             assertEquals(2, loco.getTargetSpeed(), "the deferred speed must be restored");
         }
