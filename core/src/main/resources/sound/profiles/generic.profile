@@ -32,6 +32,12 @@ notch.8  = sound/train/generic/notch-8.wav  loop=7.763832,0.966871  gain=0.35
 notch.9  = sound/train/generic/notch-9.wav  loop=3.643175,5.087528  gain=-0.05
 notch.10 = sound/train/generic/notch-10.wav loop=7.508707,1.221995  gain=0.37
 
+# --- Start transitions 0<->1 (one-shots, ordered pairs) ------
+# 0->1 / 1->0 start transitions: loop gains baked in (idle unity, notch-1 part -2.55 dB);
+# with gain=1.98 (idle's) each half matches its loop exactly (sample-exact handover, verified).
+trans.0-1 = sound/train/generic/trans-0-1.wav gain=1.98
+trans.1-0 = sound/train/generic/trans-1-0.wav gain=1.98
+
 # --- Adjacent transitions (one-shots, ordered pairs) ---------
 # No gain today (default 0.0): level balance is done by the notch gains
 # and the runtime mixing stage (PR C/D). effort/torque are reserved for

@@ -25,7 +25,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Contract test for the 32 real assets shipped in {@code sound/train/generic/} and the generic
+ * Contract test for the 34 real assets shipped in {@code sound/train/generic/} and the generic
  * profile (ADR-029 §7). It freezes format (mono 44.1 kHz PCM16), exact frame counts from the audit
  * and the measured loop declarations, so a bad commit cannot silently corrupt the material.
  */
@@ -50,10 +50,10 @@ class NotchAssetsContractTest {
         for (int notch = 1; notch <= 10; notch++) {
             assets.add(Arguments.of("notch-" + notch + ".wav", NOTCH_FRAMES));
         }
-        for (int from = 1; from <= 9; from++) {
+        for (int from = 0; from <= 9; from++) {
             assets.add(Arguments.of("trans-" + from + "-" + (from + 1) + ".wav", TRANS_UP_FRAMES));
         }
-        for (int from = 2; from <= 10; from++) {
+        for (int from = 1; from <= 10; from++) {
             assets.add(
                     Arguments.of("trans-" + from + "-" + (from - 1) + ".wav", TRANS_DOWN_FRAMES));
         }
@@ -106,11 +106,11 @@ class NotchAssetsContractTest {
     }
 
     @Test
-    @DisplayName("declares all 32 canonical materials and every path resolves on the classpath")
+    @DisplayName("declares all 34 canonical materials and every path resolves on the classpath")
     void should_DeclareEveryAsset_When_ProfileIsParsed() throws Exception {
         MaterialProfile profile = loadGenericProfile();
 
-        assertEquals(32, EXPECTED_MATERIALS.size(), "10 notches + 18 transitions + 4 singles");
+        assertEquals(34, EXPECTED_MATERIALS.size(), "10 notches + 20 transitions + 4 singles");
         assertEquals(EXPECTED_MATERIALS.size(), profile.size(), "declared material count");
         for (Map.Entry<MaterialId, String> entry : EXPECTED_MATERIALS.entrySet()) {
             MaterialRef ref = profile.material(entry.getKey())
@@ -167,9 +167,28 @@ class NotchAssetsContractTest {
         assertTrue(profile.has(MaterialId.transition(1, 2)), "trans-1-2 is shipped");
         assertTrue(profile.has(MaterialId.transition(2, 1)), "trans-2-1 is shipped");
         assertFalse(profile.has(MaterialId.transition(1, 3)), "compound trans-1-3 has no material");
-        assertFalse(profile.has(MaterialId.transition(0, 1)), "trans-0-1 has no material");
+        assertTrue(profile.has(MaterialId.transition(0, 1)), "trans-0-1 is shipped");
+        assertTrue(profile.has(MaterialId.transition(1, 0)), "trans-1-0 is shipped");
         assertFalse(profile.has(MaterialId.of(Role.BRAKES)), "brakes has no measured material yet");
         assertFalse(profile.has(MaterialId.of(Role.HORN)), "horn is reserved");
+    }
+
+    @Test
+    @DisplayName("resolves the 0-1 and 1-0 start transitions as loopless one-shots with gain 1.98")
+    void should_ResolveStartTransitions_When_ProfileIsParsed() throws Exception {
+        MaterialProfile profile = loadGenericProfile();
+
+        MaterialRef up = profile.material(MaterialId.transition(0, 1)).orElseThrow();
+        MaterialRef down = profile.material(MaterialId.transition(1, 0)).orElseThrow();
+
+        assertEquals("sound/train/generic/trans-0-1.wav", up.path());
+        assertEquals("sound/train/generic/trans-1-0.wav", down.path());
+        assertEquals(1.98, up.gainDb(), 1e-9, "trans.0-1 gain");
+        assertEquals(1.98, down.gainDb(), 1e-9, "trans.1-0 gain");
+        assertTrue(up.loop().isEmpty(), "trans.0-1 is a one-shot: no loop=");
+        assertTrue(down.loop().isEmpty(), "trans.1-0 is a one-shot: no loop=");
+        assertFalse(MaterialId.transition(0, 1).isLoop(), "0-1 transition must not be a loop role");
+        assertFalse(MaterialId.transition(1, 0).isLoop(), "1-0 transition must not be a loop role");
     }
 
     @Test
@@ -184,11 +203,11 @@ class NotchAssetsContractTest {
         for (int notch = 1; notch <= 10; notch++) {
             materials.put(MaterialId.notch(notch), "notch-" + notch + ".wav");
         }
-        for (int from = 1; from <= 9; from++) {
+        for (int from = 0; from <= 9; from++) {
             materials.put(MaterialId.transition(from, from + 1),
                     "trans-" + from + "-" + (from + 1) + ".wav");
         }
-        for (int from = 2; from <= 10; from++) {
+        for (int from = 1; from <= 10; from++) {
             materials.put(MaterialId.transition(from, from - 1),
                     "trans-" + from + "-" + (from - 1) + ".wav");
         }

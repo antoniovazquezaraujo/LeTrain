@@ -32,6 +32,7 @@ class MaterialBankTest {
             notch.1   = sound/train/generic/notch-1.wav loop=1.0,2.0
             notch.2   = sound/train/generic/notch-2.wav loop=1.0,2.0
             idle      = sound/train/generic/idle.wav    loop=0.5,1.0
+            trans.0-1 = sound/train/generic/trans-0-1.wav
             trans.1-2 = sound/train/generic/trans-1-2.wav
             trans.2-3 = sound/train/generic/trans-2-3.wav
             trans.3-4 = sound/train/generic/trans-3-4.wav
@@ -115,6 +116,7 @@ class MaterialBankTest {
     @Test
     @DisplayName("reports a complete adjacent chain in both directions")
     void should_ReportCompleteChain_When_AdjacentStepsDeclared() {
+        assertTrue(bank.hasChain(0, 4), "0->1->2->3->4 is fully declared");
         assertTrue(bank.hasChain(1, 4), "1->2->3->4 is fully declared");
         assertTrue(bank.hasChain(1, 2));
         assertTrue(bank.hasChain(1, 1), "an empty chain is trivially complete");
@@ -126,7 +128,7 @@ class MaterialBankTest {
     void should_ReportBrokenChain_When_StepMissing() {
         assertFalse(bank.hasChain(1, 5), "trans.4-5 is not declared");
         assertFalse(bank.hasChain(4, 1), "no downward transitions are declared");
-        assertFalse(bank.hasChain(0, 3), "trans.0-1 is not declared");
+        assertFalse(bank.hasChain(0, 5), "trans.4-5 is not declared above 0");
         verifyNoInteractions(resolver);
     }
 
