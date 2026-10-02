@@ -31,6 +31,9 @@ Hoy conviven **dos sistemas de audio completos y solapados**:
      explosión. Entrada = **snapshot de estado** (velocidad, notch, freno, posición, rumbo…), no
      el `Model` entero; así se testea con snapshots sintéticos y la simulación no se acopla al
      audio. Reutiliza el synth existente (`TrainSynth`, `SpeedNotch`, `GrainEngine`).
+     El paquete `letrain.audio.material` (perfil, banco y planificador de
+     [[ADR-029-Modelo-Sonido-Tren]]) es el **candidato a primer inquilino** de `train-audio`:
+     moverlo será un refactor de paquetes, no un rediseño.
    - **`gameplay-sfx`** (capa fina, módulo propio solo si crece): martillo, caterpillar,
      carga/descarga y sonidos de UI. Disparos puntuales y posicionales; los emite el presenter.
    - **`audio-core`** (núcleo compartido, extraído de lo que ya existe): dispositivo de salida,
