@@ -216,18 +216,20 @@ class MaterialProfileParserTest {
     }
 
     @Test
-    @DisplayName("parses the shipped generic profile with all 32 materials")
+    @DisplayName("parses the shipped generic profile with all 34 materials")
     void should_ParseShippedGenericProfile() throws Exception {
         MaterialProfile profile = readProfile("/sound/profiles/generic.profile");
 
         assertEquals("generic", profile.name());
         assertEquals(0, profile.packVersion());
-        assertEquals(32, profile.size(), "10 notches + 18 transitions + idle/start/stop/rolling");
+        assertEquals(34, profile.size(), "10 notches + 20 transitions + idle/start/stop/rolling");
 
         for (int notch = 1; notch <= 10; notch++) {
             assertTrue(profile.material(MaterialId.notch(notch)).orElseThrow().hasLoop(),
                     "notch-" + notch + " must declare loop points");
         }
+        assertTrue(profile.has(MaterialId.transition(0, 1)), "trans.0-1 is shipped");
+        assertTrue(profile.has(MaterialId.transition(1, 0)), "trans.1-0 is shipped");
         assertEquals(22.059252, profile.material(MaterialId.of(Role.ROLLING)).orElseThrow().loop()
                 .orElseThrow().startSeconds(), 1e-9);
         assertFalse(profile.material(MaterialId.of(Role.START)).orElseThrow().hasLoop());
