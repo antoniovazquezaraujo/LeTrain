@@ -7,6 +7,9 @@ import java.util.List;
  * e.g. {@code sea/waves-*.wav}). All sounds are loops; event-like sounds carry their gaps inside
  * longer takes, so no playback mode is declared.
  */
-public record SoundDef(String name,List<String>material){
+public record SoundDef(String name, List<String> material) {
 
-public SoundDef{material=List.copyOf(material);}}
+    public SoundDef {
+        material = List.copyOf(material);
+    }
+}

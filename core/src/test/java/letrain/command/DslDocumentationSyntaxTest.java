@@ -260,7 +260,8 @@ class DslDocumentationSyntaxTest {
         };
     }
 
-    private record Wrapped(String text, boolean waypoint) {}
+    private record Wrapped(String text, boolean waypoint) {
+    }
 
     /**
      * Some reference snippets are fragments, not full statements: waypoint lines live inside

@@ -40,7 +40,8 @@ public class PaletteLab {
             int semClosed, int signalMax, int signalMin, int deadEnd, int tunnel, int bridge,
             int loco, int wagon, int cargoCoal, int cargoGold, int cargoRuby, int cursorDrawing,
             int cursorMoving, int cursorErasing, int highlight, int label, int board, int fork,
-            int forkSelected, int selectionLink, int crash) {}
+            int forkSelected, int selectionLink, int crash) {
+    }
 
     /** Mapa de muestra: los colores de cada token salen de la {@link Pal} activa. */
     private static final String[] MAP = {"                                        ",

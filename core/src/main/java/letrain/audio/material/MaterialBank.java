@@ -17,10 +17,10 @@ import org.slf4j.LoggerFactory;
  * Shared, static cache of resolved train materials (ADR-029 §6).
  *
  * <p>
- * The bank resolves and decodes each material at most once and exposes a typed API for the
- * consumer PRs: {@link #loop(int)}, {@link #transition(int, int)}, {@link #prefetch(MaterialId)}
- * and {@link #hasChain(int, int)}. It is the only owner of the shared cache, so every
- * synthesizer instance can reuse the same decoded samples.
+ * The bank resolves and decodes each material at most once and exposes a typed API for the consumer
+ * PRs: {@link #loop(int)}, {@link #transition(int, int)}, {@link #prefetch(MaterialId)} and
+ * {@link #hasChain(int, int)}. It is the only owner of the shared cache, so every synthesizer
+ * instance can reuse the same decoded samples.
  *
  * <p>
  * The shared instance uses the shipped {@code generic} profile and the classpath resolver; tests
@@ -92,9 +92,9 @@ public final class MaterialBank {
     }
 
     /**
-     * True when every adjacent step between {@code from} and {@code to} is declared in the
-     * profile, i.e. the simple-step chain of ADR-029 §3 level 2 can be built. A chain of zero
-     * steps ({@code from == to}) is trivially complete.
+     * True when every adjacent step between {@code from} and {@code to} is declared in the profile,
+     * i.e. the simple-step chain of ADR-029 §3 level 2 can be built. A chain of zero steps
+     * ({@code from == to}) is trivially complete.
      */
     public boolean hasChain(int from, int to) {
         if (from == to) {

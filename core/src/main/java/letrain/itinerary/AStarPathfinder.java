@@ -40,7 +40,8 @@ public class AStarPathfinder implements SegmentPathfinder {
         this.train = train;
     }
 
-    private record NodeState(Segment segment, Port entryPort) {}
+    private record NodeState(Segment segment, Port entryPort) {
+    }
 
     @Override
     public List<Segment> find(Segment from, Segment to, Optional<Dir> entryDir) {

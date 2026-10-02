@@ -25,8 +25,8 @@ public class ZoneSensor {
     /** Within this distance the secondary zone is at full weight; it fades out towards R. */
     private static final float FULL_WEIGHT_DISTANCE = 4f;
 
-    public record Result(String primary, Map<String, Float> influence,
-            Map<String, Float> proximity, Map<String, Float> weights) {
+    public record Result(String primary, Map<String, Float> influence, Map<String, Float> proximity,
+            Map<String, Float> weights) {
 
         public Result {
             influence = Map.copyOf(influence);

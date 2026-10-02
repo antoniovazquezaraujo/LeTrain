@@ -131,7 +131,8 @@ class PocJournalReplayTest {
         return terrainValue(model, x, y) == GroundMap.GROUND;
     }
 
-    private record Crossing(int x, int y, int run, int totalPieces) {}
+    private record Crossing(int x, int y, int run, int totalPieces) {
+    }
 
     /**
      * Scans rows in {@code [minX,maxX]x[minY,maxY]} for a horizontal crossing that starts on
@@ -159,7 +160,8 @@ class PocJournalReplayTest {
     }
 
     /** First cell of a horizontal GROUND run of at least {@code length} cells. */
-    private record GroundRun(int x, int y) {}
+    private record GroundRun(int x, int y) {
+    }
 
     private static GroundRun findGroundRun(Model model, int length, int minX, int maxX, int minY,
             int maxY) {

@@ -208,8 +208,8 @@ class MaterialProfileParserTest {
     @Test
     @DisplayName("defaults the header when profile and packVersion are absent")
     void should_DefaultHeader_When_Absent() {
-        MaterialProfile profile = MaterialProfileParser.parse(
-                "notch.1 = sound/train/generic/notch-1.wav loop=1.0,2.0");
+        MaterialProfile profile = MaterialProfileParser
+                .parse("notch.1 = sound/train/generic/notch-1.wav loop=1.0,2.0");
 
         assertEquals("generic", profile.name());
         assertEquals(0, profile.packVersion());
@@ -228,10 +228,8 @@ class MaterialProfileParserTest {
             assertTrue(profile.material(MaterialId.notch(notch)).orElseThrow().hasLoop(),
                     "notch-" + notch + " must declare loop points");
         }
-        assertEquals(22.059252,
-                profile.material(MaterialId.of(Role.ROLLING)).orElseThrow().loop().orElseThrow()
-                        .startSeconds(),
-                1e-9);
+        assertEquals(22.059252, profile.material(MaterialId.of(Role.ROLLING)).orElseThrow().loop()
+                .orElseThrow().startSeconds(), 1e-9);
         assertFalse(profile.material(MaterialId.of(Role.START)).orElseThrow().hasLoop());
         assertFalse(profile.has(MaterialId.of(Role.HORN)), "horn is reserved, no material yet");
     }
