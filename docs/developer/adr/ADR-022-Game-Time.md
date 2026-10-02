@@ -1,6 +1,6 @@
 # ADR-022: Tiempo de Juego (Reloj, Día/Noche y Horarios)
 
-## Estado: PROPUESTO — fase 0 implementada (reloj, HUD y comando `time set`); fase 2a implementada (gramática y modelo de horarios); fase 2b implementada (retención, `park` y métrica de puntualidad en core; el HUD llega en 2c); saneo de sintaxis del lote 2 aplicado (`time set HH`, `park`/`stop` directos, `invert`≡`reverse`, sin auto-giro, comas del plan, comentarios `#`)
+## Estado: PROPUESTO — fase 0 implementada (reloj, HUD y comando `time set`); fase 2a implementada (gramática y modelo de horarios); fase 2b implementada (retención, `park` y métrica de puntualidad en core; el HUD llega en 2c); saneo de sintaxis del lote 2 aplicado (`time set HH`, `park`/`stop` directos, `invert`≡`reverse`, sin auto-giro, comas del plan, comentarios `#`); enmienda de física: el arranque 0→1 cuesta `START_STEP_TICKS` (100 ticks), igual que un tramo completo
 
 ## Contexto
 
@@ -114,6 +114,30 @@ Referencia rápida (notch 10 = 5 ticks/celda):
 | Pausa de edición | se congela | se congela | invariante |
 | Acelerador de simulación (futuro, pruebas) | ×N | ×N | invariante |
 | Cambiar `dayDurationSeconds` | sin efecto | nueva escala | cambia (por eso se fija por partida) |
+
+### Arranque desde parado: el tramo 0→1 (enmienda)
+
+El primer tramo de aceleración (**0→1**) era instantáneo: con el tren parado la rama de arranque de
+`Locomotive.updateInertia()` corre cada tick, el contador de inercia avanza por tick y
+`neededRails = max(1, currentSpeed * factor)` valía 1, así que la marcha 1 entraba en un solo tick.
+Un tren de toneladas no puede arrancar así.
+
+Desde esta enmienda el arranque se cronometra en **ticks** (no hay cadencia de raíles con el tren
+parado) y cuesta `Locomotive.START_STEP_TICKS = 100` ticks (~5 s a 20 TPS), lo mismo que un tramo
+completo en marcha (`currentSpeed * 2` raíles × `50 / currentSpeed` ticks ≈ 100 ticks). El tick que
+engancha la marcha 1 **no** consume turno de movimiento, de modo que el paso 0→1 y los pasos en
+marcha quedan exactamente a 100 ticks (0→1 en el tick 100, 1→2 en el 200, …).
+
+No se toca nada más de la física: la frenada sigue a ~50 ticks por paso y la cadencia de avance
+sigue siendo `turns = 50 / currentSpeed`. `START_STEP_TICKS` es la **única línea a afinar** por oído,
+junto con la transición de audio `trans-0-1` (que el `TransitionPlanner` usará automáticamente
+cuando exista en el perfil de sonido).
+
+| Paso | Coste | Duración (20 TPS) |
+|---|---|---|
+| Arranque 0→1 (desde parado) | `START_STEP_TICKS` ticks | 100 ticks (5 s) |
+| Marcha v→v+1 | `v * 2` raíles × `50 / v` ticks | 100 ticks (5 s) |
+| Frenada v→v−1 | `v` raíles × `50 / v` ticks | 50 ticks (2,5 s) |
 
 ### Horarios (fase 2): horas por parada
 
