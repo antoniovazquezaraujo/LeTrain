@@ -10,8 +10,9 @@
 #   effort=<token>             optional, parsed and informational today
 #   torque=<token>             optional, parsed and informational today
 #
-# v3 regenerated set: loop windows and gains come from BICHO's audit
-# (2026-10-02) measured against the engine's real loop crossfade.
+# v3 regenerated set: long loop windows (>= 4 s; 6.9-8.4 s chosen) played
+# with simple WRAP and audited against the engine's real loop crossfade;
+# gains target the measured body at -10.62 dBFS (BICHO audit, 2026-10-02).
 # Recipe: 'cruise' from the legacy master pitch-shifted with rubberband to
 # BASE+2N semitones (BASE=-6.86, anchored to 'ralenti'). Transitions are
 # rubberband pitch maps over 'cruise' (0.8 s pre-roll, 0.5 s extra tail):
@@ -24,17 +25,17 @@ profile     = generic
 packVersion = 0
 
 # --- Engine notches (loops) ---------------------------------
-# gain is BICHO's single recommended value per notch (v3 audit).
-notch.1  = sound/train/generic/notch-1.wav  loop=1.291791,3.314717  gain=+1.09
-notch.2  = sound/train/generic/notch-2.wav  loop=6.197007,1.459025  gain=-0.70
-notch.3  = sound/train/generic/notch-3.wav  loop=4.467120,2.061020  gain=+0.23
-notch.4  = sound/train/generic/notch-4.wav  loop=1.338231,3.274671  gain=+1.28
-notch.5  = sound/train/generic/notch-5.wav  loop=6.197007,1.445442  gain=-0.45
-notch.6  = sound/train/generic/notch-6.wav  loop=6.191202,1.457982  gain=-0.74
-notch.7  = sound/train/generic/notch-7.wav  loop=4.490340,3.878345  gain=-0.03
-notch.8  = sound/train/generic/notch-8.wav  loop=1.303401,0.723492  gain=-0.32
-notch.9  = sound/train/generic/notch-9.wav  loop=1.309206,0.585079  gain=+0.03
-notch.10 = sound/train/generic/notch-10.wav loop=2.290249,1.578662  gain=+0.56
+# Long windows, simple WRAP: no audible repetition; gain targets -10.62 dBFS.
+notch.1  = sound/train/generic/notch-1.wav  loop=0.435556,7.789773  gain=0.46
+notch.2  = sound/train/generic/notch-2.wav  loop=1.265420,7.413515  gain=-0.42
+notch.3  = sound/train/generic/notch-3.wav  loop=1.201633,7.052063  gain=0.43
+notch.4  = sound/train/generic/notch-4.wav  loop=1.422245,6.951519  gain=0.65
+notch.5  = sound/train/generic/notch-5.wav  loop=1.410635,6.949252  gain=-0.04
+notch.6  = sound/train/generic/notch-6.wav  loop=0.719819,7.681202  gain=-0.46
+notch.7  = sound/train/generic/notch-7.wav  loop=0.725601,7.668299  gain=0.06
+notch.8  = sound/train/generic/notch-8.wav  loop=1.271293,7.419274  gain=-0.54
+notch.9  = sound/train/generic/notch-9.wav  loop=1.213243,7.046145  gain=0.04
+notch.10 = sound/train/generic/notch-10.wav loop=1.387392,6.931361  gain=-0.40
 
 # --- Adjacent transitions (one-shots, ordered pairs) ---------
 # One-shots: no loop windows. gain is BICHO's single v3 value per
@@ -63,11 +64,13 @@ trans.9-8  = sound/train/generic/trans-9-8.wav  gain=+0.33
 trans.10-9 = sound/train/generic/trans-10-9.wav gain=+0.17
 
 # --- Idle, start, stop, rolling (loops/one-shots) ------------
-# Loop windows and gains audited against the engine's real crossfade.
-idle    = sound/train/generic/idle.wav    loop=13.673832,1.209773  gain=+1.15
-start   = sound/train/generic/start.wav   gain=+0.81
-stop    = sound/train/generic/stop.wav    gain=+0.66
-rolling = sound/train/generic/rolling.wav loop=22.059252,3.039093  gain=+5.15
+# idle/rolling use the same long-window WRAP; rolling adopts audit
+# alternative B (residual -33.4 dB vs -25.5 dB, 2.8x longer). start/stop
+# are one-shots.
+idle    = sound/train/generic/idle.wav    loop=6.965986,7.054263  gain=1.13
+start   = sound/train/generic/start.wav   gain=0.67
+stop    = sound/train/generic/stop.wav    gain=0.52
+rolling = sound/train/generic/rolling.wav loop=23.521769,8.432585  gain=6.71
 
 # --- Reserved: no measured material yet (fallback §3) --------
 # brakes: legacy alias file sound/train-brakes.wav; loop points pending

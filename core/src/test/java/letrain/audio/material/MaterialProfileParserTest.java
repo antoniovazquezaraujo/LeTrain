@@ -230,7 +230,7 @@ class MaterialProfileParserTest {
         }
         assertTrue(profile.has(MaterialId.transition(0, 1)), "trans.0-1 is shipped");
         assertTrue(profile.has(MaterialId.transition(1, 0)), "trans.1-0 is shipped");
-        assertEquals(22.059252, profile.material(MaterialId.of(Role.ROLLING)).orElseThrow().loop()
+        assertEquals(23.521769, profile.material(MaterialId.of(Role.ROLLING)).orElseThrow().loop()
                 .orElseThrow().startSeconds(), 1e-9);
         assertFalse(profile.material(MaterialId.of(Role.START)).orElseThrow().hasLoop());
         assertFalse(profile.has(MaterialId.of(Role.HORN)), "horn is reserved, no material yet");

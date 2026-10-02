@@ -69,28 +69,28 @@ class NotchAssetsContractTest {
     }
 
     static Stream<Arguments> expectedLoops() {
-        return Stream.of(Arguments.of("notch-1", 1.291791, 3.314717),
-                Arguments.of("notch-2", 6.197007, 1.459025),
-                Arguments.of("notch-3", 4.467120, 2.061020),
-                Arguments.of("notch-4", 1.338231, 3.274671),
-                Arguments.of("notch-5", 6.197007, 1.445442),
-                Arguments.of("notch-6", 6.191202, 1.457982),
-                Arguments.of("notch-7", 4.490340, 3.878345),
-                Arguments.of("notch-8", 1.303401, 0.723492),
-                Arguments.of("notch-9", 1.309206, 0.585079),
-                Arguments.of("notch-10", 2.290249, 1.578662),
-                Arguments.of("idle", 13.673832, 1.209773),
-                Arguments.of("rolling", 22.059252, 3.039093));
+        return Stream.of(Arguments.of("notch-1", 0.435556, 7.789773),
+                Arguments.of("notch-2", 1.265420, 7.413515),
+                Arguments.of("notch-3", 1.201633, 7.052063),
+                Arguments.of("notch-4", 1.422245, 6.951519),
+                Arguments.of("notch-5", 1.410635, 6.949252),
+                Arguments.of("notch-6", 0.719819, 7.681202),
+                Arguments.of("notch-7", 0.725601, 7.668299),
+                Arguments.of("notch-8", 1.271293, 7.419274),
+                Arguments.of("notch-9", 1.213243, 7.046145),
+                Arguments.of("notch-10", 1.387392, 6.931361),
+                Arguments.of("idle", 6.965986, 7.054263),
+                Arguments.of("rolling", 23.521769, 8.432585));
     }
 
     static Stream<Arguments> expectedGains() {
-        return Stream.of(Arguments.of("notch-1", 1.09), Arguments.of("notch-2", -0.70),
-                Arguments.of("notch-3", 0.23), Arguments.of("notch-4", 1.28),
-                Arguments.of("notch-5", -0.45), Arguments.of("notch-6", -0.74),
-                Arguments.of("notch-7", -0.03), Arguments.of("notch-8", -0.32),
-                Arguments.of("notch-9", 0.03), Arguments.of("notch-10", 0.56),
-                Arguments.of("idle", 1.15), Arguments.of("rolling", 5.15),
-                Arguments.of("start", 0.81), Arguments.of("stop", 0.66),
+        return Stream.of(Arguments.of("notch-1", 0.46), Arguments.of("notch-2", -0.42),
+                Arguments.of("notch-3", 0.43), Arguments.of("notch-4", 0.65),
+                Arguments.of("notch-5", -0.04), Arguments.of("notch-6", -0.46),
+                Arguments.of("notch-7", 0.06), Arguments.of("notch-8", -0.54),
+                Arguments.of("notch-9", 0.04), Arguments.of("notch-10", -0.40),
+                Arguments.of("idle", 1.13), Arguments.of("rolling", 6.71),
+                Arguments.of("start", 0.67), Arguments.of("stop", 0.52),
                 Arguments.of("trans-0-1", -2.19), Arguments.of("trans-1-0", -0.33),
                 Arguments.of("trans-1-2", -2.15), Arguments.of("trans-2-1", -0.15),
                 Arguments.of("trans-2-3", -2.29), Arguments.of("trans-3-2", 0.78),
