@@ -13,7 +13,7 @@
 > 1. **Clics de onset**: 10 de las 18 transiciones arrancan en escalón hasta −5 dBFS → se corrigen
 >    **en el reproductor** con fade-in corto de **10–20 ms** al inicio de cada one-shot; los WAVs
 >    **no se regeneran** (§4).
-> 2. **Materiales en llegada**: `idle`, `start`, `stop` y `rodadura` los está generando el usuario a
+> 2. **Materiales en llegada**: `idle`, `start`, `stop` y `rolling` los está generando el usuario a
 >    mano y se añadirán al set; hasta su entrega manda el **fallback legacy** con `train-sound.wav`
 >    (§3).
 > 3. **Procedencia**: el usuario **confirma autoría propia** de los 28 WAVs, que se commitean bajo la
@@ -27,6 +27,16 @@
 > **Auditoría de bucles incorporada (§5)**: duraciones exactas por material, puntos
 > `loop=<inicio>,<longitud>` medidos para los 10 notches —el wrap a fichero completo **no cierra
 > limpio**, así que **`loop=auto` queda descartado**—, niveles (RMS/picos) y escalera de pitch.
+
+> **Enmienda 3 — 2026-10-02.** **Nomenclatura de materiales 100 % en inglés**, decidida por el
+> usuario: la taxonomía no mezcla idiomas. Se renombran `rodadura` → **`rolling`** (alias legacy
+> `wagons`), `frenos` → **`brakes`** (alias legacy el fichero `train-brakes.wav`; esa label nunca
+> existió en `train-sound-labels.txt`) y `bocina` → **`horn`**. El resto ya estaba en inglés
+> (`idle`, `notch-1`…`notch-10`, `trans-<from>-<to>`, `start`, `stop`). Los alias siguen
+> resolviendo para leer material legacy, pero **el ID canónico y todos los ejemplos usan los
+> nombres ingleses**. Cambio sin impacto: **ni el set ni ningún ID de este ADR están todavía
+> commiteados**, así que es solo documentación — Contexto, §1, §3, §5, §6 y preguntas abiertas, más
+> el bloque de la enmienda 2, que ya citaba `rodadura`—; el español queda reservado a la prosa.
 
 ## Contexto
 
@@ -45,7 +55,7 @@ Este ADR **concreta la fase de tren** que [[ADR-026-Audio-Domains]] deja abierta
   | `ralenti` | 6.780–24.984 | bucle de la marcha 0 |
   | `cruise` | 24.984–33.715 | **única fuente de las marchas 1–10** |
   | `stop` | 33.715–38.206 | apagado del motor (una vez) |
-  | `wagons` | 38.431–87.473 | rodadura de vagones, volumen por velocidad |
+  | `wagons` | 38.431–87.473 | rodadura de vagones, volumen por velocidad (→ material `rolling`) |
 
 - `TrainSynthesizer.buildNotches()` construye 11 marchas (`SpeedNotch`): 0 = `ralenti` a pitch 1.0;
   1–10 = **el mismo segmento `cruise`** con pitch de reproducción
@@ -76,9 +86,9 @@ Este ADR **concreta la fase de tren** que [[ADR-026-Audio-Domains]] deja abierta
   queda documentado como **síntesis propia a partir de material del repo** (el segmento `cruise` de
   `train-sound.wav`), no como asset licenciado. Son la fuente de verdad del algoritmo, de la escucha
   en desarrollo y del test contrato (§7).
-- **Materiales en llegada**: `idle`, `start`, `stop` y `rodadura` **los está generando el usuario a
+- **Materiales en llegada**: `idle`, `start`, `stop` y `rolling` **los está generando el usuario a
   mano** y se añadirán al set con el mismo tratamiento; hasta su entrega manda el fallback legacy
-  con `train-sound.wav` (§3). `frenos`, `bocina`, `trans-0-1` y las parejas compuestas siguen sin
+  con `train-sound.wav` (§3). `brakes`, `horn`, `trans-0-1` y las parejas compuestas siguen sin
   material.
 - **Material del licenciante (Carlos / Railsounds)**: grabaciones reales **por marcha** (el pitch
   real de cada notch, sin pitch-shift) y grabaciones reales de **transiciones entre pares
@@ -129,23 +139,27 @@ por tipo de locomotora; existe un perfil **`generic`** como fallback. Los IDs so
 compatibles con el modelo de [[ADR-028-Sound-Packs-Externos-Cifrados]]
 (`train/<perfil>/<material>.wav`):
 
-| Rol | ID lógico | Tipo | Notas |
+| Rol | ID lógico (en) | Tipo | Notas / alias legacy |
 |---|---|---|---|
 | Ralentí | `idle` | loop | marcha 0 |
 | Marchas | `notch-1` … `notch-10` | loop con puntos de bucle | pitch propio por marcha (§5); `notch-6` = síntesis propia de `cruise` (§7) |
 | Transiciones | `trans-<from>-<to>` (p. ej. `trans-2-3`, `trans-2-5`, `trans-5-2`) | one-shot | pares **ordenados**, incluidos saltos compuestos |
 | Arranque | `start` | one-shot | encendido del motor |
 | Parada | `stop` | one-shot | apagado |
-| Frenos | `frenos` | loop | reservado; hoy `train-brakes.wav` |
-| Rodadura | `rodadura` (alias legacy `wagons`) | loop | volumen por velocidad |
-| Bocina | `bocina` | one-shot | reservado |
+| Frenos | `brakes` | loop | reservado; **alias legacy `train-brakes.wav`** (hoy suena como SFX propio); no existía label en el WAV legacy |
+| Rodadura | `rolling` | loop | volumen por velocidad; **alias legacy `wagons`** (label de `train-sound-labels.txt`) |
+| Bocina | `horn` | one-shot | reservado; **sin alias legacy** (nunca existió) |
 
 - `trans-<from>-<to>` es **direccional**: `trans-5-2` no es `trans-2-5`. Los pasos simples
   (`trans-2-3`, `trans-3-2`, …) son la unidad; los compuestos son material extra que el licenciante
   puede entregar por fases.
+- **Nomenclatura (enmienda 3)**: los IDs canónicos van **en inglés**, sin mezclar idiomas —
+  `rolling`, `brakes`, `horn`. Los alias legacy (`wagons`, `train-brakes`) siguen resolviendo en el
+  resolutor para leer material ya nombrado en clave antigua, pero **no aparecen en los descriptores
+  ni en los ejemplos**.
 - Cobertura actual del set propio: **10 bucles + 18 transiciones adyacentes**. Faltan `idle`,
-  `start`, `stop` y `rodadura` (**en generación por el usuario**, §3) y, de forma no prevista,
-  `frenos`, `bocina`, `trans-0-1` y todas las compuestas → caen al fallback del punto 3.
+  `start`, `stop` y `rolling` (**en generación por el usuario**, §3) y, de forma no prevista,
+  `brakes`, `horn`, `trans-0-1` y todas las compuestas → caen al fallback del punto 3.
 - Sin perfil específico → `generic`; sin material concreto → fallback del punto 3. Nada deja al tren
   mudo.
 - La taxonomía es el **contrato con el licenciante**: nombres, direccionalidad y metadatos.
@@ -206,16 +220,16 @@ defecto, el nivel 4. El material puede crecer por fases (primero marchas, luego 
 adyacentes, luego compuestas) **sin romper nada**: los fallbacks van entrando solos.
 
 **Retención y retirada de `train-sound.wav`.** El WAV legacy y sus labels **se mantienen** mientras
-queden materiales sin sustituir —hoy `idle` (ralenti), `start`, `stop` y `rodadura` (`wagons`),
-**ya en generación por el usuario** (§Contexto), más el nivel 3 del fallback— **y mientras
-sostengan los tests de regresión existentes** (`AudioControllerTest` depende del segmento `stop`).
-**Hasta que esos cuatro materiales lleguen, manda el fallback legacy**: la ralentía, el arranque, la
-parada y la rodadura se sirven del `train-sound.wav` con sus labels, mientras las marchas 1–10 y
-sus transiciones ya van por el material propio. La retirada es una **decisión futura explícita**,
-condicionada a: (a) la entrega efectiva de los materiales propios de `idle`/`start`/`stop`/
-`rodadura`, (b) confirmar que el nivel 3 ya no se usa en ningún perfil soportado y (c) decidir si el
-pitch-shift de emergencia sigue necesitando `cruise`. No se borra `train-sound-labels.txt` mientras
-exista el nivel 3.
+queden materiales sin sustituir —hoy `idle` (ralenti), `start`, `stop` y `rolling` (alias legacy
+`wagons`), **ya en generación por el usuario** (§Contexto), más el nivel 3 del fallback— **y
+mientras sostengan los tests de regresión existentes** (`AudioControllerTest` depende del segmento
+`stop`). **Hasta que esos cuatro materiales lleguen, manda el fallback legacy**: `idle`, `start`,
+`stop` y `rolling` se sirven del `train-sound.wav` con sus labels (`ralenti`, `start`, `stop`,
+`wagons`), mientras las marchas 1–10 y sus transiciones ya van por el material propio. La retirada
+es una **decisión futura explícita**, condicionada a: (a) la entrega efectiva de los materiales
+propios de `idle`/`start`/`stop`/`rolling`, (b) confirmar que el nivel 3 ya no se usa en ningún
+perfil soportado y (c) decidir si el pitch-shift de emergencia sigue necesitando `cruise`. No se
+borra `train-sound-labels.txt` mientras exista el nivel 3.
 
 ### 4. Política de duración real vs inercia del juego
 
@@ -275,8 +289,14 @@ exista el nivel 3.
   trans.9-10  = sound/train/generic/trans-9-10.wav effort=high torque=loaded
   ...                                                  # las 16 adyacentes restantes
 
-  # FALTAN hoy (→ fallback §3): idle, start, stop, rodadura (EN LLEGADA), frenos,
-  #   bocina, trans-0-1, las compuestas (trans.2-5, …) y sus mismos campos effort/torque
+  # FALTAN hoy (→ fallback §3): idle, start, stop, rolling (EN LLEGADA), brakes,
+  #   horn, trans-0-1, las compuestas (trans.2-5, …) y sus mismos campos effort/torque
+  #
+  # EN LLEGADA — mismo formato, IDs canónicos en inglés (enmienda 3):
+  # rolling = sound/train/generic/rolling.wav  loop=<medido>  gain=<medido>
+  # brakes  = sound/train/generic/brakes.wav   loop=<medido>  gain=<medido>
+  # horn    = sound/train/generic/horn.wav                   gain=<medido>
+  # (los alias legacy 'wagons' y 'train-brakes' NO se escriben aquí: solo resuelve el resolutor)
   ```
 
   - **Campos**: **`loop=<inicio>,<longitud>`** con **puntos de bucle en segundos** respecto al
@@ -290,6 +310,10 @@ exista el nivel 3.
     (`train/<perfil>/<material>`) a rutas de classpath.
   - **Validación**: ID desconocido, ruta ausente, línea malformada o **bucle sin `loop` declarado** →
     **`WARN` + fallback (§3)**, nunca excepción.
+  - **Alias legacy (enmienda 3)**: además del ID canónico, `MaterialResolver` resuelve una tabla
+    fija **`wagons` → `rolling`** y **`train-brakes` → `brakes`**, de modo que el material ya
+    nombrado en clave legacy sigue resolviendo sin duplicarlo. Los descriptores y los ejemplos
+    **solo** escriben los canónicos en inglés; `horn` no tiene alias porque nunca existió.
   - **Auditoría de los bucles (datos medidos, enmienda 2)**:
     - Duraciones exactas: notch **385.024 frames (8,730703 s)**; trans de subida **220.500 frames
       (5,000000 s)**; trans de bajada **88.200 frames (2,000000 s)**. Sin chunk `smpl` en los
@@ -342,8 +366,8 @@ cambio a mono **parte el coste en disco pero no altera la RAM decodificada**: si
   memoria.
 - **Coste aceptado y declarado**: el artefacto de release (`mvn clean package`) crece **≈ +13,26 MB**
   de WAVs en `core` (de ~76 MB a ~89 MB de recursos de sonido) —la conversión a mono lo deja en la
-  mitad del +26 MB del estéreo—. Los cuatro materiales **en llegada** (`idle`/`start`/`stop`/
-  `rodadura`, §3) sumarán a estas cifras cuando se entreguen.
+  mitad del +26 MB del estéreo—. Los cuatro materiales **en llegada** (`idle`, `start`, `stop` y
+  `rolling`, §3) sumarán a estas cifras cuando se entreguen.
 - El límite de **100 MB por payload de ADR-028** sigue vigente para el pack propietario; este set
   vive en el classpath y no entra en ese presupuesto, pero conviene mantenerlo vigilado si el perfil
   crece a más locomotoras.
@@ -496,9 +520,9 @@ inglés; `mvn clean test` en verde antes de abrir o actualizar):
 - **Tamaño máximo de pack por locomotora** (y total): ¿caben todas las parejas ordenadas o solo
   adyacentes + compuestas aprobadas?
 - **Relación con [[ADR-027-Clima-Y-Estaciones]]**: ¿el clima afecta al sonido del tren (lluvia sobre
-  el techo, motor en frío, bocina con niebla)? Fuera de alcance hoy; decidir si entra en la taxonomía
+  el techo, motor en frío, `horn` con niebla)? Fuera de alcance hoy; decidir si entra en la taxonomía
   o se queda en el decorado.
-- **Bocina y frenos**: disparo (tecla/comando), variantes múltiples y si entran en la taxonomía ya en
-  la PR D o después.
+- **`horn` y `brakes`**: disparo (tecla/comando), variantes múltiples y si reciben material propio
+  ya en la PR D o después (hoy solo están en la taxonomía, sin assets).
 - **Aleatoriedad de tomas**: ¿varias tomas por material (estilo [[ADR-024-Soundscape-Material-Model]])
   o una por material en la primera fase?
