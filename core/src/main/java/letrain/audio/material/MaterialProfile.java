@@ -17,7 +17,8 @@ public final class MaterialProfile {
     public MaterialProfile(String name, int packVersion, Map<MaterialId, MaterialRef> materials) {
         this.name = name == null ? "" : name.trim();
         this.packVersion = packVersion;
-        this.materials = Map.copyOf(Objects.requireNonNull(materials, "materials must not be null"));
+        this.materials =
+                Map.copyOf(Objects.requireNonNull(materials, "materials must not be null"));
     }
 
     /** Empty profile used as fallback when a descriptor is missing or unreadable. */

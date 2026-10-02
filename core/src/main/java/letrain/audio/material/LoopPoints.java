@@ -11,10 +11,12 @@ public record LoopPoints(double startSeconds, double lengthSeconds) {
 
     public LoopPoints {
         if (!Double.isFinite(startSeconds) || startSeconds < 0.0) {
-            throw new IllegalArgumentException("loop start must be finite and >= 0: " + startSeconds);
+            throw new IllegalArgumentException(
+                    "loop start must be finite and >= 0: " + startSeconds);
         }
         if (!Double.isFinite(lengthSeconds) || lengthSeconds <= 0.0) {
-            throw new IllegalArgumentException("loop length must be finite and > 0: " + lengthSeconds);
+            throw new IllegalArgumentException(
+                    "loop length must be finite and > 0: " + lengthSeconds);
         }
     }
 

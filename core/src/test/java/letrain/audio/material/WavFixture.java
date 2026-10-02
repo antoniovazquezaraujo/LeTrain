@@ -16,11 +16,11 @@ final class WavFixture {
 
     static final int SAMPLE_RATE = 44100;
 
-    private WavFixture() {
-    }
+    private WavFixture() {}
 
     /** Writes a mono 44.1 kHz PCM16 sine wave and returns the file. */
-    static Path writeSine(Path dir, String fileName, int frames, double frequencyHz) throws IOException {
+    static Path writeSine(Path dir, String fileName, int frames, double frequencyHz)
+            throws IOException {
         float[] samples = new float[frames];
         for (int i = 0; i < frames; i++) {
             samples[i] = (float) (0.5 * Math.sin(2.0 * Math.PI * frequencyHz * i / SAMPLE_RATE));

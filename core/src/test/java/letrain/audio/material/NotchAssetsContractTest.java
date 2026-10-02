@@ -26,8 +26,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Contract test for the 32 real assets shipped in {@code sound/train/generic/} and the generic
- * profile (ADR-029 §7). It freezes format (mono 44.1 kHz PCM16), exact frame counts from the
- * audit and the measured loop declarations, so a bad commit cannot silently corrupt the material.
+ * profile (ADR-029 §7). It freezes format (mono 44.1 kHz PCM16), exact frame counts from the audit
+ * and the measured loop declarations, so a bad commit cannot silently corrupt the material.
  */
 @DisplayName("Notch assets - real material contract (ADR-029 §7)")
 class NotchAssetsContractTest {
@@ -54,7 +54,8 @@ class NotchAssetsContractTest {
             assets.add(Arguments.of("trans-" + from + "-" + (from + 1) + ".wav", TRANS_UP_FRAMES));
         }
         for (int from = 2; from <= 10; from++) {
-            assets.add(Arguments.of("trans-" + from + "-" + (from - 1) + ".wav", TRANS_DOWN_FRAMES));
+            assets.add(
+                    Arguments.of("trans-" + from + "-" + (from - 1) + ".wav", TRANS_DOWN_FRAMES));
         }
         assets.add(Arguments.of("idle.wav", IDLE_FRAMES));
         assets.add(Arguments.of("start.wav", START_FRAMES));
@@ -68,8 +69,7 @@ class NotchAssetsContractTest {
     }
 
     static Stream<Arguments> expectedLoops() {
-        return Stream.of(
-                Arguments.of("notch-1", 4.477937, 4.252766),
+        return Stream.of(Arguments.of("notch-1", 4.477937, 4.252766),
                 Arguments.of("notch-2", 6.301451, 2.429252),
                 Arguments.of("notch-3", 6.684286, 2.046417),
                 Arguments.of("notch-4", 6.685102, 2.045601),
@@ -130,8 +130,8 @@ class NotchAssetsContractTest {
         MaterialProfile profile = loadGenericProfile();
         MaterialId id = MaterialId.parse(token).orElseThrow();
 
-        LoopPoints loop = profile.material(id).orElseThrow().loop().orElseThrow(
-                () -> new AssertionError("missing loop for " + token));
+        LoopPoints loop = profile.material(id).orElseThrow().loop()
+                .orElseThrow(() -> new AssertionError("missing loop for " + token));
 
         assertEquals(start, loop.startSeconds(), 1e-9, token + " loop start");
         assertEquals(length, loop.lengthSeconds(), 1e-9, token + " loop length");
@@ -216,8 +216,8 @@ class NotchAssetsContractTest {
             return NOTCH_FRAMES;
         }
         if (fileName.startsWith("trans-")) {
-            String[] endpoints = fileName.substring("trans-".length(), fileName.length() - 4)
-                    .split("-");
+            String[] endpoints =
+                    fileName.substring("trans-".length(), fileName.length() - 4).split("-");
             int from = Integer.parseInt(endpoints[0]);
             int to = Integer.parseInt(endpoints[1]);
             return to > from ? TRANS_UP_FRAMES : TRANS_DOWN_FRAMES;
@@ -242,7 +242,8 @@ class NotchAssetsContractTest {
     private record WavHeader(int audioFormat, int channels, int sampleRate, int bitsPerSample) {
 
         static WavHeader read(URL url) throws IOException {
-            try (InputStream in = url.openStream(); DataInputStream data = new DataInputStream(in)) {
+            try (InputStream in = url.openStream();
+                    DataInputStream data = new DataInputStream(in)) {
                 byte[] chunkId = new byte[4];
                 data.readFully(chunkId);
                 assertEquals("RIFF", ascii(chunkId));
@@ -277,10 +278,8 @@ class NotchAssetsContractTest {
         }
 
         private static int readIntLe(DataInputStream in) throws IOException {
-            return in.readUnsignedByte()
-                    | (in.readUnsignedByte() << 8)
-                    | (in.readUnsignedByte() << 16)
-                    | (in.readUnsignedByte() << 24);
+            return in.readUnsignedByte() | (in.readUnsignedByte() << 8)
+                    | (in.readUnsignedByte() << 16) | (in.readUnsignedByte() << 24);
         }
     }
 }

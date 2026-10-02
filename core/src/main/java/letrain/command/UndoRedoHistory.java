@@ -61,7 +61,8 @@ public class UndoRedoHistory {
     /** How many recorded commands apart a fresh full-model checkpoint is taken. */
     private static final int CHECKPOINT_EVERY = 10;
 
-    private record Checkpoint(int commandIndex, byte[] bytes) {}
+    private record Checkpoint(int commandIndex, byte[] bytes) {
+    }
 
     private final Codec codec;
 

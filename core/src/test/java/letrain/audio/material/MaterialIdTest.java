@@ -53,8 +53,8 @@ class MaterialIdTest {
     }
 
     @ParameterizedTest(name = "{0} -> {1}")
-    @CsvSource({"idle, IDLE", "start, START", "stop, STOP", "rolling, ROLLING",
-            "brakes, BRAKES", "horn, HORN"})
+    @CsvSource({"idle, IDLE", "start, START", "stop, STOP", "rolling, ROLLING", "brakes, BRAKES",
+            "horn, HORN"})
     @DisplayName("parses every singleton role")
     void should_ParseSingletonRole_When_TokenMatches(String token, Role expectedRole) {
         MaterialId id = MaterialId.parse(token).orElseThrow();
@@ -80,8 +80,8 @@ class MaterialIdTest {
     }
 
     @ParameterizedTest(name = "rejects \"{0}\"")
-    @ValueSource(strings = {"", " ", "turbo", "notch-0", "notch-11", "notch-x", "notch",
-            "trans-1", "trans-1-1", "trans-11-1", "trans-1-11", "trans--2", "trans-1-2-3"})
+    @ValueSource(strings = {"", " ", "turbo", "notch-0", "notch-11", "notch-x", "notch", "trans-1",
+            "trans-1-1", "trans-11-1", "trans-1-11", "trans--2", "trans-1-2-3"})
     @DisplayName("returns empty for unknown or malformed tokens")
     void should_ReturnEmpty_When_TokenIsUnknownOrMalformed(String token) {
         assertTrue(MaterialId.parse(token).isEmpty());

@@ -23,7 +23,8 @@ public final class TrackElementMovementService {
 
     private TrackElementMovementService() {}
 
-    private record MoveResult(Track destination, Dir heading) {}
+    private record MoveResult(Track destination, Dir heading) {
+    }
 
     public static boolean moveSensor(Model model, Sensor sensor, Dir dir) {
         Track origin = sensor.getTrack();

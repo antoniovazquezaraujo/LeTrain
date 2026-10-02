@@ -18,7 +18,8 @@ import letrain.vehicle.rail.impl.Locomotive;
  */
 public class ZoneAmbience {
 
-    public record Focus(String kind, int x, int y) {}
+    public record Focus(String kind, int x, int y) {
+    }
 
     public record Update(String primary, Map<String, Float> weights, Map<String, Float> influence,
             boolean focusChanged) {
