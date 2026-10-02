@@ -213,7 +213,8 @@ public class Model implements letrain.mvp.Model {
     private transient boolean programValid = true;
 
     /** A visible DSL notice produced before the client wired its sink (D1/O3). */
-    private record PendingUserMessage(String title, String text) {}
+    private record PendingUserMessage(String title, String text) {
+    }
 
     private AutomationEngine getAutomationEngine() {
         if (automationEngine == null) {

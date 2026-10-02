@@ -18,8 +18,8 @@ import java.util.Set;
  *
  * <p>
  * The legacy aliases {@code wagons -> rolling} and {@code train-brakes -> brakes} (ADR-029 §5,
- * amendment 3) are normalized here, so descriptors and callers can keep using canonical English
- * ids while old material still resolves.
+ * amendment 3) are normalized here, so descriptors and callers can keep using canonical English ids
+ * while old material still resolves.
  */
 public final class MaterialId {
 
@@ -33,20 +33,15 @@ public final class MaterialId {
     private static final int MIN_TRANSITION_ENDPOINT = 0;
     private static final int MAX_TRANSITION_ENDPOINT = 10;
 
-    private static final Map<String, Role> SINGLETON_ROLES = Map.of(
-            "idle", Role.IDLE,
-            "start", Role.START,
-            "stop", Role.STOP,
-            "rolling", Role.ROLLING,
-            "brakes", Role.BRAKES,
-            "horn", Role.HORN);
+    private static final Map<String, Role> SINGLETON_ROLES =
+            Map.of("idle", Role.IDLE, "start", Role.START, "stop", Role.STOP, "rolling",
+                    Role.ROLLING, "brakes", Role.BRAKES, "horn", Role.HORN);
 
-    private static final Set<Role> LOOP_ROLES = Set.of(
-            Role.NOTCH, Role.IDLE, Role.ROLLING, Role.BRAKES);
+    private static final Set<Role> LOOP_ROLES =
+            Set.of(Role.NOTCH, Role.IDLE, Role.ROLLING, Role.BRAKES);
 
-    private static final Map<String, String> LEGACY_ALIASES = Map.of(
-            "wagons", "rolling",
-            "train-brakes", "brakes");
+    private static final Map<String, String> LEGACY_ALIASES =
+            Map.of("wagons", "rolling", "train-brakes", "brakes");
 
     private final Role role;
     private final int notch;
@@ -75,9 +70,9 @@ public final class MaterialId {
     public static MaterialId transition(int from, int to) {
         if (from < MIN_TRANSITION_ENDPOINT || from > MAX_TRANSITION_ENDPOINT
                 || to < MIN_TRANSITION_ENDPOINT || to > MAX_TRANSITION_ENDPOINT) {
-            throw new IllegalArgumentException("transition endpoints out of range ["
-                    + MIN_TRANSITION_ENDPOINT + ".." + MAX_TRANSITION_ENDPOINT + "]: "
-                    + from + " -> " + to);
+            throw new IllegalArgumentException(
+                    "transition endpoints out of range [" + MIN_TRANSITION_ENDPOINT + ".."
+                            + MAX_TRANSITION_ENDPOINT + "]: " + from + " -> " + to);
         }
         if (from == to) {
             throw new IllegalArgumentException("transition endpoints must differ: " + from);
@@ -89,7 +84,8 @@ public final class MaterialId {
     public static MaterialId of(Role role) {
         Objects.requireNonNull(role, "role must not be null");
         if (role == Role.NOTCH || role == Role.TRANSITION) {
-            throw new IllegalArgumentException(role + " needs parameters; use notch()/transition()");
+            throw new IllegalArgumentException(
+                    role + " needs parameters; use notch()/transition()");
         }
         return new MaterialId(role, -1, -1, -1, role.name().toLowerCase(Locale.ROOT));
     }
@@ -115,7 +111,8 @@ public final class MaterialId {
 
         if (normalized.startsWith("notch-") || normalized.startsWith("notch.")) {
             OptionalInt notch = parseNumber(normalized.substring("notch".length() + 1));
-            if (notch.isPresent() && notch.getAsInt() >= MIN_NOTCH && notch.getAsInt() <= MAX_NOTCH) {
+            if (notch.isPresent() && notch.getAsInt() >= MIN_NOTCH
+                    && notch.getAsInt() <= MAX_NOTCH) {
                 return Optional.of(notch(notch.getAsInt()));
             }
             return Optional.empty();

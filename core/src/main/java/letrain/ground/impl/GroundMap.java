@@ -55,9 +55,11 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
         blocks = new HashSet<>();
     }
 
-    record CellEnv(int ground, int rock, int water) {}
+    record CellEnv(int ground, int rock, int water) {
+    }
 
-    record Block(int x, int y, int width, int height) {}
+    record Block(int x, int y, int width, int height) {
+    }
 
     @Override
     public void forEach(Consumer<Ground> c) {

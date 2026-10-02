@@ -61,7 +61,8 @@ public final class ScenarioFile {
      * automation program (stored at base column 0), which may be empty.
      */
     public record Scenario(int seed, Map<String, String> configuration, List<String> buildCommands,
-            List<String> startCommands, String program) {}
+            List<String> startCommands, String program) {
+    }
 
     private ScenarioFile() {}
 
@@ -477,7 +478,8 @@ public final class ScenarioFile {
      * ... }} section. Either section may be empty.
      */
     public record Parts(int seed, String scenarioText, String configurationText,
-            String programText) {}
+            String programText) {
+    }
 
     /** Splits a full scenario text into the three editor parts (see {@link Parts}). */
     public static Parts split(String fullText) {
@@ -503,7 +505,8 @@ public final class ScenarioFile {
      * Editor tab a composed-scenario line belongs to: {@code 0} = Scenario (seed + on build + on
      * start), {@code 1} = Program, {@code 2} = Config.
      */
-    public record LineTarget(int tab, int line) {}
+    public record LineTarget(int tab, int line) {
+    }
 
     /**
      * Maps a 1-based line of a composed scenario to the editor tab that owns it and the 1-based

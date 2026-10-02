@@ -612,7 +612,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
     /**
      * Destination and speed of a {@code stopOrder}, shared by loose orders and waypoint actions.
      */
-    private record MissionSpec(TrainMission.Kind kind, int targetId, int speed) {}
+    private record MissionSpec(TrainMission.Kind kind, int targetId, int speed) {
+    }
 
     /**
      * Resolves a {@code stopOrder} into a mission spec, or null (after warning) when the target is
@@ -1193,8 +1194,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                     int speed = Integer.parseInt(ctx.NUMBER().getText());
                     int clamped = clampSpeed(speed);
                     if (clamped != speed) {
-                        warnUser("Speed", "Waypoint speed " + speed + " is out of range 0-10; using "
-                                + clamped);
+                        warnUser("Speed", "Waypoint speed " + speed
+                                + " is out of range 0-10; using " + clamped);
                     }
                     yield List.of(WaypointCommand.speed(clamped));
                 }
@@ -1240,7 +1241,8 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
      * itself exists. An unknown place is warned here and reported with {@code placeKnown=false} so
      * the caller does not add a second, misleading "no train" notice on top.
      */
-    private record PlaceTrain(Train train, boolean placeKnown) {}
+    private record PlaceTrain(Train train, boolean placeKnown) {
+    }
 
     private PlaceTrain findTrainAtPlace(ScriptLogicParser.PlaceSelectorContext ctx) {
         if (ctx.stationSelector() != null) {

@@ -381,12 +381,10 @@ public interface Model {
 
     public RailTrack getCursorRailTrack();
 
-    public record GameModeMenuOption(
-            String gameModeName,
-            String gameModeDescription,
-            Supplier<Boolean> enabledIf,
-            Supplier<Boolean> selectedIf,
-            Supplier<GameMode> doWhenSelected) {}
+    public record GameModeMenuOption(String gameModeName, String gameModeDescription,
+            Supplier<Boolean> enabledIf, Supplier<Boolean> selectedIf,
+            Supplier<GameMode> doWhenSelected) {
+    }
 
     public List<GameModeMenuOption> getMenuModel();
 

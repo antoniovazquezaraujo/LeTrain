@@ -33,7 +33,8 @@ public final class ScenarioCompiler {
     }
 
     /** Compilation outcome. */
-    public record Result(boolean ok, List<Diagnostic> diagnostics) {}
+    public record Result(boolean ok, List<Diagnostic> diagnostics) {
+    }
 
     private ScenarioCompiler() {}
 

@@ -20,7 +20,8 @@ public final class Headlights {
     private Headlights() {}
 
     /** Rendered position and heading of one locomotive, ready to place a light. */
-    public record Source(float x, float z, float dirX, float dirZ) {}
+    public record Source(float x, float z, float dirX, float dirZ) {
+    }
 
     /**
      * The sources nearest to {@code origin} first, at most {@code max}. A null list means no

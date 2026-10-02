@@ -26,8 +26,7 @@ public final class MaterialProfileParser {
     /** Fallback profile name when the descriptor does not declare one. */
     public static final String DEFAULT_PROFILE_NAME = "generic";
 
-    private MaterialProfileParser() {
-    }
+    private MaterialProfileParser() {}
 
     /** Parses profile text; null input yields an empty {@value #DEFAULT_PROFILE_NAME} profile. */
     public static MaterialProfile parse(String text) {
@@ -48,8 +47,8 @@ public final class MaterialProfileParser {
             return MaterialProfile.empty(DEFAULT_PROFILE_NAME);
         }
         Builder builder = new Builder();
-        BufferedReader bufferedReader = reader instanceof BufferedReader br ? br
-                : new BufferedReader(reader);
+        BufferedReader bufferedReader =
+                reader instanceof BufferedReader br ? br : new BufferedReader(reader);
         try {
             String line;
             int lineNumber = 0;
@@ -162,8 +161,8 @@ public final class MaterialProfileParser {
                 double length = Double.parseDouble(parts[1].trim());
                 return Optional.of(new LoopPoints(start, length));
             } catch (IllegalArgumentException e) {
-                log.warn("profile line {}: invalid loop for '{}': '{}' ({})",
-                        lineNumber, id, value, e.getMessage());
+                log.warn("profile line {}: invalid loop for '{}': '{}' ({})", lineNumber, id, value,
+                        e.getMessage());
                 return Optional.empty();
             }
         }
@@ -172,14 +171,14 @@ public final class MaterialProfileParser {
             try {
                 double gain = Double.parseDouble(value.trim());
                 if (!Double.isFinite(gain)) {
-                    log.warn("profile line {}: non-finite gain for '{}'; using 0.0",
-                            lineNumber, id);
+                    log.warn("profile line {}: non-finite gain for '{}'; using 0.0", lineNumber,
+                            id);
                     return 0.0;
                 }
                 return gain;
             } catch (NumberFormatException e) {
-                log.warn("profile line {}: invalid gain '{}' for '{}'; using 0.0",
-                        lineNumber, value, id);
+                log.warn("profile line {}: invalid gain '{}' for '{}'; using 0.0", lineNumber,
+                        value, id);
                 return 0.0;
             }
         }

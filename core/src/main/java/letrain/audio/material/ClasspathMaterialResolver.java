@@ -14,8 +14,8 @@ import org.slf4j.LoggerFactory;
  * classpath paths declared by a {@link MaterialProfile} (ADR-029 §5).
  *
  * <p>
- * Failures never propagate: a missing resource or an undecodable file is logged as {@code WARN}
- * and resolves to {@link Optional#empty()}, so callers can apply the §3 fallback chain.
+ * Failures never propagate: a missing resource or an undecodable file is logged as {@code WARN} and
+ * resolves to {@link Optional#empty()}, so callers can apply the §3 fallback chain.
  */
 public final class ClasspathMaterialResolver implements MaterialResolver {
 

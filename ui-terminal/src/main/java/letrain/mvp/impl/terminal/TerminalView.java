@@ -1114,7 +1114,8 @@ public class TerminalView implements letrain.mvp.View {
     }
 
     /** A location in the editor: which tab and which 1-based line inside it. */
-    record Jump(int tab, int line) {}
+    record Jump(int tab, int line) {
+    }
 
     /**
      * Shows the diagnostics in a scrollable list; returns the location picked with Enter, or
