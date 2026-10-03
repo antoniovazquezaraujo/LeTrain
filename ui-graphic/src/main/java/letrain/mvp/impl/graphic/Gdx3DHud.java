@@ -1103,7 +1103,7 @@ public class Gdx3DHud {
             errorItems.top().left();
             ScrollPane errorScroll = new ScrollPane(errorItems, skin);
             errorScroll.setFadeScrollBars(false);
-            final Table errorTable = new Table();
+            final Table errorTable = new CollapsiblePanel();
             errorTable.setBackground(skin.newDrawable("white", Color.MAROON));
             errorTable.add(new Label("ERRORS (click to jump):", skin, "monospace")).left()
                     .padLeft(5).row();
@@ -1646,6 +1646,25 @@ public class Gdx3DHud {
         }
         if (shapeRenderer != null) {
             shapeRenderer.dispose();
+        }
+    }
+
+    /**
+     * Editor diagnostics panel: collapses to zero height while hidden so it does not leave a dead
+     * band between the editor and the footer. libGDX measures an actor through its preferred size
+     * without checking {@link Actor#isVisible()}, so a plain hidden {@code Table} keeps reserving
+     * its full size (#652).
+     */
+    static class CollapsiblePanel extends Table {
+
+        @Override
+        public float getPrefHeight() {
+            return isVisible() ? super.getPrefHeight() : 0f;
+        }
+
+        @Override
+        public float getMinHeight() {
+            return isVisible() ? super.getMinHeight() : 0f;
         }
     }
 
