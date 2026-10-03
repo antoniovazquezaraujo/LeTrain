@@ -29,6 +29,20 @@ public class Locomotive extends Linker implements Tractor {
     /** Maximum speed in game units (notches 0-10). */
     public static final int MAX_SPEED = 10;
 
+    /**
+     * Simulation ticks needed for the first speed step (0→1) when the train starts from standstill.
+     *
+     * <p>
+     * A stopped train has no rail cadence yet ({@code turns = -1}), so the start branch of
+     * {@link #updateInertia()} counts <b>ticks</b> instead of rails. 100 ticks (~5 s at 20 TPS) is
+     * the same cost as a complete rolling step: {@code currentSpeed * 2} rails at
+     * {@code 50 / currentSpeed} ticks each. A train with tons behind it must not jump to notch 1 in
+     * a single tick; this keeps the departure physical and lets the start audio breathe. Tune this
+     * value by ear together with the {@code trans-0-1} transition; braking (1→0, ~50 ticks) and the
+     * rail cadence ({@code 50 / currentSpeed}) are not affected.
+     */
+    public static final int START_STEP_TICKS = 100;
+
     static final int SPEED_CHANGE_MAX_RELUCTANCE = 2;
     int currentSpeed;
     int targetSpeed;
@@ -175,6 +189,7 @@ public class Locomotive extends Linker implements Tractor {
             }
 
             // Handle acceleration from 0 - allows getting unstuck from speed 0
+            boolean startedThisTick = false;
             if (currentSpeed == 0 && targetSpeed > 0) {
                 boolean blocked = false;
                 if (getTrain() != null) {
@@ -217,10 +232,14 @@ public class Locomotive extends Linker implements Tractor {
                 if (!blocked) {
                     updateInertia();
                     resetTurns();
+                    startedThisTick = currentSpeed > 0;
                 }
             }
 
-            if (currentSpeed > 0) {
+            // The tick that lands the first notch does not consume a movement turn: the first rail
+            // after standing must be a full 50/currentSpeed ticks like any other, so the 0→1 step
+            // and the rolling steps stay exactly START_STEP_TICKS apart.
+            if (currentSpeed > 0 && !startedThisTick) {
                 consumeTurn();
             }
 
@@ -289,7 +308,11 @@ public class Locomotive extends Linker implements Tractor {
 
         // Factor de inercia fallback only if audio is disabled
         int factor = isBraking() ? 1 : 2;
-        int neededRails = Math.max(1, currentSpeed * factor);
+        // The 0→1 step is special: while stopped the counter advances one per tick (there is no
+        // rail cadence yet), so the first step costs START_STEP_TICKS ticks instead of
+        // speed*factor rails. Same total as a rolling step (~100 ticks).
+        int neededRails = (currentSpeed == 0 && targetSpeed > 0) ? START_STEP_TICKS
+                : Math.max(1, currentSpeed * factor);
 
         if (railsSinceLastSpeedChange >= neededRails) {
             int oldSpeed = currentSpeed;

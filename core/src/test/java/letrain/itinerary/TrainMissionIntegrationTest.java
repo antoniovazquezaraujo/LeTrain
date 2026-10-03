@@ -486,6 +486,10 @@ class TrainMissionIntegrationTest {
             // Free C before the train reaches its boundary: it was not really blocked.
             console("train " + other.getId() + " set engine on;");
             console("train " + other.getId() + " set speed 3;");
+            // Fixture: the blocker's own 0→1 start step would add ~100 ticks to the release and
+            // the subject would reach its canton boundary first (mission over). Its launch is not
+            // under test, so it is given rolling state.
+            ((Locomotive) other.getDirectorLinker()).setCurrentSpeed(3);
             runUntil(() -> !train.getSafetyManager().isWaitingForBlock(), 600);
             assertTrue(mission(train).isActive(), "the mission must survive the release");
 

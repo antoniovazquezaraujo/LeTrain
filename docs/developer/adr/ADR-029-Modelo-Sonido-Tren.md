@@ -179,9 +179,12 @@ compatibles con el modelo de [[ADR-028-Sound-Packs-Externos-Cifrados]]
 - **Cuadre con la inercia — por qué duran 5,0 s y 2,0 s**: `Locomotive.updateInertia()` cuesta
   `max(1, currentSpeed × 2)` raíles al acelerar y `max(1, currentSpeed)` al frenar, a
   `50 / currentSpeed` ticks por raíl y 20 TPS ([[ADR-022-Game-Time]]) → **≈100 ticks (4,5–5,0 s)
-  por marcha al acelerar** y **≈50 ticks (2,25–2,50 s) al frenar**; el paso `0 → 1` es inmediato.
-  Las grabaciones están **calibradas contra esa inercia**: la subida cabe entera en su paso, y la
-  bajada termina 0,25–0,5 s antes (se espera que haga crossfade al loop y espere, §4).
+  por marcha al acelerar** y **≈50 ticks (2,25–2,50 s) al frenar**. *(Enmienda de física: el paso
+  `0 → 1` ya no es inmediato — cuesta `Locomotive.START_STEP_TICKS` = 100 ticks (~5 s), como
+  cualquier tramo completo de subida, así que `trans-0-1` debe caber en su tramo igual que las
+  demás transiciones.)* Las grabaciones están **calibradas contra esa inercia**: la subida cabe
+  entera en su paso, y la bajada termina 0,25–0,5 s antes (se espera que haga crossfade al loop y
+  espere, §4).
 - **La evaluación ocurre una vez por frame, nunca dentro de la física**: `AudioController.update()`
   pasa **ambos** valores al synth — `setThrottle(target)` más **`setCurrentNotch(current)`**
   *(método nuevo)* —; los setters solo guardan el snapshot y marcan la evaluación como pendiente, y
