@@ -25,9 +25,9 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Contract test for the 32 real assets shipped in {@code sound/train/generic/} and the generic
+ * Contract test for the 34 real assets shipped in {@code sound/train/generic/} and the generic
  * profile (ADR-029 §7). It freezes format (mono 44.1 kHz PCM16), exact frame counts from the audit
- * and the measured loop declarations, so a bad commit cannot silently corrupt the material.
+ * and the measured loop/gain declarations, so a bad commit cannot silently corrupt the material.
  */
 @DisplayName("Notch assets - real material contract (ADR-029 §7)")
 class NotchAssetsContractTest {
@@ -50,10 +50,10 @@ class NotchAssetsContractTest {
         for (int notch = 1; notch <= 10; notch++) {
             assets.add(Arguments.of("notch-" + notch + ".wav", NOTCH_FRAMES));
         }
-        for (int from = 1; from <= 9; from++) {
+        for (int from = 0; from <= 9; from++) {
             assets.add(Arguments.of("trans-" + from + "-" + (from + 1) + ".wav", TRANS_UP_FRAMES));
         }
-        for (int from = 2; from <= 10; from++) {
+        for (int from = 1; from <= 10; from++) {
             assets.add(
                     Arguments.of("trans-" + from + "-" + (from - 1) + ".wav", TRANS_DOWN_FRAMES));
         }
@@ -69,18 +69,38 @@ class NotchAssetsContractTest {
     }
 
     static Stream<Arguments> expectedLoops() {
-        return Stream.of(Arguments.of("notch-1", 4.477937, 4.252766),
-                Arguments.of("notch-2", 6.301451, 2.429252),
-                Arguments.of("notch-3", 6.684286, 2.046417),
-                Arguments.of("notch-4", 6.685102, 2.045601),
-                Arguments.of("notch-5", 4.734195, 3.996508),
-                Arguments.of("notch-6", 3.747370, 4.983333),
-                Arguments.of("notch-7", 4.629683, 4.101020),
-                Arguments.of("notch-8", 7.763832, 0.966871),
-                Arguments.of("notch-9", 3.643175, 5.087528),
-                Arguments.of("notch-10", 7.508707, 1.221995),
-                Arguments.of("idle", 14.579841, 3.624603),
-                Arguments.of("rolling", 22.059252, 3.039093));
+        return Stream.of(Arguments.of("notch-1", 0.435556, 7.789773),
+                Arguments.of("notch-2", 1.265420, 7.413515),
+                Arguments.of("notch-3", 1.201633, 7.052063),
+                Arguments.of("notch-4", 1.422245, 6.951519),
+                Arguments.of("notch-5", 1.410635, 6.949252),
+                Arguments.of("notch-6", 0.719819, 7.681202),
+                Arguments.of("notch-7", 0.725601, 7.668299),
+                Arguments.of("notch-8", 1.271293, 7.419274),
+                Arguments.of("notch-9", 1.213243, 7.046145),
+                Arguments.of("notch-10", 1.387392, 6.931361),
+                Arguments.of("idle", 6.965986, 7.054263),
+                Arguments.of("rolling", 23.521769, 8.432585));
+    }
+
+    static Stream<Arguments> expectedGains() {
+        return Stream.of(Arguments.of("notch-1", 0.46), Arguments.of("notch-2", -0.42),
+                Arguments.of("notch-3", 0.43), Arguments.of("notch-4", 0.65),
+                Arguments.of("notch-5", -0.04), Arguments.of("notch-6", -0.46),
+                Arguments.of("notch-7", 0.06), Arguments.of("notch-8", -0.54),
+                Arguments.of("notch-9", 0.04), Arguments.of("notch-10", -0.40),
+                Arguments.of("idle", 1.13), Arguments.of("rolling", 6.71),
+                Arguments.of("start", 0.67), Arguments.of("stop", 0.52),
+                Arguments.of("trans-0-1", 1.54), Arguments.of("trans-1-0", -0.67),
+                Arguments.of("trans-1-2", -2.15), Arguments.of("trans-2-1", -0.15),
+                Arguments.of("trans-2-3", -2.29), Arguments.of("trans-3-2", 0.78),
+                Arguments.of("trans-3-4", -2.06), Arguments.of("trans-4-3", -0.05),
+                Arguments.of("trans-4-5", -1.71), Arguments.of("trans-5-4", 0.66),
+                Arguments.of("trans-5-6", -2.15), Arguments.of("trans-6-5", 0.38),
+                Arguments.of("trans-6-7", -1.88), Arguments.of("trans-7-6", 0.33),
+                Arguments.of("trans-7-8", -2.05), Arguments.of("trans-8-7", 0.59),
+                Arguments.of("trans-8-9", -1.92), Arguments.of("trans-9-10", -1.97),
+                Arguments.of("trans-9-8", 0.33), Arguments.of("trans-10-9", 0.17));
     }
 
     @ParameterizedTest(name = "{0}")
@@ -106,11 +126,11 @@ class NotchAssetsContractTest {
     }
 
     @Test
-    @DisplayName("declares all 32 canonical materials and every path resolves on the classpath")
+    @DisplayName("declares all 34 canonical materials and every path resolves on the classpath")
     void should_DeclareEveryAsset_When_ProfileIsParsed() throws Exception {
         MaterialProfile profile = loadGenericProfile();
 
-        assertEquals(32, EXPECTED_MATERIALS.size(), "10 notches + 18 transitions + 4 singles");
+        assertEquals(34, EXPECTED_MATERIALS.size(), "10 notches + 20 transitions + 4 singles");
         assertEquals(EXPECTED_MATERIALS.size(), profile.size(), "declared material count");
         for (Map.Entry<MaterialId, String> entry : EXPECTED_MATERIALS.entrySet()) {
             MaterialRef ref = profile.material(entry.getKey())
@@ -135,6 +155,36 @@ class NotchAssetsContractTest {
 
         assertEquals(start, loop.startSeconds(), 1e-9, token + " loop start");
         assertEquals(length, loop.lengthSeconds(), 1e-9, token + " loop length");
+    }
+
+    @ParameterizedTest(name = "{0} gain {1} dB")
+    @MethodSource("expectedGains")
+    @DisplayName("declares the measured gain for every material")
+    void should_DeclareMeasuredGain_When_ProfileIsParsed(String token, double gain)
+            throws Exception {
+        MaterialProfile profile = loadGenericProfile();
+        MaterialId id = MaterialId.parse(token).orElseThrow();
+
+        MaterialRef ref = profile.material(id)
+                .orElseThrow(() -> new AssertionError("undeclared material " + token));
+
+        assertEquals(gain, ref.gainDb(), 1e-9, token + " gain");
+    }
+
+    @Test
+    @DisplayName("keeps every one-shot loopless")
+    void should_KeepOneShotsLoopless_When_ProfileIsParsed() throws Exception {
+        MaterialProfile profile = loadGenericProfile();
+
+        for (Map.Entry<MaterialId, String> entry : EXPECTED_MATERIALS.entrySet()) {
+            if (entry.getKey().isLoop()) {
+                continue;
+            }
+            MaterialRef ref = profile.material(entry.getKey()).orElseThrow();
+            assertTrue(ref.loop().isEmpty(), entry.getKey() + " is a one-shot and must not loop");
+        }
+        assertTrue(profile.material(MaterialId.of(Role.START)).orElseThrow().loop().isEmpty());
+        assertTrue(profile.material(MaterialId.of(Role.STOP)).orElseThrow().loop().isEmpty());
     }
 
     @Test
@@ -167,7 +217,8 @@ class NotchAssetsContractTest {
         assertTrue(profile.has(MaterialId.transition(1, 2)), "trans-1-2 is shipped");
         assertTrue(profile.has(MaterialId.transition(2, 1)), "trans-2-1 is shipped");
         assertFalse(profile.has(MaterialId.transition(1, 3)), "compound trans-1-3 has no material");
-        assertFalse(profile.has(MaterialId.transition(0, 1)), "trans-0-1 has no material");
+        assertTrue(profile.has(MaterialId.transition(0, 1)), "trans-0-1 is shipped");
+        assertTrue(profile.has(MaterialId.transition(1, 0)), "trans-1-0 is shipped");
         assertFalse(profile.has(MaterialId.of(Role.BRAKES)), "brakes has no measured material yet");
         assertFalse(profile.has(MaterialId.of(Role.HORN)), "horn is reserved");
     }
@@ -184,11 +235,11 @@ class NotchAssetsContractTest {
         for (int notch = 1; notch <= 10; notch++) {
             materials.put(MaterialId.notch(notch), "notch-" + notch + ".wav");
         }
-        for (int from = 1; from <= 9; from++) {
+        for (int from = 0; from <= 9; from++) {
             materials.put(MaterialId.transition(from, from + 1),
                     "trans-" + from + "-" + (from + 1) + ".wav");
         }
-        for (int from = 2; from <= 10; from++) {
+        for (int from = 1; from <= 10; from++) {
             materials.put(MaterialId.transition(from, from - 1),
                     "trans-" + from + "-" + (from - 1) + ".wav");
         }
