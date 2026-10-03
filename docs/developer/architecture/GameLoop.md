@@ -110,14 +110,15 @@ Ambos modos llaman exactamente al mismo método en `SimulationController.java` (
 flowchart TD
     Start[Tick de Simulación] --> Step0[0. Ejecutar Scheduler del Modelo]
     Step0 --> Step1[1. Progresar tendido de vías RailTrackMaker]
-    Step1 --> Step2[2. Actualizar movimiento de vehículos SimulationService.moveVehicles]
+    Step1 --> Step1b[1b. Avanzar reloj lógico GameClock]
+    Step1b --> Step2[2. Actualizar movimiento de vehículos SimulationService.moveVehicles]
     Step2 --> Step3[3. Parar audio de locomotoras marcadas para destrucción]
     Step3 --> Step4[4. Procesar operaciones de carga en estaciones handleIndustrialActions]
     Step4 --> Step5[5. Limpiar trenes destruidos cleanupEntities]
 ```
 
 1.  **Scheduler Lógico**: El planificador del juego comprueba si hay eventos de scripts programados o temporizadores que deben dispararse en este instante (`model.getScheduler().tick()`).
-2.  **Construcción de Vías**: Si el jugador está tendiendo vías manualmente en modo de edición, se progresa la colocación de raíles (`trackMaker.makeTracks()`).
+2.  **Construcción de Vías**: Si el jugador está tendiendo vías manualmente en modo de edición, se progresa la colocación de raíles (`trackMaker.makeTracks()`). Justo después, si la simulación no está en pausa de edición, se avanza el reloj lógico (`model.getGameClock().tick()`, ver §6).
 3.  **Movimiento y Físicas**: Se desplazan los trenes mediante el método `simulationService.moveVehicles()`.
 4.  **Desconexión de Audio**: Se detienen los sintetizadores de sonido de aquellas locomotoras que hayan descarrilado o se encuentren en estado de destrucción inminente.
 5.  **Acciones Industriales y Economía**:
@@ -217,6 +218,16 @@ La transición de modos **no pausa** la simulación — los trenes siguen movié
 
 ## 6. Gestión de Tiempo y Scheduler
 
+### Reloj Lógico de Juego (`GameClock`)
+
+Desde ADR-022 el `Model` incorpora un **reloj lógico** (`letrain.time.GameClock`, implementado por `letrain.time.impl.SimpleGameClock`) que deriva la hora de juego **exclusivamente de los ticks** de la simulación; nunca consulta el reloj de pared, por lo que es determinista y reproducible en el replay del diario de comandos (ADR-020).
+
+*   **Tick-driven**: `GameClock.TICKS_PER_SECOND = 20` (un segundo real = 20 ticks) y la partida arranca el **Día 1 a las 08:00**.
+*   **Duración del día configurable**: `time.dayDurationSeconds` en `letrain.cfg` (por defecto **1440 s reales por día**, es decir, 24 minutos reales por día de juego; con ese valor cada tick avanza 3 segundos de juego). `EconomyManager.getDayDurationSeconds()` lee la clave y `Model` la aplica al reloj al construirse.
+*   **Avance y persistencia**: `SimulationController.tick()` llama a `gameClock.tick()` tras el tendido de vías, y la pausa de edición (ADR-020) lo congela. Lo único que se serializa es el contador `elapsedTicks`; `GameTime` se deriva de él, de modo que las partidas antiguas cargan a las 08:00 del Día 1. El comando de consola `time set HH[:MM]` salta en el tiempo de forma determinista y dispara los eventos pendientes.
+*   **Event-driven**: `SimpleGameClock` notifica a sus `GameClockListener` los cambios de hora, de día y de día/noche (`onHourChanged`, `onDayChanged`, `onDayNightChanged`). El clima del soundscape (`SoundscapeAmbience`) se suscribe a `onHourChanged` para regenerar el tiempo atmosférico sin sondear el reloj en cada tick. Las vistas, en cambio, leen `now()`/`getDayNightRatio()` durante el render: la paleta 3D y los faros necesitan el valor continuo para los fundidos de amanecer/atardecer, y el HUD (3D y terminal) refresca con `now()` la etiqueta del reloj. `isNight()` y `getDayNightRatio()` se derivan de `SolarModel` a partir del día del año, la hora y la latitud del mundo (`world.latitude`).
+*   **Encaje con la física**: el reloj no interviene en el movimiento de trenes; la física sigue dependiendo de ticks (1 celda cada `50 / velocidad` ticks). `time.dayDurationSeconds` solo cambia el ritmo del calendario, no la velocidad de simulación. `ticksUntil(GameTime)` da al `SimulationScheduler` la programación exacta en ticks que usan las retenciones de horario (ADR-022 fase 2b).
+
 ### Scheduler de Ticks
 El `SimulationScheduler` permite programar tareas para ejecutarse tras N ticks:
 ```java
@@ -249,6 +260,10 @@ Si el renderizado se atrasa (ej: escena 3D muy compleja), el acumulador evita qu
 | Orquestador de Simulación | `core/src/main/java/letrain/mvp/impl/SimulationController.java` |
 | Servicio de Física y Simulación | `core/src/main/java/letrain/mvp/impl/services/SimulationService.java` |
 | Planificador de Tareas síncronas | `core/src/main/java/letrain/utils/impl/SimulationScheduler.java` |
+| Reloj lógico de juego | `core/src/main/java/letrain/time/GameClock.java` |
+| Implementación del reloj (ticks) | `core/src/main/java/letrain/time/impl/SimpleGameClock.java` |
+| Eventos de tiempo (hora/día/noche) | `core/src/main/java/letrain/time/GameClockListener.java` |
+| Modelo solar (día/noche por latitud) | `core/src/main/java/letrain/time/SolarModel.java` |
 | Presentador del modo Terminal 2D | `ui-terminal/src/main/java/letrain/mvp/impl/terminal/TerminalPresenter.java` |
 | Presentador del modo Gráfico 3D | `ui-graphic/src/main/java/letrain/mvp/impl/graphic/GraphicPresenter.java` |
 | Vista del modo Terminal 2D | `ui-terminal/src/main/java/letrain/mvp/impl/terminal/TerminalView.java` |
