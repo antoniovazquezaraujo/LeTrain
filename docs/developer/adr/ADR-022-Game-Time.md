@@ -232,7 +232,12 @@ motor) o una orden manual; es un fin de servicio, no una espera activa. Los coma
 llega por `emergencyStop` dentro del guard de reentrada y no dispara `onSpeedChanged`; sin ese
 camino el plan quedaría clavado en cocheras/terminales. La seguridad manda: la retención no toca
 cantones; si el bloque siguiente está ocupado, el tren espera y el retraso se refleja en la
-siguiente medida. La métrica vive en `letrain.itinerary.Punctuality` y se expone en `info train N`.
+siguiente medida. **Issue #650**: cuando una espera de bloque transitoria (p. ej. el cantón de los
+vagones desenganchados) difiere la velocidad de la salida, esa velocidad se restaura **al
+resolverse la espera por cualquier camino** — también cuando `acquireInitialLocks` bloquea el
+segmento **alternativo** (la variante paralela) en vez del siguiente. Además, un `reverse` pedido
+con el tren en marcha y target 0 ya no pisa con un 0 la velocidad restaurada mientras el tren frena
+hasta el punto de inversión. Tests: `DepartureRestoreViaBlockWaitTest`. La métrica vive en `letrain.itinerary.Punctuality` y se expone en `info train N`.
 **Al cargar**, el cursor de secuencia no viaja en el guardado: la primera hora se re-resuelve con
 `resolveNearest` (una salida ya pasada libera de inmediato) y el replay del programa reinicia el
 servicio igualmente. Tests de referencia: `RetentionParkMetricsTest` (reloj con `time set` + ticks),

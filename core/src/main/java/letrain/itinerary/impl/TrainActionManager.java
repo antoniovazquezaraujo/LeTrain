@@ -304,6 +304,9 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
             if (waypoint != null && waypoint.departure().isPresent()) {
                 // A scheduled departure starts the engine (park left it explicitly off) and
                 // resumes the cruise speed; safety still gates the actual movement afterwards.
+                // Leave the schedule hold first (issue #650): while WAITING the speed gate would
+                // defer the restored speed again and the released train would stay stopped.
+                autopilot.resumeWaiting();
                 startEnginesAndResume();
             }
         }

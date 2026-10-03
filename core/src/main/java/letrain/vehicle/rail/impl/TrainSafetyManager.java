@@ -282,7 +282,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                 log.info("Train {} acquireInitialLocks: tryLock nextSegment {} returned {}",
                         train.getId(), nextSegment.getId(), locked);
                 if (locked) {
-                    clearBlockWait();
+                    resolveBlockWaitAndRestore();
                     log.info("Train {} initially locked current segment {} and next segment {}",
                             train.getId(), currentSegment.getId(), nextSegment.getId());
                 } else {
@@ -510,7 +510,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                 if (locked) {
                     log.info("Train {} locked next segment {} upon entry to {}", train.getId(),
                             nextSegment.getId(), currentSegment.getId());
-                    clearBlockWait();
+                    resolveBlockWaitAndRestore();
                 } else {
                     scheduleStopAtBoundary(nextSegment);
                 }
@@ -542,22 +542,11 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
                 if (locked) {
                     log.info("Train {} (AUTO) successfully woke up and locked segment {}",
                             train.getId(), nextSegment.getId());
-                    boolean restore = brakedForBlock || targetCapped || train.hasSavedTargetSpeed();
-                    clearBlockWait();
-                    if (restore) {
-                        // Restore the speed desired before the plan, the newest order the wait gate
-                        // stored, or a brake's saved speed. A wait that neither braked, capped nor
-                        // deferred anything leaves the target untouched.
-                        train.restoreSpeed();
-                    }
+                    clearBlockWaitAndRestore();
                 }
             } else if (isWaitingForBlock && nextSegment != null
                     && bm.getOwnedSegments(train).contains(nextSegment)) {
-                boolean restore = brakedForBlock || targetCapped || train.hasSavedTargetSpeed();
-                clearBlockWait();
-                if (restore) {
-                    train.restoreSpeed();
-                }
+                clearBlockWaitAndRestore();
             }
         }
     }
@@ -993,6 +982,33 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         brakedForBlock = false;
         targetCapped = false;
         isWaitingForBlock = false;
+    }
+
+    /**
+     * A block wait resolved by a release with the way ahead clear: clears the wait and restores the
+     * speed deferred by the wait gate/braking curve. A wait that neither braked, capped nor
+     * deferred anything leaves the target untouched.
+     */
+    private void clearBlockWaitAndRestore() {
+        boolean restore = brakedForBlock || targetCapped || train.hasSavedTargetSpeed();
+        clearBlockWait();
+        if (restore) {
+            train.restoreSpeed();
+        }
+    }
+
+    /**
+     * Issue #650: a wait resolved by locking the way ahead (direct or alternative segment). Only an
+     * active wait restores its deferred speed; an old saved speed without an active wait (e.g. the
+     * brake of a deliberate {@code park}) must not wake the train.
+     */
+    private void resolveBlockWaitAndRestore() {
+        boolean restore = isWaitingForBlock
+                && (brakedForBlock || targetCapped || train.hasSavedTargetSpeed());
+        clearBlockWait();
+        if (restore) {
+            train.restoreSpeed();
+        }
     }
 
     private Locomotive directorLocomotive() {

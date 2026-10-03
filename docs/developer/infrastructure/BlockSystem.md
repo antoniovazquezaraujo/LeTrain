@@ -9,7 +9,8 @@ La red ferroviaria se divide lógicamente en segmentos indivisibles cuyos límit
 
 1. **Propiedad y Reserva**: Un tren debe poseer el segmento que ocupa físicamente y reservar el segmento siguiente antes de entrar en él.
 2. **Cascada de Seguridad**: En cada avance, el tren utiliza un mecanismo de "look-ahead" para verificar la viabilidad de su ruta futura.
-3. **Frenado Proactivo**: Si el tren no puede obtener la propiedad del siguiente segmento (porque está ocupado por otro tren o un desvío está mal orientado), inicia un frenado de emergencia.
+3. **Frenado Proactivo**: Si el tren no puede obtener la propiedad del siguiente segmento (porque está ocupado por otro tren o un desvío está mal orientado), inicia un frenado de emergencia. Desde la issue #633 el tren rueda hasta el final de su cantón y frena en la última vía antes del nodo (nada de muros artificiales).
+4. **Restauración de la velocidad diferida (issue #650)**: la velocidad deseada que la espera deja diferida (una orden de velocidad durante la espera, el crucero capado por la curva de frenado o la velocidad de una `departure` interceptada) **se restaura cuando la espera se resuelve por cualquier camino**: liberación del bloque (`onBlockReleased`), bloqueo directo del siguiente segmento o bloqueo del **alternativo** (la variante paralela) desde `acquireInitialLocks`/`onSegmentEntered`. Las esperas que siguen activas (parada deliberada, retención por horario) no tocan el target.
 
 ## El Rol de `RailIterator`
 Para que el sistema de segmentos funcione, el tren necesita "ver" más allá de su posición actual. Aquí es donde entra el `RailIterator`:
