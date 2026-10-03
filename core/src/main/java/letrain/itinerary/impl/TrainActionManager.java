@@ -161,7 +161,27 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
             this.train.notifyAutopilotSegmentEntered(this.train.resolveCurrentSegmentFromGraph());
             this.train.getSafetyManager().acquireInitialLocks();
         }
+        if (autopilot.mode() == letrain.itinerary.AutoPilot.Mode.FOLLOWING
+                && autopilot.currentRoute().isEmpty()) {
+            // Issue #649: the route to the next waypoint could not be computed (the autopilot
+            // warned visibly). Hold the train instead of resuming the cruise towards the dead end.
+            holdWithoutRoute();
+            return;
+        }
         resumePlanCruiseIfStopped(autopilot);
+    }
+
+    /**
+     * Issue #649: keeps the train stopped when there is no route to the next waypoint. The direct
+     * target is zeroed (not {@code brake()}) so a deferred speed is not saved as a future restore.
+     */
+    private void holdWithoutRoute() {
+        Tractor director = train.getDirectorLinker();
+        if (director instanceof Locomotive locomotive) {
+            locomotive.setTargetSpeedDirect(0);
+        } else if (train.getMovementManager() != null) {
+            train.getMovementManager().initiateBraking();
+        }
     }
 
     /**

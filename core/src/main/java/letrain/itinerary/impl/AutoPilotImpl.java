@@ -70,6 +70,12 @@ public class AutoPilotImpl implements AutoPilot {
     private transient boolean currentWaypointReached;
     /** Last plan failure was because the destination is physically behind the current sense. */
     private transient boolean missionPlanFailedBehind;
+    /**
+     * The route to the current waypoint could not be computed and the user was already warned
+     * (issue #649): avoids repeating the same warning at every segment entry until a route is found
+     * or the plan advances.
+     */
+    private transient boolean routeFailureReported;
     /** Console sink for mission messages; null in scripts (log only). */
     private transient Consumer<String> missionNotifier;
     /** Ticks the mission train has been stopped without a block/schedule/loading reason. */
@@ -196,6 +202,8 @@ public class AutoPilotImpl implements AutoPilot {
         }
         // The next waypoint has not been reached yet: its segment counts as pending again.
         currentWaypointReached = false;
+        // A new target deserves its own route warning if it cannot be computed (issue #649).
+        routeFailureReported = false;
     }
 
     @Override
@@ -682,6 +690,9 @@ public class AutoPilotImpl implements AutoPilot {
                 currentSeg != null ? currentSeg.getId() : "null",
                 targetSeg != null ? targetSeg.getId() : "null");
         if (currentSeg == null || targetSeg == null) {
+            // Issue #649: a route that cannot even be planned must warn visibly (silent-success
+            // rule) instead of only logging; the action manager holds the train afterwards.
+            warnRouteUnavailable(wp, true);
             return false;
         }
 
@@ -692,7 +703,33 @@ public class AutoPilotImpl implements AutoPilot {
         log.info("[AP] calcRoute result: {} segments{} route={}", currentRoute.size(),
                 currentRoute.isEmpty() ? " → ROUTE NOT FOUND" : "",
                 currentRoute.stream().map(Segment::getId).toList());
-        return !currentRoute.isEmpty();
+        if (currentRoute.isEmpty()) {
+            warnRouteUnavailable(wp, false);
+            return false;
+        }
+        routeFailureReported = false;
+        return true;
+    }
+
+    /**
+     * Issue #649: warns once (visible sink) that the route to the current waypoint cannot be
+     * computed, either because its destination does not resolve or because there is no path from
+     * the current position/sense. The action manager holds the train when this happens after a
+     * maneuver, instead of resuming the cruise towards a dead end.
+     */
+    private void warnRouteUnavailable(Waypoint wp, boolean targetUnresolved) {
+        if (routeFailureReported) {
+            return;
+        }
+        routeFailureReported = true;
+        String target =
+                (wp.type() == Waypoint.Type.STATION ? "station " : "sensor ") + wp.targetId();
+        if (targetUnresolved) {
+            warnMission("Train " + train.getId() + ": next waypoint " + target + " not found");
+            return;
+        }
+        warnMission("Train " + train.getId() + ": no route to the next waypoint " + target
+                + " from the current sense; add 'reverse' to the itinerary");
     }
 
     /***********************************************************

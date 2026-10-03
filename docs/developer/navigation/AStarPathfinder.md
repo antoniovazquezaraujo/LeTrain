@@ -115,7 +115,11 @@ de fork (`fork N set straight|curved`, `fork N flip`). Detalles de implementaci�
   el tren quedó parado y el plan sigue viajando a un waypoint no alcanzado. Nunca despierta un
   `park` deliberado (motores apagados), ni una espera de bloque, ni un cambio a manual pendiente.
 - Tras la maniobra, `advanceWaypoint` + `clearRoute` recalculan la ruta al siguiente waypoint desde
-  la posición y el sentido en que haya quedado el tren.
+  la posición y el sentido en que haya quedado el tren. Si esa ruta **no se puede calcular** (falta
+  el `reverse` final, el destino desapareció, A* no encuentra camino desde el sentido actual), el
+  aviso sale por el canal visible del autopilot y `TrainActionManager` **retiene el tren** (target
+  directo a 0) en lugar de reanudar el crucero hacia el tope de vía (issue #649). El aviso se emite
+  una sola vez por waypoint (`routeFailureReported`), no en cada entrada de segmento.
 - **Itinerarios desde consola**: la consola comparte un `CommandManager` por mundo (issue #632):
   `create itinerary` y `assign itinerary` funcionan entre sentencias de la misma sesión, o en la
   misma línea. El registro sigue al modelo vigente: undo/redo, carga y replay de escenario restauran

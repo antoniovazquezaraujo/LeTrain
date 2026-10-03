@@ -377,7 +377,9 @@ add station "B", arrival 06:27,
   waypoint** para no seguir la coreografía en un estado raro; el `departure` y la ruta al siguiente
   waypoint siguen su curso.
 - **Después de la maniobra** la ruta al siguiente waypoint se recalcula desde donde haya quedado el
-  tren (posición y sentido).
+  tren (posición y sentido). Si no se puede calcular (p. ej. falta el `reverse` final y A* no
+  reorienta el desvío), se avisa por el canal visible y el tren **se retiene** en vez de rodar al
+  tope de vía con `route=[]` (issue #649).
 - **Las órdenes sueltas no pisan el plan**: si el tren está cumpliendo un itinerario, una orden
   suelta de consola o script (`stop at …`, `invert`, etc.) se **rechaza con aviso** (consola y
   log: "está en itinerario; quítale el autopilot o escríbela en el itinerario"). Nada de pausar y
