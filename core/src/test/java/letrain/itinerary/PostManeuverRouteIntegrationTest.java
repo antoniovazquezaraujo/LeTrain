@@ -96,6 +96,102 @@ class PostManeuverRouteIntegrationTest {
     @Test
     @DisplayName("the missing final reverse warns and the train is held instead of rolling away")
     void noRouteAfterManeuver_warnsAndHoldsTheTrain() {
+        ManeuverScenario s = prepareNoRouteAfterManeuverScenario();
+
+        assertEquals(0, s.loco().getTargetSpeed(), "the train must be held without a route");
+
+        int heldX = s.loco().getPosition().getX();
+        runTicks(600);
+
+        assertEquals(0, s.loco().getSpeed(), "the held train must stay stopped");
+        assertEquals(heldX, s.loco().getPosition().getX(),
+                "the train must not roll to the dead end after the no-route warning");
+        assertFalse(s.train().isPendingManualMode(), "holding must not switch the train to manual");
+    }
+
+    @Test
+    @DisplayName("reassignment resets the warning: a new route failure warns again")
+    void noRouteAfterItineraryReassigned_warnsAgain() {
+        BlockedScenario s = prepareUnreachableFirstWaypointScenario();
+        AutoPilot autopilot = s.train().getAutopilot();
+        long warningsSoFar = noRouteWarnings(s.messages());
+
+        // Reapplying the program (#677) assigns the itinerary again: a new service must warn again
+        // when its route cannot be computed instead of inheriting the previous silence (#649).
+        autopilot.setItinerary(autopilot.itinerary().orElseThrow());
+        assertTrue(autopilot.activate(), "the reassigned itinerary must activate");
+
+        assertEquals(warningsSoFar + 1, noRouteWarnings(s.messages()),
+                "the blocked route must warn again after reassigning the itinerary: "
+                        + s.messages());
+    }
+
+    @Test
+    @DisplayName("deactivate/reactivate resets the warning: a new route failure warns again")
+    void noRouteAfterDeactivateReactivate_warnsAgain() {
+        BlockedScenario s = prepareUnreachableFirstWaypointScenario();
+        AutoPilot autopilot = s.train().getAutopilot();
+        long warningsSoFar = noRouteWarnings(s.messages());
+
+        // Turning the autopilot off and on again is a fresh start: the route problem must be
+        // visible again instead of inheriting the previous silence (#649).
+        autopilot.deactivate();
+        assertTrue(autopilot.activate(), "the reactivated itinerary must activate");
+
+        assertEquals(warningsSoFar + 1, noRouteWarnings(s.messages()),
+                "the blocked route must warn again after deactivate/reactivate: " + s.messages());
+    }
+
+    /** A held train whose first waypoint is not reachable from its network. */
+    private record BlockedScenario(Train train, List<String> messages) {
+    }
+
+    /**
+     * The first waypoint is a station on an isolated stub, unreachable from the train's network, so
+     * the route fails on activation and the autopilot must warn visibly (issue #649). Re-running
+     * the service must be able to warn again: that latch lifecycle is what these tests pin down.
+     */
+    private BlockedScenario prepareUnreachableFirstWaypointScenario() {
+        World w = buildWorld();
+        // An isolated two-track stub: it forms its own segment, unreachable from the network.
+        Station unreachable = station(line(50, 2, 50).get(0), "unreachable");
+        Train subject = placeConsist(w.westTail, 6, 2);
+        int locoId = ((Locomotive) subject.getDirectorLinker()).getId();
+        setTime(12, 45);
+        List<String> messages = new ArrayList<>();
+        model.setUserMessageSink((title, text) -> messages.add(text));
+
+        List<String> errors = model.setProgram("""
+                create itinerary "blocked" {
+                    add station %d, arrival 12:00;
+                    add station %d, arrival 14:00, park
+                }
+                assign itinerary "blocked" to train %d;
+                train %d set autopilot true;
+                train %d set speed 3;
+                """.formatted(unreachable.getId(), w.station4.getId(), locoId, locoId, locoId));
+        assertTrue(errors.isEmpty(), "unexpected errors: " + errors);
+
+        assertTrue(noRouteWarnings(messages) > 0,
+                "the unreachable first waypoint must warn visibly on activation: " + messages);
+        assertTrue(subject.getAutopilot().currentRoute().isEmpty(),
+                "the scenario must keep the route empty: " + subject.getAutopilot().currentRoute());
+        return new BlockedScenario(subject, messages);
+    }
+
+    private static long noRouteWarnings(List<String> messages) {
+        return messages.stream().filter(m -> m.contains("no route")).count();
+    }
+
+    /** A train held by the post-maneuver route failure (the #649 scenario). */
+    private record ManeuverScenario(Train train, Locomotive loco, List<String> messages) {
+    }
+
+    /**
+     * Drives the user's run-around without the final reverse until the flow advances to station 3
+     * and the route from the final position/sense cannot be planned (#649).
+     */
+    private ManeuverScenario prepareNoRouteAfterManeuverScenario() {
         World w = buildWorld();
         Train subject = placeConsist(w.westTail, 6, 2);
         Locomotive loco = (Locomotive) subject.getDirectorLinker();
@@ -131,20 +227,12 @@ class PostManeuverRouteIntegrationTest {
         runUntil(() -> subject.getAutopilot().mode() == AutoPilot.Mode.FOLLOWING
                 && subject.getAutopilot().currentWaypointIndex() == 1, 12000);
 
-        assertTrue(messages.stream().anyMatch(m -> m.contains("no route")),
+        assertTrue(noRouteWarnings(messages) > 0,
                 "the silent no-route must warn visibly: " + messages);
         assertTrue(subject.getAutopilot().currentRoute().isEmpty(),
                 "the scenario must reproduce the empty route: "
                         + subject.getAutopilot().currentRoute());
-        assertEquals(0, loco.getTargetSpeed(), "the train must be held without a route");
-
-        int heldX = loco.getPosition().getX();
-        runTicks(600);
-
-        assertEquals(0, loco.getSpeed(), "the held train must stay stopped");
-        assertEquals(heldX, loco.getPosition().getX(),
-                "the train must not roll to the dead end after the no-route warning");
-        assertFalse(subject.isPendingManualMode(), "holding must not switch the train to manual");
+        return new ManeuverScenario(subject, loco, messages);
     }
 
     // ═══════════════════════════════════════════════════════════════════

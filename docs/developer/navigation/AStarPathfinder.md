@@ -119,7 +119,10 @@ de fork (`fork N set straight|curved`, `fork N flip`). Detalles de implementaci�
   el `reverse` final, el destino desapareció, A* no encuentra camino desde el sentido actual), el
   aviso sale por el canal visible del autopilot y `TrainActionManager` **retiene el tren** (target
   directo a 0) en lugar de reanudar el crucero hacia el tope de vía (issue #649). El aviso se emite
-  una sola vez por waypoint (`routeFailureReported`), no en cada entrada de segmento.
+  una sola vez por episodio de fallo (`routeFailureReported`), no en cada entrada de segmento. El
+  latch se limpia al avanzar de waypoint, al calcular una ruta con éxito, al asignar un itinerario
+  nuevo (`setItinerary`, nuevo servicio — reaplicar el programa vuelve a avisar) y al desactivar el
+  autopilot (`deactivate`): tras desactivar y reactivar, un nuevo fallo de ruta vuelve a ser visible.
 - **Itinerarios desde consola**: la consola comparte un `CommandManager` por mundo (issue #632):
   `create itinerary` y `assign itinerary` funcionan entre sentencias de la misma sesión, o en la
   misma línea. El registro sigue al modelo vigente: undo/redo, carga y replay de escenario restauran

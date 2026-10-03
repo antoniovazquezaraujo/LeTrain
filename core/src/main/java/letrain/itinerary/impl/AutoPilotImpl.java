@@ -234,6 +234,8 @@ public class AutoPilotImpl implements AutoPilot {
         this.punctuality.clear();
         this.retentionSerial++;
         this.currentWaypointReached = false;
+        // A new service deserves its own route warning if it cannot be planned (issue #649).
+        this.routeFailureReported = false;
     }
 
     @Override
@@ -606,6 +608,8 @@ public class AutoPilotImpl implements AutoPilot {
         waitTicks = 0;
         pendingCommands.clear();
         currentWaypointReached = false;
+        // A stopped autopilot keeps no warning latch: reactivating must warn again (issue #649).
+        routeFailureReported = false;
     }
 
     private Port getTrainExitPort(Segment currentSeg) {
