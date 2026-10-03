@@ -372,8 +372,14 @@ public class Train implements Renderable {
                     dirLinker.toggleReversed();
                     if (this.savedSpeedBeforeReverse != -1) {
                         int targetSpeed = this.savedSpeedBeforeReverse;
-                        dirLinker.setTargetSpeed(targetSpeed);
                         this.savedSpeedBeforeReverse = -1;
+                        // Issue #650: a reverse ordered while moving with target 0 saved a 0. It
+                        // must not clobber a speed restored in between (e.g. a departure that
+                        // released while the train braked to the reversal stop): only a positive
+                        // saved speed is re-applied.
+                        if (targetSpeed > 0) {
+                            dirLinker.setTargetSpeed(targetSpeed);
+                        }
                         if (getModel() != null) {
                             letrain.segments.Segment seg = resolveCurrentSegmentFromGraph();
                             if (seg != null) {
