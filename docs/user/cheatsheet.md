@@ -157,3 +157,15 @@ Once named, **you can use the name enclosed in quotes** (or without quotes if it
 - `clear tr "HighSpeed";`
 
 > **Strict case**: keywords are always lowercase (`train`, `station`, `sensor`…), and names are matched **exactly** as written: `"Central"` and `"central"` are different names. A wrong-case reference warns `not found` and does nothing. Inside `program { ... }` the text runs verbatim, strings included — there is no lowercasing.
+
+---
+
+## 10. Game Clock
+
+| Command | Description | Example |
+| :--- | :--- | :--- |
+| `time;` | Report the current game day and time. | `time;` |
+| `time set <hour>;` | Set the hour on the current day (`00`–`23`); minutes go back to `:00`. | `time set 9;` |
+| `time set <HH:MM>;` | Set hour and minute (`00:00`–`23:59`); single-digit hours are accepted. | `time set 18:45;` |
+
+> A valid change is silent: watch the HUD clock. Out-of-range values (`time set 25;`, `time set 25:99;`) warn `Invalid time …` and leave the clock untouched.
