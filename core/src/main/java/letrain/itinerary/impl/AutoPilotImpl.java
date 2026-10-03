@@ -929,8 +929,9 @@ public class AutoPilotImpl implements AutoPilot {
     }
 
     /**
-     * Issue #645: at or above the crash threshold the contact is a crash (normal physics, no
-     * shield); the mission fails with a warning instead of waiting for a train being destroyed.
+     * Issue #645/#648: a crash is normal physics (no shield) and aborts the maneuver. A running
+     * mission of any kind fails with a warning; the action manager aborts the remaining waypoint
+     * actions so the choreography does not continue on the destroyed consist.
      */
     @Override
     public void onCrash(letrain.map.Point pos, int speed) {
@@ -939,6 +940,8 @@ public class AutoPilotImpl implements AutoPilot {
         }
         if (mission.kind() == TrainMission.Kind.ON_CONTACT) {
             failMission("crashed before touching the vehicle ahead");
+        } else {
+            failMission("crashed before reaching " + mission.description());
         }
     }
 

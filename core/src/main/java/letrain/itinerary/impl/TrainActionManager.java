@@ -21,6 +21,11 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
     private transient WaypointCommand pendingCommandToResume = null;
     /** Mission started by the current waypoint action (ADR-022 phase 2f), if any. */
     private transient TrainMission pendingMission = null;
+    /**
+     * The train crashed: the pending waypoint actions were aborted and must never run on the
+     * destroyed consist (issue #648). A crash is final, so the flag is not cleared.
+     */
+    private transient boolean abortedByCrash = false;
     private letrain.itinerary.Waypoint currentProcessingWaypoint;
 
     public TrainActionManager(Train train) {
@@ -30,7 +35,7 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
 
     @Override
     public void onWaypointReached(Train train, Waypoint waypoint) {
-        if (waypoint == currentProcessingWaypoint) {
+        if (abortedByCrash || waypoint == currentProcessingWaypoint) {
             return;
         }
         startWaypoint(waypoint);
@@ -72,6 +77,9 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
 
     @Override
     public void onSpeedChanged(int speed) {
+        if (abortedByCrash) {
+            return;
+        }
         if (speed == 0 && pendingCommandToResume != null) {
             resumeDeferredCommand();
         }
@@ -88,14 +96,40 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
         resumeDeferredCommand();
     }
 
+    /**
+     * Issue #648: a crash aborts the pending waypoint actions. Resuming them would keep driving the
+     * destroyed consist (no exception, but the choreography must not continue in a broken state).
+     */
     @Override
     public void onCrash(Train train, letrain.map.Point pos, int speed) {
-        resumeDeferredCommand();
+        abortPendingActions();
+    }
+
+    /**
+     * Aborts every pending waypoint action and the deferred mission state. Scheduled waits may
+     * still fire afterwards; every entry point checks {@link #abortedByCrash} so the remaining
+     * commands never run (issue #648).
+     */
+    private void abortPendingActions() {
+        boolean hadPending = pendingCommandToResume != null || pendingMission != null
+                || !pendingCommands.isEmpty();
+        if (pendingMission != null && pendingMission.isActive()) {
+            pendingMission.cancel();
+        }
+        pendingMission = null;
+        pendingCommandToResume = null;
+        pendingCommands.clear();
+        savedTargetSpeed = 0;
+        waitTicks = 0;
+        abortedByCrash = true;
+        if (hadPending) {
+            log.warn("Train {} crashed: aborting the pending waypoint actions", train.getId());
+        }
     }
 
     /** Runs a command that was waiting for the train to stop, then continues the waypoint. */
     private void resumeDeferredCommand() {
-        if (pendingCommandToResume == null || train.isStalled()) {
+        if (pendingCommandToResume == null || abortedByCrash || train.isStalled()) {
             return;
         }
         WaypointCommand cmd = pendingCommandToResume;
@@ -108,6 +142,9 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
 
     @Override
     public void onLoadingFinished(Train train) {
+        if (abortedByCrash) {
+            return;
+        }
         if (savedTargetSpeed > 0 && pendingCommands.isEmpty()) {
             train.setSpeed(savedTargetSpeed);
             savedTargetSpeed = 0;
@@ -116,6 +153,9 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
     }
 
     private void runPendingCommands() {
+        if (abortedByCrash) {
+            return;
+        }
         if (!completePendingCommands()) {
             return;
         }
@@ -265,6 +305,9 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
 
     @Override
     public void onRetentionReleased() {
+        if (abortedByCrash) {
+            return;
+        }
         this.waitTicks = 0;
         runPendingCommands();
     }
@@ -412,7 +455,13 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
      */
     private boolean executeMissionCommand(WaypointCommand command) {
         letrain.itinerary.AutoPilot autopilot = train.getAutopilot();
-        if (autopilot == null || command.missionKind() == null) {
+        if (autopilot == null) {
+            return false;
+        }
+        if (command.missionKind() == null) {
+            // Corrupt/old saved action without a destination (issue #647): reject loudly and
+            // abort the rest instead of dropping the action silently.
+            abortRemainingActions("mission without a destination");
             return false;
         }
         if (pendingMission != null) {
@@ -435,12 +484,7 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
             // Rejected with a warning (no route from the current sense, no speed, unknown target):
             // abort the rest of the waypoint's actions so the choreography does not continue in a
             // wrong state. The departure and the route to the next waypoint still run.
-            if (!pendingCommands.isEmpty()) {
-                log.warn(
-                        "Train {} waypoint action: mission rejected, aborting the remaining {} action(s) of the waypoint",
-                        train.getId(), pendingCommands.size());
-                pendingCommands.clear();
-            }
+            abortRemainingActions("mission rejected");
             return false;
         }
         pendingMission = mission;
@@ -513,6 +557,9 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
     private void scheduleResume(int ticks) {
         if (train.getModel() != null && train.getModel().getScheduler() != null) {
             train.getModel().getScheduler().schedule(ticks, () -> {
+                if (abortedByCrash) {
+                    return;
+                }
                 resumeWaiting();
                 this.acquireInitialLocks();
             });
@@ -520,8 +567,22 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
     }
 
     private void resumeWaiting() {
+        if (abortedByCrash) {
+            return;
+        }
         this.waitTicks = 0;
         runPendingCommands();
+    }
+
+    /** Aborts the remaining actions of the current waypoint after a rejected mission. */
+    private void abortRemainingActions(String reason) {
+        if (pendingCommands.isEmpty()) {
+            return;
+        }
+        log.warn(
+                "Train {} waypoint action: {}, aborting the remaining {} action(s) of the waypoint",
+                train.getId(), reason, pendingCommands.size());
+        pendingCommands.clear();
     }
 
     private void acquireInitialLocks() {
