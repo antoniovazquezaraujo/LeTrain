@@ -34,10 +34,12 @@
   
 - **Mundo Procedimental Infinito:** El terreno se genera dinámicamente usando ruido Perlin, creando paisajes interminables para explorar y construir.
 
+- **Hora de Juego y Día/Noche:** Un reloj de juego determinista, visible en el HUD de ambos clientes, controla el ciclo de amanecer/atardecer y una paleta completa de día/crepúsculo/noche en las vistas 2D y 3D. Los faros de las locomotoras iluminan la vía al caer la noche, y el reloj se puede ajustar desde la consola (`time;`, `time set 9:30;`).
+
 - **Automatización Avanzada e IDE:**
   - Incluye un lenguaje de programación integrado (analizado mediante ANTLR4) para una verdadera automatización.
   - Un editor en el juego con pestañas (**Scenario / Program / Config**), referencia rápida por pestaña, navegación de errores y validador sin interfaz (`letrain-check`).
-  - Automatiza desvíos, configura rutas con piloto automático y gestiona itinerarios complejos.
+  - Automatiza desvíos, configura rutas con piloto automático y gestiona itinerarios complejos con horarios (`arrival`/`departure` y puntualidad) y maniobras de enganche y apartado.
 
 - **Grabar, Deshacer y Escenarios:** Congela el mundo y graba cada edición (`R`), deshaz/rehaz de forma determinista (`u` / `Ctrl+R`) y exporta toda tu red como una pequeña receta de texto `.ltr` que puedes compartir, importar y reproducir. La misma semilla reconstruye el mismo mundo — sin partida guardada.
 

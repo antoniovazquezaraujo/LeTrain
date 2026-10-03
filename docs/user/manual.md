@@ -110,9 +110,22 @@ You start with your account at zero. To earn money you must:
 You can adjust the base costs and rewards by modifying the `letrain.cfg` file. It ships next to the
 game; a `letrain.cfg` in the working directory overrides the packaged one.
 
+## 🕐 Game Time & Day/Night
+
+The world runs on a logical game clock, independent from real time. The HUD shows the current game date and time (`D1 08:00`) in both the 2D terminal and the 3D view, and the world starts on day 1 at 08:00; one full game day lasts 24 real minutes by default (adjustable in `letrain.cfg`). The clock is deterministic and drives the simulation, so the same scenario always replays with the same times.
+
+- **Day/Night cycle**: Sunrise and sunset are simulated, and the world palette shifts through day, dusk and night in both clients: ambient light, sunlight, sky and terrain colours in 3D, and the terminal colour palette in 2D. The same network looks very different at midnight.
+- **Headlights**: Locomotive headlights only shine once it gets dark, and only while the engine is running — switching the engine off turns them off. The two lamps stay visible (unlit) at any hour, and only the head locomotive of a consist shines: the other locomotives keep their lamps off.
+- **Clock commands** (full syntax in **[grammar.md](grammar.md)**):
+  - `time;` - Show the current game date and time.
+  - `time set HH[:MM];` - Jump the clock, e.g. `time set 21:30;` or `time set 9;` for 09:00. Out-of-range times are rejected with a warning and the clock does not move.
+- **Itinerary schedules use this clock**: The `arrival` and `departure` times of a waypoint are measured against the game clock, so `time set` is the quick way to test a timetable without waiting for the day to pass. See **Autopilot and Routes** below, **[grammar.md](grammar.md)** and **[scenarios.md](scenarios.md)**.
+
 ## 🤖 Autopilot and Routes
 
 To manage dozens of trains without going crazy, LeTrain includes an Autopilot that you can program yourself. Check the complete programming guide at: **[grammar.md](grammar.md)**.
+
+Itineraries also support **timetables and shunting maneuvers**: each waypoint can carry an `arrival` and/or `departure` time (24 h clock). On arrival the waypoint actions run, the train **holds until its departure** and then leaves; if the actions finish late, it leaves late and the delay is recorded. A repeating daily service can end with `park` (brakes, engine off, autopilot still armed) and start again by itself on its next scheduled departure. Punctuality is reported per stop in `info train N`: arrival/departure deviation in game minutes, plus current, average and maximum deviation. Waypoints can chain maneuvers as well, including `uncouple`/`couple … all` and `stop on contact`, for run-arounds and siding moves. See the **Autopilot and Itineraries** section of **[grammar.md](grammar.md)** and the scenario guide **[scenarios.md](scenarios.md)** for the full syntax and examples.
 
 ---
 <div align="center" style="margin-top: 40px; margin-bottom: 40px;">

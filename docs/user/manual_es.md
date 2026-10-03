@@ -114,9 +114,22 @@ Empiezas con tu cuenta a cero. Para ganar dinero debes:
 Puedes ajustar los costes y recompensas base modificando el archivo `letrain.cfg`. Se distribuye
 junto al juego; un `letrain.cfg` en el directorio de trabajo tiene prioridad sobre el empaquetado.
 
+## 🕐 Reloj de Juego y Día/Noche
+
+El mundo funciona con un reloj de juego lógico, independiente del tiempo real. El HUD muestra la fecha y hora de juego actuales (`D1 08:00`) tanto en la terminal 2D como en la vista 3D, y el mundo empieza en el día 1 a las 08:00; un día de juego completo dura 24 minutos reales por defecto (ajustable en `letrain.cfg`). El reloj es determinista y guía la simulación, así que un mismo escenario se reproduce siempre con las mismas horas.
+
+- **Ciclo día/noche**: Se simulan el amanecer y el atardecer, y la paleta del mundo pasa por día, crepúsculo y noche en ambos clientes: luz ambiental, luz solar, cielo y colores del terreno en 3D, y la paleta de colores de la terminal en 2D. La misma red se ve muy distinta a medianoche.
+- **Faros**: Los faros de las locomotoras solo brillan cuando oscurece y con el motor en marcha — si se apaga el motor, se apagan. Las dos lámparas siguen visibles (apagadas) a cualquier hora, y solo alumbra la locomotora de cabeza del tren: las demás mantienen sus faros apagados.
+- **Comandos del reloj** (sintaxis completa en **[grammar_es.md](grammar_es.md)**):
+  - `time;` - Muestra la fecha y hora de juego actuales.
+  - `time set HH[:MM];` - Salta el reloj, p. ej. `time set 21:30;` o `time set 9;` para las 09:00. Las horas fuera de rango se rechazan con un aviso y el reloj no se mueve.
+- **Los horarios de los itinerarios usan este reloj**: Las horas `arrival` y `departure` de un waypoint se miden con el reloj de juego, así que `time set` es la forma rápida de probar un horario sin esperar a que pase el día. Ver **Autopilot y Rutas** más abajo, **[grammar_es.md](grammar_es.md)** y **[scenarios_es.md](scenarios_es.md)**.
+
 ## 🤖 Autopilot y Rutas
 
 Para gestionar decenas de trenes sin volverte loco, LeTrain incluye un Piloto Automático que puedes programar tú mismo. Consulta la guía completa de programación en: **[grammar_es.md](grammar_es.md)**.
+
+Los itinerarios también admiten **horarios y maniobras de enganche y apartado**: cada waypoint puede llevar una hora de `arrival` y/o `departure` (reloj de 24 h). Al llegar se ejecutan las acciones del waypoint, el tren **espera hasta su salida** y entonces parte; si las acciones terminan tarde, sale tarde y el retraso queda registrado. Un servicio diario recurrente puede terminar con `park` (frena, apaga el motor y mantiene el piloto automático armado) y volver a arrancar solo en su siguiente salida programada. La puntualidad se informa por parada en `info train N`: desviación de llegada/salida en minutos de juego, más la desviación actual, media y máxima. Los waypoints también pueden encadenar maniobras, como `uncouple`/`couple … all` y `stop on contact`, para cambios de sentido y apartado. Consulta la sección **Autopilot e Itinerarios** de **[grammar_es.md](grammar_es.md)** y la guía de escenarios **[scenarios_es.md](scenarios_es.md)** para la sintaxis completa y ejemplos.
 
 ---
 <div align="center" style="margin-top: 40px; margin-bottom: 40px;">
