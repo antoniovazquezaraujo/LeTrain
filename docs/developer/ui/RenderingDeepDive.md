@@ -49,6 +49,27 @@ El cálculo de `canEnterNext` usa un **lookahead encadenado**: desde la celda de
 
 Cuando `speed == 0` o `train.isStalled()`, el renderer no llama a `calculateTwoStagePath()` en absoluto: dibuja el vehículo directamente en el centro exacto de su celda (`getPosition() + 0.5`), igual que el renderer 2D.
 
+## Ciclo día/noche
+
+Ambos renderers leen la hora del `GameClock` del modelo y aplican la paleta compartida; el ratio
+`getDayNightRatio()` (0 = pleno día, 1 = noche) sale de `SolarModel` (día del año, hora solar y
+latitud mundial). El detalle de tokens y fases está en
+[DayNight_Colors.md](../systems/DayNight_Colors.md) y la decisión de diseño en
+[ADR-022](../adr/ADR-022-Game-Time.md).
+
+- **3D**: `GraphicPresenter.updateDayNight()` aplica `VisualPalette` en cada tick a la luz ambiental,
+  al sol direccional (dirección real desde `SolarModel`), al cielo/`VOID` (repartidos por la línea de
+  horizonte con `glScissor`), al tablero y a los materiales de terreno, vía y trenes
+  (`Gdx3DResourceContext.applyTerrainPalette`). Los avisos y resaltados conservan su color.
+- **2D**: `RenderVisitor` resuelve `TerminalPalette` por **niveles** (20, con histéresis direccional)
+  y pinta cada token; las celdas dentro del cono del faro (`Headlight`) mezclan su color nocturno con
+  el diurno, incluido el fondo.
+- **Faros**: `VehicleRenderer` publica las posiciones renderizadas de las locomotoras con luz y el
+  presentador enciende hasta 4 `PointLight` en las más cercanas a la cámara, con intensidad
+  `VisualPalette.lightsOnFactor(ratio)`. Luces y haz solo se encienden por encima de
+  `VisualPalette.LIGHTS_ON_RATIO` (0,1) y con el motor en marcha y la locomotora de cabeza
+  (`isEngineOn() && isHeadLocomotive()`); en 2D el túnel oculto también apaga el haz.
+
 ## Invariantes de la Vista
 - Ninguna clase de renderizado debe modificar el estado del `Model`.
 - El acceso a los datos de la entidad durante el renderizado debe ser solo de lectura.

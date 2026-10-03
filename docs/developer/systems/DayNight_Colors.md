@@ -1,20 +1,58 @@
 # Mapa de colores día/noche (fase 1 de ADR-022)
 
-Estado: **propuesta para revisión** (inventario previo a tocar código)
+Estado: **implementado** — fase 1: **1a, 1b, 1c y 1d completas**; **1e parcial** (faros de
+locomotora; farolas/ventanas y niebla fina pendientes).
 
 Relacionado: [[ADR-022-Game-Time]] (fase 1), [[ADR-013]] (modo noche/día), issue #480
 (paridad 2D/3D).
 
 ## Objetivo
 
-Antes de implementar el ciclo día/noche hay que saber **qué color cambia cada cosa y dónde
-vive**. Hoy los colores están repartidos en literales por los renderers de los dos clientes; sin
-un mapa único, ajustar la noche es tocar veinte sitios a ciegas.
+Fijar, antes de tocar código, **qué color cambia cada cosa y dónde vive**: los colores estaban
+repartidos en literales por los renderers de los dos clientes y, sin un mapa único, ajustar la noche
+era tocar veinte sitios a ciegas. El mapa de tokens sigue vigente; lo implementado se resume en
+*Resultado implementado*.
 
 Alcance de la fase 1: **mundo** (terreno, vía, elementos, trenes, ambiente). El HUD/skin queda
 fuera (solo se revisará su legibilidad al final).
 
-## Cómo funciona hoy
+## Resultado implementado (beta.5)
+
+Lo que hay en `develop` a día de hoy; el detalle por fase está al final de la ficha.
+
+- **Reloj**: `GameClock`/`SimpleGameClock` (`core`, `letrain.time`). Arranca en el **día 1 a las
+  08:00** y un día completo dura `DEFAULT_DAY_DURATION_SECONDS = 1440` (24 minutos reales;
+  configurable con `time.dayDurationSeconds`). Avanza desde `SimulationController.tick()` (20 TPS) y
+  la pausa de edición lo congela; se persiste `elapsedTicks` y `GameTime` se deriva.
+- **Modelo solar**: `SolarModel` calcula elevación y azimut del sol a partir del **día del año** y la
+  hora solar, con la **latitud mundial** (`world.latitude`, por defecto 40°) y una banda de
+  **crepúsculo** de 18°. `getDayNightRatio()` (0 = pleno día, 1 = noche cerrada) e `isNight()`
+  (ratio > 0,5) salen de ahí; en latitudes extremas hay noches blancas y día/noche perpetuos sin
+  casos especiales.
+- **`VisualPalette`** (`core`, `letrain.palette`): fuente única de verdad, con tokens de ambiente
+  (`AMBIENT_LIGHT`, `SUN_LIGHT`, `SKY`, `TABLE_BOARD`), terreno (1b), vía y trenes (1c) y
+  `EMISSIVE_HEADLIGHT` (1e). Claves día/crepúsculo/noche interpoladas en luz lineal; los colores de
+  jugador solo se atenúan (`playerColorFactor`: 1,0 → 0,8 → 0,55).
+- **3D** (`ui-graphic`): `GraphicPresenter.updateDayNight()` aplica la paleta en cada tick al
+  `Environment` (luz ambiental y sol direccional según `SolarModel`), al cielo/`VOID` repartido por
+  el horizonte con `glScissor`, al tablero/rejilla/cajas y a los materiales de terreno, vía y trenes
+  (`Gdx3DResourceContext.applyTerrainPalette`). Los avisos y resaltados no se atenúan.
+- **2D** (`ui-terminal`): `TerminalPalette` (familia clara) resuelve los tokens con degradación
+  **24-bit → 256 → 16 ANSI** según `COLORTERM`/`TERM`; el `RenderVisitor` cuantiza el ratio en
+  **20 niveles** (`BANDS = 19`) con histéresis direccional y suelo de contraste, y mezcla el fondo
+  con su color diurno dentro del haz del faro.
+- **Faros**: umbral compartido `VisualPalette.LIGHTS_ON_RATIO = 0,1` y rampa `lightsOnFactor`. En 3D
+  se encienden hasta 4 `PointLight` reales en las locomotoras más cercanas a la cámara (posición
+  **renderizada** interpolada) y `VehicleRenderer` pinta las dos lámparas (emisivas o apagadas); en
+  2D el `RenderVisitor` simula el cono (`Headlight`). En ambos clientes las luces y el haz solo se
+  encienden con el motor en marcha (`isEngineOn()`) y en la locomotora de cabeza
+  (`isHeadLocomotive()`); en 3D tampoco durante el descarrilamiento (`isDestroying()`).
+
+## Cómo funcionaba antes de implementar (histórico)
+
+> Sección conservada como inventario del punto de partida. Las viñetas de 3D y 2D describen el
+> estado previo a 1a/1d; la del reloj sigue siendo válida (el reloj es de la fase 0). Los valores de
+> color en vigor salen de `VisualPalette` en 3D y de `TerminalPalette` en 2D.
 
 - **Reloj**: `GameClock.getDayNightRatio()` (0.0 = pleno día, 1.0 = noche cerrada) e `isNight()`
   (ratio > 0.5). El ratio sale de `SolarModel` (elevación del sol con banda de crepúsculo de 18°)
@@ -28,30 +66,34 @@ fuera (solo se revisará su legibilidad al final).
   (`BG_COLOR`). La paleta ANSI es discreta (16 colores): aquí no se interpola, se elige variante
   por franja con **histéresis** en las fronteras.
 
-## Arquitectura propuesta
+## Arquitectura (implementada)
 
-1. **`VisualPalette`**: única fuente de verdad. Un enum/registro de **tokens** (p. ej.
-   `terrain.fields`, `track.rail`, `light.ambient`) con hasta tres variantes: `day`, `dusk`,
-   `night` (RGB 0–1). Propuesta de ubicación: `letrain.palette` en `core` como **datos puros**
-   (sin libgdx ni Lanterna); cada cliente los traduce a su tecnología (ANSI en 2D, `Color` en 3D).
-   Si crece con detalle de UI, se mueve a un módulo propio.
-2. **3D**: `palette.colorOf(token, dayNightRatio)` interpola entre variantes (día→crepúsculo→
-   noche). Los materiales dejan de usar literales: piden el token. La luz ambiental, la
-   direccional y el color de fondo/niebla también son tokens.
-3. **2D**: `palette.rgbOf(token, band)` con franjas (día/crepúsculo/noche) e histéresis ±5 min
-   de juego alrededor de cada frontera; el terminal no interpola. **Familia por defecto: clara**
-   (día tipo “mapa papel”: fondo claro y glifos oscuros; noche: fondo oscuro y glifos claros),
-   elegida tras ver la demo. El color se emite en **24-bit cuando el terminal lo soporta**
-   (`COLORTERM=truecolor|24bit`, `TERM=*-direct`) y si no se cae a los **16 slots ANSI** (nunca
-   emitir `38;2` a un terminal que lo ignora). Configuración:
-   `terminal.palette=auto|light|dark|theme` (`auto` = 24-bit si se puede + familia clara; `theme`
-   = slots del usuario, comportamiento actual). Aviso único en el log si no hay 24-bit.
-4. Los colores **de jugador** (paleta de locomotoras, carga) no se rediseñan: se atenúan con un
-   multiplicador global de la luz (3D) o con la variante RGB/ANSI más cercana (2D).
+El diseño aprobado y llevado a código:
+
+1. **`VisualPalette`**: única fuente de verdad. Enum de **tokens** (`AMBIENT_LIGHT`,
+   `TERRAIN_FIELDS`, `TRACK_RAIL`, …) con tres claves —día, crepúsculo y noche (0xRRGGBB)— y
+   `color(token, ratio)` que interpola en luz lineal. Vive en `letrain.palette` (`core`) como
+   **datos puros**, sin libgdx ni Lanterna; cada cliente los traduce a su tecnología (ANSI en 2D,
+   `Color` en 3D). Si crece con detalle de UI, se moverá a un módulo propio (pendiente).
+2. **3D**: el `GraphicPresenter` pide cada token con `palette.color(token, ratio)` y lo aplica al
+   `Environment`, a los materiales, al tablero y al cielo; la dirección del sol sale de
+   `SolarModel`.
+3. **2D**: `TerminalPalette.resolve(band)` con 20 escalones de ratio espaciados por luminosidad
+   percibida e histéresis (`band(ratio, currentBand)`); el terminal no interpola. **Familia por
+   defecto: clara** (día tipo “mapa papel”: fondo claro y glifos oscuros; noche: fondo oscuro y
+   glifos claros), elegida tras ver la demo. El color se emite en **24-bit cuando el terminal lo
+   soporta** (`COLORTERM`, `TERM=*-direct`) y si no se degrada a **256** o a los **16 slots ANSI**.
+   La configuración `terminal.palette=auto|light|dark|theme` quedó aplazada (siempre familia clara).
+4. Los colores **de jugador** (paleta de locomotoras, carga) no se rediseñan: se atenúan con
+   `playerColorFactor` (1,0 → 0,8 → 0,55).
 
 ## Inventario (el mapa)
 
 Convención: `n` = `[0–1]` por canal. 2D en colores ANSI de Lanterna.
+
+Nota: las columnas «2D actual» / «3D actual» son el inventario **previo a implementar**; se
+conservan como referencia. Las columnas Día/Crepúsculo/Noche son el mapeo acordado que se aplicó, y
+los valores vivos están hoy en `VisualPalette` (ambiente y 3D) y `TerminalPalette` (2D).
 
 ### Terreno y estructura
 
@@ -146,25 +188,28 @@ esferas (la activa a color, la otra muy oscura). Limpieza pendiente: en 2D `SEMA
 3. **Los avisos no se apagan**: vía inválida, bloque ocupado, semáforos, señales, cursor y
    resaltados conservan color y contraste de noche (son información de juego, no decorado).
 4. **Colores de jugador**: solo atenuación global (≤ 45 % de noche); no se re-mapean a variantes.
-5. **Emisivos**: faros de locomotora, farolas y ventanas iluminadas se añaden como tokens
-   "emisivos" que no se atenúan (fase 1e); son la guía visual de noche. Lámpara y luz se encienden a
-   la vez: umbral compartido `VisualPalette.LIGHTS_ON_RATIO` (0,1) y rampa `lightsOnFactor` en 3D y
-   2D.
-6. **Rendimiento**: interpolar la paleta una vez por frame (no por instancia); los materiales
-   actualizan su `ColorAttribute` solo cuando el token cambia.
+5. **Emisivos**: los faros de locomotora son el token `EMISSIVE_HEADLIGHT`, que no se atenúa
+   (implementado); farolas y ventanas iluminadas se añadirán como tokens emisivos (1e pendiente).
+   Lámpara y luz se encienden a la vez: umbral compartido `VisualPalette.LIGHTS_ON_RATIO` (0,1) y
+   rampa `lightsOnFactor` en 3D y 2D.
+6. **Rendimiento**: en 3D la paleta se interpola una vez por tick (no por instancia) y los
+   materiales actualizan su `ColorAttribute` solo cuando el color cambia; en 2D la paleta se resuelve
+   al cruzar un escalón, no en cada frame.
 
-## Fases propuestas
+## Fases
 
-| Fase | Alcance | Entregable |
-|---|---|---|
-| 1a | `VisualPalette` + ambiente 3D (luz, fondo, mesa, rejilla) | El mundo se apaga con `getDayNightRatio()`; test de paleta determinista |
-| 1b | Terreno (campos, agua, montaña, balasto, túnel, pared) | Hecha: tokens de terreno en `VisualPalette` y materiales del `Gdx3DResourceContext`/`GroundRenderer` |
-| 1c | Elementos, vía y trenes | Hecha: tokens de vía/trenes base + atenuación de colores de jugador; avisos intactos |
-| 1d | 2D: paleta día/noche del terminal (familia clara) | Hecha: `TerminalPalette` + wiring del `RenderVisitor` |
-| 1e | Emisivos (faros/farolas) y niebla/cielo fino | Parcial: **faros de locomotora** (luz real en 3D + haz simulado en 2D); farolas/ventanas y niebla pendientes; coordinar con #480 |
+| Fase | Alcance | Entregable | Estado |
+|---|---|---|---|
+| 1a | `VisualPalette` + ambiente 3D (luz, fondo, mesa, rejilla) | El mundo se apaga con `getDayNightRatio()`; test de paleta determinista | Hecha |
+| 1b | Terreno (campos, agua, montaña, balasto, túnel, pared) | Tokens de terreno en `VisualPalette` y materiales del `Gdx3DResourceContext`/`GroundRenderer` | Hecha |
+| 1c | Elementos, vía y trenes | Tokens de vía/trenes base + atenuación de colores de jugador; avisos intactos | Hecha |
+| 1d | 2D: paleta día/noche del terminal (familia clara) | `TerminalPalette` + wiring del `RenderVisitor` | Hecha |
+| 1e | Emisivos (faros/farolas) y niebla/cielo fino | **Faros de locomotora** (luz real en 3D + haz simulado en 2D) | Parcial: farolas/ventanas y niebla pendientes; coordinar con #480 |
 
-Estado: **1a, 1b, 1c y 1d hechas; 1e parcial (faros de locomotora)** (farolas/ventanas y niebla
-pendientes).
+Pendiente de 1e: farolas/ventanas, acabado de cielo y niebla fina. El resto de la fase 1 está en
+`develop`.
+
+### Detalle por fase
 
 - 3D (1a): `VisualPalette` (core, `letrain.palette`) con `AMBIENT_LIGHT`, `SUN_LIGHT`, `SKY` y
   `TABLE_BOARD`; el `GraphicPresenter` los aplica cada tick (luz ambiental, sol direccional según
@@ -185,9 +230,10 @@ pendientes).
   decorado del `GraphicPresenter` también siguen su token.
 - 2D (1d): `TerminalPalette` (`ui-terminal`, `letrain.visitor.terminal`) con la **familia clara**
   afinada en el laboratorio: día papel, crepúsculo, noche; fundido con el ratio del reloj,
-  inversión de polaridad y suelo de contraste. El `RenderVisitor` resuelve la paleta una vez por
-  frame (`model.getGameClock().getDayNightRatio()`) y pinta cada token (terreno, vía, estaciones,
-  señales, trenes, cursor, resaltados) con su color; el fondo del mapa es el token `BOARD`.
+  inversión de polaridad y suelo de contraste. El `RenderVisitor` lee el ratio una vez por frame
+  (`model.getGameClock().getDayNightRatio()`) y resuelve la paleta solo cuando cambia de nivel (ver
+  *Escalonado*); cada token (terreno, vía, estaciones, señales, trenes, cursor, resaltados) se pinta
+  con su color y el fondo del mapa es el token `BOARD`.
   Traducción de color: **24-bit → 256 → 16 ANSI** según `COLORTERM`/`TERM`. El HUD (`menuBox`) y
   el `InfoVisitor` se quedan como estaban.
   **Escalonado**: el ratio solar es continuo y, interpolado, obligaba al terminal a repintar el
@@ -200,11 +246,12 @@ pendientes).
   `GraphicPresenter` enciende hasta **4 `PointLight`** reales en las locomotoras más cercanas a la
   cámara (`Headlights.nearestTo`) con intensidad proporcional al ratio, y el `VehicleRenderer` pinta
   dos lámparas en el frontal que **siempre se ven**: emisivas (`headlightModel`) con el motor en
-  marcha y oscuro (`headlightOffModel`), apagadas de día o con el motor parado. La luz usa la
+  marcha y oscuro (`headlightOffModel`), apagadas de día o con el motor parado (y en 3D tampoco si
+  está descarrilada). La luz usa la
   posición **renderizada** (interpolada) que el `VehicleRenderer` publica cada frame
   (`Gdx3DRenderer.getHeadlightSources()`), así el haz se desliza con el tren en vez de saltar de
-  celda en celda. Luces y haz solo se encienden con el motor en marcha (`Locomotive.isEngineOn()`)
-  y por encima del umbral compartido. En 2D el
+  celda en celda. Luces y haz solo se encienden con el motor en marcha (`Locomotive.isEngineOn()`),
+  en la locomotora de cabeza (`isHeadLocomotive()`) y por encima del umbral compartido. En 2D el
   `RenderVisitor` simula el haz: `Headlight.factor(dx, dy, dir)` da el cono (alcance 3 celdas,
   semiángulo 40°, tope `MAX_LIGHT`), y las celdas que ilumina se pintan mezclando su color nocturno
   con el diurno, **incluido el fondo**, así que el haz "aclara" vía y terreno. El túnel oculto (fuera
@@ -221,8 +268,8 @@ pendientes).
 - Contraste de los colores de jugador (locomotoras, carga) sobre el papel: hoy se mantienen tal
   cual (los fundidos los ajusta solo el suelo de contraste de los tokens). A revisar cuando se
   juegue en 2D a fondo.
-- Curvas de ratio propias por franja (más suaves) o las actuales 05/07/19/21.
-- ¿Curvas de ratio propias por franja (más suaves) o las actuales 05/07/19/21?
+- Curvas de ratio: `SolarModel` sustituyó las franjas fijas 05/07/19/21 por elevación solar con
+  banda de crepúsculo; revisar si hace falta una curva propia (más suave) por franja.
 
 ## Decisiones tomadas
 
