@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import letrain.economy.EconomyManager;
 import letrain.ground.GroundMap;
+import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.impl.RailMap;
 import letrain.track.CargoTypes;
@@ -21,6 +22,8 @@ import letrain.vehicle.rail.impl.Train;
 import letrain.vehicle.rail.impl.Wagon;
 
 public interface Model {
+
+    letrain.time.GameClock getGameClock();
 
     public void addScriptTrainEventListener(ScriptTrainEventListener listener);
 
@@ -43,8 +46,11 @@ public interface Model {
     public int peekNextLocomotiveId();
 
     public int nextSensorId();
+
     public int nextSpeedSignalId();
+
     public letrain.track.SpeedSignal getSpeedSignal(int id);
+
     public letrain.track.SpeedSignal findSpeedSignalByName(String name);
 
 
@@ -128,6 +134,30 @@ public interface Model {
 
     void removeSemaphore(RailSemaphore semaphore);
 
+    /**
+     * Moves a sensor (a plain {@code Sensor}, or any of its subclasses {@code Station},
+     * {@code SpeedSignal} and {@code RailSemaphore}) one resting cell forward along the rail in
+     * {@code dir}, jumping over cells occupied by other components but never over trains. Returns
+     * false (and does not move the element) when blocked or at the end of the line. A moved
+     * {@code Station} re-evaluates its industry role at the new position.
+     */
+    boolean moveSensor(Sensor sensor, Dir dir);
+
+    /**
+     * Moves a sensor (or any of its subclasses, including {@code RailSemaphore}) one resting cell
+     * forward along the rail, in the direction the element itself is facing. The element keeps
+     * following the track across curves and forks (its facing is rotated to the rail direction), it
+     * jumps cells occupied by other components but never over trains, and stops at the end of the
+     * line. A moved {@code Station} re-evaluates its industry role at the new position.
+     */
+    boolean moveSensorForward(Sensor sensor);
+
+    /**
+     * Moves a sensor one resting cell backward along the rail (away from the direction it is
+     * facing), with the same rail-following rules as {@link #moveSensorForward(Sensor)}.
+     */
+    boolean moveSensorBackward(Sensor sensor);
+
     RailSemaphore getSemaphoreAt(Point point);
 
     boolean selectNextSemaphore();
@@ -135,9 +165,13 @@ public interface Model {
     boolean selectPrevSemaphore();
 
     boolean selectNextSensor();
+
     boolean selectPrevSensor();
+
     boolean selectSensor(int id);
+
     letrain.track.Sensor getSelectedSensor();
+
     void setSelectedSensor(letrain.track.Sensor selectedSensor);
 
 
@@ -163,7 +197,52 @@ public interface Model {
 
     GameMode getPreviousMode();
 
+    /**
+     * The mode the player is effectively in: the console ({@link GameMode#COMMAND}) is a temporary
+     * overlay, so the focus-dependent systems (camera, ambience, menu highlight) keep behaving as
+     * the mode it was opened from. Input routing still uses {@link #getMode()}.
+     */
+    GameMode getEffectiveMode();
+
     void setMode(GameMode mode);
+
+    /**
+     * Whether the player has toggled "paused editing" on. When {@code true} and the current mode is
+     * {@link GameMode#RAILS}, the world simulation (trains, economy, scheduler) is frozen and track
+     * construction is instantaneous — the exact state ADR-020 needs for an exact edit journal and
+     * deterministic undo (reset to checkpoint + replay).
+     */
+    boolean isPauseEditing();
+
+    void setPauseEditing(boolean pauseEditing);
+
+    /**
+     * True when the world simulation must be frozen right now: pause-editing is toggled on and the
+     * current game mode is an editing mode (RAILS, ADD, element management, train building, console
+     * or program editor). In that state vehicle movement, the scheduler, industrial actions and
+     * cleanup are skipped while track building keeps working instantly. Simulation only resumes in
+     * play/view modes (DRIVE, MENU, LINK/UNLINK, LOAD_TRAINS).
+     */
+    default boolean isSimulationPaused() {
+        if (!isPauseEditing()) {
+            return false;
+        }
+        switch (getMode()) {
+            case RAILS:
+            case ADD:
+            case STATIONS:
+            case SENSORS:
+            case SEMAPHORES:
+            case SPEED_SIGNALS:
+            case FORKS:
+            case TRAINS:
+            case COMMAND:
+            case PROGRAM:
+                return true;
+            default:
+                return false;
+        }
+    }
 
     Locomotive getSelectedLocomotive();
 
@@ -218,12 +297,15 @@ public interface Model {
     boolean selectPrevLocomotive();
 
     enum GameMode {
-        MENU("Menu mode"), RAILS("Navigate map, create and delete tracks"), ADD("Add entities"), DRIVE(
-                "Manage locomotives"), FORKS("Manage forks"), SEMAPHORES(
+        MENU("Menu mode"), RAILS("Navigate map, create and delete tracks"), ADD(
+                "Add entities"), DRIVE("Manage locomotives"), FORKS("Manage forks"), SEMAPHORES(
                         "Manage semaphores"), SPEED_SIGNALS("Manage speed signals"), TRAINS(
                                 "Create trains"), LINK("Link trains"), UNLINK(
-                                        "Divide trains"), SENSORS("Manage sensors"), STATIONS("Stations"), LOAD_TRAINS(
-                                                "Use load Stations"), PROGRAM("Program"), COMMAND("Command Line Interface");
+                                        "Divide trains"), SENSORS("Manage sensors"), STATIONS(
+                                                "Stations"), LOAD_TRAINS(
+                                                        "Use load Stations"), PROGRAM(
+                                                                "Program"), COMMAND(
+                                                                        "Command Line Interface");
 
         private String name;
 
@@ -240,25 +322,69 @@ public interface Model {
 
     public void removeDestroyedTrains();
 
+    /**
+     * Installs a program: the engine parses it strictly and applies it. The returned list carries
+     * the syntax errors (empty when it applied). A rejected text is stored anyway so the program
+     * editor can show it for fixing; {@link #isProgramValid()} then reports it was not applied.
+     */
     public List<String> setProgram(String program);
 
+    /**
+     * Installs a program that came from disk (a savegame, a program file…): the single load path
+     * shared by {@code postLoadInit} and the clients. The text is parsed strictly like any other
+     * program (ADR-022: the old comma-less waypoint syntax is not migrated). Its problem notices
+     * are routed through the model's visible channel; while no sink is wired yet (a savegame
+     * re-applied by {@code postLoadInit} before the presenter exists) they are queued and delivered
+     * when the client wires its sink, so a loaded program never warns only in the log.
+     */
+    public List<String> setProgramFromDisk(String program);
+
     public String getProgram();
+
+    /**
+     * True when the text returned by {@link #getProgram()} parsed and applied on the last attempt;
+     * false when the engine rejected it (the text is kept for editing). See {@link #setProgram}.
+     */
+    default boolean isProgramValid() {
+        return true;
+    }
+
+    /**
+     * Sink for DSL problem notices that must reach the player (D1: warnings from programs,
+     * itineraries and missions are never log-only when there is a player). The clients wire it to
+     * their visible message channel; headless contexts ({@code letrain-check}, tests) leave it null
+     * and the engine only logs.
+     */
+    default void setUserMessageSink(java.util.function.BiConsumer<String, String> sink) {}
+
+    /** See {@link #setUserMessageSink}. */
+    default java.util.function.BiConsumer<String, String> getUserMessageSink() {
+        return null;
+    }
+
+    /**
+     * Reports a DSL problem through the visible message channel (D1). When no sink is wired yet the
+     * notice is queued and delivered by {@link #setUserMessageSink}, so it never stays log-only.
+     * Asynchronous events (programs being applied, missions, triggers) and long/multiline console
+     * notices use this channel; short typed-command notices use {@link #setCommandNotice}.
+     */
+    default void reportUserMessage(String title, String text) {}
 
     public EconomyManager getEconomyManager();
 
 
     void setMark(String name, letrain.map.Point pos);
+
     letrain.map.Point getMark(String name);
+
     java.util.Map<String, letrain.map.Point> getMarks();
-    
+
     public RailTrack getCursorRailTrack();
 
-    public record GameModeMenuOption(
-            String gameModeName,
-            String gameModeDescription,
-            Supplier<Boolean> enabledIf,
-            Supplier<Boolean> selectedIf,
-            Supplier<GameMode> doWhenSelected) {}
+    public record GameModeMenuOption(String gameModeName, String gameModeDescription,
+            Supplier<Boolean> enabledIf, Supplier<Boolean> selectedIf,
+            Supplier<GameMode> doWhenSelected) {
+    }
 
     public List<GameModeMenuOption> getMenuModel();
 
@@ -278,15 +404,48 @@ public interface Model {
 
     CargoTypes.StationRole getStationGhostRole();
 
+    /**
+     * Recomputes the industrial role, cargo type, industry count and storage of {@code station} at
+     * {@code position} with the same industry-influence rules used when the station is created
+     * (radius 5). Shared by station creation and by {@link #moveSensor(Sensor, Dir)} so both stay
+     * consistent ("mirror of creation").
+     */
+    void applyStationRoleByIndustry(Station station, Point position);
+
     letrain.mvp.impl.EventLogManager getEventLogManager();
+
+    /**
+     * The editing command journal (ADR-020): an in-memory, session-scoped recorder of the DSL
+     * commands the player executed while recording was on. Not persisted with the savegame.
+     */
+    letrain.command.CommandJournal getCommandJournal();
+
+    /** Binds a (presenter-owned) journal so it survives model swaps. */
+    void setCommandJournal(letrain.command.CommandJournal journal);
+
+    /** Terrain seed of this model; a scenario stores it to rebuild an identical world. */
+    int getSeed();
 
     String getGameObjectsReport();
 
     String getRailwayGraphReport();
+
     String getCommandText();
+
     void setCommandText(String text);
+
     String getCommandError();
+
     void setCommandError(String error);
+
+    /**
+     * Short, single-line console notice of the last typed command (D1 contextual channel). The
+     * command bar paints it next to the command line; long/multiline notices are never set here:
+     * they open the scrollable panel through {@link #reportUserMessage}.
+     */
+    String getCommandNotice();
+
+    void setCommandNotice(String notice);
 
     CargoTypes getSelectedWagonType();
 

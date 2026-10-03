@@ -1,4 +1,4 @@
-[ [Índice] ] [[docs/Index|⬅️ Volver al Índice]]
+[ [Índice] ] [[Index|⬅️ Volver al Índice]]
 
 # ADR-003: Topología del Grafo y Motor de Rutas
 

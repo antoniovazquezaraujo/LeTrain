@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.progmatic</groupId>
         <artifactId>JLeTrain</artifactId>
-        <version>1.0.0-beta.3</version>
+        <version>1.0.0-beta.5</version>
     </parent>
     <artifactId>JLeTrain-launcher-graphic</artifactId>
     <packaging>jar</packaging>
@@ -24,7 +24,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.4.1</version>
+                <version>3.6.2</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -48,7 +48,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>3.5.0</version>
+                <version>3.6.4</version>
                 <executions>
                     <execution>
                         <id>jlink-jre</id>
@@ -75,7 +75,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
-                <version>3.1.0</version>
+                <version>3.2.0</version>
                 <executions>
                     <execution>
                         <id>clean-output</id>
@@ -102,11 +102,15 @@
                                 <copy file="${project.build.directory}/${project.build.finalName}-jar-with-dependencies.jar"
                                       tofile="${maven.multiModuleProjectDirectory}/output/LeTrain/lib/app/${project.build.finalName}-jar-with-dependencies.jar"/>
 
+                                <!-- Ship the default configuration next to the app -->
+                                <copy file="${maven.multiModuleProjectDirectory}/letrain.cfg"
+                                      tofile="${maven.multiModuleProjectDirectory}/output/LeTrain/letrain.cfg"/>
+
                                 <!-- Create the shell script -->
                                 <mkdir dir="${maven.multiModuleProjectDirectory}/output/LeTrain/bin"/>
                                 <echo file="${maven.multiModuleProjectDirectory}/output/LeTrain/bin/LeTrain.sh">#!/bin/sh
 DIR="$(cd "$(dirname "$0")" &amp;&amp; pwd)"
-"$DIR/../lib/runtime/bin/java" -jar "$DIR/../lib/app/${project.build.finalName}-jar-with-dependencies.jar"
+"$DIR/../lib/runtime/bin/java" -Djava.awt.headless=true -jar "$DIR/../lib/app/${project.build.finalName}-jar-with-dependencies.jar"
 </echo>
                                 <!-- Make it executable -->
                                 <chmod file="${maven.multiModuleProjectDirectory}/output/LeTrain/bin/LeTrain.sh" perm="755"/>
@@ -114,7 +118,7 @@ DIR="$(cd "$(dirname "$0")" &amp;&amp; pwd)"
                                 <!-- Create the batch script for Windows -->
                                 <echo file="${maven.multiModuleProjectDirectory}/output/LeTrain/bin/LeTrain.bat">@echo off
 set DIR=%~dp0
-"%DIR%\..\lib\runtime\bin\java.exe" -jar "%DIR%\..\lib\app\${project.build.finalName}-jar-with-dependencies.jar"
+"%DIR%\..\lib\runtime\bin\java.exe" -Djava.awt.headless=true -jar "%DIR%\..\lib\app\${project.build.finalName}-jar-with-dependencies.jar"
 </echo>
                             </target>
                         </configuration>

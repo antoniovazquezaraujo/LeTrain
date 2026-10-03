@@ -10,7 +10,10 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import letrain.mvp.impl.Model;
+import letrain.track.RailSemaphore;
+import letrain.track.SemaphoreEventListener;
 import letrain.track.Station;
+import letrain.track.rail.RailTrack;
 import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.rail.ScriptTrainEventListener;
 import letrain.vehicle.rail.impl.*;
@@ -86,6 +89,23 @@ class SerializationTest {
         Train restored = deserialize(serialized, Train.class);
         assertNotNull(restored);
         assertEquals(1, restored.getId());
+    }
+
+    @Test
+    @DisplayName("Game clock ticks survive serialization")
+    void testGameClockSerialization() throws IOException {
+        Model original = new Model();
+        for (int i = 0; i < 3 * 60 * letrain.time.GameClock.TICKS_PER_SECOND; i++) {
+            original.getGameClock().tick();
+        }
+        long ticks = original.getElapsedTicks();
+
+        byte[] serialized = serialize(original);
+        Model restored = deserialize(serialized, Model.class);
+
+        assertEquals(ticks, restored.getElapsedTicks());
+        assertEquals(11, restored.getGameClock().now().hour());
+        assertEquals(0, restored.getGameClock().now().minute());
     }
 
     @Test
@@ -241,6 +261,75 @@ class SerializationTest {
     }
 
     @Test
+    @DisplayName("RailSemaphore (a Sensor) serializes state and listener lists")
+    void testRailSemaphoreSerialization() throws IOException {
+        RailSemaphore original = new RailSemaphore(30);
+        original.setOpen(true);
+        original.setCreationDir(letrain.map.Dir.W);
+
+        // Serialize
+        byte[] serialized = serialize(original);
+        assertNotNull(serialized);
+
+        // Deserialize
+        RailSemaphore restored = deserialize(serialized, RailSemaphore.class);
+        assertNotNull(restored);
+        assertTrue(restored instanceof letrain.track.Sensor);
+        assertEquals(30, restored.getId());
+        assertTrue(restored.isOpen());
+        assertEquals(letrain.map.Dir.W, restored.getCreationDir());
+
+        // Listener lists must be usable after deserialization.
+        assertDoesNotThrow(() -> {
+            restored.addSemaphoreEventListener(new SemaphoreEventListener() {
+                @Override
+                public void onOpen() {}
+
+                @Override
+                public void onClosed() {}
+
+                @Override
+                public void onEnterTrain(letrain.vehicle.rail.impl.Train train,
+                        boolean isForward) {}
+
+                @Override
+                public void onExitTrain(letrain.vehicle.rail.impl.Train train, boolean isForward) {}
+            });
+            restored.setOpen(false);
+        });
+    }
+
+    @Test
+    @DisplayName("Model with a semaphore on a track round-trips")
+    void testModelWithSemaphoreRoundTrip() throws IOException {
+        Model model = new Model();
+        RailTrack track = new RailTrack();
+        track.addRoute(letrain.map.Dir.E, letrain.map.Dir.W);
+        track.addRoute(letrain.map.Dir.W, letrain.map.Dir.E);
+        track.setPosition(new letrain.map.Point(0, 0));
+        model.getRailMap().addTrack(track.getPosition(), track);
+        RailSemaphore semaphore = new RailSemaphore(40);
+        semaphore.setCreationDir(letrain.map.Dir.E);
+        semaphore.setTrack(track);
+        track.setComponent(semaphore);
+        model.addSemaphore(semaphore);
+
+        byte[] serialized = serialize(model);
+        Model restored = deserialize(serialized, Model.class);
+
+        assertNotNull(restored);
+        RailSemaphore rs = restored.getSemaphore(40);
+        assertNotNull(rs);
+        assertEquals(40, rs.getId());
+        assertNotNull(rs.getTrack());
+        assertEquals(new letrain.map.Point(0, 0), rs.getPosition());
+        assertTrue(rs instanceof letrain.track.Sensor);
+        assertTrue(restored.getSemaphores().stream()
+                .noneMatch(s -> !(s instanceof letrain.track.RailSemaphore)));
+        assertTrue(restored.getSensors().stream().noneMatch(s -> s instanceof RailSemaphore));
+    }
+
+    @Test
     @DisplayName("Large object graph serialization succeeds")
     void testLargeObjectGraph() throws IOException {
         // Create multiple trains to test graph serialization
@@ -341,9 +430,12 @@ class SerializationTest {
                         letrain.itinerary.WaypointCommand.speed(8));
         itinerary.addWaypoint(
                 new letrain.itinerary.impl.WaypointImpl(letrain.itinerary.Waypoint.Type.STATION, 10,
-                        java.util.Optional.of(letrain.map.Dir.N), cmds1));
+                        java.util.Optional.of(letrain.map.Dir.N), cmds1,
+                        java.util.Optional.of(java.time.LocalTime.of(9, 0)),
+                        java.util.Optional.of(java.time.LocalTime.of(9, 20))));
         itinerary.addWaypoint(new letrain.itinerary.impl.WaypointImpl(
-                letrain.itinerary.Waypoint.Type.SENSOR, 20, java.util.Optional.empty(), cmds2));
+                letrain.itinerary.Waypoint.Type.SENSOR, 20, java.util.Optional.empty(), cmds2,
+                java.util.Optional.empty(), java.util.Optional.of(java.time.LocalTime.of(23, 50))));
         // Build AutoPilot
         letrain.itinerary.impl.AutoPilotImpl ap =
                 new letrain.itinerary.impl.AutoPilotImpl(original, original.getActionManager());
@@ -377,11 +469,17 @@ class SerializationTest {
         assertEquals(letrain.map.Dir.N, wp1.entryDir().orElse(null));
         assertEquals(1, wp1.commands().size());
         assertEquals(letrain.itinerary.WaypointCommand.LOAD, wp1.commands().get(0));
+        assertEquals(java.time.LocalTime.of(9, 0), wp1.arrival().orElse(null),
+                "scheduled arrival must survive save/load");
+        assertEquals(java.time.LocalTime.of(9, 20), wp1.departure().orElse(null),
+                "scheduled departure must survive save/load");
 
         letrain.itinerary.Waypoint wp2 = restoredItin.waypoints().get(1);
         assertEquals(letrain.itinerary.Waypoint.Type.SENSOR, wp2.type());
         assertEquals(20, wp2.targetId());
         assertTrue(wp2.entryDir().isEmpty());
+        assertTrue(wp2.arrival().isEmpty(), "an unscheduled arrival must stay empty");
+        assertEquals(java.time.LocalTime.of(23, 50), wp2.departure().orElse(null));
         assertEquals(2, wp2.commands().size());
         assertEquals(letrain.itinerary.WaypointCommand.Kind.WAIT, wp2.commands().get(0).kind());
         assertEquals(5, wp2.commands().get(0).seconds());
@@ -395,5 +493,44 @@ class SerializationTest {
                     impl.getPendingCommands().get(0).kind());
             assertEquals(5, impl.getPendingCommands().get(0).targetSpeed());
         }
+    }
+
+    @Test
+    @DisplayName("Selected speed signal that is also a track component round-trips")
+    void selectedSpeedSignal_thatIsAlsoComponent_roundTrips() throws IOException {
+        Model model = new Model();
+        RailTrack track = new RailTrack();
+        track.addRoute(letrain.map.Dir.E, letrain.map.Dir.W);
+        track.addRoute(letrain.map.Dir.W, letrain.map.Dir.E);
+        track.setPosition(new letrain.map.Point(0, 0));
+        model.getRailMap().addTrack(track.getPosition(), track);
+        letrain.track.SpeedSignal signal =
+                new letrain.track.SpeedSignal(1, letrain.map.Dir.E, 3, true);
+        signal.setTrack(track);
+        track.setComponent(signal);
+        model.addSensor(signal);
+        model.setSelectedSpeedSignal(signal);
+
+        Model restored = deserialize(serialize(model), Model.class);
+        assertNotNull(restored);
+        assertNotNull(restored.getSensor(1));
+        assertNotNull(restored.getSelectedSpeedSignal());
+    }
+
+    @Test
+    @DisplayName("Construction delays survive a save/load round trip")
+    void constructionDelays_surviveRoundTrip() throws IOException {
+        Model model = new Model();
+        assertEquals(30, model.getEconomyManager()
+                .getConstructionDelay(letrain.mvp.Presenter.TrackType.TUNNEL_TRACK));
+        assertEquals(20, model.getEconomyManager()
+                .getConstructionDelay(letrain.mvp.Presenter.TrackType.BRIDGE_TRACK));
+
+        Model restored = deserialize(serialize(model), Model.class);
+        assertNotNull(restored);
+        assertEquals(30, restored.getEconomyManager()
+                .getConstructionDelay(letrain.mvp.Presenter.TrackType.TUNNEL_TRACK));
+        assertEquals(20, restored.getEconomyManager()
+                .getConstructionDelay(letrain.mvp.Presenter.TrackType.BRIDGE_TRACK));
     }
 }

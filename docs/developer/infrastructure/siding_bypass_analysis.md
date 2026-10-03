@@ -6,7 +6,7 @@ Este informe analiza en detalle el funcionamiento del sistema de cantones y desv
 
 ## 1. Arquitectura del Sistema de Cantones y Bloqueos
 
-El sistema de seguridad de **LeTrain** gestiona el movimiento de trenes mediante reservas de **Segmentos** (cantones) lógicos utilizando la clase [BlockManager](file:///home/antonio/dev/LeTrain/src/main/java/letrain/segments/BlockManager.java):
+El sistema de seguridad de **LeTrain** gestiona el movimiento de trenes mediante reservas de **Segmentos** (cantones) lógicos utilizando la clase `BlockManager` (`core/src/main/java/letrain/segments/BlockManager.java`):
 * **Segmento (Segment):** Tramo de vía indivisible delimitado por puntos lógicos de decisión (desvíos o topes de final de vía).
 * **Gestor de Seguridad (TrainSafetyManager):** Responsable de garantizar que el tren actual posea los segmentos físicos donde se encuentra y reserve de manera predictiva el siguiente segmento (`nextSegment`) en su ruta.
 * **Piloto Automático (AutoPilot):** Gestiona los itinerarios y genera la ruta planificada de segmentos.
@@ -17,7 +17,7 @@ Cuando un tren autónomo entra en un segmento, intenta bloquear de forma predict
 
 ## 2. Evasión de Apartaderos Ocupados (Siding Bypass)
 
-Para evitar que los trenes se queden bloqueados en desvíos/apartaderos cuando la vía principal del apartadero está ocupada, la clase [TrainSafetyManager](file:///home/antonio/dev/LeTrain/src/main/java/letrain/vehicle/rail/impl/TrainSafetyManager.java) implementa el método `tryAlternativeSegment(Model model)`:
+Para evitar que los trenes se queden bloqueados en desvíos/apartaderos cuando la vía principal del apartadero está ocupada, la clase `TrainSafetyManager` (`core/src/main/java/letrain/vehicle/rail/impl/TrainSafetyManager.java`) implementa el método `tryAlternativeSegment(Model model)`:
 1. Si el bloqueo de `nextSegment` falla, se verifica si el segmento es elegible para desvío (no tiene paradas programadas de waypoints).
 2. Se obtienen los dos nodos extremos (desvíos/Forks) de dicho segmento.
 3. Se itera por los puertos del nodo de entrada buscando si existe una **vía paralela alternativa** (otro segmento que conecte los mismos dos desvíos extremos).
@@ -44,7 +44,7 @@ El fallo reportado por el usuario ocurre cuando **ambas vías del apartadero (pr
 ### B. El Evento de Liberación de Vía
 1. Posteriormente, el tren que ocupaba la Vía B (la vía alternativa) reanuda la marcha y la abandona completamente.
 2. El `BlockManager` libera la Vía B y lanza el evento `onReleaseListener`.
-3. El escuchador global de liberación configurado en [Model.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/mvp/impl/Model.java#L152-L163) reacciona para despertar a los trenes parados:
+3. El escuchador global de liberación configurado en `Model.java` (`core/src/main/java/letrain/mvp/impl/Model.java`) reacciona para despertar a los trenes parados:
    ```java
    bmi.setOnReleaseListener((releasedSegment) -> {
        for (Locomotive loco : locomotives) {
@@ -67,7 +67,7 @@ El fallo reportado por el usuario ocurre cuando **ambas vías del apartadero (pr
 
 ## 4. Riesgo de Bucle Infinito en la Selección de Locomotoras
 
-Durante la inicialización y testeo de la solución, se identificó un problema de bucle infinito potencial en los métodos `selectNextLocomotive()` y `selectPrevLocomotive()` de [Model.java](file:///home/antonio/dev/LeTrain/src/main/java/letrain/mvp/impl/Model.java#L520-L538):
+Durante la inicialización y testeo de la solución, se identificó un problema de bucle infinito potencial en los métodos `selectNextLocomotive()` y `selectPrevLocomotive()` de `Model.java` (`core/src/main/java/letrain/mvp/impl/Model.java`):
 ```java
 do {
     selectedLocomotiveIndex++;

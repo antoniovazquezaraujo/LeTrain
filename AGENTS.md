@@ -13,6 +13,8 @@ Este proyecto usa un equipo de agentes definido en `.opencode/agents/`:
 
 **IMPORTANTE: Al iniciar cada sesión, lee TODOS los ficheros en `instructions/`.** Contienen las directrices del proyecto (coding standards, build commands, estructura, convenciones) que deben aplicarse a todo el código.
 
+**IMPORTANTE: Al iniciar cada sesión, lee `CONTRIBUTING.md`.** Define el flujo Git del proyecto: ramas `feature/...` o `fix/...` desde `develop`, **PROHIBIDO commitear directamente a `develop`** (está protegida), PRs en inglés y `mvn clean test` en verde antes de abrir o actualizar un PR.
+
 ## Estructura del Proyecto
 
 ```
@@ -28,12 +30,12 @@ Este proyecto usa un equipo de agentes definido en `.opencode/agents/`:
 
 ## Comandos de Build/Lint/Test
 
-Este proyecto no tiene código fuente tradicional — es una configuración de agentes para OpenCode. Sin embargo, para proyectos derivados:
+LeTrain es un simulador ferroviario en Java 17 modularizado con Maven (`core`, `ui-terminal`, `ui-graphic`, `launcher-terminal`, `launcher-graphic`, `launcher-check`):
 
-- **Java/Maven**: `mvn clean compile`, `mvn clean test`, `mvn clean test -Dtest=ClassName`
-- **Java/Gradle**: `./gradlew build`, `./gradlew test --tests ClassName`
-- **Lint Java**: `mvn checkstyle:check` o `./gradlew checkstyleMain`
-- **Tests unitarios**: Ejecutar tests específicos con `-Dtest=ClassName#methodName` (Maven) o `--tests "ClassName.methodName"` (Gradle)
+- **Compilación**: `mvn clean compile` (obligatorio siempre `clean`)
+- **Tests unitarios**: `mvn clean test` o tests específicos con `mvn -pl <modulo> test -Dtest=ClassName#methodName`
+- **Empaquetado**: `mvn clean package -DskipTests` (genera las aplicaciones en `output/`)
+- **Formato Java**: 4 espacios, llaves K&R (ver `eclipse-java-google-style.xml`)
 
 ## Convenciones de Código
 
@@ -72,6 +74,7 @@ Siempre usar el formato `NOMBRE: respuesta` al presentar resultados al usuario.
 ## Reglas Generales
 
 - **NUNCA** inventar respuestas técnicas que correspondan a un experto
+- **NUNCA** commitear directamente a `develop`: siempre rama `feature/...` o `fix/...` + PR
 - **SIEMPRE** leer los ficheros de agentes antes de actuar
 - **PRIORIZAR** código limpio y mantenible sobre soluciones clever
 - **EXPLICAR** el "por qué" detrás de cada decisión técnica

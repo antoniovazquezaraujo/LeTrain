@@ -29,6 +29,20 @@ public class Locomotive extends Linker implements Tractor {
     /** Maximum speed in game units (notches 0-10). */
     public static final int MAX_SPEED = 10;
 
+    /**
+     * Simulation ticks needed for the first speed step (0→1) when the train starts from standstill.
+     *
+     * <p>
+     * A stopped train has no rail cadence yet ({@code turns = -1}), so the start branch of
+     * {@link #updateInertia()} counts <b>ticks</b> instead of rails. 100 ticks (~5 s at 20 TPS) is
+     * the same cost as a complete rolling step: {@code currentSpeed * 2} rails at
+     * {@code 50 / currentSpeed} ticks each. A train with tons behind it must not jump to notch 1 in
+     * a single tick; this keeps the departure physical and lets the start audio breathe. Tune this
+     * value by ear together with the {@code trans-0-1} transition; braking (1→0, ~50 ticks) and the
+     * rail cadence ({@code 50 / currentSpeed}) are not affected.
+     */
+    public static final int START_STEP_TICKS = 100;
+
     static final int SPEED_CHANGE_MAX_RELUCTANCE = 2;
     int currentSpeed;
     int targetSpeed;
@@ -157,6 +171,13 @@ public class Locomotive extends Linker implements Tractor {
         }
 
         if (isDirectorLinker()) {
+            // Un tick de simulación por actualización de la locomotora directora.
+            if (getTrain() != null) {
+                getTrain().advanceSimulationTick();
+                // Issue #619: watchdog de estancamiento de misiones (no-op sin misión).
+                getTrain().notifyAutopilotTick();
+            }
+
             // Motor apagado: no puede moverse
             if (!engineOn) {
                 return moved;
@@ -168,6 +189,7 @@ public class Locomotive extends Linker implements Tractor {
             }
 
             // Handle acceleration from 0 - allows getting unstuck from speed 0
+            boolean startedThisTick = false;
             if (currentSpeed == 0 && targetSpeed > 0) {
                 boolean blocked = false;
                 if (getTrain() != null) {
@@ -186,13 +208,21 @@ public class Locomotive extends Linker implements Tractor {
                                     blocked = true;
                                     log.info(
                                             "[CONTACT-TIMING] Instant contact check on start: next cell is occupied. Firing contact sound immediately.");
-                                    getTrain().notifyContact(nextTrack.getPosition(), targetSpeed);
-
-                                    // Stop the train immediately
+                                    // Issue #645 follow-up: stop before notifying. The contact
+                                    // chain (mission completion -> waypoint actions -> departure)
+                                    // may legitimately restore a speed and must not be overwritten
+                                    // here.
                                     setCurrentSpeed(0);
                                     setTargetSpeed(0);
                                     this.turns = -1;
                                     this.totalTurns = -1;
+                                    // Issue #645 review M1: report the real contact speed. The
+                                    // train is stopped at this instant check, so an order with a
+                                    // high target (e.g. speed 8) must not lie as a crash-threshold
+                                    // contact: already touching at 0 is a low-speed contact that
+                                    // completes the approach. Real crashes always come from the
+                                    // movement manager with the actual movement speed.
+                                    getTrain().notifyContact(nextTrack.getPosition(), currentSpeed);
                                 }
                             }
                         }
@@ -202,10 +232,14 @@ public class Locomotive extends Linker implements Tractor {
                 if (!blocked) {
                     updateInertia();
                     resetTurns();
+                    startedThisTick = currentSpeed > 0;
                 }
             }
 
-            if (currentSpeed > 0) {
+            // The tick that lands the first notch does not consume a movement turn: the first rail
+            // after standing must be a full 50/currentSpeed ticks like any other, so the 0→1 step
+            // and the rolling steps stay exactly START_STEP_TICKS apart.
+            if (currentSpeed > 0 && !startedThisTick) {
                 consumeTurn();
             }
 
@@ -243,6 +277,11 @@ public class Locomotive extends Linker implements Tractor {
                     updateInertia();
                     resetTurns();
                 }
+            } else if (currentSpeed == 0 && targetSpeed == 0) {
+                // Fully stopped after a move: turns is -1 and no advance will run, so a pending
+                // manual switch (emergency stop / invasion) must be resolved here or the train
+                // would stay in auto forever (ADR-022 phase 2f review M2).
+                updateInertia();
             }
         } else {
             // No somos el director, pero consumimos turnos para animación suave
@@ -269,7 +308,11 @@ public class Locomotive extends Linker implements Tractor {
 
         // Factor de inercia fallback only if audio is disabled
         int factor = isBraking() ? 1 : 2;
-        int neededRails = Math.max(1, currentSpeed * factor);
+        // The 0→1 step is special: while stopped the counter advances one per tick (there is no
+        // rail cadence yet), so the first step costs START_STEP_TICKS ticks instead of
+        // speed*factor rails. Same total as a rolling step (~100 ticks).
+        int neededRails = (currentSpeed == 0 && targetSpeed > 0) ? START_STEP_TICKS
+                : Math.max(1, currentSpeed * factor);
 
         if (railsSinceLastSpeedChange >= neededRails) {
             int oldSpeed = currentSpeed;
@@ -286,6 +329,60 @@ public class Locomotive extends Linker implements Tractor {
 
     public boolean isBraking() {
         return currentSpeed > targetSpeed && currentSpeed > 0;
+    }
+
+    /**
+     * Rails the train still advances while braking from {@code speed} down to a full stop with the
+     * current inertia model (issue #633). While braking ({@code targetSpeed == 0}) updateInertia
+     * drops one notch every {@code max(1, currentSpeed)} rails, so starting from a steady cruise
+     * (rail counter at 0) the count is {@code speed + (speed-1) + ... + 1 = speed(speed+1)/2}.
+     *
+     * <p>
+     * Pure helper: it only computes the distance, it does not brake anything. Negative speeds count
+     * as 0. This is the braking distance the safety layer compares against the rails left to the
+     * segment boundary before deciding when to start braking.
+     */
+    public static int brakingRails(int speed) {
+        if (speed <= 0) {
+            return 0;
+        }
+        return speed * (speed + 1) / 2;
+    }
+
+    /**
+     * Maximum speed whose braking distance fits in the given number of rails
+     * ({@code brakingRails(speed) <= rails}), issue #633. It is the ceiling of the braking curve
+     * the safety layer uses to cap the target while a boundary stop is planned. Pure helper;
+     * non-positive rails return 0.
+     */
+    public static int maxSpeedForRails(int rails) {
+        int speed = 0;
+        while (speed < MAX_SPEED && brakingRails(speed + 1) <= rails) {
+            speed++;
+        }
+        return speed;
+    }
+
+    /**
+     * Rails needed to stop from the <b>current</b> state (speed and inertia rail counter), issue
+     * #633. Unlike {@link #brakingRails(int)}, it accounts for a counter that is already partway:
+     * the first notch down comes sooner, so the distance can be shorter. Exact replica of
+     * {@code updateInertia()}'s braking steps; the safety layer uses it to engage the boundary
+     * brake at the precise rail.
+     */
+    public int brakingRailsFromCurrentState() {
+        int rails = 0;
+        int speed = currentSpeed;
+        int counter = Math.max(0, railsSinceLastSpeedChange);
+        while (speed > 0) {
+            counter++;
+            if (counter >= Math.max(1, speed)) {
+                speed--;
+                counter = 0;
+            }
+            rails++;
+        }
+        return rails;
     }
 
     public boolean isEngineOn() {
@@ -336,16 +433,31 @@ public class Locomotive extends Linker implements Tractor {
     }
 
     public void setTargetSpeed(int speed) {
-        if (getTrain() != null && getTrain().getSafetyManager() != null
-                && getTrain().getSafetyManager().isWaitingForBlock()) {
-            if (speed > 0) {
-                log.info(
-                        "Locomotive {}: Train is waiting for block. Intercepting setTargetSpeed({}) and saving it instead.",
-                        id, speed);
-                getTrain().setSavedTargetSpeed(speed);
-                speed = 0;
-            }
+        boolean heldBySchedule = getTrain() != null && getTrain().isHeldBySchedule();
+        boolean waitingForBlock = getTrain() != null && getTrain().getSafetyManager() != null
+                && getTrain().getSafetyManager().isWaitingForBlock();
+        if (speed > 0 && (waitingForBlock || heldBySchedule)) {
+            log.info(
+                    "Locomotive {}: Train is {} (waiting for block={}, schedule hold={}). Intercepting setTargetSpeed({}) and saving it instead.",
+                    id, waitingForBlock ? "waiting for block" : "holding at a waypoint",
+                    waitingForBlock, heldBySchedule, speed);
+            getTrain().setSavedTargetSpeed(speed);
+            speed = 0;
         }
+        applyTargetSpeed(speed);
+    }
+
+    /**
+     * Sets the target speed bypassing the block/schedule-wait interception of
+     * {@link #setTargetSpeed(int)} (issue #633). The safety layer uses it to cap the speed on the
+     * braking curve while a boundary stop is planned, without clobbering the desired speed the wait
+     * gate keeps for restore.
+     */
+    public void setTargetSpeedDirect(int speed) {
+        applyTargetSpeed(speed);
+    }
+
+    private void applyTargetSpeed(int speed) {
         if (this.targetSpeed != speed) {
             log.info("Locomotive {}: setTargetSpeed changes from {} to {}", id, this.targetSpeed,
                     speed);
@@ -361,13 +473,14 @@ public class Locomotive extends Linker implements Tractor {
         }
         limitTargetSpeed();
 
-        // Sincronizar con el resto de locomotoras del tren
+        // Sincronizar con el resto de locomotoras del tren (directo: no debe pasar por el gate de
+        // espera ni guardar velocidades deseadas por duplicado)
         if (getTrain() != null) {
             for (Tractor tractor : getTrain().getTractors()) {
                 if (tractor instanceof Locomotive && tractor != this) {
 
                     if (tractor.getTargetSpeed() != this.targetSpeed) {
-                        ((Locomotive) tractor).setTargetSpeed(this.targetSpeed);
+                        ((Locomotive) tractor).setTargetSpeedDirect(this.targetSpeed);
                     }
                 }
             }
@@ -475,6 +588,15 @@ public class Locomotive extends Linker implements Tractor {
 
     public boolean isDirectorLinker() {
         return getTrain() != null && getTrain().getDirectorLinker() == this;
+    }
+
+    /**
+     * True when this locomotive is the head of its train (the director, the "cabeza tractora") or
+     * travels alone. Only the head shows the headlights after dark; the rest of the locomotives in
+     * the consist keep theirs off.
+     */
+    public boolean isHeadLocomotive() {
+        return getTrain() == null || getTrain().getDirectorLinker() == this;
     }
 
     public boolean isShowingDir() {

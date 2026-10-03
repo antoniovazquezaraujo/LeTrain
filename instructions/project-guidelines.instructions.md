@@ -102,6 +102,7 @@ mvn test -X             # Verbose
 - `ui-graphic/`: 3D view layer (LibGDX).
 - `launcher-terminal/`: Terminal executable entrypoint.
 - `launcher-graphic/`: Graphic executable entrypoint.
+- `launcher-check/`: Headless scenario (`.ltr`) validator entrypoint.
 - `output/`: Built application images.
 
 ### Key Packages
@@ -119,12 +120,12 @@ mvn test -X             # Verbose
 3. Add rendering support in `RenderVisitor` (2D) and `Gdx3DRenderer` (3D).
 
 ### Add New Test
-1. Create a test class in `src/test/java/letrain/` following the package structure.
+1. Create a test class in `<module>/src/test/java/letrain/` (e.g. `core/src/test/java/letrain/`) following the package structure.
 2. Use JUnit 5: `@Test`, `@ParameterizedTest`, `@DisplayName`.
 3. Name the class: `ClassNameTest.java`.
 
 ### Modify Economy
-Edit `economy.properties` to adjust gameplay values.
+Edit `letrain.cfg` to adjust gameplay values.
 
 ## Quality Assurance
 - Ensure all code adheres to the above standards.

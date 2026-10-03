@@ -22,6 +22,8 @@ public class Gdx3DRenderer implements Visitor {
     private final List<ModelInstance> instances = new ArrayList<>();
     private final List<ModelInstance> transparentInstances = new ArrayList<>();
     private final List<VehicleLabel> labels = new ArrayList<>();
+    /** Rendered locomotive positions of the frame, used to place the real headlights. */
+    private final List<Headlights.Source> headlightSources = new ArrayList<>();
     private final com.badlogic.gdx.utils.Pool<VehicleLabel> labelPool =
             new com.badlogic.gdx.utils.Pool<VehicleLabel>() {
                 @Override
@@ -64,8 +66,8 @@ public class Gdx3DRenderer implements Visitor {
         this.resourceContext = resourceContext;
         this.trackRenderer =
                 new TrackRenderer(resourceContext, instances, transparentInstances, labels);
-        this.vehicleRenderer =
-                new VehicleRenderer(resourceContext, instances, transparentInstances, labels);
+        this.vehicleRenderer = new VehicleRenderer(resourceContext, instances, transparentInstances,
+                labels, headlightSources);
         this.infrastructureRenderer = new InfrastructureRenderer(resourceContext, instances,
                 transparentInstances, labels, trackRenderer);
         this.groundRenderer =
@@ -138,11 +140,17 @@ public class Gdx3DRenderer implements Visitor {
     public void clear() {
         instances.clear();
         transparentInstances.clear();
+        headlightSources.clear();
         for (VehicleLabel l : labels) {
             labelPool.free(l);
         }
         labels.clear();
         resourceContext.freeAllInstances();
+    }
+
+    /** Rendered headlight sources of the last {@code visitModel}: interpolated positions. */
+    public List<Headlights.Source> getHeadlightSources() {
+        return headlightSources;
     }
 
     public void visitGroundPlane(ModelInstance ground) {
@@ -174,7 +182,8 @@ public class Gdx3DRenderer implements Visitor {
                 isXRayActive = true;
             } else {
                 RailTrack rt = model.getCursorRailTrack();
-                if (rt != null && rt.getVisualType() == letrain.track.rail.RailTrack.VisualType.TUNNEL_GATE) {
+                if (rt != null && rt
+                        .getVisualType() == letrain.track.rail.RailTrack.VisualType.TUNNEL_GATE) {
                     isXRayActive = true;
                 }
             }
@@ -229,16 +238,8 @@ public class Gdx3DRenderer implements Visitor {
                 t.accept(infrastructureRenderer);
             }
         });
-        model.getWagons().forEach(t -> {
-            if (isVisible(t.getPosition())) {
-                t.accept(vehicleRenderer);
-            }
-        });
-        model.getLocomotives().forEach(t -> {
-            if (isVisible(t.getPosition())) {
-                t.accept(vehicleRenderer);
-            }
-        });
+        model.getWagons().forEach(t -> t.accept(vehicleRenderer));
+        model.getLocomotives().forEach(t -> t.accept(vehicleRenderer));
         model.getStations().forEach(t -> {
             if (isVisible(t.getPosition())) {
                 t.accept(infrastructureRenderer);

@@ -8,7 +8,7 @@ El sistema de infraestructura de LeTrain se basa en una jerarquía de clases que
         - **`letrain.track.rail.ForkRailTrack`**: Representa un desvío (fork). Implementa `DynamicRouter` para gestionar cambios de aguja.
         - **`letrain.track.rail.BridgeRailTrack`**: Extensión para tramos de puente.
         - **`letrain.track.rail.TunnelRailTrack`**: Extensión para tramos de túnel.
-        - **`letrain.track.rail.StationRailTrack`**: Vía que contiene una estación.
+*(Nota: Las estaciones, semáforos y sensores ya no son subclases de `RailTrack`; se modelan como componentes desacoplados `TrackComponent` alojados sobre cualquier `Track`, según ADR-017).*
 
 ## Mecanismos de Navegación
 La navegación dentro de una pieza de vía no es directa, sino que se delega en componentes especializados:
@@ -31,3 +31,13 @@ LeTrain utiliza una rejilla octogonal para las direcciones (`Dir`), permitiendo 
 ## Invariantes
 - Una vía solo puede conectarse a otra si sus conectores son compatibles espacialmente.
 - Los `ForkRailTrack` deben tener siempre un `ForkEventListener` asociado si forman parte de un itinerario automático.
+
+## Movimiento de Elementos de Vía (issue #468)
+`Model.moveSensor(Sensor, Dir)`, `moveSensorForward(Sensor)` y `moveSensorBackward(Sensor)` desplazan un elemento (sensor, estación, señal de velocidad o semáforo) una celda de reposo a lo largo de la vía (operación de edición del usuario; nunca se ejecuta dentro de loops de tick ni reservas de bloque). Semántica del escaneo (`Model.findMoveDestination`, equivalente a `RailIterator.advance`):
+- Desde la celda origen se avanza con `getConnected(heading)`; el puerto de entrada a la celda candidata es `heading.inverse()` y la salida se obtiene con `getDir(port)`.
+- Una celda con otro `TrackComponent` se **salta**; se sigue buscando la primera celda libre en esa dirección.
+- Una celda con un tren (`getLinker() != null`) **aborta** el movimiento: nunca se salta por encima de trenes.
+- Un `ForkRailTrack` es un nodo de ruteo, nunca celda de reposo: se atraviesa siguiendo la rama activa (`isUsingAlternativeRoute()`).
+- Al mover una `Station`, `applyStationRoleByIndustry(Station, Point)` re-evalúa su rol industrial (radio 5) con la misma lógica usada en la creación ("espejo de la creación"). Los elementos conservan identidad (`id`) y `creationDir`; las listas del `Model` y el componente del `Track` se mantienen sincronizados sin re-registrar el elemento.
+
+`RailSemaphore extends Sensor` (issue #470): el semáforo hereda `Track`/posición derivada/orientación de `Sensor` y se mueve con las mismas `moveSensor*`. El movimiento orientado usa la `creationDir` del propio elemento como sentido de avance, no el cursor: el elemento debe "descansar" siempre con su orientación alineada a un extremo real de la vía. Al avanzar, `creationDir` se rota a la dirección de salida del tramo (`continuationDir`), de modo que el elemento sigue la vía en curvas; al retroceder se usa el extremo opuesto (`backEndDir`) y la orientación apunta de vuelta al origen. De esta forma el elemento ya no queda bloqueado al llegar a una curva o cruzar un desvío que gira.

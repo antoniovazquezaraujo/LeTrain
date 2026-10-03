@@ -13,6 +13,43 @@ public interface GameViewListener {
 
     void onLoadGame(File file);
 
+    default void onExportScenario(File file) {}
+
+    default void onImportScenario(File file) {}
+
+    /**
+     * Generates the current scenario text (seed + on build + on start + program) for the editor.
+     */
+    default String getScenarioText() {
+        return "";
+    }
+
+    /** Generates the scenario's {@code configuration { ... }} section (the effective settings). */
+    default String getConfigurationText() {
+        return "";
+    }
+
+    /** Exports the (possibly hand-edited) scenario text to {@code file}. */
+    default void onExportScenarioText(File file, String text) {}
+
+    /** Plays a scenario from its text (used by the editor's Play button). */
+    default void onPlayScenarioText(String text) {}
+
+    /** Whether there is an edit journal to export (used to enable/disable the Export button). */
+    default boolean canExportScenario() {
+        return true;
+    }
+
+    /** Whether the command journal is currently recording edits (for the REC indicator). */
+    default boolean isRecordingCommands() {
+        return false;
+    }
+
+    /** Compact game clock for the map corner, e.g. {@code D1 08:00} (ADR-022). */
+    default String getGameTimeText() {
+        return "";
+    }
+
     void onSaveCommands(File file);
 
     void onLoadCommands(File file);

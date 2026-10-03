@@ -2,7 +2,6 @@ package letrain.mvp.impl;
 
 import letrain.mvp.input.InputEvent;
 import letrain.mvp.input.KeyType;
-import java.util.Map;
 import letrain.ground.GroundMap;
 import letrain.map.Dir;
 import letrain.map.Page;
@@ -11,7 +10,6 @@ import letrain.map.Router;
 import letrain.map.impl.SimpleRouter;
 import letrain.mvp.Presenter;
 import letrain.mvp.Presenter.TrackType;
-import letrain.track.CargoTypes;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Station;
@@ -39,12 +37,100 @@ public class RailTrackMaker {
     Point lastCursorPosition = null;
     Integer oldGroundType = null;
     int trackConstructionTimeCounter = 0;
+
+    /**
+     * True while a console turtle sequence (write/move/del via {@code TurtleBuilder}) is running.
+     * Console lines are already recorded whole by the presenter funnel, so per-tile keyboard
+     * recording must be suppressed while the console drives this maker.
+     */
+    private boolean journalSuppressed = false;
+
+    /** Toggled by the console turtle builder around its sequences. */
+    public void setJournalSuppressed(boolean suppressed) {
+        this.journalSuppressed = suppressed;
+    }
+
+    /**
+     * Records a keyboard edit as a canonical, self-positioned DSL command (ADR-020 item 3). Only
+     * fires while pause-editing is on (undo history active) and the edit is keyboard-driven, not a
+     * console turtle sequence. The action is prefixed with the absolute cursor position and facing
+     * captured at the moment of the mutation, so a replay is deterministic.
+     */
+    private void journalKeyboardEdit(Point position, Dir dir, String action) {
+        journalKeyboardEdit(position, dir, action, null);
+    }
+
+    /**
+     * Like {@link #journalKeyboardEdit(Point, Dir, String)}, but also records the
+     * {@code resumeFrom} origin when the placed piece continued the previous rail (chaining).
+     * Without it, a slice replayed after a checkpoint restore would start the fresh maker with no
+     * {@code oldTrack} and lay that piece disconnected/wrong.
+     */
+    private void journalKeyboardEdit(Point position, Dir dir, String action, Point resumeFrom) {
+        if (journalSuppressed || presenter == null) {
+            return;
+        }
+        letrain.mvp.Model model = presenter.getModel();
+        if (model == null) {
+            return;
+        }
+        String text = "go " + position.getX() + "," + position.getY() + "; face "
+                + dir.name().toLowerCase() + "; " + action + ";";
+        // Only while the world is frozen in edit mode: the command journal (ADR-020 item 2) and the
+        // undo history (item 3) must capture the same edits, in lockstep.
+        if (!model.isSimulationPaused()) {
+            return;
+        }
+        letrain.command.CommandJournal journal = model.getCommandJournal();
+        if (journal != null && journal.isRecording()) {
+            journal.record(text);
+        }
+        letrain.command.UndoRedoHistory history = presenter.getUndoRedoHistory();
+        if (history == null) {
+            return;
+        }
+        history.record(text, resumeFrom);
+    }
+
+    /**
+     * The position of the rail piece this maker's last successful build left {@code oldTrack}
+     * pointing at, when it is adjacent to {@code cell} (i.e. the next piece would chain from it).
+     * Null when the build started a disconnected piece.
+     */
+    private Point resumeOriginAdjacentTo(Point cell) {
+        if (oldTrack == null || oldTrack.getPosition() == null) {
+            return null;
+        }
+        return Point.distance(oldTrack.getPosition(), cell) <= 1.5
+                ? new Point(oldTrack.getPosition())
+                : null;
+    }
+
+    /**
+     * Re-seeds this maker so the next build continues the rail {@code predecessor} instead of
+     * starting a disconnected piece. Used by the undo/redo slice replay right after a checkpoint
+     * restore, when the maker was recreated fresh and its transient chaining state was lost. {@code
+     * reset()} (run by the turtle builder before each sequence) recomputes the actual resume
+     * direction/ground from this track and the cursor.
+     */
+    public void resumeChainFrom(Track predecessor) {
+        this.oldTrack = predecessor;
+    }
+
     public void startTrackConstruction(TrackType type) {
         if (type == null) {
             this.trackConstructionTimeCounter = 0;
             return;
         }
-        this.trackConstructionTimeCounter = presenter.getModel().getEconomyManager().getConstructionDelay(type);
+        if (presenter == null) {
+            this.trackConstructionTimeCounter = 0;
+            return;
+        }
+        // Paused editing (ADR-020): construction is instantaneous, so bridges/tunnels skip their
+        // construction delay.
+        boolean paused = presenter.getModel().isSimulationPaused();
+        this.trackConstructionTimeCounter =
+                paused ? 0 : presenter.getModel().getEconomyManager().getConstructionDelay(type);
     }
 
     public boolean isTrackConstructionFinished() {
@@ -77,19 +163,23 @@ public class RailTrackMaker {
                 switch (c) {
                     case 'k':
                     case 'K':
-                        keyEvent = new InputEvent(KeyType.ArrowUp, null, keyEvent.isCtrlDown(), keyEvent.isAltDown(), c == 'K' || keyEvent.isShiftDown());
+                        keyEvent = new InputEvent(KeyType.ArrowUp, null, keyEvent.isCtrlDown(),
+                                keyEvent.isAltDown(), c == 'K' || keyEvent.isShiftDown());
                         break;
                     case 'j':
                     case 'J':
-                        keyEvent = new InputEvent(KeyType.ArrowDown, null, keyEvent.isCtrlDown(), keyEvent.isAltDown(), c == 'J' || keyEvent.isShiftDown());
+                        keyEvent = new InputEvent(KeyType.ArrowDown, null, keyEvent.isCtrlDown(),
+                                keyEvent.isAltDown(), c == 'J' || keyEvent.isShiftDown());
                         break;
                     case 'h':
                     case 'H':
-                        keyEvent = new InputEvent(KeyType.ArrowLeft, null, keyEvent.isCtrlDown(), keyEvent.isAltDown(), c == 'H' || keyEvent.isShiftDown());
+                        keyEvent = new InputEvent(KeyType.ArrowLeft, null, keyEvent.isCtrlDown(),
+                                keyEvent.isAltDown(), c == 'H' || keyEvent.isShiftDown());
                         break;
                     case 'l':
                     case 'L':
-                        keyEvent = new InputEvent(KeyType.ArrowRight, null, keyEvent.isCtrlDown(), keyEvent.isAltDown(), c == 'L' || keyEvent.isShiftDown());
+                        keyEvent = new InputEvent(KeyType.ArrowRight, null, keyEvent.isCtrlDown(),
+                                keyEvent.isAltDown(), c == 'L' || keyEvent.isShiftDown());
                         break;
                 }
             }
@@ -107,7 +197,8 @@ public class RailTrackMaker {
                         resetTrackConstructionTime(type);
                     }
                     resetQuantifierSteps();
-                    if (presenter.getModel().getCursor().getMode() != Cursor.CursorMode.MAKING_TRACKS) {
+                    if (presenter.getModel().getCursor()
+                            .getMode() != Cursor.CursorMode.MAKING_TRACKS) {
                         presenter.getModel().getCursor().setMode(Cursor.CursorMode.DRAWING);
                     }
                     makingTracks = true;
@@ -224,15 +315,17 @@ public class RailTrackMaker {
         Track track =
                 presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
         if (track != null) {
-            letrain.track.Sensor sensor = track.getComponent() instanceof letrain.track.Sensor ? (letrain.track.Sensor) track.getComponent() : null;
-            if (sensor != null && sensor instanceof letrain.track.SpeedSignal) {
-                presenter.getModel().removeSensor(sensor);
-            } else if (sensor == null) {
+            letrain.track.TrackComponent component = track.getComponent();
+            if (component instanceof letrain.track.SpeedSignal) {
+                presenter.getModel().removeSensor((letrain.track.SpeedSignal) component);
+                journalKeyboardEdit(position, presenter.getModel().getCursor().getDir(), "del sg");
+            } else if (component == null) {
                 letrain.track.SpeedSignal speedSignal =
                         new letrain.track.SpeedSignal(presenter.getModel().nextSpeedSignalId(),
                                 presenter.getModel().getCursor().getDir(), 3, true);
                 speedSignal.setTrack(track);
                 presenter.getModel().addSensor(speedSignal);
+                journalKeyboardEdit(position, presenter.getModel().getCursor().getDir(), "new sg");
             }
         }
     }
@@ -242,15 +335,19 @@ public class RailTrackMaker {
         Track track =
                 presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
         if (track != null) {
-            letrain.track.Sensor sensor = track.getComponent() instanceof letrain.track.Sensor ? (letrain.track.Sensor) track.getComponent() : null;
-            if (sensor != null) {
-                presenter.getModel().removeSensor(sensor);
-            } else {
-                sensor = new Sensor(presenter.getModel().nextSensorId());
+            letrain.track.TrackComponent component = track.getComponent();
+            if (component instanceof letrain.track.Sensor && !(component instanceof Station)
+                    && !(component instanceof letrain.track.SpeedSignal)
+                    && !(component instanceof RailSemaphore)) {
+                presenter.getModel().removeSensor((letrain.track.Sensor) component);
+                journalKeyboardEdit(position, presenter.getModel().getCursor().getDir(), "del sn");
+            } else if (component == null) {
+                Sensor sensor = new Sensor(presenter.getModel().nextSensorId());
                 sensor.setTrack(track);
                 sensor.setCreationDir(presenter.getModel().getCursor().getDir());
                 presenter.getModel().addSensor(sensor);
                 track.setComponent(sensor);
+                journalKeyboardEdit(position, presenter.getModel().getCursor().getDir(), "new sn");
             }
         }
     }
@@ -260,13 +357,16 @@ public class RailTrackMaker {
         Track track =
                 presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
         if (track != null) {
-            RailSemaphore semaphore = presenter.getModel().getSemaphoreAt(position);
-            if (semaphore != null) {
-                presenter.getModel().removeSemaphore(semaphore);
-            } else {
-                semaphore = new RailSemaphore(presenter.getModel().nextSemaphoreId(), position);
+            letrain.track.TrackComponent component = track.getComponent();
+            if (component instanceof RailSemaphore) {
+                presenter.getModel().removeSemaphore((RailSemaphore) component);
+                journalKeyboardEdit(position, presenter.getModel().getCursor().getDir(), "del sm");
+            } else if (component == null) {
+                RailSemaphore semaphore = new RailSemaphore(presenter.getModel().nextSemaphoreId());
                 semaphore.setCreationDir(presenter.getModel().getCursor().getDir());
+                semaphore.setTrack(track);
                 presenter.getModel().addSemaphore(semaphore);
+                journalKeyboardEdit(position, presenter.getModel().getCursor().getDir(), "new sm");
             }
         }
     }
@@ -276,10 +376,11 @@ public class RailTrackMaker {
         Track track =
                 presenter.getModel().getRailMap().getTrackAt(position.getX(), position.getY());
         if (track != null) {
-            letrain.track.Sensor sensor = track.getComponent() instanceof letrain.track.Sensor ? (letrain.track.Sensor) track.getComponent() : null;
-            if (sensor != null && sensor instanceof Station) {
-                presenter.getModel().removeStation((Station) sensor);
-            } else if (sensor == null) {
+            letrain.track.TrackComponent component = track.getComponent();
+            if (component instanceof Station) {
+                presenter.getModel().removeStation((Station) component);
+                journalKeyboardEdit(position, presenter.getModel().getCursor().getDir(), "del st");
+            } else if (component == null) {
                 // Allow building on industry (removed the block)
                 Integer terrainAtPos = presenter.getModel().getGroundMap().getValueAt(position);
 
@@ -294,28 +395,11 @@ public class RailTrackMaker {
                 station.setCreationDir(presenter.getModel().getCursor().getDir());
                 station.setSideDir(
                         presenter.getModel().getCursor().getDir().turnRight().turnRight());
-                Integer foundTerrain =
-                        presenter.getModel().getGroundMap().findClosestIndustry(position, 5);
-
-                // If found, count density for THAT type
-                if (foundTerrain != null) {
-                    int densityCount = presenter.getModel().getGroundMap()
-                            .countIndustryDensity(position, 5, foundTerrain);
-                    station.setCargoType(letrain.track.CargoTypes.IndustryMapper
-                            .getCargoForTerrain(foundTerrain));
-                    station.setRole(letrain.track.CargoTypes.IndustryMapper
-                            .getRoleForTerrain(foundTerrain));
-                    station.setIndustryCount(densityCount);
-                    if (station.getRole() == CargoTypes.StationRole.PRODUCER) {
-                        station.setStorage(50);
-                    }
-                } else {
-                    station.setCargoType(CargoTypes.NONE);
-                    station.setRole(CargoTypes.StationRole.GENERIC);
-                }
+                presenter.getModel().applyStationRoleByIndustry(station, position);
 
                 presenter.getModel().addStation(station);
                 track.setComponent(station);
+                journalKeyboardEdit(position, presenter.getModel().getCursor().getDir(), "new st");
             }
         }
     }
@@ -371,6 +455,9 @@ public class RailTrackMaker {
                 return;
             }
             presenter.getModel().removeTrack(position);
+            // Keyboard erase of one tile, journaled as a canonical self-positioned delete.
+            journalKeyboardEdit(new Point(position), presenter.getModel().getCursor().getDir(),
+                    "del 1");
         }
 
         if (moveCursor) {
@@ -388,8 +475,11 @@ public class RailTrackMaker {
                             || type == Presenter.TrackType.BRIDGE_TRACK;
                     if (needsDelay) {
                         showAnimation();
-                        float delay = presenter.getModel().getEconomyManager().getConstructionDelay(type);
-                        float progress = delay > 0 ? (1.0f - ((float) trackConstructionTimeCounter / delay)) : 1.0f;
+                        float delay =
+                                presenter.getModel().getEconomyManager().getConstructionDelay(type);
+                        float progress =
+                                delay > 0 ? (1.0f - ((float) trackConstructionTimeCounter / delay))
+                                        : 1.0f;
                         presenter.getModel().getCursor().setProgress(progress);
                         decrementTrackConstructionTime();
                     } else {
@@ -400,7 +490,8 @@ public class RailTrackMaker {
                     TrackType type = detectTrackType();
                     if (type == null) {
                         makingTracks = false;
-                        presenter.getModel().getCursor().setMode(letrain.vehicle.Cursor.CursorMode.DRAWING);
+                        presenter.getModel().getCursor()
+                                .setMode(letrain.vehicle.Cursor.CursorMode.DRAWING);
                         presenter.getModel().getCursor().setProgress(0f);
                         return;
                     }
@@ -409,7 +500,8 @@ public class RailTrackMaker {
                     decrementQuantifierSteps();
                     resetTrackConstructionTime(type);
                     if (!isQuantifierPending()) {
-                        presenter.getModel().getCursor().setMode(letrain.vehicle.Cursor.CursorMode.DRAWING);
+                        presenter.getModel().getCursor()
+                                .setMode(letrain.vehicle.Cursor.CursorMode.DRAWING);
                         presenter.getModel().getCursor().setProgress(0f);
                     }
                 }
@@ -489,7 +581,8 @@ public class RailTrackMaker {
         }
 
         int effectiveActualType =
-                (actualGroundType >= 10 && actualGroundType <= 29) ? GroundMap.GROUND : actualGroundType;
+                (actualGroundType >= 10 && actualGroundType <= 29) ? GroundMap.GROUND
+                        : actualGroundType;
         int effectiveOldType =
                 (oldGroundType >= 10 && oldGroundType <= 29) ? GroundMap.GROUND : oldGroundType;
 
@@ -554,13 +647,19 @@ public class RailTrackMaker {
 
         if (type == null) {
             type = detectTrackType();
-        } else {
-            selectNewTrackType(type);
         }
 
         if (type == null) {
             return false;
         }
+
+        // Keep the *new* selected type in sync with the type actually being placed. The UI tick
+        // path already calls selectNewTrackType(type) before createTrack(type), but the turtle
+        // console/headless path calls createTrack(null) so makeTrack detects the terrain-based
+        // type itself (NORMAL / BRIDGE* / TUNNEL*). Selecting here makes both paths produce the
+        // same rail kind (bridges over water, tunnels in rock) instead of silently laying NORMAL
+        // track, and keeps economy counters consistent.
+        selectNewTrackType(type);
 
         // Obtenemos el track bajo el cursor
         RailTrack track = presenter.getModel().getRailMap().getTrackAt(actualCursorPosition);
@@ -568,14 +667,21 @@ public class RailTrackMaker {
             // si no había nada creamos un track normal
             track = createTrackOfSelectedType();
             if (oldTrack != null && type == Presenter.TrackType.NORMAL_TRACK) {
-                if (oldTrack instanceof letrain.track.rail.RailTrack && ((letrain.track.rail.RailTrack)oldTrack).getVisualType() == letrain.track.rail.RailTrack.VisualType.TUNNEL) {
+                if (oldTrack instanceof letrain.track.rail.RailTrack
+                        && ((letrain.track.rail.RailTrack) oldTrack)
+                                .getVisualType() == letrain.track.rail.RailTrack.VisualType.TUNNEL) {
                     convertOldTrackToGate(Presenter.TrackType.TUNNEL_GATE_TRACK);
-                } else if (oldTrack instanceof letrain.track.rail.RailTrack && ((letrain.track.rail.RailTrack)oldTrack).getVisualType() == letrain.track.rail.RailTrack.VisualType.BRIDGE) {
+                } else if (oldTrack instanceof letrain.track.rail.RailTrack
+                        && ((letrain.track.rail.RailTrack) oldTrack)
+                                .getVisualType() == letrain.track.rail.RailTrack.VisualType.BRIDGE) {
                     convertOldTrackToGate(Presenter.TrackType.BRIDGE_GATE_TRACK);
                 }
             }
         } else {
-            int mappedGroundType = (actualGroundType != null && actualGroundType >= 10 && actualGroundType <= 29) ? GroundMap.GROUND : actualGroundType;
+            int mappedGroundType =
+                    (actualGroundType != null && actualGroundType >= 10 && actualGroundType <= 29)
+                            ? GroundMap.GROUND
+                            : actualGroundType;
             if (mappedGroundType != GroundMap.GROUND) {
                 // si la dirección del cursor es distinta de la del track actual retornamos
                 if (track != null && !track.canExit(presenter.getModel().getCursor().getDir())) {
@@ -589,10 +695,16 @@ public class RailTrackMaker {
                     letrain.map.Router r = track.getRouter();
                     if (r instanceof letrain.map.impl.ForkRouter) {
                         letrain.map.impl.ForkRouter fr = (letrain.map.impl.ForkRouter) r;
-                        letrain.utils.Pair<letrain.map.Dir, letrain.map.Dir> orig = fr.getOriginalRoute();
-                        letrain.utils.Pair<letrain.map.Dir, letrain.map.Dir> alt = fr.getAlternativeRoute();
-                        if (orig != null && ((orig.getKey() == oldDir && orig.getValue() == dir) || (orig.getKey() == dir && orig.getValue() == oldDir))) routeExists = true;
-                        if (alt != null && ((alt.getKey() == oldDir && alt.getValue() == dir) || (alt.getKey() == dir && alt.getValue() == oldDir))) routeExists = true;
+                        letrain.utils.Pair<letrain.map.Dir, letrain.map.Dir> orig =
+                                fr.getOriginalRoute();
+                        letrain.utils.Pair<letrain.map.Dir, letrain.map.Dir> alt =
+                                fr.getAlternativeRoute();
+                        if (orig != null && ((orig.getKey() == oldDir && orig.getValue() == dir)
+                                || (orig.getKey() == dir && orig.getValue() == oldDir)))
+                            routeExists = true;
+                        if (alt != null && ((alt.getKey() == oldDir && alt.getValue() == dir)
+                                || (alt.getKey() == dir && alt.getValue() == oldDir)))
+                            routeExists = true;
                     }
                 }
                 if (!routeExists) {
@@ -615,7 +727,8 @@ public class RailTrackMaker {
         track.setPosition(actualCursorPosition);
         presenter.getModel().addTrack(actualCursorPosition, track);
         presenter.getModel().getEconomyManager().onRailTrackConstructed(newTrackType);
-        if (!ForkRailTrack.class.isAssignableFrom(track.getClass()) && canBeAFork(track, oldDir, dir)) {
+        if (!ForkRailTrack.class.isAssignableFrom(track.getClass())
+                && canBeAFork(track, oldDir, dir)) {
             RailTrack trackToSubstitute = track;
             final ForkRailTrack fork = createForkRailTrack(actualCursorPosition, trackToSubstitute);
             addRoutesToFork(trackToSubstitute, fork);
@@ -629,6 +742,14 @@ public class RailTrackMaker {
             track.connect(oldDir, oldTrack);
             // conectamos a oldTrack con track, en la inversa
             oldTrack.connect(oldDir.inverse(), track);
+        }
+
+        // Keyboard build of one tile, journaled as a canonical self-positioned write. Reverse
+        // building is not expressible as a plain "write 1" so it is skipped (rare in the UI).
+        if (!reversed) {
+            journalKeyboardEdit(new Point(actualCursorPosition),
+                    presenter.getModel().getCursor().getDir(), "write 1",
+                    resumeOriginAdjacentTo(actualCursorPosition));
         }
 
         Point newPos = new Point(actualCursorPosition);
@@ -715,9 +836,6 @@ public class RailTrackMaker {
     public RailTrack createTrackOfSelectedType() {
         RailTrack track = new RailTrack();
         switch (newTrackType) {
-            case STATION_TRACK:
-                track.setVisualType(letrain.track.rail.RailTrack.VisualType.STATION);
-                break;
             case TUNNEL_GATE_TRACK:
                 track.setVisualType(letrain.track.rail.RailTrack.VisualType.TUNNEL_GATE);
                 break;

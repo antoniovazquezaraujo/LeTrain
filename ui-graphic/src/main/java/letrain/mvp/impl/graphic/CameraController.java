@@ -18,7 +18,7 @@ public class CameraController {
         ORBIT, CAB, MAP
     }
 
-    private final Model model;
+    private Model model;
     private PerspectiveCamera cam;
 
     private CameraMode cameraMode = CameraMode.ORBIT;
@@ -30,12 +30,21 @@ public class CameraController {
     private float targetCameraAngle = 45f;
     private float targetCameraDistance = 8.5f;
     private float mapCameraHeight = 15f;
+    /** Rango de distancia de la cámara ORBIT (zoom). */
+    private static final float MIN_ORBIT_DISTANCE = 3f;
+    private static final float MAX_ORBIT_DISTANCE = 40f;
+    /** Ángulo de la cámara ORBIT lejos del suelo (grados por debajo de la horizontal). */
+    private static final float ORBIT_PITCH_FAR_DEG = 35f;
+    /** Por debajo de esta fracción de zoom la cámara se endereza hasta mirar al frente. */
+    private static final float ORBIT_FLATTEN_ZOOM = 0.35f;
     private letrain.track.SpeedSignal lastCameraSnapSignal;
     private letrain.track.RailSemaphore lastCameraSnapSemaphore;
     private letrain.mvp.Model.GameMode lastMode = null;
 
     // Estado de cámara CAB
     private final Vector2 currentCabDirection = new Vector2(0, 1);
+    private boolean cabSnapNeeded = true;
+    private Locomotive lastCabLocomotive = null;
 
     public CameraController(Model model) {
         this.model = model;
@@ -50,7 +59,7 @@ public class CameraController {
         camTarget.set(startPos.getX() + 0.5f, 0, startPos.getY() + 0.5f);
         cam.position.set(startPos.getX() + 20f, 20f, startPos.getY() + 20f);
         cam.lookAt(camTarget);
-        cam.near = 1f;
+        cam.near = 0.2f;
         cam.far = 1000f;
         cam.update();
         return cam;
@@ -63,6 +72,28 @@ public class CameraController {
     public void forceSnap() {
         this.lastCameraSnapSignal = null;
         this.lastCameraSnapSemaphore = null;
+        this.cabSnapNeeded = true;
+    }
+
+    /** Ground X of the point the camera orbits (interpolated), used to materialize terrain. */
+    public float getTargetX() {
+        return camTarget.x;
+    }
+
+    /** Ground Z of the point the camera orbits (interpolated), used to materialize terrain. */
+    public float getTargetZ() {
+        return camTarget.z;
+    }
+
+    /**
+     * Re-targets this controller to a new model instance while preserving the current camera pose
+     * (used by the paused-editing undo/redo swap, where the world is frozen and visually
+     * identical). The next {@link #update} simply tracks the new model's cursor/selection.
+     */
+    public void rebind(Model model) {
+        this.model = model;
+        this.lastMode = null;
+        forceSnap();
     }
 
     public CameraMode getMode() {
@@ -70,6 +101,9 @@ public class CameraController {
     }
 
     public void setMode(CameraMode mode) {
+        if (this.cameraMode != mode) {
+            this.cabSnapNeeded = true;
+        }
         this.cameraMode = mode;
     }
 
@@ -81,6 +115,7 @@ public class CameraController {
         } else {
             cameraMode = CameraMode.ORBIT;
         }
+        this.cabSnapNeeded = true;
     }
 
     public void rotateOrbit(float deltaDegrees) {
@@ -91,7 +126,8 @@ public class CameraController {
         if (cameraMode == CameraMode.MAP) {
             mapCameraHeight = MathUtils.clamp(mapCameraHeight + delta * 2f, 3f, 100f);
         } else if (cameraMode == CameraMode.ORBIT) {
-            targetCameraDistance = MathUtils.clamp(targetCameraDistance + delta, 3f, 40f);
+            targetCameraDistance = MathUtils.clamp(targetCameraDistance + delta, MIN_ORBIT_DISTANCE,
+                    MAX_ORBIT_DISTANCE);
         }
     }
 
@@ -99,7 +135,8 @@ public class CameraController {
         if (cameraMode == CameraMode.MAP) {
             mapCameraHeight = MathUtils.clamp(mapCameraHeight + deltaStep, 3f, 100f);
         } else {
-            targetCameraDistance = MathUtils.clamp(targetCameraDistance + deltaStep, 3f, 40f);
+            targetCameraDistance = MathUtils.clamp(targetCameraDistance + deltaStep,
+                    MIN_ORBIT_DISTANCE, MAX_ORBIT_DISTANCE);
         }
     }
 
@@ -115,7 +152,8 @@ public class CameraController {
         if (cameraMode == CameraMode.MAP) {
             return (mapCameraHeight - 3f) / (100f - 3f);
         }
-        return (targetCameraDistance - 3f) / (40f - 3f);
+        return (targetCameraDistance - MIN_ORBIT_DISTANCE)
+                / (MAX_ORBIT_DISTANCE - MIN_ORBIT_DISTANCE);
     }
 
     public void resize(int width, int height) {
@@ -131,7 +169,7 @@ public class CameraController {
         if (cam == null) {
             return;
         }
-        letrain.mvp.Model.GameMode currentMode = model.getMode();
+        letrain.mvp.Model.GameMode currentMode = model.getEffectiveMode();
         if (currentMode != lastMode) {
             forceSnap();
             lastMode = currentMode;
@@ -139,20 +177,20 @@ public class CameraController {
         float targetX;
         float targetZ;
 
-        if ((model.getMode() == letrain.mvp.Model.GameMode.DRIVE
-                || model.getMode() == letrain.mvp.Model.GameMode.LINK
-                || model.getMode() == letrain.mvp.Model.GameMode.UNLINK)
+        if ((currentMode == letrain.mvp.Model.GameMode.DRIVE
+                || currentMode == letrain.mvp.Model.GameMode.LINK
+                || currentMode == letrain.mvp.Model.GameMode.UNLINK)
                 && model.getSelectedLocomotive() != null) {
             Locomotive selected = model.getSelectedLocomotive();
             Vector2 interpPos = getInterpolatedPosition(selected, alpha);
             targetX = interpPos.x + 0.5f;
             targetZ = interpPos.y + 0.5f;
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.FORKS
+        } else if (currentMode == letrain.mvp.Model.GameMode.FORKS
                 && model.getSelectedFork() != null) {
             letrain.track.rail.ForkRailTrack selected = model.getSelectedFork();
             targetX = selected.getPosition().getX() + 0.5f;
             targetZ = selected.getPosition().getY() + 0.5f;
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.SEMAPHORES
+        } else if (currentMode == letrain.mvp.Model.GameMode.SEMAPHORES
                 && model.getSelectedSemaphore() != null) {
             letrain.track.RailSemaphore selected = model.getSelectedSemaphore();
             targetX = selected.getPosition().getX() + 0.5f;
@@ -166,7 +204,7 @@ public class CameraController {
                             * com.badlogic.gdx.math.MathUtils.radiansToDegrees;
                 }
             }
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.SENSORS
+        } else if (currentMode == letrain.mvp.Model.GameMode.SENSORS
                 && model.getSelectedSensor() != null) {
             letrain.track.Sensor selected = model.getSelectedSensor();
             if (selected.getPosition() != null) {
@@ -176,7 +214,7 @@ public class CameraController {
                 targetX = cam.position.x;
                 targetZ = cam.position.z;
             }
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.SPEED_SIGNALS
+        } else if (currentMode == letrain.mvp.Model.GameMode.SPEED_SIGNALS
                 && model.getSelectedSpeedSignal() != null) {
             letrain.track.SpeedSignal selected = model.getSelectedSpeedSignal();
             targetX = selected.getPosition().getX() + 0.5f;
@@ -190,7 +228,7 @@ public class CameraController {
                             * com.badlogic.gdx.math.MathUtils.radiansToDegrees + 180f;
                 }
             }
-        } else if (model.getMode() == letrain.mvp.Model.GameMode.STATIONS
+        } else if (currentMode == letrain.mvp.Model.GameMode.STATIONS
                 && model.getSelectedStation() != null) {
             letrain.track.Station selected = model.getSelectedStation();
             targetX = selected.getPosition().getX() + 0.5f;
@@ -232,7 +270,13 @@ public class CameraController {
             float dz = PathGeometry.getDirZ(dir);
 
             Vector2 targetDir = new Vector2(dx, dz);
-            currentCabDirection.lerp(targetDir, 0.05f).nor();
+            if (cabSnapNeeded || loco != lastCabLocomotive) {
+                currentCabDirection.set(targetDir).nor();
+                lastCabLocomotive = loco;
+                cabSnapNeeded = false;
+            } else {
+                currentCabDirection.lerp(targetDir, 0.15f).nor();
+            }
 
             float smoothDx = currentCabDirection.x;
             float smoothDz = currentCabDirection.y;
@@ -259,7 +303,25 @@ public class CameraController {
         float camY = Math.max(2.0f, cameraDistance * 0.7f);
 
         cam.position.set(camX, camY, camZ);
-        cam.lookAt(camTarget);
+
+        // Cerca del suelo la cámara se endereza: al mínimo zoom mira al frente (y se ve el cielo),
+        // recuperando el ángulo de siempre a partir de ORBIT_FLATTEN_ZOOM.
+        float zoom = MathUtils.clamp(
+                (cameraDistance - MIN_ORBIT_DISTANCE) / (MAX_ORBIT_DISTANCE - MIN_ORBIT_DISTANCE),
+                0f, 1f);
+        float t = MathUtils.clamp(zoom / ORBIT_FLATTEN_ZOOM, 0f, 1f);
+        float eased = t * t * (3f - 2f * t);
+        double pitch = Math.toRadians(ORBIT_PITCH_FAR_DEG * eased);
+        float horizX = camTarget.x - camX;
+        float horizZ = camTarget.z - camZ;
+        float length = (float) Math.sqrt(horizX * horizX + horizZ * horizZ);
+        if (length < 1e-4f) {
+            horizX = 0f;
+            horizZ = -1f;
+            length = 1f;
+        }
+        cam.direction.set((float) (horizX / length * Math.cos(pitch)), (float) -Math.sin(pitch),
+                (float) (horizZ / length * Math.cos(pitch))).nor();
         cam.up.set(0, 1, 0);
     }
 

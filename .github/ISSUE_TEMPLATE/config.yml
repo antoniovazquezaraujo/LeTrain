@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://antoniovazquezaraujo.github.io/LeTrain/
+    about: Manual, scripting grammar and the scenario guide.
+  - name: How to contribute
+    url: https://github.com/antoniovazquezaraujo/LeTrain/blob/develop/CONTRIBUTING.md
+    about: Build, test and pull-request workflow.

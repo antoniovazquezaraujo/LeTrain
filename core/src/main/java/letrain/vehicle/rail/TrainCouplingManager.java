@@ -14,6 +14,12 @@ import org.slf4j.LoggerFactory;
 public interface TrainCouplingManager {
     Logger log = LoggerFactory.getLogger(letrain.vehicle.rail.impl.TrainCouplingManager.class);
 
+    /**
+     * Count meaning "every vehicle on that side" ({@code uncouple backward all}). The prepare
+     * methods clamp it to the removable/linkable vehicles, so it can be passed through as-is.
+     */
+    int ALL = Integer.MAX_VALUE;
+
     List<Linker> getSelectedLinkersToJoin(Train train);
 
     boolean hasLinkableVehicles(Train train);

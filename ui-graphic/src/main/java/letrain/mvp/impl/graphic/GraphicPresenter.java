@@ -14,6 +14,7 @@ import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import letrain.mvp.input.InputEvent;
 import java.io.File;
@@ -21,22 +22,26 @@ import java.util.List;
 import java.util.Optional;
 import letrain.map.Point;
 import letrain.mvp.Model.GameModeMenuOption;
+import letrain.palette.VisualPalette;
 import letrain.mvp.impl.GameSaveService;
 import letrain.mvp.impl.RailTrackMaker;
 import letrain.mvp.impl.SimulationController;
+import letrain.game.audio.SoundscapeAmbience;
 import letrain.utils.FontManager;
 import letrain.utils.ValidationUtils;
 import letrain.vehicle.rail.CoreTrainEventListener;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
 import letrain.visitor.gdx3d.Gdx3DRenderer;
+import letrain.visitor.gdx3d.Headlights;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class GraphicPresenter extends ApplicationAdapter
         implements letrain.mvp.View, letrain.mvp.Presenter, CoreTrainEventListener {
     private static final Logger log = LoggerFactory.getLogger(GraphicPresenter.class);
-    private static final String DEFAULT_SAVEGAME_FILENAME = "savegame.dat";
+    private static final String DEFAULT_SAVEGAME_FILENAME = "savegame.json";
+    private static final String DEFAULT_SCENARIO_FILENAME = "scenario.ltr";
     private com.badlogic.gdx.graphics.PerspectiveCamera cam;
     private ModelBatch modelBatch;
     private ModelBuilder modelBuilder;
@@ -46,6 +51,20 @@ public class GraphicPresenter extends ApplicationAdapter
     private java.util.Map<Character, com.badlogic.gdx.graphics.g2d.TextureRegion> glyphRegions =
             new java.util.HashMap<>();
 
+    /**
+     * Region of a glyph inside its own atlas page. The 128 px font atlas spans several pages and
+     * always reading {@code font.getRegion()} (page 0) rendered the wrong characters for every
+     * glyph packed on the following pages (bug #603: lowercase wagon aspects showed garbage).
+     */
+    static com.badlogic.gdx.graphics.g2d.TextureRegion glyphRegion(
+            com.badlogic.gdx.graphics.g2d.BitmapFont font,
+            com.badlogic.gdx.graphics.g2d.BitmapFont.Glyph glyph) {
+        com.badlogic.gdx.graphics.Texture pageTexture =
+                font.getRegions().get(glyph.page).getTexture();
+        return new com.badlogic.gdx.graphics.g2d.TextureRegion(pageTexture, glyph.u, glyph.v,
+                glyph.u2, glyph.v2);
+    }
+
     private com.badlogic.gdx.graphics.g3d.decals.Decal getGlyphDecal(char c) {
         if (!glyphRegions.containsKey(c)) {
             com.badlogic.gdx.graphics.g2d.BitmapFont.Glyph glyph = font.getData().getGlyph(c);
@@ -53,9 +72,7 @@ public class GraphicPresenter extends ApplicationAdapter
                 return null;
             }
 
-            com.badlogic.gdx.graphics.g2d.TextureRegion region =
-                    new com.badlogic.gdx.graphics.g2d.TextureRegion(font.getRegion().getTexture(),
-                            glyph.u, glyph.v, glyph.u2, glyph.v2);
+            com.badlogic.gdx.graphics.g2d.TextureRegion region = glyphRegion(font, glyph);
             region.flip(false, true); // Corregir inversión vertical
             glyphRegions.put(c, region);
         }
@@ -69,6 +86,22 @@ public class GraphicPresenter extends ApplicationAdapter
     }
 
     private Environment environment;
+    private final VisualPalette palette = new VisualPalette();
+    private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute ambientAttribute;
+    private com.badlogic.gdx.graphics.g3d.environment.DirectionalLight sunLight;
+    /** Real lights for the nearest locomotive headlights (ADR-022 phase 1e). */
+    private static final int HEADLIGHT_POOL = 4;
+
+    private static final float HEADLIGHT_INTENSITY = 25f;
+    private final com.badlogic.gdx.graphics.g3d.environment.PointLight[] headlightLights =
+            new com.badlogic.gdx.graphics.g3d.environment.PointLight[HEADLIGHT_POOL];
+    private final Color headlightColor = new Color();
+    private final Vector3 headlightPosition = new Vector3();
+    private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute tableDiffuse;
+    private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute gridDiffuse;
+    private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute boxDiffuse;
+    private final Color skyColor = new Color();
+    private final Color voidColor = new Color();
 
     private letrain.mvp.Model model;
     private Gdx3DRenderer renderer;
@@ -90,16 +123,55 @@ public class GraphicPresenter extends ApplicationAdapter
     // Audio
     private letrain.audio.AudioController audioController;
 
+    /**
+     * True while a programmatic replay (scenario import, undo/redo) executes commands. Train-event
+     * sounds (link/unlink) are muted then, since the player did not perform those actions.
+     */
+    private boolean eventSoundsSuppressed = false;
+
     private SimulationController simulationController;
 
     // Persistence
     private final GameSaveService gameSaveService;
 
+    /**
+     * Paused-editing undo/redo session (ADR-020 item 3). Created lazily on the first pause toggle;
+     * survives model swaps because it is a field of the presenter, not of the model.
+     */
+    private letrain.command.UndoRedoHistory undoRedoHistory;
+
+    /**
+     * Editing command journal (ADR-020 item 2). Presenter-owned so it survives the model swaps that
+     * undo/redo perform (the model field is transient); the model is bound to this instance.
+     */
+    private final letrain.command.CommandJournal commandJournal =
+            new letrain.command.CommandJournal();
+
+    /**
+     * Experiment-mode session (ADR-020 item 5): snapshots the world on enter and restores it on
+     * exit, so the user can try things in the live simulation without consequences.
+     */
+    private letrain.command.ExperimentSession experimentSession;
+
+    /**
+     * Console (' :') command history. Kept at the presenter so it survives the input-handler
+     * recreations an undo/redo performs (each undo rebuilds the handler against the restored
+     * model).
+     */
+    private final CommandHistory commandHistory = new CommandHistory();
+
     private CameraController cameraController;
     private Gdx3DInputHandler inputHandler;
+    private final SoundscapeAmbience ambience;
 
     public GraphicPresenter(letrain.mvp.Model model) {
+        this(model, null);
+    }
+
+    public GraphicPresenter(letrain.mvp.Model model, SoundscapeAmbience ambience) {
         this.model = ValidationUtils.requireNonNull(model, "model");
+        wireUserMessageSink();
+        this.ambience = ambience;
         this.resourceContext = new letrain.visitor.gdx3d.Gdx3DResourceContext();
         this.renderer = new Gdx3DRenderer(resourceContext);
         this.trackMaker = new RailTrackMaker(this);
@@ -117,6 +189,7 @@ public class GraphicPresenter extends ApplicationAdapter
 
         // Register as listener for audio events
         model.addCoreTrainEventListener(this);
+        model.setCommandJournal(commandJournal);
     }
 
     public Stage getStage() {
@@ -140,32 +213,49 @@ public class GraphicPresenter extends ApplicationAdapter
         }
     }
 
+    /**
+     * Points the model's DSL message sink at the visible message panel (D1). Programs, itineraries
+     * and missions then report their problems where the player can see them, not only in the log.
+     */
+    private void wireUserMessageSink() {
+        if (model != null) {
+            model.setUserMessageSink((title, message) -> showMessage(title, message));
+        }
+    }
+
     @Override
     public void create() {
         resourceContext.init();
         renderer.init();
         modelBatch = new ModelBatch();
         environment = new Environment();
-        environment.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.5f, 0.5f, 0.5f, 1f));
-        environment.add(new DirectionalLight().set(0.8f, 0.8f, 0.8f, -1f, -0.8f, -0.2f));
+        ambientAttribute = new ColorAttribute(ColorAttribute.AmbientLight, 0.5f, 0.5f, 0.5f, 1f);
+        environment.set(ambientAttribute);
+        sunLight = new DirectionalLight();
+        sunLight.set(0.8f, 0.8f, 0.8f, -1f, -0.8f, -0.2f);
+        environment.add(sunLight);
+        for (int i = 0; i < headlightLights.length; i++) {
+            headlightLights[i] = new com.badlogic.gdx.graphics.g3d.environment.PointLight();
+            environment.add(headlightLights[i]);
+        }
 
         cam = cameraController.init(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
         modelBuilder = new ModelBuilder();
 
         // Suelo de madera o tablero
+        tableDiffuse = ColorAttribute.createDiffuse(new Color(0.4f, 0.3f, 0.1f, 1f));
         groundModel = modelBuilder.createRect(-500f, 0, -500f, 500f, 0, -500f, 500f, 0, 500f, -500f,
-                0, 500f, 0, 1, 0,
-                new com.badlogic.gdx.graphics.g3d.Material(
-                        ColorAttribute.createDiffuse(new Color(0.4f, 0.3f, 0.1f, 1f))),
+                0, 500f, 0, 1, 0, new com.badlogic.gdx.graphics.g3d.Material(tableDiffuse),
                 Usage.Position | Usage.Normal);
 
         // Rejilla para orientación (1x1 para coincidir con las celdas)
         modelBuilder.begin();
+        gridDiffuse = ColorAttribute.createDiffuse(Color.LIGHT_GRAY);
         com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder mpb =
                 modelBuilder.part("grid", GL20.GL_LINES, Usage.Position | Usage.ColorUnpacked,
-                        new com.badlogic.gdx.graphics.g3d.Material());
-        mpb.setColor(Color.LIGHT_GRAY);
+                        new com.badlogic.gdx.graphics.g3d.Material(gridDiffuse));
+        mpb.setColor(Color.WHITE);
         for (int i = -100; i <= 100; i += 1) {
             mpb.line(i, 0.01f, -100, i, 0.01f, 100);
             mpb.line(-100, 0.01f, i, 100, 0.01f, i);
@@ -175,11 +265,10 @@ public class GraphicPresenter extends ApplicationAdapter
         cameraGroupStrategy = new com.badlogic.gdx.graphics.g3d.decals.CameraGroupStrategy(cam);
         decalBatch = new com.badlogic.gdx.graphics.g3d.decals.DecalBatch(cameraGroupStrategy);
 
-        boxModel =
-                modelBuilder.createBox(0.8f, 0.8f, 0.8f,
-                        new com.badlogic.gdx.graphics.g3d.Material(
-                                ColorAttribute.createDiffuse(Color.FOREST)),
-                        Usage.Position | Usage.Normal);
+        boxDiffuse = ColorAttribute.createDiffuse(Color.FOREST);
+        boxModel = modelBuilder.createBox(0.8f, 0.8f, 0.8f,
+                new com.badlogic.gdx.graphics.g3d.Material(boxDiffuse),
+                Usage.Position | Usage.Normal);
 
         spriteBatch = new SpriteBatch();
         font = FontManager.loadMonospaceFont(128); // High resolution for 3D Decal
@@ -188,14 +277,28 @@ public class GraphicPresenter extends ApplicationAdapter
 
         hud = new Gdx3DHud(model, this);
         createCompassModel();
+        updateDayNight();
 
         InputMultiplexer multiplexer = new InputMultiplexer();
         multiplexer.addProcessor(hud.getStage());
         multiplexer.addProcessor(inputHandler);
         Gdx.input.setInputProcessor(multiplexer);
+
+        // The app starts fullscreen (no maximize animation), but switch to a normal maximized
+        // window
+        // right away so the OS/window behaviour (Esc exit menu, etc.) is the usual one.
+        com.badlogic.gdx.Graphics.DisplayMode dm = Gdx.graphics.getDisplayMode();
+        Gdx.graphics.setWindowedMode(dm.width, dm.height);
+        if (Gdx.graphics instanceof com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics) {
+            ((com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics) Gdx.graphics).getWindow()
+                    .maximizeWindow();
+        }
     }
 
     private float stateTime = 0f;
+
+    /** Terrain block (in cells) materialized around the camera target, half the side. */
+    private static final int CAMERA_VIEW_RADIUS = 28;
 
     @Override
     public letrain.audio.AudioController getAudioController() {
@@ -216,9 +319,20 @@ public class GraphicPresenter extends ApplicationAdapter
             model.getGroundMap().renderBlock(cp.getX() - radius, cp.getY() - radius, radius * 2 + 1,
                     radius * 2 + 1);
 
+            // La cámara mira mucho más allá del bloque del cursor: materializamos también el
+            // terreno que sobrevuela, o su borde se ve como el VOID negro en el horizonte.
+            float camTargetX = cameraController.getTargetX();
+            float camTargetZ = cameraController.getTargetZ();
+            model.getGroundMap().renderBlock(Math.round(camTargetX) - CAMERA_VIEW_RADIUS,
+                    Math.round(camTargetZ) - CAMERA_VIEW_RADIUS, CAMERA_VIEW_RADIUS * 2 + 1,
+                    CAMERA_VIEW_RADIUS * 2 + 1);
+
             simulationController.tick();
+            if (hud != null) {
+                hud.updateClock();
+            }
+            updateDayNight();
             inputHandler.update();
-            hud.updateIDE();
 
             stateTime -= 0.05f;
             if (stateTime > 0.05f)
@@ -240,15 +354,34 @@ public class GraphicPresenter extends ApplicationAdapter
         audioController.setListenerPosition(cam.position.x, cam.position.z, cam.position.y,
                 camAngle);
         audioController.update();
-        audioController.updateAmbient(cameraController.getMode() == CameraController.CameraMode.MAP,
-                cameraController.getZoomFactor(), cam.position.x, cam.position.z, cam.position.y);
+        if (ambience != null) {
+            ambience.update(model, cameraController.getZoomFactor());
+        } else {
+            audioController.updateAmbient(
+                    cameraController.getMode() == CameraController.CameraMode.MAP,
+                    cameraController.getZoomFactor(), cam.position.x, cam.position.z,
+                    cam.position.y);
+        }
 
         Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        // Horizon split: sky above, unexplored void below; the world is drawn on top of both.
+        Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST);
+        Gdx.gl.glClearColor(voidColor.r, voidColor.g, voidColor.b, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
+        int horizon = horizonScreenY();
+        if (horizon > 0) {
+            Gdx.gl.glEnable(GL20.GL_SCISSOR_TEST);
+            Gdx.gl.glScissor(0, horizon, Gdx.graphics.getWidth(),
+                    Gdx.graphics.getHeight() - horizon);
+            Gdx.gl.glClearColor(skyColor.r, skyColor.g, skyColor.b, 1f);
+            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+            Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST);
+        }
 
         // Actualizar instancias desde el modelo
         renderer.clear();
         renderer.visitModel(model, cam);
+        updateHeadlights(dayNightRatio());
         modelBatch.begin(cam);
         modelBatch.render(renderer.getInstances(), environment);
         // Render the background table slightly below ground level
@@ -384,6 +517,156 @@ public class GraphicPresenter extends ApplicationAdapter
     }
 
     @Override
+    public letrain.command.UndoRedoHistory getUndoRedoHistory() {
+        if (undoRedoHistory == null) {
+            undoRedoHistory = new letrain.command.UndoRedoHistory(
+                    new letrain.command.UndoRedoHistory.Codec() {
+                        @Override
+                        public byte[] toBytes(letrain.mvp.Model m) {
+                            return gameSaveService.toBytes(m);
+                        }
+
+                        @Override
+                        public letrain.mvp.Model fromBytes(byte[] data) {
+                            return gameSaveService.fromBytes(data);
+                        }
+                    });
+        }
+        return undoRedoHistory;
+    }
+
+    /** Experiment-mode session (ADR-020 item 5), created lazily with the same in-memory codec. */
+    public letrain.command.ExperimentSession getExperimentSession() {
+        if (experimentSession == null) {
+            experimentSession = new letrain.command.ExperimentSession(
+                    new letrain.command.ExperimentSession.Codec() {
+                        @Override
+                        public byte[] toBytes(letrain.mvp.Model m) {
+                            return gameSaveService.toBytes(m);
+                        }
+
+                        @Override
+                        public letrain.mvp.Model fromBytes(byte[] data) {
+                            return gameSaveService.fromBytes(data);
+                        }
+                    });
+        }
+        return experimentSession;
+    }
+
+    /**
+     * Toggles experiment mode (ADR-020 item 5). Entering turns paused editing off and snapshots the
+     * live world; leaving restores that snapshot. While active the simulation runs (no journal, no
+     * undo), exactly like a "try things freely" sandbox.
+     */
+    public void toggleExperimentMode() {
+        letrain.command.ExperimentSession session = getExperimentSession();
+        if (session.isActive()) {
+            letrain.mvp.Model restored = session.end();
+            if (restored != null) {
+                applyModel(restored);
+            }
+            log.info("Experiment mode: OFF (state restored)");
+        } else {
+            if (model.isPauseEditing()) {
+                model.setPauseEditing(false);
+                getUndoRedoHistory().end();
+            }
+            session.begin(model);
+            log.info("Experiment mode: ON (live simulation; press X to discard and restore)");
+        }
+    }
+
+    /**
+     * Tab parity with the 2D terminal: cycles the HUD bottom panel between full, compact and
+     * hidden, so the map can be seen without the panel.
+     */
+    public void cycleHelpLevel() {
+        if (hud != null) {
+            hud.cycleHelpLevel();
+        }
+    }
+
+    /**
+     * Starts/clears the paused-editing undo/redo session when the editing pause is toggled (called
+     * by the input handler on {@code x}), mirroring TerminalPresenter.togglePauseEditing.
+     */
+    public void onPauseEditingChanged(boolean paused) {
+        if (paused) {
+            getUndoRedoHistory().begin(model);
+            commandJournal.startRecording();
+        } else {
+            getUndoRedoHistory().end();
+            commandJournal.stopRecording();
+            commandJournal.bake();
+        }
+    }
+
+    /** Console (' :') command history, shared by the (recreated) input handlers. */
+    public CommandHistory getCommandHistory() {
+        return commandHistory;
+    }
+
+    /**
+     * Atomically swaps the live model for {@code newModel} while keeping the presenter running, in
+     * a lightweight way: audio is re-pointed in place (no sample reload / mixer restart), the
+     * renderer/resources/camera pose are kept and the HUD + input handler are recreated against the
+     * new model. Used by the undo/redo path (ADR-020 item 3). Unlike {@link #applyLoadedModel} it
+     * does not reset the camera nor reload audio, so an undo is seamless (the frozen world looks
+     * identical).
+     */
+    void applyModel(letrain.mvp.Model newModel) {
+        if (newModel == null) {
+            return;
+        }
+        boolean wasPaused = model.isPauseEditing();
+        this.model = newModel;
+        // The sink is wired after the new HUD exists (see applyLoadedModel): wiring flushes the
+        // notices queued by a snapshot restore (D1/O3) into the visible panel.
+        if (audioController == null) {
+            this.audioController = new letrain.audio.AudioController(newModel);
+        } else {
+            this.audioController.retarget(newModel);
+        }
+        // CRITICAL for deterministic undo/redo replay: RailTrackMaker keeps per-model internal
+        // state
+        // (oldTrack, oldGroundType, dir, makingTracks...), so recreate it bound to the restored
+        // model exactly as applyLoadedModel does on a load.
+        this.trackMaker = new RailTrackMaker(this);
+        this.cameraController.rebind(newModel);
+        this.inputHandler = new Gdx3DInputHandler(newModel, this, cameraController, trackMaker,
+                audioController);
+        this.simulationController = new SimulationController(newModel, audioController, trackMaker);
+        // The HUD keeps a direct reference to the model, so rebuild it against the restored one.
+        if (hud != null) {
+            hud.dispose();
+        }
+        this.hud = new Gdx3DHud(newModel, this);
+        wireUserMessageSink();
+        com.badlogic.gdx.InputMultiplexer multiplexer =
+                Gdx.input.getInputProcessor() instanceof com.badlogic.gdx.InputMultiplexer
+                        ? (com.badlogic.gdx.InputMultiplexer) Gdx.input.getInputProcessor()
+                        : null;
+        if (multiplexer != null) {
+            multiplexer.getProcessors().clear();
+            multiplexer.addProcessor(hud.getStage());
+            multiplexer.addProcessor(inputHandler);
+        }
+        newModel.addCoreTrainEventListener(this);
+        newModel.setPauseEditing(wasPaused);
+        newModel.setCommandJournal(commandJournal);
+        if (wasPaused) {
+            commandJournal.startRecording();
+        } else {
+            commandJournal.stopRecording();
+        }
+        letrain.map.Point startPos = newModel.getCursor().getPosition();
+        newModel.getGroundMap().renderBlock(startPos.getX() - getCols() / 2,
+                startPos.getY() - getRows() / 2, getCols(), getRows());
+        cameraController.forceSnap();
+    }
+
+    @Override
     public void onMapPageChanged(letrain.map.Point pos, int cols, int rows) {}
 
     @Override
@@ -391,11 +674,18 @@ public class GraphicPresenter extends ApplicationAdapter
 
     @Override
     public void onChar(InputEvent stroke) {
+        // While the PROGRAM editor is open only the editor/buttons handle keys; game shortcuts off.
+        if (hud != null && hud.isIDEOpen()) {
+            return;
+        }
         inputHandler.onChar(stroke);
     }
 
     @Override
     public void onKeyUp(InputEvent stroke) {
+        if (hud != null && hud.isIDEOpen()) {
+            return;
+        }
         inputHandler.onKeyUp(stroke);
     }
 
@@ -459,7 +749,10 @@ public class GraphicPresenter extends ApplicationAdapter
                 while (scanner.hasNextLine()) {
                     sb.append(scanner.nextLine()).append("\n");
                 }
-                List<String> errors = model.setProgram(sb.toString());
+                // Program file from disk: the model's load path (strict, like every other
+                // entry point).
+                String text = sb.toString();
+                List<String> errors = model.setProgramFromDisk(text);
                 handleScriptErrors(errors);
                 log.info("Commands loaded successfully from {}", file.getAbsolutePath());
             } catch (java.io.FileNotFoundException e) {
@@ -556,16 +849,174 @@ public class GraphicPresenter extends ApplicationAdapter
             log.warn("Ignoring save request with null file");
             return;
         }
+        file = letrain.command.FileNames.withSavegameExtension(file);
         boolean ok = gameSaveService.save(model, file);
         if (!ok) {
             showMessage("Save Error", "Could not save game to\n" + file.getAbsolutePath());
         }
     }
 
+    /** Exports the current editing journal as a scenario file (seed + commands). */
+    private void saveScenario(File file) {
+        try {
+            if (commandJournal.appliedEntries().isEmpty()) {
+                showMessage("Scenario",
+                        "Cannot export: nothing recorded yet (toggle Record/edit mode with 'R' and edit).");
+                return;
+            }
+            writeScenario(file, letrain.command.ScenarioExporter.render(model,
+                    commandJournal.appliedEntries()));
+        } catch (Exception e) {
+            log.error("Error saving scenario to {}", file.getAbsolutePath(), e);
+            showMessage("Scenario Error", "Could not save scenario: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Generates the world recipe (seed + on build + on start, no settings/program) for the editor.
+     */
+    @Override
+    public String getScenarioText() {
+        return letrain.command.ScenarioExporter.renderWorld(model, commandJournal.appliedEntries());
+    }
+
+    /** Generates the scenario's settings section (the model's effective configuration). */
+    @Override
+    public String getConfigurationText() {
+        String section = letrain.command.ScenarioFile.configurationSection(
+                model.getEconomyManager() != null ? model.getEconomyManager().effectiveConfig()
+                        : null);
+        return section.isBlank() ? "configuration {\n}\n" : section;
+    }
+
+    /** Exports the (possibly hand-edited) scenario text to a file. */
+    @Override
+    public void onExportScenarioText(File file, String text) {
+        if (file != null && text != null) {
+            writeScenario(file, text);
+        }
+    }
+
+    private void writeScenario(File file, String text) {
+        file = letrain.command.FileNames.withScenarioExtension(file);
+        try {
+            java.nio.file.Files.writeString(file.toPath(), text);
+            log.info("Scenario saved to {}", file.getAbsolutePath());
+        } catch (Exception e) {
+            log.error("Error saving scenario to {}", file.getAbsolutePath(), e);
+            showMessage("Scenario Error", "Could not save scenario: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Rebuilds a fresh same-seed world and replays the scenario commands on it (free constructor).
+     */
+    private void playScenario(File file) {
+        try {
+            playScenarioText(java.nio.file.Files.readString(file.toPath()), file);
+        } catch (Exception e) {
+            log.error("Error reading scenario from {}", file.getAbsolutePath(), e);
+            showMessage("Scenario Error", "Could not play scenario: " + e.getMessage());
+        }
+    }
+
+    /** Plays a scenario from its text (used by the editor's Play button). */
+    @Override
+    public void onPlayScenarioText(String text) {
+        playScenarioText(text, null);
+    }
+
+    private void playScenarioText(String text, File file) {
+        try {
+            letrain.command.ScenarioFile.Scenario scenario =
+                    letrain.command.ScenarioFile.parse(text);
+            // Apply the scenario's settings (configuration section) to the fresh world BEFORE any
+            // terrain generation, so the scenario reproduces the same terrain and rules regardless
+            // of the local letrain.cfg.
+            letrain.mvp.impl.Model fresh = new letrain.mvp.impl.Model(scenario.seed());
+            fresh.getEconomyManager().applyConfig(scenario.configuration());
+            applyLoadedModel(fresh, file);
+            // Constructor libre: building the scenario costs nothing (ADR-020).
+            model.getEconomyManager().setFreeConstruction(true);
+            // Replay silently: re-running a coupling must not play the "link" sound of the user
+            // action it represents.
+            boolean[] failed = {false};
+            runWithoutEventSounds(() -> {
+                for (String cmd : scenario.buildCommands()) {
+                    String error = executeScenarioCommand(cmd);
+                    if (error != null) {
+                        log.error("Scenario build command failed: '{}': {}", cmd, error);
+                        showMessage("Scenario Error", cmd + "\n" + error);
+                        failed[0] = true;
+                        return;
+                    }
+                }
+                for (String cmd : scenario.startCommands()) {
+                    String error = executeScenarioCommand(cmd);
+                    if (error != null) {
+                        log.error("Scenario start command failed: '{}': {}", cmd, error);
+                        showMessage("Scenario Error", cmd + "\n" + error);
+                        failed[0] = true;
+                        return;
+                    }
+                }
+            });
+            if (failed[0]) {
+                return;
+            }
+            // Materialize the terrain under the whole rebuilt network; otherwise tracks outside the
+            // cursor/render radius appear floating over void until the cursor passes over them.
+            materializeGroundUnderTracks();
+            // Install the scenario's automation program (the operator), if any. It references the
+            // elements just built, so it runs after the build/start replay.
+            if (scenario.program() != null && !scenario.program().isBlank()) {
+                handleScriptErrors(model.setProgram(scenario.program()));
+            }
+            // The imported recipe becomes the journal base, so a later export keeps the whole
+            // network (imported + subsequent edits).
+            commandJournal.clear();
+            for (String cmd : scenario.buildCommands()) {
+                commandJournal.record(cmd);
+            }
+            commandJournal.bake();
+            // Scenario = free construction mode: enter the Record/edit mode (frozen, instant,
+            // undo).
+            model.setPauseEditing(true);
+            commandJournal.startRecording();
+            getUndoRedoHistory().begin(model);
+            log.info("Scenario played from {}", file != null ? file.getAbsolutePath() : "(editor)");
+        } catch (Exception e) {
+            log.error("Error playing scenario", e);
+            showMessage("Scenario Error", "Could not play scenario: " + e.getMessage());
+        }
+    }
+
+    /** Runs one scenario command through the same console path used by the UI. */
+    private String executeScenarioCommand(String cmd) {
+        return letrain.command.PlayerCommandExecutor.execute(cmd, model, f -> onSaveGame(f),
+                f -> onLoadGame(f), new letrain.command.TurtleBuilder(model, trackMaker),
+                (title, msg) -> showMessage(title, msg), () -> onExitGame(), null, null, false);
+    }
+
+    /**
+     * Generates the ground blocks around every rail tile so the loaded world has terrain visible.
+     */
+    private void materializeGroundUnderTracks() {
+        int r = 2;
+        model.getRailMap().forEach(track -> {
+            letrain.map.Point p = track.getPosition();
+            model.getGroundMap().renderBlock(p.getX() - r, p.getY() - r, r * 2 + 1, r * 2 + 1);
+        });
+    }
+
     private void applyLoadedModel(letrain.mvp.impl.Model loadedModel, File file) {
         this.model = ValidationUtils.requireNonNull(loadedModel, "loadedModel");
+        // The message sink is wired only after the new HUD exists: setUserMessageSink flushes the
+        // notices queued while the savegame was replayed (D1/O3), and they must reach the visible
+        // panel, not the old HUD this method is about to dispose.
 
-        log.info("Game loaded successfully from {}", file.getAbsolutePath());
+        log.info("Game loaded successfully from {}",
+                file != null ? file.getAbsolutePath() : "(editor)");
 
         // Stop previous sounds
         if (this.audioController != null) {
@@ -595,6 +1046,7 @@ public class GraphicPresenter extends ApplicationAdapter
 
         // Re-initialize HUD with new model
         this.hud = new Gdx3DHud(model, this);
+        wireUserMessageSink();
         InputMultiplexer multiplexer = (InputMultiplexer) Gdx.input.getInputProcessor();
         multiplexer.getProcessors().clear();
         multiplexer.addProcessor(hud.getStage());
@@ -607,6 +1059,12 @@ public class GraphicPresenter extends ApplicationAdapter
         letrain.map.Point startPos = model.getCursor().getPosition();
         model.getGroundMap().renderBlock(startPos.getX() - getCols() / 2,
                 startPos.getY() - getRows() / 2, getCols(), getRows());
+        // Loading a savegame uses normal economy (scenario import re-enables free construction).
+        model.getEconomyManager().setFreeConstruction(false);
+        // Normal play: no recipe yet; bind the presenter-owned journal.
+        commandJournal.clear();
+        commandJournal.stopRecording();
+        model.setCommandJournal(commandJournal);
     }
 
     @Override
@@ -630,6 +1088,133 @@ public class GraphicPresenter extends ApplicationAdapter
             showMessage("Load Error",
                     "A critical error occurred while applying loaded game state.");
         }
+    }
+
+    /**
+     * Records a canonical editing command (e.g. a coupling) into the command journal while
+     * recording and into the paused-editing undo history. Coupling commands are id-based, so no
+     * cursor prefix.
+     */
+    public void journalEditingCommand(String command) {
+        letrain.command.CommandJournal journal = model.getCommandJournal();
+        if (journal != null && journal.isRecording()) {
+            journal.recordCoalescing(command);
+        }
+        if (model.isSimulationPaused()) {
+            letrain.command.UndoRedoHistory history = getUndoRedoHistory();
+            if (history != null) {
+                history.recordCoalescing(command);
+            }
+        }
+    }
+
+    /** Undoes {@code steps} editing commands (ADR-020 item 3). */
+    public void undo(int steps) {
+        if (!model.isSimulationPaused()) {
+            log.info("Undo needs the Record/edit mode (R)");
+            return;
+        }
+        letrain.command.UndoRedoHistory history = getUndoRedoHistory();
+        letrain.command.UndoRedoHistory.UndoPlan plan = history.planUndo(steps);
+        if (plan == null) {
+            log.info("Nothing to undo");
+            return;
+        }
+        applyPlan(history, plan, true);
+    }
+
+    /** Redoes {@code steps} editing commands (ADR-020 item 3). */
+    public void redo(int steps) {
+        if (!model.isSimulationPaused()) {
+            log.info("Redo needs the Record/edit mode (R)");
+            return;
+        }
+        letrain.command.UndoRedoHistory history = getUndoRedoHistory();
+        letrain.command.UndoRedoHistory.UndoPlan plan = history.planRedo(steps);
+        if (plan == null) {
+            log.info("Nothing to redo");
+            return;
+        }
+        applyPlan(history, plan, false);
+    }
+
+    /**
+     * Runs {@code action} with train-event sounds muted, for programmatic replays (scenario import,
+     * undo/redo): replayed commands must not play the sounds of the user actions they represent.
+     */
+    private void runWithoutEventSounds(Runnable action) {
+        boolean previous = eventSoundsSuppressed;
+        eventSoundsSuppressed = true;
+        try {
+            action.run();
+        } finally {
+            eventSoundsSuppressed = previous;
+        }
+    }
+
+    /**
+     * Applies an undo/redo plan: restore the checkpoint base (undo) via {@link #applyModel}, then
+     * re-execute the recorded command slice on the restored world through the console path. Mirrors
+     * TerminalPresenter.applyPlan; before replaying it re-seeds the fresh maker from the recorded
+     * resume origin so a slice starting mid-gesture keeps the rail connected.
+     */
+    private void applyPlan(letrain.command.UndoRedoHistory history,
+            letrain.command.UndoRedoHistory.UndoPlan plan, boolean restoring) {
+        log.info("[undoredo] {} from={} to={} target={} appliedBefore={} size={}",
+                restoring ? "UNDO" : "REDO", plan.fromIndex(), plan.toIndex(), plan.target(),
+                history.applied(), history.size());
+        if (restoring) {
+            letrain.mvp.Model restored = history.restore(plan);
+            if (restored == null) {
+                showMessage("Undo", "Undo failed: could not restore checkpoint");
+                return;
+            }
+            applyModel(restored);
+            history.bind(model);
+        }
+        letrain.map.Point resumeOrigin = history.resumeFrom(plan.fromIndex());
+        if (resumeOrigin != null) {
+            letrain.track.Track predecessor =
+                    model.getRailMap().getTrackAt(resumeOrigin.getX(), resumeOrigin.getY());
+            if (predecessor != null) {
+                trackMaker.resumeChainFrom(predecessor);
+            }
+        }
+        int[] progress = {plan.fromIndex(), 0};
+        runWithoutEventSounds(() -> {
+            for (String cmd : plan.commandsToReplay(history.entries())) {
+                String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
+                        file -> onSaveGame(file), file -> onLoadGame(file),
+                        new letrain.command.TurtleBuilder(model, trackMaker),
+                        (title, msg) -> showMessage(title, msg), () -> onExitGame(), null, null,
+                        false);
+                if (error != null) {
+                    log.error("Undo/redo replay failed on '{}': {}", cmd, error);
+                    showMessage("Undo/Redo", "Replay error: " + error);
+                    break;
+                }
+                // Reproduce the terrain materialization the live session performed between edits
+                // (the
+                // render loop generates ground blocks around the cursor each frame). Replay runs
+                // with
+                // no frames, so without this, painting beyond the blocks stored in the checkpoint
+                // would
+                // hit void (-1) terrain and silently fail to lay rails.
+                letrain.map.Point cp = model.getCursor().getPosition();
+                int radius = model.getEconomyManager().getViewRadius();
+                model.getGroundMap().renderBlock(cp.getX() - radius, cp.getY() - radius,
+                        radius * 2 + 1, radius * 2 + 1);
+                progress[0]++;
+                progress[1]++;
+            }
+        });
+        int replayedTo = progress[0];
+        int count = progress[1];
+        log.info("[undoredo] replayed={} replayedTo={} committing", count, replayedTo);
+        history.commit(replayedTo);
+        // Keep the export journal cursor in sync with the applied edits of this session.
+        commandJournal.setApplied(commandJournal.base() + replayedTo);
+        cameraController.forceSnap();
     }
 
     @Override
@@ -677,7 +1262,49 @@ public class GraphicPresenter extends ApplicationAdapter
 
     @Override
     public void showExitDialog() {
-        showMessage("Exit", "Use ALT+F4 to exit the application.");
+        if (hud != null) {
+            hud.showExitMenu();
+        }
+    }
+
+    /** Exports the current editing journal as a scenario file (called by the DSL and the UI). */
+    public void onExportScenario(File file) {
+        if (file != null) {
+            saveScenario(file);
+        }
+    }
+
+    /** Imports (plays) a scenario file: fresh same-seed world + replayed commands. */
+    public void onImportScenario(File file) {
+        if (file != null) {
+            playScenario(file);
+        }
+    }
+
+    public void showExportDialog() {
+        hud.showFileDialog("Export Scenario", com.kotcrab.vis.ui.widget.file.FileChooser.Mode.SAVE,
+                DEFAULT_SCENARIO_FILENAME, new String[] {"ltr"}, (text) -> {
+                    if (text != null && !text.trim().isEmpty()) {
+                        File file = new File(text);
+                        log.info("Exporting scenario to {}", file.getAbsolutePath());
+                        onExportScenario(file);
+                    }
+                });
+    }
+
+    public void showImportDialog() {
+        hud.showFileDialog("Import Scenario", com.kotcrab.vis.ui.widget.file.FileChooser.Mode.OPEN,
+                DEFAULT_SCENARIO_FILENAME, new String[] {"ltr"}, (text) -> {
+                    if (text != null && !text.trim().isEmpty()) {
+                        File file = new File(text);
+                        if (file.exists()) {
+                            log.info("Importing scenario from {}", file.getAbsolutePath());
+                            onImportScenario(file);
+                        } else {
+                            showMessage("Import Error", "Scenario not found:\n" + text);
+                        }
+                    }
+                });
     }
 
     @Override
@@ -757,12 +1384,18 @@ public class GraphicPresenter extends ApplicationAdapter
 
     @Override
     public void onLink(Train train) {
+        if (eventSoundsSuppressed) {
+            return;
+        }
         audioController.playOneShot("link", model.getCursor().getPosition().getX(),
                 model.getCursor().getPosition().getY());
     }
 
     @Override
     public void onUnlink(Train train) {
+        if (eventSoundsSuppressed) {
+            return;
+        }
         audioController.playOneShot("link", model.getCursor().getPosition().getX(),
                 model.getCursor().getPosition().getY());
     }
@@ -771,6 +1404,87 @@ public class GraphicPresenter extends ApplicationAdapter
         if (hud != null) {
             hud.updateHUD();
         }
+    }
+
+    /**
+     * Applies the day/night palette (ADR-022 phase 1) to the ambient light, the sun, the sky colour
+     * and the board; the sun direction follows {@code SolarModel} for the world latitude.
+     */
+    private void updateDayNight() {
+        if (model == null || model.getGameClock() == null) {
+            return;
+        }
+        letrain.time.GameClock clock = model.getGameClock();
+        letrain.time.GameTime now = clock.now();
+        double ratio = clock.getDayNightRatio();
+        setColor(ambientAttribute.color, palette.color(VisualPalette.Token.AMBIENT_LIGHT, ratio));
+        setColor(sunLight.color, palette.color(VisualPalette.Token.SUN_LIGHT, ratio));
+        setColor(tableDiffuse.color, palette.color(VisualPalette.Token.TABLE_BOARD, ratio));
+        setColor(skyColor, palette.color(VisualPalette.Token.SKY, ratio));
+        setColor(voidColor, palette.color(VisualPalette.Token.VOID, ratio));
+        setColor(gridDiffuse.color, palette.color(VisualPalette.Token.TABLE_GRID, ratio));
+        setColor(boxDiffuse.color, palette.color(VisualPalette.Token.DECOR_BOX, ratio));
+        resourceContext.applyTerrainPalette(palette, ratio);
+
+        int dayOfYear = letrain.time.SolarModel.dayOfYear(now.day());
+        double hour = now.hour() + now.minute() / 60.0;
+        double latitude = clock.getLatitude();
+        double elevation =
+                Math.max(2.0, letrain.time.SolarModel.elevationDegrees(dayOfYear, hour, latitude));
+        double azimuth = letrain.time.SolarModel.azimuthDegrees(dayOfYear, hour, latitude);
+        double e = Math.toRadians(elevation);
+        double a = Math.toRadians(azimuth);
+        sunLight.direction.set((float) (-Math.cos(e) * Math.sin(a)), (float) -Math.sin(e),
+                (float) (Math.cos(e) * Math.cos(a))).nor();
+    }
+
+    /** Clock day/night ratio, or 0 (day) when there is no clock. */
+    private double dayNightRatio() {
+        if (model == null || model.getGameClock() == null) {
+            return 0.0;
+        }
+        return model.getGameClock().getDayNightRatio();
+    }
+
+    /**
+     * Lights the nearest locomotive headlights; off while the sun is up (phase 1e). Uses the
+     * rendered positions collected by the vehicle renderer this frame, so the light glides with the
+     * train.
+     */
+    private void updateHeadlights(double ratio) {
+        float intensity = HEADLIGHT_INTENSITY * VisualPalette.lightsOnFactor(ratio);
+        setColor(headlightColor, palette.color(VisualPalette.Token.EMISSIVE_HEADLIGHT, ratio));
+        for (com.badlogic.gdx.graphics.g3d.environment.PointLight light : headlightLights) {
+            light.intensity = 0f;
+        }
+        if (cam == null || intensity <= 0f) {
+            return;
+        }
+        List<Headlights.Source> nearest = Headlights.nearestTo(renderer.getHeadlightSources(),
+                cam.position, headlightLights.length);
+        for (int i = 0; i < nearest.size(); i++) {
+            Headlights.Source source = nearest.get(i);
+            headlightPosition.set(source.x() + source.dirX() * 0.6f, 0.7f,
+                    source.z() + source.dirZ() * 0.6f);
+            headlightLights[i].set(headlightColor, headlightPosition, intensity);
+        }
+    }
+
+    /**
+     * Screen Y (from the bottom, like glScissor) of the horizon: the camera pitch projected with
+     * the vertical FOV. Looking down, the horizon sits above the centre; looking up, below.
+     */
+    private int horizonScreenY() {
+        double halfFov = Math.toRadians(cam.fieldOfView / 2.0);
+        double pitch = Math.asin(Math.max(-1.0, Math.min(1.0, -cam.direction.y)));
+        double ndc = Math.tan(pitch) / Math.tan(halfFov);
+        int height = Gdx.graphics.getHeight();
+        return (int) Math.max(0, Math.min(height, Math.round(height * (1 + ndc) / 2.0)));
+    }
+
+    private static void setColor(Color target, int rgb) {
+        target.set(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f,
+                1f);
     }
 
     @Override

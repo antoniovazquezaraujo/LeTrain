@@ -40,6 +40,16 @@ public class BlockManagerImpl implements BlockManager {
     }
 
     @Override
+    public void addOwner(Train train, Segment segment) {
+        List<Train> owners =
+                segmentOwners.computeIfAbsent(segment, k -> new CopyOnWriteArrayList<>());
+        if (!owners.contains(train)) {
+            owners.add(train);
+            registerTrainSegment(train, segment);
+        }
+    }
+
+    @Override
     public void release(Train train, Segment segment) {
         List<Train> owners = segmentOwners.get(segment);
         if (owners != null) {

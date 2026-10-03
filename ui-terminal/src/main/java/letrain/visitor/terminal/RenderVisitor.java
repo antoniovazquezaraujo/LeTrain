@@ -1,7 +1,9 @@
 package letrain.visitor.terminal;
 
 import com.googlecode.lanterna.TextColor;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import letrain.economy.EconomyManager;
 import letrain.ground.Ground;
 import letrain.ground.GroundMap;
@@ -12,6 +14,7 @@ import letrain.map.impl.SimpleRouter;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameMode;
 import letrain.mvp.impl.terminal.TerminalView;
+import letrain.palette.VisualPalette;
 import letrain.segments.BlockManager;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
@@ -34,29 +37,13 @@ import org.slf4j.LoggerFactory;
 public class RenderVisitor implements Visitor {
     Logger log = LoggerFactory.getLogger(RenderVisitor.class);
     private Model model;
-    private static final TextColor GROUND_COLOR = TextColor.ANSI.WHITE;
-    private static final TextColor WATER_COLOR = TextColor.ANSI.BLUE_BRIGHT;
-    private static final TextColor ROCK_COLOR = TextColor.ANSI.RED_BRIGHT;
-    private static final TextColor CURSOR_DRAWING_COLOR = TextColor.ANSI.GREEN_BRIGHT;
-    private static final TextColor CURSOR_MOVING_COLOR = TextColor.ANSI.YELLOW_BRIGHT;
-    private static final TextColor CURSOR_ERASING_COLOR = TextColor.ANSI.RED_BRIGHT;
-    private static final TextColor WAGON_COLOR = TextColor.ANSI.WHITE;
-    private static final TextColor LOCOMOTIVE_COLOR = TextColor.ANSI.WHITE;
-    private static final TextColor RAIL_TRACK_COLOR = TextColor.ANSI.BLACK_BRIGHT;
-    private static final TextColor SENSOR_COLOR = TextColor.ANSI.CYAN_BRIGHT;
-    private static final TextColor STATION_COLOR = TextColor.ANSI.WHITE;
-    private static final TextColor SELECTED_STATION_COLOR = TextColor.ANSI.RED_BRIGHT;
-    public static final TextColor FORK_COLOR = TextColor.ANSI.WHITE_BRIGHT;
-    public static final TextColor SELECTED_FORK_COLOR = TextColor.ANSI.RED_BRIGHT;
-    public static final TextColor FG_COLOR = TextColor.ANSI.WHITE;
-    public static final TextColor BG_COLOR = TextColor.ANSI.BLACK;
-    public static final TextColor SELECTED_LINKER_COLOR = TextColor.ANSI.MAGENTA;
-    public static final TextColor SEMAPHORE_OPEN_COLOR = TextColor.ANSI.GREEN;
-    public static final TextColor SEMAPHORE_CLOSED_COLOR = TextColor.ANSI.RED;
-    public static final TextColor SEMAPHORE_COLOR = TextColor.ANSI.BLUE;
-    public static final TextColor SELECTED_SEMAPHORE_COLOR = TextColor.ANSI.RED_BRIGHT;
-    public static final TextColor[] CRASH_COLORS = {TextColor.ANSI.RED, TextColor.ANSI.RED_BRIGHT,
-            TextColor.ANSI.YELLOW, TextColor.ANSI.YELLOW_BRIGHT, TextColor.ANSI.BLACK};
+    private final TerminalPalette palette;
+    private TerminalPalette.Resolved paletteColors;
+    /** Paleta diurna de referencia: el faro mezcla hacia ella las celdas que ilumina. */
+    private final TerminalPalette.Resolved dayColors;
+    private float paletteBand = -1f;
+    /** Celdas iluminadas por los faros de las locomotoras y con qué fuerza (0..1). */
+    private final Map<Long, Float> litCells = new HashMap<>();
 
     public static final char[] CRASH_ASPECTS =
             {'⁖', '⁘', '⁙', '⁚', '⁛', '⁝', '⁞', '․', '‥', '…', '⋯', '⋰', '⋱'};
@@ -104,9 +91,113 @@ public class RenderVisitor implements Visitor {
     boolean showId = false;
 
     public RenderVisitor(TerminalView view) {
+        this(view, TerminalPalette.detect());
+    }
+
+    /** Constructor de test: permite fijar el modo de color de la paleta. */
+    RenderVisitor(TerminalView view, TerminalPalette palette) {
         this.view = view;
-        view.setFgColor(FG_COLOR);
-        view.setBgColor(BG_COLOR);
+        this.palette = palette;
+        this.paletteColors = palette.resolve(0f);
+        this.dayColors = this.paletteColors;
+        resetColors();
+    }
+
+    private TextColor color(TerminalPalette.Token token) {
+        return paletteColors.color(token);
+    }
+
+    private int rgb(TerminalPalette.Token token) {
+        return paletteColors.rgb(token);
+    }
+
+    /** Recalcula las celdas que iluminan los faros; de día no hay haz. */
+    private void updateHeadlights(float dayNightRatio) {
+        litCells.clear();
+        if (VisualPalette.lightsOnFactor(dayNightRatio) <= 0f || model.getLocomotives() == null) {
+            return;
+        }
+        for (Locomotive locomotive : model.getLocomotives()) {
+            addHeadlight(locomotive);
+        }
+    }
+
+    private void addHeadlight(Locomotive locomotive) {
+        if (locomotive.getDir() == null || !locomotive.isEngineOn()
+                || !locomotive.isHeadLocomotive() || isHiddenInTunnel(locomotive)) {
+            return;
+        }
+        int cx = locomotive.getPosition().getX();
+        int cy = locomotive.getPosition().getY();
+        for (int dx = -Headlight.RADIUS; dx <= Headlight.RADIUS; dx++) {
+            for (int dy = -Headlight.RADIUS; dy <= Headlight.RADIUS; dy++) {
+                float factor = Headlight.factor(dx, dy, locomotive.getDir());
+                if (factor <= 0f) {
+                    continue;
+                }
+                if (isHiddenTunnelCell(cx + dx, cy + dy)) {
+                    continue;
+                }
+                long key = cellKey(cx + dx, cy + dy);
+                Float previous = litCells.get(key);
+                if (previous == null || factor > previous) {
+                    litCells.put(key, factor);
+                }
+            }
+        }
+    }
+
+    /**
+     * A train inside a tunnel disappears from the map outside Rails mode; its light must vanish
+     * with it.
+     */
+    private boolean isHiddenInTunnel(Locomotive locomotive) {
+        return this.mode != GameMode.RAILS && locomotive.getTrack() instanceof RailTrack
+                && ((RailTrack) locomotive.getTrack())
+                        .getVisualType() == RailTrack.VisualType.TUNNEL;
+    }
+
+    /** The same rule per cell: a hidden tunnel swallows the beam instead of lighting it up. */
+    private boolean isHiddenTunnelCell(int x, int y) {
+        if (this.mode == GameMode.RAILS || model.getRailMap() == null) {
+            return false;
+        }
+        RailTrack track = model.getRailMap().getTrackAt(x, y);
+        return track != null && track.getVisualType() == RailTrack.VisualType.TUNNEL;
+    }
+
+    private static long cellKey(int x, int y) {
+        return ((long) x << 32) | (y & 0xFFFFFFFFL);
+    }
+
+    /** Fuerza del faro en la celda, o null si está a oscuras. */
+    private Float litFactor(int x, int y) {
+        if (paletteBand <= 0f) {
+            return null;
+        }
+        return litCells.get(cellKey(x, y));
+    }
+
+    /** Enciende el fondo de la celda: papel nocturno mezclado hacia el diurno. */
+    private void applyHeadlightBackground(int x, int y) {
+        Float lit = litFactor(x, y);
+        if (lit == null || lit <= 0f) {
+            return;
+        }
+        int board = TerminalPalette.mix(rgb(TerminalPalette.Token.BOARD),
+                dayColors.rgb(TerminalPalette.Token.BOARD), lit * Headlight.MAX_LIGHT);
+        view.setBgColor(palette.colorOf(board));
+    }
+
+    /** Color del token con el faro aplicado: mezcla su versión nocturna con la diurna. */
+    private TextColor headlightColor(TerminalPalette.Token token, int x, int y) {
+        Float lit = litFactor(x, y);
+        if (lit == null || lit <= 0f) {
+            return color(token);
+        }
+        int value =
+                TerminalPalette.mix(rgb(token), dayColors.rgb(token), lit * Headlight.MAX_LIGHT);
+        return palette.colorOf(value);
     }
 
     boolean isShowId() {
@@ -114,8 +205,8 @@ public class RenderVisitor implements Visitor {
     }
 
     public void resetColors() {
-        view.setFgColor(FG_COLOR);
-        view.setBgColor(BG_COLOR);
+        view.setFgColor(color(TerminalPalette.Token.LABEL));
+        view.setBgColor(color(TerminalPalette.Token.BOARD));
         view.setUnderline(false);
     }
 
@@ -125,8 +216,16 @@ public class RenderVisitor implements Visitor {
         if (model == null) {
             return;
         }
+        float dayNightRatio =
+                model.getGameClock() == null ? 0f : model.getGameClock().getDayNightRatio();
+        float band = TerminalPalette.band(dayNightRatio, paletteBand);
+        if (band != paletteBand) {
+            paletteBand = band;
+            paletteColors = palette.resolve(band);
+        }
         this.showId = model.isShowId();
         this.mode = model.getMode();
+        updateHeadlights(dayNightRatio);
         selectedLocomotive = model.getSelectedLocomotive();
         selectedFork = model.getSelectedFork();
         selectedStation = model.getSelectedStation();
@@ -168,23 +267,30 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitRailTrack(RailTrack track) {
+        letrain.track.rail.RailTrack.VisualType vt = track.getVisualType();
+        if (vt == letrain.track.rail.RailTrack.VisualType.TUNNEL && this.mode != GameMode.RAILS) {
+            return;
+        }
         TextColor blockedColor = getTrackBlockedColor(track);
         String aspect = getTrackAspect(track);
+        int x = track.getPosition().getX();
+        int y = track.getPosition().getY();
 
         if (blockedColor != null) {
             view.setFgColor(blockedColor);
         } else if (track.getComponent() instanceof letrain.track.Sensor) {
             if (track.getComponent() instanceof Station) {
-                view.setFgColor(STATION_COLOR);
+                view.setFgColor(headlightColor(TerminalPalette.Token.STATION, x, y));
             } else {
-                view.setFgColor(SENSOR_COLOR);
+                view.setFgColor(headlightColor(TerminalPalette.Token.SENSOR, x, y));
             }
         } else if (DEAD_END_ASPECT.equals(aspect)) {
-            view.setFgColor(TextColor.ANSI.YELLOW);
+            view.setFgColor(headlightColor(TerminalPalette.Token.DEAD_END, x, y));
         } else {
-            view.setFgColor(RAIL_TRACK_COLOR);
+            view.setFgColor(headlightColor(TerminalPalette.Token.RAIL, x, y));
         }
-        view.set(track.getPosition().getX(), track.getPosition().getY(), aspect);
+        applyHeadlightBackground(x, y);
+        view.set(x, y, aspect);
         resetColors();
     }
 
@@ -221,7 +327,7 @@ public class RenderVisitor implements Visitor {
             boolean isProducer = station.getRole() == letrain.track.CargoTypes.StationRole.PRODUCER;
             view.setFgColor(getCargoColor(station.getCargoType(), isProducer));
         } else {
-            view.setFgColor(STATION_COLOR);
+            view.setFgColor(color(TerminalPalette.Token.STATION));
         }
 
         String aspect = GENERIC_STATION_ASPECT;
@@ -242,15 +348,16 @@ public class RenderVisitor implements Visitor {
         }
 
         view.set(renderPos.getX(), renderPos.getY(), aspect);
-        
+
         if (this.mode == GameMode.STATIONS) {
             if (station == selectedStation) {
                 view.setUnderline(true);
-                view.setFgColor(TextColor.ANSI.WHITE_BRIGHT);
+                view.setFgColor(color(TerminalPalette.Token.HIGHLIGHT));
             } else {
-                view.setFgColor(TextColor.ANSI.BLACK_BRIGHT);
+                view.setFgColor(color(TerminalPalette.Token.LABEL));
             }
-            view.set(renderPos.getX() + 1, renderPos.getY(), String.valueOf(station.getId()));
+            int step = labelStep(renderPos, track.getPosition());
+            view.set(renderPos.getX() + step, renderPos.getY(), String.valueOf(station.getId()));
             view.setUnderline(false);
         }
         resetColors();
@@ -264,19 +371,22 @@ public class RenderVisitor implements Visitor {
         }
         Point renderPos = getRightSide(track.getPosition(), sensor.getCreationDir());
 
-        view.setFgColor(SENSOR_COLOR);
+        view.setFgColor(color(TerminalPalette.Token.SENSOR));
         view.set(renderPos.getX(), renderPos.getY(), SENSOR_ASPECT);
 
         if (this.mode == GameMode.SENSORS) {
-            if (sensor.getId() == (model.getSelectedSensor() != null ? model.getSelectedSensor().getId() : -1)) {
+            if (sensor.getId() == (model.getSelectedSensor() != null
+                    ? model.getSelectedSensor().getId()
+                    : -1)) {
                 view.setUnderline(true);
-                view.setFgColor(TextColor.ANSI.WHITE_BRIGHT);
+                view.setFgColor(color(TerminalPalette.Token.HIGHLIGHT));
             } else {
-                view.setFgColor(TextColor.ANSI.BLACK_BRIGHT);
+                view.setFgColor(color(TerminalPalette.Token.LABEL));
             }
             String arrow = speedSignalArrow(sensor.getCreationDir());
-            view.set(renderPos.getX() + 1, renderPos.getY(), arrow);
-            view.set(renderPos.getX() + 2, renderPos.getY(), String.valueOf(sensor.getId()));
+            int step = labelStep(renderPos, sensor.getTrack().getPosition());
+            view.set(renderPos.getX() + step, renderPos.getY(), arrow);
+            view.set(renderPos.getX() + 2 * step, renderPos.getY(), String.valueOf(sensor.getId()));
             view.setUnderline(false);
         }
         resetColors();
@@ -285,24 +395,26 @@ public class RenderVisitor implements Visitor {
     @Override
     public void visitSemaphore(RailSemaphore semaphore) {
         Point renderPos = getRightSide(semaphore.getPosition(), semaphore.getCreationDir());
-        
+
         if (semaphore.isOpen()) {
-            view.setFgColor(SEMAPHORE_OPEN_COLOR);
+            view.setFgColor(color(TerminalPalette.Token.SEMAPHORE_OPEN));
         } else {
-            view.setFgColor(SEMAPHORE_CLOSED_COLOR);
+            view.setFgColor(color(TerminalPalette.Token.SEMAPHORE_CLOSED));
         }
         view.set(renderPos.getX(), renderPos.getY(), SEMAPHORE_ASPECT);
-        
+
         if (mode == GameMode.SEMAPHORES) {
             if (semaphore == selectedSemaphore) {
                 view.setUnderline(true);
-                view.setFgColor(TextColor.ANSI.WHITE_BRIGHT);
+                view.setFgColor(color(TerminalPalette.Token.HIGHLIGHT));
             } else {
-                view.setFgColor(TextColor.ANSI.BLACK_BRIGHT);
+                view.setFgColor(color(TerminalPalette.Token.LABEL));
             }
             String arrow = speedSignalArrow(semaphore.getCreationDir());
-            view.set(renderPos.getX() + 1, renderPos.getY(), arrow);
-            view.set(renderPos.getX() + 2, renderPos.getY(), String.valueOf(semaphore.getId()));
+            int step = labelStep(renderPos, semaphore.getPosition());
+            view.set(renderPos.getX() + step, renderPos.getY(), arrow);
+            view.set(renderPos.getX() + 2 * step, renderPos.getY(),
+                    String.valueOf(semaphore.getId()));
             view.setUnderline(false);
         }
         resetColors();
@@ -310,12 +422,13 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitSpeedSignal(letrain.track.SpeedSignal speedSignal) {
-        letrain.map.Point renderPos = getRightSide(speedSignal.getPosition(), speedSignal.getCreationDir());
-        
+        letrain.map.Point renderPos =
+                getRightSide(speedSignal.getPosition(), speedSignal.getCreationDir());
+
         if (speedSignal.isMax()) {
-            view.setFgColor(TextColor.ANSI.RED);
+            view.setFgColor(color(TerminalPalette.Token.SIGNAL_MAX));
         } else {
-            view.setFgColor(TextColor.ANSI.BLUE);
+            view.setFgColor(color(TerminalPalette.Token.SIGNAL_MIN));
         }
 
         int limit = speedSignal.getLimit();
@@ -327,20 +440,33 @@ public class RenderVisitor implements Visitor {
         }
 
         view.set(renderPos.getX(), renderPos.getY(), String.valueOf(icon));
-        
+
         if (mode == GameMode.SPEED_SIGNALS) {
             if (speedSignal == selectedSpeedSignal) {
                 view.setUnderline(true);
-                view.setFgColor(TextColor.ANSI.WHITE_BRIGHT);
+                view.setFgColor(color(TerminalPalette.Token.HIGHLIGHT));
             } else {
-                view.setFgColor(TextColor.ANSI.BLACK_BRIGHT);
+                view.setFgColor(color(TerminalPalette.Token.LABEL));
             }
             String arrow = speedSignalArrow(speedSignal.getCreationDir());
-            view.set(renderPos.getX() + 1, renderPos.getY(), arrow);
-            view.set(renderPos.getX() + 2, renderPos.getY(), String.valueOf(speedSignal.getId()));
+            int step = labelStep(renderPos, speedSignal.getPosition());
+            view.set(renderPos.getX() + step, renderPos.getY(), arrow);
+            view.set(renderPos.getX() + 2 * step, renderPos.getY(),
+                    String.valueOf(speedSignal.getId()));
             view.setUnderline(false);
         }
         resetColors();
+    }
+
+    /**
+     * Column step for the arrow/ID drawn next to an element icon: to the outer side, so a signal on
+     * the west side does not paint its label over the rails.
+     */
+    private int labelStep(Point renderPos, Point trackPos) {
+        if (trackPos == null) {
+            return 1;
+        }
+        return renderPos.getX() < trackPos.getX() ? -1 : 1;
     }
 
     private String speedSignalArrow(letrain.map.Dir dir) {
@@ -374,18 +500,18 @@ public class RenderVisitor implements Visitor {
         if (blockedColor != null) {
             view.setFgColor(blockedColor);
         } else {
-            view.setFgColor(FORK_COLOR);
+            view.setFgColor(color(TerminalPalette.Token.FORK));
         }
-        
+
         view.set(track.getPosition().getX(), track.getPosition().getY(),
                 dirGraphicAspect(track.getFirstOpenDir()));
-                
+
         if (this.mode == GameMode.FORKS) {
             if (track == selectedFork) {
                 view.setUnderline(true);
-                view.setFgColor(TextColor.ANSI.WHITE_BRIGHT);
+                view.setFgColor(color(TerminalPalette.Token.HIGHLIGHT));
             } else {
-                view.setFgColor(TextColor.ANSI.BLACK_BRIGHT);
+                view.setFgColor(color(TerminalPalette.Token.LABEL));
             }
             view.set(track.getPosition().getX() + 1, track.getPosition().getY(),
                     String.valueOf(track.getId()));
@@ -415,7 +541,7 @@ public class RenderVisitor implements Visitor {
             }
 
             if (highlighted) {
-                view.setBgColor(SELECTED_LINKER_COLOR);
+                view.setBgColor(color(TerminalPalette.Token.SELECTION_LINK));
                 view.setFgColor(TextColor.ANSI.BLACK);
             }
         }
@@ -423,8 +549,9 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitLocomotive(Locomotive locomotive) {
-        if (locomotive.getTrack() instanceof RailTrack && (((RailTrack)locomotive.getTrack()).getVisualType() == RailTrack.VisualType.TUNNEL
-                || ((RailTrack)locomotive.getTrack()).getVisualType() == RailTrack.VisualType.TUNNEL_GATE)
+        if (locomotive.getTrack() instanceof RailTrack
+                && (((RailTrack) locomotive.getTrack())
+                        .getVisualType() == RailTrack.VisualType.TUNNEL)
                 && this.mode != GameMode.RAILS) {
             return;
         }
@@ -437,7 +564,8 @@ public class RenderVisitor implements Visitor {
             return;
         }
         TextColor locoColor = parseColor(locomotive.getColor());
-        view.setFgColor(locoColor != null ? locoColor : LOCOMOTIVE_COLOR);
+        view.setFgColor(locoColor != null ? locoColor : color(TerminalPalette.Token.LOCO));
+        applyHeadlightBackground(locomotive.getPosition().getX(), locomotive.getPosition().getY());
         if (locomotive == selectedLocomotive) {
             view.setUnderline(true);
         }
@@ -456,8 +584,8 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitWagon(Wagon wagon) {
-        if (wagon.getTrack() instanceof RailTrack && (((RailTrack)wagon.getTrack()).getVisualType() == RailTrack.VisualType.TUNNEL
-                || ((RailTrack)wagon.getTrack()).getVisualType() == RailTrack.VisualType.TUNNEL_GATE)
+        if (wagon.getTrack() instanceof RailTrack
+                && (((RailTrack) wagon.getTrack()).getVisualType() == RailTrack.VisualType.TUNNEL)
                 && this.mode != GameMode.RAILS) {
             return;
         }
@@ -485,8 +613,9 @@ public class RenderVisitor implements Visitor {
                 view.setUnderline(false);
             }
         } else {
-            view.setFgColor(WAGON_COLOR);
+            view.setFgColor(color(TerminalPalette.Token.WAGON));
         }
+        applyHeadlightBackground(wagon.getPosition().getX(), wagon.getPosition().getY());
         highlightIfSelected(wagon);
         view.set(wagon.getPosition().getX(), wagon.getPosition().getY(), wagon.getAspect());
         resetColors();
@@ -497,7 +626,7 @@ public class RenderVisitor implements Visitor {
         String aspect = cursorGraphicAspect(cursor.getDir());
         switch (cursor.getMode()) {
             case DRAWING:
-                view.setFgColor(CURSOR_DRAWING_COLOR);
+                view.setFgColor(color(TerminalPalette.Token.CURSOR_DRAWING));
                 break;
             case MAKING_TRACKS:
                 // Draw braille on the tile being constructed (previous position)
@@ -506,20 +635,21 @@ public class RenderVisitor implements Visitor {
                     String[] braille = {"⡀", "⢀", "⡄", "⣤", "⣦", "⣶", "⣾", "⣿"};
                     int idx2 = (int) (cursor.getProgress() * (braille.length - 1));
                     String brailleChar = braille[Math.max(0, Math.min(idx2, braille.length - 1))];
-                    view.setFgColor(TextColor.ANSI.YELLOW);
+                    view.setFgColor(color(TerminalPalette.Token.CURSOR_MOVING));
                     view.set(cp.getX(), cp.getY(), brailleChar);
                     resetColors();
                 }
                 // Draw cursor normally on its own position
-                view.setFgColor(CURSOR_DRAWING_COLOR);
+                view.setFgColor(color(TerminalPalette.Token.CURSOR_DRAWING));
                 break;
             case ERASING:
-                view.setFgColor(CURSOR_ERASING_COLOR);
+                view.setFgColor(color(TerminalPalette.Token.CURSOR_ERASING));
                 break;
             case MOVING:
-                view.setFgColor(CURSOR_MOVING_COLOR);
+                view.setFgColor(color(TerminalPalette.Token.CURSOR_MOVING));
                 break;
         }
+        applyHeadlightBackground(cursor.getPosition().getX(), cursor.getPosition().getY());
         view.set(cursor.getPosition().getX(), cursor.getPosition().getY(), aspect);
         resetColors();
     }
@@ -527,7 +657,8 @@ public class RenderVisitor implements Visitor {
     ////////////////////////////////////////////////////////////////////////////////
     private String getTrackAspect(Track track) {
         if (track instanceof letrain.track.rail.RailTrack) {
-            letrain.track.rail.RailTrack.VisualType vt = ((letrain.track.rail.RailTrack) track).getVisualType();
+            letrain.track.rail.RailTrack.VisualType vt =
+                    ((letrain.track.rail.RailTrack) track).getVisualType();
             if (vt == letrain.track.rail.RailTrack.VisualType.TUNNEL) {
                 return TUNNEL_RAILTRACK_ASPECT;
             } else if (vt == letrain.track.rail.RailTrack.VisualType.TUNNEL_GATE) {
@@ -639,7 +770,16 @@ public class RenderVisitor implements Visitor {
     }
 
     public TextColor getCrashColor() {
-        return CRASH_COLORS[(int) (Math.random() * CRASH_COLORS.length)];
+        int[] fire = crashColors();
+        return palette.colorOf(fire[(int) (Math.random() * fire.length)]);
+    }
+
+    /** Variantes de fuego del choque derivadas del token, para no salirse de la familia. */
+    private int[] crashColors() {
+        int crash = rgb(TerminalPalette.Token.CRASH);
+        return new int[] {crash, TerminalPalette.mix(crash, 0xFFD24A, 0.5f),
+                TerminalPalette.mix(crash, 0xFFFFFF, 0.35f),
+                TerminalPalette.mix(crash, 0x000000, 0.3f)};
     }
 
     @Override
@@ -653,55 +793,59 @@ public class RenderVisitor implements Visitor {
         int x = ground.getPosition().getX();
         int y = ground.getPosition().getY();
         String aspect = GROUND_ASPECT;
-        TextColor color = GROUND_COLOR;
+        TextColor color = null;
+        TerminalPalette.Token token = TerminalPalette.Token.GROUND;
 
         if (type >= 10 && type <= 19) {
             letrain.track.CargoTypes cargo =
                     letrain.track.CargoTypes.IndustryMapper.getCargoForTerrain(type);
             color = getCargoColor(cargo, true);
             aspect = PRODUCER_ASPECT;
+            token = null;
         } else if (type >= 20 && type <= 29) {
             letrain.track.CargoTypes cargo =
                     letrain.track.CargoTypes.IndustryMapper.getCargoForTerrain(type);
             color = getCargoColor(cargo, true);
             aspect = CONSUMER_ASPECT;
+            token = null;
         } else {
             switch (type) {
                 case GroundMap.GROUND:
-                    color = GROUND_COLOR;
                     aspect = GROUND_ASPECT;
                     break;
                 case GroundMap.WATER:
-                    color = WATER_COLOR;
+                    token = TerminalPalette.Token.WATER;
                     aspect = WATER_ASPECT;
                     break;
                 case GroundMap.ROCK:
-                    color = ROCK_COLOR;
+                    token = TerminalPalette.Token.ROCK;
                     aspect = ROCK_ASPECT;
                     break;
             }
         }
-        view.setFgColor(color);
+        view.setFgColor(token != null ? headlightColor(token, x, y) : color);
+        applyHeadlightBackground(x, y);
         view.set(x, y, aspect);
         resetColors();
     }
 
     private TextColor getCargoColor(letrain.track.CargoTypes cargo, boolean isLoaded) {
         if (cargo == null) {
-            return TextColor.ANSI.WHITE;
+            return color(TerminalPalette.Token.LABEL);
         }
-        switch (cargo) {
-            case COAL:
-                return isLoaded ? TextColor.ANSI.WHITE : TextColor.ANSI.BLACK_BRIGHT;
-            case GOLD:
-                return isLoaded ? TextColor.ANSI.YELLOW_BRIGHT : TextColor.ANSI.YELLOW;
-            case RUBY:
-                return isLoaded ? TextColor.ANSI.RED_BRIGHT : TextColor.ANSI.RED;
-            case NONE:
-            default:
-                return TextColor.ANSI.WHITE;
+        TerminalPalette.Token token = switch (cargo) {
+            case COAL -> TerminalPalette.Token.CARGO_COAL;
+            case GOLD -> TerminalPalette.Token.CARGO_GOLD;
+            case RUBY -> TerminalPalette.Token.CARGO_RUBY;
+            default -> TerminalPalette.Token.LABEL;
+        };
+        int value = rgb(token);
+        if (!isLoaded) {
+            value = TerminalPalette.mix(value, rgb(TerminalPalette.Token.BOARD), 0.35f);
         }
+        return palette.colorOf(value);
     }
+
     private TextColor getTrackBlockedColor(RailTrack track) {
 
         if (model == null || track == null) {

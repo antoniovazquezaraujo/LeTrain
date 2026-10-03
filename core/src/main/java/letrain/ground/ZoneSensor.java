@@ -1,0 +1,140 @@
+package letrain.ground;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.function.IntBinaryOperator;
+
+/**
+ * Turns a listening position into zone weights, following ADR-025: the primary zone is the tile
+ * under the focus and the secondary one is the non-primary zone with the most influence inside a
+ * fixed radius. Influence sums a linear distance falloff per sampled tile, so both proximity and
+ * extent count.
+ *
+ * <p>
+ * The bed zone ({@code fields}, the default terrain) may not outrank a feature under the focus:
+ * stepping on a factory, a mine or a bridge keeps that zone prominent (the surrounding field is
+ * capped at {@link #BED_SECONDARY_MAX}) instead of burying it at 0.15.
+ */
+public class ZoneSensor {
+
+    public static final float SECONDARY_MAX = 0.85f;
+
+    /** Top weight of the bed zone when it is the secondary and the focus is on a feature. */
+    public static final float BED_SECONDARY_MAX = 0.15f;
+
+    /** Within this distance the secondary zone is at full weight; it fades out towards R. */
+    private static final float FULL_WEIGHT_DISTANCE = 4f;
+
+    public record Result(String primary, Map<String, Float> influence, Map<String, Float> proximity,
+            Map<String, Float> weights) {
+
+        public Result {
+            influence = Map.copyOf(influence);
+            proximity = Map.copyOf(proximity);
+            weights = Map.copyOf(weights);
+        }
+
+        public float weightOf(String zone) {
+            return weights.getOrDefault(zone, 0f);
+        }
+    }
+
+    private final int radius;
+    private final int stride;
+
+    public ZoneSensor(int radius, int stride) {
+        if (radius < 1) {
+            throw new IllegalArgumentException("radius must be >= 1");
+        }
+        if (stride < 1) {
+            throw new IllegalArgumentException("stride must be >= 1");
+        }
+        this.radius = radius;
+        this.stride = stride;
+    }
+
+    public int radius() {
+        return radius;
+    }
+
+    public int stride() {
+        return stride;
+    }
+
+    public Result sense(IntBinaryOperator terrainAt, int x, int y) {
+        String primary = zoneOf(terrainAt.applyAsInt(x, y));
+        if (primary == null) {
+            return new Result(null, Map.of(), Map.of(), Map.of());
+        }
+        Map<String, Float> summed = new LinkedHashMap<>();
+        Map<String, Float> proximity = new LinkedHashMap<>();
+        float total = 0f;
+        for (int dy = -radius; dy <= radius; dy += stride) {
+            for (int dx = -radius; dx <= radius; dx += stride) {
+                float distance = (float) Math.sqrt(dx * dx + dy * dy);
+                if (distance > radius) {
+                    continue;
+                }
+                String zone = zoneOf(terrainAt.applyAsInt(x + dx, y + dy));
+                if (zone == null) {
+                    continue;
+                }
+                float falloff = 1f - distance / radius;
+                summed.merge(zone, falloff, Float::sum);
+                proximity.merge(zone, falloff, Math::max);
+                total += falloff;
+            }
+        }
+        Map<String, Float> influence = new LinkedHashMap<>();
+        for (Map.Entry<String, Float> entry : summed.entrySet()) {
+            influence.put(entry.getKey(), total > 0f ? entry.getValue() / total : 0f);
+        }
+        String secondary = null;
+        float bestProximity = 0f;
+        float bestInfluence = 0f;
+        for (Map.Entry<String, Float> entry : proximity.entrySet()) {
+            if (entry.getKey().equals(primary)) {
+                continue;
+            }
+            float zoneInfluence = influence.getOrDefault(entry.getKey(), 0f);
+            if (entry.getValue() > bestProximity
+                    || (entry.getValue() == bestProximity && zoneInfluence > bestInfluence)) {
+                bestProximity = entry.getValue();
+                bestInfluence = zoneInfluence;
+                secondary = entry.getKey();
+            }
+        }
+        Map<String, Float> weights = new LinkedHashMap<>();
+        if (secondary == null) {
+            weights.put(primary, 1f);
+            return new Result(primary, influence, proximity, weights);
+        }
+        float full = Math.max(0.05f, 1f - Math.min(FULL_WEIGHT_DISTANCE, radius) / radius);
+        float curve = Math.min(1f, bestProximity / full);
+        float top = isBed(secondary) && !isBed(primary) ? BED_SECONDARY_MAX : SECONDARY_MAX;
+        float secondaryWeight = top * curve;
+        weights.put(primary, 1f - secondaryWeight);
+        weights.put(secondary, secondaryWeight);
+        return new Result(primary, influence, proximity, weights);
+    }
+
+    /** The default terrain acts as the mix bed: it can be replaced by a feature, never bury one. */
+    private static boolean isBed(String zone) {
+        return "fields".equals(zone);
+    }
+
+    public static String zoneOf(int terrain) {
+        return switch (terrain) {
+            case GroundMap.GROUND -> "fields";
+            case GroundMap.WATER -> "sea";
+            case GroundMap.ROCK -> "mountain";
+            case GroundMap.GOLD_MINE -> "gold-mine";
+            case GroundMap.MINE -> "coal-mine";
+            case GroundMap.RUBY_MINE -> "ruby-mine";
+            case GroundMap.JEWELRY_STORE -> "gold-factory";
+            case GroundMap.POWER_PLANT -> "coal-factory";
+            case GroundMap.RUBY_STORE -> "ruby-factory";
+            default -> null;
+        };
+    }
+}

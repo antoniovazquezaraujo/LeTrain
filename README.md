@@ -1,6 +1,10 @@
 # LeTrain 🚂✨
 
 <p align="left">
+  🌐 <strong>English</strong> | <a href="README_es.md">Español</a>
+</p>
+
+<p align="left">
   <a href="https://github.com/antoniovazquezaraujo/LeTrain/actions/workflows/ci.yml"><img src="https://github.com/antoniovazquezaraujo/LeTrain/actions/workflows/ci.yml/badge.svg" alt="Build Status"></a>
   <a href="https://github.com/antoniovazquezaraujo/LeTrain/releases"><img src="https://img.shields.io/github/v/release/antoniovazquezaraujo/LeTrain?include_prereleases&style=flat-square" alt="GitHub release"></a>
   <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=flat-square" alt="License"></a>
@@ -28,6 +32,9 @@
     <img src="https://img.shields.io/badge/🐧_Get_it_on_Snap_Store-E95420?style=for-the-badge&logo=snapcraft&logoColor=white" alt="Get it on Snap Store">
   </a>
   <br><br>
+  <a href="docs/PHILOSOPHY.md">
+    <img src="https://img.shields.io/badge/📜_Manifesto_&_Philosophy-8A2BE2?style=for-the-badge&logo=markdown&logoColor=white" alt="Read the Manifesto">
+  </a>
   <a href="https://antoniovazquezaraujo.github.io/LeTrain/">
     <img src="https://img.shields.io/badge/📖_Read_the_Documentation-2EA043?style=for-the-badge&logo=markdown&logoColor=white" alt="Read the Documentation">
   </a>
@@ -39,6 +46,9 @@
 
 **LeTrain** is a procedural train simulator that blends classic ASCII aesthetics with a modern 3D engine. Build vast rail networks across an infinite world, manage a complex economy, and master the art of logistical efficiency.
 
+> 📜 **[Read the LeTrain Manifesto & Philosophy](docs/PHILOSOPHY.md)** ([Leer en Español](docs/PHILOSOPHY_es.md))  
+> *"A game for engineer-children and child-engineers: no toys that play by themselves, honest trains, and pure keyboard flow."*
+
 ---
 
 ## 🌟 New in 2026: The 3D Evolution
@@ -47,13 +57,25 @@ LeTrain has evolved! While maintaining its terminal roots, it now features a **h
 - **Classic Soul**: Industrial zones and trains retain their iconic character-based charm, now rendered as physical 3D objects.
 - **Visual Polish**: Dynamic transparency for mountains, semantic color-coded stations, and high-resolution typography.
 
+## 🎬 Record, Undo & Scenarios
+The editing workflow is now first-class — in both the 2D and 3D clients:
+- **Record/edit mode (`R`)**: freeze the world, build instantly, and journal every edit.
+- **Undo / redo**: `u` and **Ctrl+R** (or `undo;` / `redo;`), for construction *and* state changes (forks, semaphores, signals).
+- **Scenarios (`.ltr`)**: export your whole network as a small text recipe and import anyone else's. The same seed rebuilds the same world, so a scenario travels as plain text. Validate one headlessly with the bundled **`letrain-check`**.
+- **Built-in editor (`p`)**: a tabbed Scenario / Program / Config editor with a per-tab quick reference and error navigation.
+- **Experiment mode (`X`)**: snapshot the live world, try anything, then restore it.
+
+<p align="center">
+  <img width="80%" alt="The LeTrain Editor with the Config tab selected" src="docs/user/images/config-editor.png" />
+</p>
+
 ## 💰 Deep Economy & Industry
 The game now features a fully integrated financial system:
 - **Capital Management**: Start with **$0** (Zero-to-Hero challenge) and grow your wealth.
 - **Logistics Engine**: Transport specialized cargo (**GOLD**, **COAL**, **RUBY**) from Producers to Consumers.
 - **Smart Pricing**: Revenue scales with travel distance. Every meter counts!
 - **Construction Costs**: Balancing infrastructure expansion vs. operational fuel costs.
-- **Configurable Gameplay**: Fine-tune the entire economy via the `economy.properties` file.
+- **Configurable Gameplay**: Fine-tune the entire game via the `letrain.cfg` file (it ships next to the launchers).
 
 ## 🌍 Infinite Procedural World
 - **Entropy Booster**: Every new game starts at a unique, randomized coordinate (±10k to ±100k units) to ensure fresh exploration every time.
@@ -69,15 +91,21 @@ The game now features a fully integrated financial system:
 - **Maven**.
 
 ### Quick Launch
-The build system is now fully automated. Simply run:
+The build system is fully automated. Simply run:
 ```bash
-mvn package -DskipTests
+mvn clean package -DskipTests
 ```
-This generates a standalone native distribution for your OS in the `output/LeTrain` folder.
+This generates three standalone distributions in `output/`:
+- **`output/LeTrain`** — the modern **3D** experience.
+- **`output/LeTrain2D`** — the classic, high-speed **ASCII terminal** view.
+- **`output/letrain-check`** — the headless scenario (`.ltr`) validator.
 
-### Dual Launchers
-- **`LeTrain`** (or `.exe` on Windows): The modern experience. Launches directly into **3D mode**.
-- **`LeTrain2D`** (or `.exe` on Windows): For those who prefer the classic, high-speed ASCII terminal view.
+A default `letrain.cfg` ships next to each launcher, so you can tweak the game without touching the code.
+
+### Launchers
+- **`LeTrain`** (or `.exe` / `.sh`): Launches directly into **3D mode**.
+- **`LeTrain2D`** (or `.exe` / `.sh`): For those who prefer the classic terminal view.
+- **`letrain-check <file.ltr>`**: Validates a scenario file and prints `file:line:col` diagnostics.
 
 ---
 
@@ -89,7 +117,11 @@ This generates a standalone native distribution for your OS in the `output/LeTra
 - **Audio**: Granular synthesis engine for realistic locomotive sounds.
 
 ## 🤝 Contributing
-Contributions are welcome! Whether it's bug fixes, performance improvements, or new "letter" models for wagons, feel free to open a Pull Request.
+Contributions are welcome! Bug reports, feature ideas, docs and code are all appreciated.
+- 📜 **Start by reading our [Design Philosophy & Manifesto](docs/PHILOSOPHY.md)** to understand the core soul, the 2D/3D symmetry, and the non-negotiables of LeTrain.
+- Read **[CONTRIBUTING.md](CONTRIBUTING.md)** for the build/test and PR workflow.
+- [Open an issue](https://github.com/antoniovazquezaraujo/LeTrain/issues/new/choose) for a bug or a feature request.
+- For code, branch from `develop` (`feature/...` / `fix/...`), keep the PR focused, and make sure `mvn clean test` passes.
 
 ---
 *Created by Antonio Vazquez Araujo.*  

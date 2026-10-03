@@ -1,5 +1,6 @@
 package letrain.vehicle.rail.impl;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 import java.util.Deque;
 import java.util.LinkedList;
@@ -62,6 +63,13 @@ public class Train implements Renderable {
     private transient boolean pendingReverse = false;
     private transient boolean pendingManualMode = false;
 
+    /**
+     * Contador de ticks de simulación transcurridos para este tren (20 TPS). Avanza una vez por
+     * tick cuando la locomotora directora es actualizada por {@code SimulationService}. Es la
+     * unidad de tiempo usada por la regla de descarrilamiento por curvas (issue #350).
+     */
+    private transient long simulationTick = 0;
+
     public TrainCouplingManager getTrainCouplingManager() {
         return trainCouplingManager;
     }
@@ -92,6 +100,19 @@ public class Train implements Renderable {
 
     public void setSavedTargetSpeed(int speed) {
         this.savedTargetSpeed = speed;
+    }
+
+    /**
+     * True when there is a speed saved for a later restore (block/schedule wait gate, brake…). The
+     * safety layer uses it to decide whether a release must restore a deferred order (issue #633).
+     */
+    public boolean hasSavedTargetSpeed() {
+        return savedTargetSpeed > 0;
+    }
+
+    /** The speed saved for a later restore, or -1 when there is none. */
+    public int getSavedTargetSpeed() {
+        return savedTargetSpeed;
     }
 
     public Train(int id) {
@@ -153,6 +174,24 @@ public class Train implements Renderable {
         return autopilot.mode() != letrain.itinerary.AutoPilot.Mode.IDLE;
     }
 
+    /**
+     * True while the autopilot holds the train at a waypoint until its departure (ADR-022 phase
+     * 2b). A requested speed is then deferred (saved) instead of moving the train, like a block
+     * wait; the scheduled departure restores it.
+     */
+    public boolean isHeldBySchedule() {
+        return autopilot != null && autopilot.mode() == letrain.itinerary.AutoPilot.Mode.WAITING;
+    }
+
+    public long getSimulationTick() {
+        return simulationTick;
+    }
+
+    /** Avanza el reloj de simulación del tren un tick (se invoca una vez por tick del motor). */
+    public void advanceSimulationTick() {
+        this.simulationTick++;
+    }
+
     public void setAutoMode(boolean autoMode) {
         if (autoMode) {
             autopilot.activate();
@@ -209,10 +248,17 @@ public class Train implements Renderable {
         return this.pendingReverse;
     }
 
+    /**
+     * Runtime intent ("switch to manual once the train stops"), never persistent state. Both
+     * accessors are ignored by Jackson so the flag cannot leak into a savegame and drop a loaded
+     * train to manual on its next full stop (issue #636).
+     */
+    @JsonIgnore
     public boolean isPendingManualMode() {
         return this.pendingManualMode;
     }
 
+    @JsonIgnore
     public void setPendingManualMode(boolean pending) {
         this.pendingManualMode = pending;
     }
@@ -275,7 +321,10 @@ public class Train implements Renderable {
             int oldSpeed = speedLinker.getTargetSpeed();
             this.setSavedSpeedBeforeReverse(-1);
             speedLinker.setSpeed(speed);
-            if (speed > 0 && oldSpeed == 0 && getModel() != null) {
+            // The effective target can be 0 when the block/schedule wait gate deferred the order;
+            // the train is not really starting, so do not acquire initial locks (which would clear
+            // the wait and strand the deferred speed) (issue #633).
+            if (speedLinker.getTargetSpeed() > 0 && oldSpeed == 0 && getModel() != null) {
                 letrain.segments.Segment seg = resolveCurrentSegmentFromGraph();
                 if (seg != null) {
                     notifyAutopilotSegmentEntered(seg);
@@ -319,6 +368,11 @@ public class Train implements Renderable {
 
     public void notifySpeedChanged(int speed) {
         guardNotify(() -> {
+            if (speed == 0 && safetyManager != null) {
+                // El tren se ha detenido por completo: la próxima curva ya no puede
+                // descarrilar por intervalo con la anterior (issue #350).
+                safetyManager.resetDerailmentHistory();
+            }
             if (speed == 0 && pendingReverse) {
                 pendingReverse = false;
                 Tractor dirLinker = getDirectorLinker();
@@ -326,8 +380,14 @@ public class Train implements Renderable {
                     dirLinker.toggleReversed();
                     if (this.savedSpeedBeforeReverse != -1) {
                         int targetSpeed = this.savedSpeedBeforeReverse;
-                        dirLinker.setTargetSpeed(targetSpeed);
                         this.savedSpeedBeforeReverse = -1;
+                        // Issue #650: a reverse ordered while moving with target 0 saved a 0. It
+                        // must not clobber a speed restored in between (e.g. a departure that
+                        // released while the train braked to the reversal stop): only a positive
+                        // saved speed is re-applied.
+                        if (targetSpeed > 0) {
+                            dirLinker.setTargetSpeed(targetSpeed);
+                        }
                         if (getModel() != null) {
                             letrain.segments.Segment seg = resolveCurrentSegmentFromGraph();
                             if (seg != null) {
@@ -420,6 +480,27 @@ public class Train implements Renderable {
         }
     }
 
+    /**
+     * Rebind after a split (ADR-022 phase 2f): both parts of the train physically share the cantons
+     * they occupy, so the presence is registered without the exclusive-lock conflict that would
+     * emergency-stop the trains. Safe: the canton stays occupied for the rest of the network until
+     * both parts leave it.
+     */
+    public void rebindShared() {
+        if (model == null) {
+            log.warn("Cannot rebind train {}: model is null", id);
+            return;
+        }
+        safetyManager.claimSharedPresence();
+        if (isAutoMode()) {
+            letrain.segments.Segment seg = resolveCurrentSegmentFromGraph();
+            if (seg != null) {
+                notifyAutopilotSegmentEntered(seg);
+            }
+            safetyManager.acquireInitialLocks();
+        }
+    }
+
     /** Reinitializes transient fields after deserialization. */
     public void postLoadInit() {
         this.activeSensors = new java.util.HashSet<>();
@@ -467,6 +548,59 @@ public class Train implements Renderable {
         return linkers;
     }
 
+    /**
+     * Human-readable composition: the tractive locomotive's color and the number of wagons per
+     * cargo type, e.g. {@code Loco color: RED} / {@code Wagons (3): COAL x2 GOLD x1}.
+     */
+    public String describeComposition() {
+        StringBuilder sb = new StringBuilder();
+
+        String color = null;
+        if (directorLinker instanceof Locomotive) {
+            color = ((Locomotive) directorLinker).getColor();
+        }
+        if (color == null) {
+            for (Linker linker : linkers) {
+                if (linker instanceof Locomotive) {
+                    color = ((Locomotive) linker).getColor();
+                    break;
+                }
+            }
+        }
+        if (color != null) {
+            sb.append("Loco color: ").append(color).append('\n');
+        }
+
+        java.util.Map<letrain.track.CargoTypes, Integer> counts =
+                new java.util.EnumMap<>(letrain.track.CargoTypes.class);
+        int wagons = 0;
+        for (Linker linker : linkers) {
+            if (linker instanceof Wagon) {
+                wagons++;
+                Wagon wagon = (Wagon) linker;
+                letrain.track.CargoTypes type = wagon.getExclusiveCargoType();
+                if (type == null || type == letrain.track.CargoTypes.NONE) {
+                    type = wagon.getCargoType();
+                }
+                if (type == null) {
+                    type = letrain.track.CargoTypes.NONE;
+                }
+                counts.merge(type, 1, Integer::sum);
+            }
+        }
+        sb.append("Wagons (").append(wagons).append("):");
+        if (counts.isEmpty()) {
+            sb.append(" none");
+        } else {
+            for (java.util.Map.Entry<letrain.track.CargoTypes, Integer> e : counts.entrySet()) {
+                sb.append(' ').append(e.getKey()).append(" x").append(e.getValue());
+            }
+        }
+        sb.append('\n');
+
+        return sb.toString();
+    }
+
     public Deque<Linker> getLinkersToJoin() {
         return linkersToJoin;
     }
@@ -501,6 +635,16 @@ public class Train implements Renderable {
 
     public LinkersSense getLinkerJoinSense() {
         return linkerJoinSense;
+    }
+
+    /** True when the pending join/link is on the front sense (for canonical coupling recording). */
+    public boolean isJoinFront() {
+        return linkerJoinSense == LinkersSense.FRONT;
+    }
+
+    /** True when the pending division/unlink is on the front sense. */
+    public boolean isDivisionFront() {
+        return linkerDivisionSense == LinkersSense.FRONT;
     }
 
     public void setLinkerJoinSense(LinkersSense linkerJoinSense) {
@@ -577,6 +721,12 @@ public class Train implements Renderable {
         return linkers.stream().filter(Tractor.class::isInstance).map(Tractor.class::cast).toList();
     }
 
+    /** The locomotives of this train (its tractors that are locomotives), in composition order. */
+    public List<Locomotive> getLocomotives() {
+        return getTractors().stream().filter(Locomotive.class::isInstance)
+                .map(Locomotive.class::cast).toList();
+    }
+
     /**
      * Sets target speed to 0 on the director linker (gradual stop). Saves the current target speed
      * so it can be restored later.
@@ -590,9 +740,13 @@ public class Train implements Renderable {
         }
     }
 
-    /** Stops all tractors immediately (speed = 0). */
+    /**
+     * Stops all tractors immediately (speed = 0). A previously saved cruise speed is preserved when
+     * the train was already braking (target 0): buffer contacts must not forget it, or the
+     * scheduled departure of a parked train would resume at the default speed (ADR-022 2b).
+     */
     public void emergencyStop() {
-        if (getDirectorLinker() != null) {
+        if (getDirectorLinker() != null && getDirectorLinker().getTargetSpeed() > 0) {
             savedTargetSpeed = getDirectorLinker().getTargetSpeed();
         }
         getTractors().forEach(t -> {
@@ -638,6 +792,12 @@ public class Train implements Renderable {
     public void crashDestroy(letrain.map.Point pos, int speed) {
         guardNotify(() -> {
             this.stalled = true;
+            // Issue #645: a stop-on-contact mission fails here (a contact at or above the crash
+            // threshold is the normal crash physics). Before the dispatcher so the waypoint flow
+            // sees the finished mission.
+            if (isAutoMode() && autopilot != null) {
+                autopilot.onCrash(pos, speed);
+            }
             this.eventDispatcher.notifyCrash(pos, speed);
         });
         getLinkers().forEach(l -> {
@@ -660,6 +820,12 @@ public class Train implements Renderable {
     public void notifyContact(letrain.map.Point pos, int speed) {
         guardNotify(() -> {
             emergencyStop();
+            // Issue #645: the coupling approach completes on the physical contact, before the
+            // event dispatcher resumes the waypoint actions deferred for the mission (they need
+            // the mission already finished).
+            if (isAutoMode() && autopilot != null) {
+                autopilot.onContact(pos, speed);
+            }
             this.eventDispatcher.notifyContact(pos, speed);
         });
     }
@@ -759,6 +925,26 @@ public class Train implements Renderable {
         if (isAutoMode() && autopilot != null) {
             log.info("Train {} notifyAutopilotSegmentEntered: notifying autopilot", id);
             autopilot.onSegmentEntered(newSegment);
+        }
+    }
+
+    /**
+     * One real rail advance of the head (issue #619). Missions use it to watch their destination
+     * and to apply the braking curve; only called while the autopilot is active.
+     */
+    public void notifyAutopilotRailAdvanced() {
+        if (isAutoMode() && autopilot != null) {
+            autopilot.onRailAdvanced();
+        }
+    }
+
+    /**
+     * One simulation tick of the train (issue #619). Missions use it as a stall watchdog; only
+     * called while the autopilot is active.
+     */
+    public void notifyAutopilotTick() {
+        if (isAutoMode() && autopilot != null) {
+            autopilot.onTick();
         }
     }
 

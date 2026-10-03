@@ -496,12 +496,12 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
                         linkerToRemove, newTrain.getId());
             }
             newTrain.assignDefaultDirectorLinker();
-            newTrain.rebind();
+            newTrain.rebindShared();
             newTrain.getMovementManager().refreshLinkersDirection();
         }
 
         train.assignDefaultDirectorLinker();
-        train.rebind();
+        train.rebindShared();
         train.getLinkersToRemove().clear();
         train.setNumLinkersToRemove(0);
         train.getMovementManager().refreshLinkersDirection();
@@ -539,12 +539,12 @@ public class TrainCouplingManager implements letrain.vehicle.rail.TrainCouplingM
                 linkersToDestroy.add(linkerToRemove);
             }
             newTrain.assignDefaultDirectorLinker();
-            newTrain.rebind();
+            newTrain.rebindShared();
             newTrain.getMovementManager().refreshLinkersDirection();
         }
 
         train.assignDefaultDirectorLinker();
-        train.rebind();
+        train.rebindShared();
         train.getMovementManager().refreshLinkersDirection();
         train.getLinkersToRemove().clear();
         train.setNumLinkersToRemove(0);

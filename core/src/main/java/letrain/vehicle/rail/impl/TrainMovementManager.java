@@ -6,17 +6,18 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import letrain.economy.EconomyManager;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
-import letrain.track.Sensor;
 import letrain.track.Track;
 import letrain.track.rail.ForkRailTrack;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.Destructible;
 import letrain.vehicle.Tractor;
 import letrain.vehicle.rail.Linker;
+import letrain.vehicle.rail.TrainSafetyManager;
 
 /**
  * Extracted from Train.java (~247 lines) to keep the train class focused. Handles the two-pass
@@ -98,6 +99,13 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
                 return false;
             }
 
+            // Descarrilamiento por curvas/desvíos (issue #350). Solo se evalúa cuando la cabeza va
+            // a entrar en la siguiente pieza; si descarrila destruimos el tren y abortamos antes de
+            // reservar o mover ningún linker (sin fugas de reserva).
+            if (evaluateDerailmentOnHeadEntry(headNextConnectedTrack, headExitDir)) {
+                return false;
+            }
+
             Dir headEntryDir = headExitDir.inverse();
             currentTracks.put(head, headCurrent);
             entryDirsMap.put(head, headEntryDir);
@@ -153,11 +161,8 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
                 // If this is the only linker, it is also the tail, so we trigger exit events on
                 // headCurrentTrack
                 if (movingOrder.size() == 1) {
-                    if ((headCurrentTrack.getComponent() instanceof letrain.track.Sensor)) {
-                        ((letrain.track.Sensor)headCurrentTrack.getComponent()).onExitTrain(train);
-                    }
-                    if ((headCurrentTrack.getComponent() instanceof letrain.track.RailSemaphore)) {
-                        ((letrain.track.RailSemaphore)headCurrentTrack.getComponent()).onExitTrain(train);
+                    if (headCurrentTrack.getComponent() instanceof letrain.track.Sensor) {
+                        ((letrain.track.Sensor) headCurrentTrack.getComponent()).onExitTrain(train);
                     }
                     if (headCurrentTrack instanceof ForkRailTrack) {
                         ((ForkRailTrack) headCurrentTrack).onExitTrain(train);
@@ -178,12 +183,12 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
                 }
             }
 
-            letrain.track.Sensor enterSensor = headNextTrack.getComponent() instanceof letrain.track.Sensor ? (letrain.track.Sensor) headNextTrack.getComponent() : null;
+            letrain.track.Sensor enterSensor =
+                    headNextTrack.getComponent() instanceof letrain.track.Sensor
+                            ? (letrain.track.Sensor) headNextTrack.getComponent()
+                            : null;
             if (enterSensor != null) {
                 enterSensor.onEnterTrain(train);
-            }
-            if ((headNextTrack.getComponent() instanceof letrain.track.RailSemaphore)) {
-                ((letrain.track.RailSemaphore)headNextTrack.getComponent()).onEnterTrain(train);
             }
             if (headNextTrack instanceof ForkRailTrack) {
                 ((ForkRailTrack) headNextTrack).onEnterTrain(train);
@@ -220,11 +225,8 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
             lastLinker.setRailsSinceStop(lastLinker.getRailsSinceStop() + 1);
             lastLinkerNextTrack.setReservation(null);
 
-            if ((lastLinkerTrack.getComponent() instanceof letrain.track.Sensor)) {
-                ((letrain.track.Sensor)lastLinkerTrack.getComponent()).onExitTrain(train);
-            }
-            if ((lastLinkerTrack.getComponent() instanceof letrain.track.RailSemaphore)) {
-                ((letrain.track.RailSemaphore)lastLinkerTrack.getComponent()).onExitTrain(train);
+            if (lastLinkerTrack.getComponent() instanceof letrain.track.Sensor) {
+                ((letrain.track.Sensor) lastLinkerTrack.getComponent()).onExitTrain(train);
             }
             if (train.getSafetyManager() != null) {
                 if (lastLinkerTrack instanceof ForkRailTrack) {
@@ -256,7 +258,8 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
         Track nextAfterMove = currentFirstTrack.getConnected(firstLinker.getDir());
         if (nextAfterMove != null) {
             Linker blockingLinker = nextAfterMove.getLinker();
-            if (blockingLinker != null && blockingLinker.getTrain() != train) {
+            if (blockingLinker != null && blockingLinker.getTrain() != train
+                    && !willHaltOnThisRail()) {
                 int speed = train.getSpeed();
                 if (Math.abs(speed) >= Train.CRASH_SPEED_THRESHOLD) {
                     crashDetected(blockingLinker, speed);
@@ -274,26 +277,119 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
                     train.crashDestroy(impactPos, speed);
                 }
             } else {
+                // Issue #645 follow-up: no speed is written after notifying the contact. The
+                // contact chain (mission completion -> waypoint actions -> departure) may
+                // legitimately restore a speed, and the internal emergencyStop of notifyContact
+                // already stopped the train and set the idle sound. Zeroing here would silently
+                // undo a scheduled departure that released during the notify.
                 train.notifyContact(impactPos, speed);
-                train.getTractors().forEach(t -> {
-                    t.setCurrentSpeed(0);
-                    t.setTargetSpeed(0);
-                    if (t instanceof Locomotive) {
-                        ((Locomotive) t).setForceIdleSound(true);
-                    }
-                });
             }
         }
 
         return true;
     }
 
+    /**
+     * True when this move's braking brings the train to a full stop on the current rail (issue
+     * #633): it will not enter the cell ahead, so being adjacent to an occupied cell is not a
+     * collision. This is the case when a train waiting for the next block halts on the last rail of
+     * its segment while another train is still clearing the shared node. If the train later
+     * resumes, the start-from-zero check and the pre-move validation fire the contact again if the
+     * cell is still occupied, so safety is preserved.
+     */
+    private boolean willHaltOnThisRail() {
+        if (!(train.getDirectorLinker() instanceof Locomotive loco)) {
+            return false;
+        }
+        if (loco.brakingRailsFromCurrentState() > 1) {
+            return false;
+        }
+        if (loco.getTargetSpeed() == 0) {
+            return true;
+        }
+        // A train waiting for a block halts on the last rail of its segment: the safety brake
+        // engages right after this collision check (the onRailAdvanced hook runs after
+        // moveLinkers).
+        return train.isAutoMode() && train.getSafetyManager() != null
+                && train.getSafetyManager().isWaitingForBlock();
+    }
+
     private void contactDetected(Linker headOccupant, int speed) {
         Point collisionPos = headOccupant.getPosition();
-        train.notifyContact(collisionPos, speed);
+        // Issue #645 follow-up: capture the other train before notifying. The contact chain may
+        // couple the occupant during notifyContact (couple waypoint action), and then
+        // headOccupant.getTrain() would be our own train: emergency-stopping it would kill the
+        // speed the same chain just restored (e.g. the scheduled departure).
         Train otherTrain = headOccupant.getTrain();
-        if (otherTrain != null) {
+        train.notifyContact(collisionPos, speed);
+        if (otherTrain != null && otherTrain != train) {
             otherTrain.emergencyStop();
+        }
+    }
+
+    /**
+     * Evalúa si la cabeza descarrila al entrar en {@code nextTrack}. Regla (issue #350, ADR-019):
+     *
+     * <ul>
+     * <li>Curva: una pieza (recta curva o desvío, da igual) es curva si el rumbo de salida difiere
+     * del rumbo con el que se entró. Un desvío en recto es una recta más; un desvío desviado es una
+     * curva normal. Al entrar en una curva, si la velocidad actual &ge; {@code derail.minSpeed} y
+     * ha pasado menos de {@code derail.minCurveInterval} ticks desde la última curva, descarrila.
+     * En cualquier caso se anota el instante de la curva como última curva.</li>
+     * </ul>
+     *
+     * @param nextTrack la pieza en la que está a punto de entrar la cabeza.
+     * @param entryHeading rumbo (dirección de avance) con el que la cabeza entra en {@code
+     *     nextTrack}.
+     * @return true si el tren ha descarrilado (y el movimiento debe abortarse).
+     */
+    private boolean evaluateDerailmentOnHeadEntry(Track nextTrack, Dir entryHeading) {
+        if (train.getModel() == null || train.getModel().getEconomyManager() == null) {
+            return false;
+        }
+        EconomyManager economy = train.getModel().getEconomyManager();
+        int speed = Math.abs(train.getSpeed());
+
+        if (!(nextTrack instanceof RailTrack)) {
+            return false;
+        }
+        Dir entryDir = entryHeading.inverse();
+        if (!isCurveEntry((RailTrack) nextTrack, entryDir, entryHeading)) {
+            return false;
+        }
+
+        long now = train.getSimulationTick();
+        TrainSafetyManager safetyManager = train.getSafetyManager();
+        boolean derail = speed >= economy.getDerailMinSpeed() && safetyManager != null
+                && safetyManager.shouldDerailOnCurve(now, economy.getDerailMinCurveInterval());
+        if (derail) {
+            crashByDerailment(nextTrack.getPosition(), speed);
+            return true;
+        }
+        // Toda curva atravesada anota su instante, también a baja velocidad: es el estado que
+        // usará la siguiente curva para medir el intervalo.
+        if (safetyManager != null) {
+            safetyManager.onCurveCrossed(now);
+        }
+        return false;
+    }
+
+    /**
+     * Una pieza se considera curva si, atravesada desde el puerto {@code entryDir}, el rumbo de
+     * salida que devuelve su router difiere del rumbo {@code entryHeading} con el que se entró (no
+     * se miden ángulos; se usan los dirs que ya se calculan para mover al tren).
+     */
+    private boolean isCurveEntry(RailTrack nextTrack, Dir entryDir, Dir entryHeading) {
+        Dir exitDir = nextTrack.getDir(entryDir);
+        return exitDir != null && nextTrack.getConnected(exitDir) != null
+                && !exitDir.equals(entryHeading);
+    }
+
+    /** Destruye el tren reutilizando el pipeline de accidente existente (listeners/economía). */
+    private void crashByDerailment(Point pos, int speed) {
+        log.warn("Train {} derailed at {} (speed={})", train.getId(), pos, speed);
+        if (!isAlreadyDestroying(train)) {
+            train.crashDestroy(pos, speed);
         }
     }
 
@@ -415,6 +511,16 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
 
         refreshLinkersDirection();
         boolean moved = moveLinkers(normalSense);
+
+        // One real rail advance (head) feeds the safety layer's boundary-stop countdown (issue
+        // #633). Only the director locomotive moves the train, so push-pull counts one per rail.
+        if (moved && !train.isStalled() && train.getSafetyManager() != null) {
+            train.getSafetyManager().onRailAdvanced();
+        }
+        // Issue #619: missions watch the destination and the braking curve per rail too.
+        if (moved && !train.isStalled()) {
+            train.notifyAutopilotRailAdvanced();
+        }
 
         if (!moved || train.isStalled()) {
             Linker first = train.getLinkers().isEmpty() ? null : train.getLinkers().getFirst();

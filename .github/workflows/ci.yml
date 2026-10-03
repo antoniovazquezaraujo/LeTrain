@@ -23,5 +23,13 @@ jobs:
         distribution: 'temurin'
         cache: maven
         
+    - name: Check the class index is up to date
+      run: |
+        java tools/GenClassIndex.java
+        git diff --exit-code -- docs/developer/architecture/ClassIndex.md
+
+    - name: Check formatting (Spotless)
+      run: mvn spotless:check
+
     - name: Build and run tests
       run: xvfb-run mvn test

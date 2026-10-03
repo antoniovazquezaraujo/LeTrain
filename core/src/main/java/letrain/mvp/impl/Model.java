@@ -3,7 +3,6 @@ package letrain.mvp.impl;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import letrain.economy.EconomyManager;
 import letrain.ground.GroundMap;
@@ -11,7 +10,11 @@ import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.impl.RailMap;
 import letrain.mvp.impl.services.AutomationEngine;
+import letrain.mvp.impl.services.ModelListenerService;
+import letrain.mvp.impl.services.ModelReportService;
+import letrain.mvp.impl.services.ModelSelectionService;
 import letrain.mvp.impl.services.SimulationService;
+import letrain.mvp.impl.services.TrackElementMovementService;
 import letrain.segments.BlockManager;
 import letrain.segments.TopologyService;
 import letrain.segments.impl.TopologyServiceImpl;
@@ -80,6 +83,46 @@ public class Model implements letrain.mvp.Model {
     int selectedSpeedSignalIndex;
     int selectedStationIndex;
     boolean showId = false;
+
+    public int getSelectedLocomotiveIndex() {
+        return selectedLocomotiveIndex;
+    }
+
+    public void setSelectedLocomotiveIndex(int selectedLocomotiveIndex) {
+        this.selectedLocomotiveIndex = selectedLocomotiveIndex;
+    }
+
+    public int getSelectedForkIndex() {
+        return selectedForkIndex;
+    }
+
+    public void setSelectedForkIndex(int selectedForkIndex) {
+        this.selectedForkIndex = selectedForkIndex;
+    }
+
+    public int getSelectedSemaphoreIndex() {
+        return selectedSemaphoreIndex;
+    }
+
+    public void setSelectedSemaphoreIndex(int selectedSemaphoreIndex) {
+        this.selectedSemaphoreIndex = selectedSemaphoreIndex;
+    }
+
+    public int getSelectedSpeedSignalIndex() {
+        return selectedSpeedSignalIndex;
+    }
+
+    public void setSelectedSpeedSignalIndex(int selectedSpeedSignalIndex) {
+        this.selectedSpeedSignalIndex = selectedSpeedSignalIndex;
+    }
+
+    public int getSelectedStationIndex() {
+        return selectedStationIndex;
+    }
+
+    public void setSelectedStationIndex(int selectedStationIndex) {
+        this.selectedStationIndex = selectedStationIndex;
+    }
 
     letrain.ground.GroundMap groundMap;
     GameMode mode = letrain.mvp.Model.GameMode.RAILS;
@@ -150,6 +193,28 @@ public class Model implements letrain.mvp.Model {
 
     private transient AutomationEngine automationEngine;
     private transient SimulationService internalSimService;
+    private transient letrain.time.impl.SimpleGameClock gameClock =
+            new letrain.time.impl.SimpleGameClock();
+    /** Visible message sink for DSL problem notices; wired by the clients (see Model). */
+    private transient java.util.function.BiConsumer<String, String> userMessageSink;
+
+    /**
+     * D1 ordering fix (O3): notices produced before the client wires its sink (a savegame is loaded
+     * by {@code postLoadInit} before its presenter exists) wait here and are flushed by
+     * {@link #setUserMessageSink}, so a rejection never stays log-only.
+     */
+    private transient List<PendingUserMessage> pendingUserMessages;
+
+    /**
+     * Result of the last program load attempt: false when {@link #setProgram} kept a text the
+     * engine rejected. The text is kept anyway (the editor shows it so the player can fix it); this
+     * only marks it as not applied.
+     */
+    private transient boolean programValid = true;
+
+    /** A visible DSL notice produced before the client wired its sink (D1/O3). */
+    private record PendingUserMessage(String title, String text) {
+    }
 
     private AutomationEngine getAutomationEngine() {
         if (automationEngine == null) {
@@ -191,6 +256,8 @@ public class Model implements letrain.mvp.Model {
         this.eventLogManager = new EventLogManager();
         this.economyManager = new letrain.economy.impl.EconomyManager(eventLogManager);
         this.economyManager.reloadConfig();
+        this.gameClock.setDayDurationSeconds(this.economyManager.getDayDurationSeconds());
+        this.gameClock.setLatitude(this.economyManager.getLatitude());
         if (seed == 0) {
             seed = 1 + (int) (Math.random() * 255);
         }
@@ -198,13 +265,9 @@ public class Model implements letrain.mvp.Model {
         this.cursor = new Cursor();
         this.cursor.setDir(Dir.E);
 
-        int minOffset = 10000;
-        int maxOffset = 100000;
-        int offsetX = (minOffset + (int) (Math.random() * (maxOffset - minOffset)))
-                * (Math.random() > 0.5 ? 1 : -1);
-        int offsetY = (minOffset + (int) (Math.random() * (maxOffset - minOffset)))
-                * (Math.random() > 0.5 ? 1 : -1);
-        this.cursor.setPosition(new Point(offsetX, offsetY));
+        // Always start at the origin: the world is asymmetric, so a shared (0,0) makes
+        // coordinates in scenarios and the console simpler and reproducible.
+        this.cursor.setPosition(new Point(0, 0));
         this.locomotives = new ArrayList<>();
         this.wagons = new ArrayList<>();
         this.forks = new ArrayList<>();
@@ -213,29 +276,7 @@ public class Model implements letrain.mvp.Model {
         this.stations = new ArrayList<>();
         this.map = new RailMap();
 
-        this.addCoreTrainEventListener(new CoreTrainEventListener() {
-            @Override
-            public void onCrash(Train train, Point pos, int speed) {
-                eventLogManager.addEntry("CRASH! Train " + train.getId() + " crashed!");
-                getEconomyManager().onTrainCrashed(train);
-            }
-
-            @Override
-            public void onContact(Train train, Point pos, int speed) {
-                eventLogManager
-                        .addEntry("Train " + train.getId() + " contact (speed=" + speed + ")");
-            }
-
-            @Override
-            public void onLink(Train train) {
-                eventLogManager.addEntry("Train " + train.getId() + " linked");
-            }
-
-            @Override
-            public void onUnlink(Train train) {
-                eventLogManager.addEntry("Train " + train.getId() + " unlinked");
-            }
-        });
+        setupModelTrainEventListeners();
         this.program = "";
         selectedLocomotiveIndex = 0;
         selectedForkIndex = 0;
@@ -243,7 +284,56 @@ public class Model implements letrain.mvp.Model {
         selectedStationIndex = 0;
     }
 
+    /**
+     * Rebuilds each track's adjacency ({@code connections}) from its router routes and the
+     * positions of the tracks in the rail map. Adjacency is not serialized (Jackson recursed
+     * through the whole graph, so a long connected line blew the document nesting limit); it is
+     * derived here after a load. Tracks created by commands already have their connections set, so
+     * this only matters for deserialized models (savegame / undo checkpoint).
+     */
+    private void rebuildTrackConnections() {
+        if (map == null) {
+            return;
+        }
+        map.forEach(track -> {
+            if (track == null || track.getRouter() == null || track.getPosition() == null) {
+                return;
+            }
+            for (letrain.map.Dir dir : letrain.map.Dir.values()) {
+                if (track.getRouter().getDir(dir) == null) {
+                    continue;
+                }
+                letrain.map.Point neighbour = new letrain.map.Point(track.getPosition());
+                neighbour.move(dir, 1);
+                letrain.track.Track connected = map.getTrackAt(neighbour.getX(), neighbour.getY());
+                if (connected != null) {
+                    track.connect(dir, connected);
+                }
+            }
+        });
+    }
+
+    /**
+     * Post-load initialization of one train: model, transient state, shared listeners and physical
+     * claim of the cantons it occupies (ADR-022 phase 2f: wagon-only trains too).
+     */
+    private void initializeTrainAfterLoad(Train train) {
+        train.setModel(this);
+        train.postLoadInit();
+        for (ScriptTrainEventListener l : scriptTrainEventListeners) {
+            train.addScriptTrainEventListener(l);
+        }
+        for (CoreTrainEventListener l : coreTrainEventListeners) {
+            train.addCoreTrainEventListener(l);
+        }
+        train.getSafetyManager().claimOccupiedSegments();
+    }
+
     public void postLoadInit() {
+        // NOTE: the economy/settings are NOT reloaded from the local file here on purpose: a
+        // savegame or an imported scenario carries its own settings, and those must win over the
+        // local letrain.cfg for the world (terrain included) to be reproducible.
+        rebuildTrackConnections();
         if (nextSpeedSignalId == 0) {
             for (Sensor s : getSensors()) {
                 if (s instanceof letrain.track.SpeedSignal && s.getId() > nextSpeedSignalId) {
@@ -285,23 +375,28 @@ public class Model implements letrain.mvp.Model {
         }
 
         setupModelTrainEventListeners();
+        java.util.Set<Train> initializedTrains = new java.util.HashSet<>();
         if (locomotives != null) {
             // Pass 1: Set model, post-load init, setup listeners, and claim physically occupied
-            // segments
+            // segments. Trains are initialized once even with several locomotives.
             for (Locomotive loco : locomotives) {
                 Train train = loco.getTrain();
-                if (train != null) {
-                    train.setModel(this);
-                    train.postLoadInit();
-                    for (ScriptTrainEventListener l : scriptTrainEventListeners) {
-                        train.addScriptTrainEventListener(l);
-                    }
-                    for (CoreTrainEventListener l : coreTrainEventListeners) {
-                        train.addCoreTrainEventListener(l);
-                    }
-                    train.getSafetyManager().claimOccupiedSegments();
+                if (train != null && initializedTrains.add(train)) {
+                    initializeTrainAfterLoad(train);
                 }
             }
+        }
+        if (wagons != null) {
+            // A detached wagon part has no locomotive to reach it: without this it would lose the
+            // canton it physically occupies after a load (ADR-022 phase 2f review).
+            for (Wagon wagon : wagons) {
+                Train train = wagon.getTrain();
+                if (train != null && initializedTrains.add(train)) {
+                    initializeTrainAfterLoad(train);
+                }
+            }
+        }
+        if (locomotives != null) {
             // Pass 2: Acquire initial lookahead locks for all active autopilot trains
             for (Locomotive loco : locomotives) {
                 Train train = loco.getTrain();
@@ -316,7 +411,19 @@ public class Model implements letrain.mvp.Model {
         }
         reestablishSystemListeners();
         if (this.program != null && !this.program.isEmpty()) {
-            this.setProgram(this.program);
+            // Single load path, shared with the clients' program files. The text is parsed
+            // strictly: ADR-022 does not migrate the old comma-less waypoint syntax. A rejected
+            // text is kept (the editor shows it so the player can fix it) and the rejection is
+            // reported to the visible channel. At this point the presenter does not exist yet
+            // (the sink is wired after this model is applied), so the notice is queued and
+            // delivered by setUserMessageSink (O3). A valid program's semantic warnings follow
+            // the same route: setProgramFromDisk wires the engine to reportUserMessage (D1).
+            List<String> errors = this.setProgramFromDisk(this.program);
+            if (errors != null && !errors.isEmpty()) {
+                reportUserMessage("Program",
+                        "Saved program not applied; fix it in the program editor:\n"
+                                + String.join("\n", errors));
+            }
         }
 
         if (this.mode == letrain.mvp.Model.GameMode.COMMAND) {
@@ -327,29 +434,7 @@ public class Model implements letrain.mvp.Model {
     }
 
     private void setupModelTrainEventListeners() {
-        this.addCoreTrainEventListener(new CoreTrainEventListener() {
-            @Override
-            public void onCrash(Train train, Point pos, int speed) {
-                eventLogManager.addEntry("CRASH! Train " + train.getId() + " crashed!");
-                getEconomyManager().onTrainCrashed(train);
-            }
-
-            @Override
-            public void onContact(Train train, Point pos, int speed) {
-                eventLogManager
-                        .addEntry("Train " + train.getId() + " contact (speed=" + speed + ")");
-            }
-
-            @Override
-            public void onLink(Train train) {
-                eventLogManager.addEntry("Train " + train.getId() + " linked");
-            }
-
-            @Override
-            public void onUnlink(Train train) {
-                eventLogManager.addEntry("Train " + train.getId() + " unlinked");
-            }
-        });
+        this.addCoreTrainEventListener(ModelListenerService.createCoreTrainEventListener(this));
     }
 
     @Override
@@ -410,15 +495,12 @@ public class Model implements letrain.mvp.Model {
         if (track instanceof ForkRailTrack) {
             addFork((ForkRailTrack) track);
         }
-        if (track.getComponent() instanceof letrain.track.Sensor) {
-            if (track.getComponent() instanceof Station) {
-                addStation((Station) track.getComponent());
-            } else {
-                addSensor((letrain.track.Sensor) track.getComponent());
-            }
-        }
         if (track.getComponent() instanceof letrain.track.RailSemaphore) {
             addSemaphore((letrain.track.RailSemaphore) track.getComponent());
+        } else if (track.getComponent() instanceof Station) {
+            addStation((Station) track.getComponent());
+        } else if (track.getComponent() instanceof letrain.track.Sensor) {
+            addSensor((letrain.track.Sensor) track.getComponent());
         }
         mapChanged = true;
     }
@@ -427,15 +509,12 @@ public class Model implements letrain.mvp.Model {
     public RailTrack removeTrack(Point point) {
         RailTrack track = map.getTrackAt(point);
         if (track != null) {
-            if (track.getComponent() instanceof letrain.track.Sensor) {
-                if (track.getComponent() instanceof Station) {
-                    removeStation((Station) track.getComponent());
-                } else {
-                    removeSensor((letrain.track.Sensor) track.getComponent());
-                }
-            }
             if (track.getComponent() instanceof letrain.track.RailSemaphore) {
                 removeSemaphore((letrain.track.RailSemaphore) track.getComponent());
+            } else if (track.getComponent() instanceof Station) {
+                removeStation((Station) track.getComponent());
+            } else if (track.getComponent() instanceof letrain.track.Sensor) {
+                removeSensor((letrain.track.Sensor) track.getComponent());
             }
             if (track instanceof ForkRailTrack) {
                 removeFork((ForkRailTrack) track);
@@ -491,19 +570,7 @@ public class Model implements letrain.mvp.Model {
     }
 
     private void setupSensorSystemListeners(Sensor sensor) {
-        final int id = sensor.getId();
-        sensor.addSystemSensorEventListener(new letrain.track.SensorEventListener() {
-            @Override
-            public void onEnterTrain(Train train, boolean isForward) {
-                eventLogManager.addEntry("Train " + train.getId() + " entered Sensor " + id
-                        + (isForward ? " (forward)" : " (backward)"));
-            }
-
-            @Override
-            public void onExitTrain(Train train, boolean isForward) {
-                eventLogManager.addEntry("Train " + train.getId() + " exited Sensor " + id);
-            }
-        });
+        ModelListenerService.setupSensorSystemListeners(this, sensor);
     }
 
     @Override
@@ -571,31 +638,7 @@ public class Model implements letrain.mvp.Model {
     }
 
     private void setupForkSystemListeners(ForkRailTrack fork) {
-        final int id = fork.getId();
-        fork.addSystemForkEventListener(new letrain.track.ForkEventListener() {
-            @Override
-            public void onEnterTrain(Train train, boolean isForward) {
-                eventLogManager.addEntry("Train " + train.getId() + " entered Fork " + id
-                        + (isForward ? " (forward)" : " (backward)"));
-            }
-
-            @Override
-            public void onDirectionChanged(boolean normal) {
-                eventLogManager
-                        .addEntry("Fork " + id + " set to " + (normal ? "Normal" : "Alternative"));
-                // Despertar a todos los trenes cuando cambia un desvío
-                for (Locomotive loco : locomotives) {
-                    if (loco.getTrain() != null) {
-                        loco.getTrain().resetSafetyTimer();
-                    }
-                }
-            }
-
-            @Override
-            public void onExitTrain(Train train, boolean isForward) {
-                eventLogManager.addEntry("Train " + train.getId() + " exited Fork " + id);
-            }
-        });
+        ModelListenerService.setupForkSystemListeners(this, fork);
     }
 
     @Override
@@ -648,6 +691,19 @@ public class Model implements letrain.mvp.Model {
         return mode;
     }
 
+    @JsonIgnore
+    private boolean pauseEditing = false;
+
+    @Override
+    public boolean isPauseEditing() {
+        return pauseEditing;
+    }
+
+    @Override
+    public void setPauseEditing(boolean pauseEditing) {
+        this.pauseEditing = pauseEditing;
+    }
+
     @Override
     public void setMode(GameMode mode) {
         if (this.mode == GameMode.RAILS && mode != GameMode.RAILS && mapChanged) {
@@ -679,6 +735,11 @@ public class Model implements letrain.mvp.Model {
         return previousMode;
     }
 
+    @Override
+    public GameMode getEffectiveMode() {
+        return mode == GameMode.COMMAND ? previousMode : mode;
+    }
+
     @JsonIgnore
     public letrain.segments.RailwayGraph getRailwayGraph() {
         if (currentGraph == null) {
@@ -702,14 +763,7 @@ public class Model implements letrain.mvp.Model {
 
     @Override
     public boolean selectFork(int id) {
-        for (ForkRailTrack fork : getForks()) {
-            if (fork.getId() == id) {
-                selectedFork = fork;
-                selectedForkIndex = forks.indexOf(fork);
-                return true;
-            }
-        }
-        return false;
+        return ModelSelectionService.selectFork(this, id);
     }
 
     @Override
@@ -724,59 +778,22 @@ public class Model implements letrain.mvp.Model {
 
     @Override
     public boolean selectNextFork() {
-        if (getForks().isEmpty()) {
-            return false;
-        }
-        selectedForkIndex++;
-        if (selectedForkIndex >= getForks().size()) {
-            selectedForkIndex = 0;
-        }
-        selectedFork = getForks().get(selectedForkIndex);
-        return true;
+        return ModelSelectionService.selectNextFork(this);
     }
 
     @Override
     public boolean selectPrevFork() {
-        if (getForks().isEmpty()) {
-            return false;
-        }
-        selectedForkIndex--;
-        if (selectedForkIndex < 0) {
-            selectedForkIndex = getForks().size() - 1;
-        }
-        selectedFork = getForks().get(selectedForkIndex);
-        return true;
+        return ModelSelectionService.selectPrevFork(this);
     }
 
     @Override
     public boolean selectNextLocomotive() {
-        if (getLocomotives().isEmpty()) {
-            return false;
-        }
-        do {
-            selectedLocomotiveIndex++;
-            if (selectedLocomotiveIndex >= getLocomotives().size()) {
-                selectedLocomotiveIndex = 0;
-            }
-            selectedLocomotive = getLocomotives().get(selectedLocomotiveIndex);
-        } while (!selectedLocomotive.isDirectorLinker()
-                && selectedLocomotiveIndex < getLocomotives().size());
-        return true;
+        return ModelSelectionService.selectNextLocomotive(this);
     }
 
     @Override
     public boolean selectPrevLocomotive() {
-        if (getLocomotives().isEmpty()) {
-            return false;
-        }
-        do {
-            selectedLocomotiveIndex--;
-            if (selectedLocomotiveIndex < 0) {
-                selectedLocomotiveIndex = getLocomotives().size() - 1;
-            }
-            selectedLocomotive = getLocomotives().get(selectedLocomotiveIndex);
-        } while (!selectedLocomotive.isDirectorLinker() && selectedLocomotiveIndex >= 0);
-        return true;
+        return ModelSelectionService.selectPrevLocomotive(this);
     }
 
     @Override
@@ -791,14 +808,7 @@ public class Model implements letrain.mvp.Model {
 
     @Override
     public boolean selectLocomotive(int id) {
-        for (Locomotive loco : locomotives) {
-            if (loco.getId() == id) {
-                selectedLocomotive = loco;
-                selectedLocomotiveIndex = locomotives.indexOf(loco);
-                return true;
-            }
-        }
-        return false;
+        return ModelSelectionService.selectLocomotive(this, id);
     }
 
     @Override
@@ -810,52 +820,43 @@ public class Model implements letrain.mvp.Model {
     public void addSemaphore(RailSemaphore semaphore) {
         if (!this.semaphores.contains(semaphore)) {
             this.semaphores.add(semaphore);
-            getEconomyManager().onSemaphoreConstructed(semaphore);
-            RailTrack track = map.getTrackAt(semaphore.getPosition());
-            if (track != null) {
-                track.setComponent(semaphore);
+            if (semaphore.getTrack() != null) {
+                semaphore.getTrack().setComponent(semaphore);
             }
+            getEconomyManager().onSemaphoreConstructed(semaphore);
             setupSemaphoreSystemListeners(semaphore);
             mapChanged = true;
         }
     }
 
     private void setupSemaphoreSystemListeners(RailSemaphore semaphore) {
-        final int id = semaphore.getId();
-        semaphore.addSystemSemaphoreEventListener(new letrain.track.SemaphoreEventListener() {
-            @Override
-            public void onOpen() {
-                eventLogManager.addEntry("Semaphore " + id + " opened");
-            }
-
-            @Override
-            public void onClosed() {
-                eventLogManager.addEntry("Semaphore " + id + " closed");
-            }
-
-            @Override
-            public void onEnterTrain(Train train, boolean isForward) {
-                eventLogManager.addEntry("Train " + train.getId() + " entered Semaphore " + id
-                        + (isForward ? " (forward)" : " (backward)"));
-            }
-
-            @Override
-            public void onExitTrain(Train train, boolean isForward) {
-                eventLogManager.addEntry("Train " + train.getId() + " exited Semaphore " + id);
-            }
-        });
+        ModelListenerService.setupSemaphoreSystemListeners(this, semaphore);
     }
 
     @Override
     public void removeSemaphore(RailSemaphore semaphore) {
         if (this.semaphores.remove(semaphore)) {
-            getEconomyManager().onSemaphoreDestroyed(semaphore);
-            RailTrack track = map.getTrackAt(semaphore.getPosition());
-            if (track != null) {
-                track.setComponent(null);
+            if (semaphore.getTrack() != null) {
+                semaphore.getTrack().setComponent(null);
             }
+            getEconomyManager().onSemaphoreDestroyed(semaphore);
             mapChanged = true;
         }
+    }
+
+    @Override
+    public boolean moveSensor(Sensor sensor, Dir dir) {
+        return TrackElementMovementService.moveSensor(this, sensor, dir);
+    }
+
+    @Override
+    public boolean moveSensorForward(Sensor sensor) {
+        return TrackElementMovementService.moveSensorForward(this, sensor);
+    }
+
+    @Override
+    public boolean moveSensorBackward(Sensor sensor) {
+        return TrackElementMovementService.moveSensorBackward(this, sensor);
     }
 
     @Override
@@ -870,28 +871,12 @@ public class Model implements letrain.mvp.Model {
 
     @Override
     public boolean selectNextSemaphore() {
-        if (getSemaphores().isEmpty()) {
-            return false;
-        }
-        selectedSemaphoreIndex++;
-        if (selectedSemaphoreIndex >= getSemaphores().size()) {
-            selectedSemaphoreIndex = 0;
-        }
-        selectedSemaphore = getSemaphores().get(selectedSemaphoreIndex);
-        return true;
+        return ModelSelectionService.selectNextSemaphore(this);
     }
 
     @Override
     public boolean selectPrevSemaphore() {
-        if (getSemaphores().isEmpty()) {
-            return false;
-        }
-        selectedSemaphoreIndex--;
-        if (selectedSemaphoreIndex < 0) {
-            selectedSemaphoreIndex = getSemaphores().size() - 1;
-        }
-        selectedSemaphore = getSemaphores().get(selectedSemaphoreIndex);
-        return true;
+        return ModelSelectionService.selectPrevSemaphore(this);
     }
 
     @Override
@@ -916,61 +901,26 @@ public class Model implements letrain.mvp.Model {
 
     @Override
     public boolean selectSemaphore(int id) {
-        for (RailSemaphore semaphore : getSemaphores()) {
-            if (semaphore.getId() == id) {
-                selectedSemaphore = semaphore;
-                selectedSemaphoreIndex = semaphores.indexOf(semaphore);
-                return true;
-            }
-        }
-        return false;
+        return ModelSelectionService.selectSemaphore(this, id);
     }
 
     public java.util.List<letrain.track.SpeedSignal> getSpeedSignals() {
-        return sensors.stream().filter(s -> s instanceof letrain.track.SpeedSignal)
-                .map(s -> (letrain.track.SpeedSignal) s)
-                .collect(java.util.stream.Collectors.toList());
+        return ModelSelectionService.getSpeedSignals(this);
     }
 
     @Override
     public boolean selectNextSpeedSignal() {
-        java.util.List<letrain.track.SpeedSignal> sigs = getSpeedSignals();
-        if (sigs.isEmpty()) {
-            return false;
-        }
-        selectedSpeedSignalIndex++;
-        if (selectedSpeedSignalIndex >= sigs.size()) {
-            selectedSpeedSignalIndex = 0;
-        }
-        selectedSpeedSignal = sigs.get(selectedSpeedSignalIndex);
-        return true;
+        return ModelSelectionService.selectNextSpeedSignal(this);
     }
 
     @Override
     public boolean selectPrevSpeedSignal() {
-        java.util.List<letrain.track.SpeedSignal> sigs = getSpeedSignals();
-        if (sigs.isEmpty()) {
-            return false;
-        }
-        selectedSpeedSignalIndex--;
-        if (selectedSpeedSignalIndex < 0) {
-            selectedSpeedSignalIndex = sigs.size() - 1;
-        }
-        selectedSpeedSignal = sigs.get(selectedSpeedSignalIndex);
-        return true;
+        return ModelSelectionService.selectPrevSpeedSignal(this);
     }
 
     @Override
     public boolean selectSpeedSignal(int id) {
-        java.util.List<letrain.track.SpeedSignal> sigs = getSpeedSignals();
-        for (int i = 0; i < sigs.size(); i++) {
-            if (sigs.get(i).getId() == id) {
-                selectedSpeedSignal = sigs.get(i);
-                selectedSpeedSignalIndex = i;
-                return true;
-            }
-        }
-        return false;
+        return ModelSelectionService.selectSpeedSignal(this, id);
     }
 
     @Override
@@ -995,28 +945,79 @@ public class Model implements letrain.mvp.Model {
 
     @Override
     public List<String> setProgram(String program) {
+        // The text is stored even when it does not parse: the editor must show what the player
+        // wrote so it can be fixed. `programValid` marks that the engine rejected it (nothing was
+        // applied).
         this.program = program;
-        return getAutomationEngine().setProgram(program);
+        return markProgramApplied(getAutomationEngine().setProgram(program));
+    }
+
+    @Override
+    public List<String> setProgramFromDisk(String program) {
+        // The disk path (savegame, program file) routes the program's warnings through the model's
+        // visible channel: a savegame is re-applied by postLoadInit before the presenter exists,
+        // so reportUserMessage queues the notice until the client wires its sink (D1).
+        this.program = program;
+        return markProgramApplied(getAutomationEngine().setProgramFromDisk(program));
+    }
+
+    private List<String> markProgramApplied(List<String> errors) {
+        this.programValid = errors == null || errors.isEmpty();
+        return errors;
+    }
+
+    @Override
+    public boolean isProgramValid() {
+        return this.programValid;
     }
 
     public void reestablishSystemListeners() {
-        if (sensors != null) {
-            sensors.forEach(this::setupSensorSystemListeners);
-        }
-        if (forks != null) {
-            forks.forEach(this::setupForkSystemListeners);
-        }
-        if (stations != null) {
-            stations.forEach(this::setupStationSystemListeners);
-        }
-        if (semaphores != null) {
-            semaphores.forEach(this::setupSemaphoreSystemListeners);
-        }
+        ModelListenerService.reestablishSystemListeners(this);
     }
 
     @Override
     public String getProgram() {
         return this.program;
+    }
+
+    @Override
+    public void setUserMessageSink(java.util.function.BiConsumer<String, String> sink) {
+        this.userMessageSink = sink;
+        if (sink == null || pendingUserMessages == null || pendingUserMessages.isEmpty()) {
+            return;
+        }
+        // Flush what was produced while no presenter existed (D1/O3). Detach the list first so a
+        // sink callback that reports another problem cannot loop over the same messages.
+        List<PendingUserMessage> pending = pendingUserMessages;
+        pendingUserMessages = null;
+        for (PendingUserMessage message : pending) {
+            sink.accept(message.title(), message.text());
+        }
+    }
+
+    /**
+     * D1: reports a DSL problem through the visible message channel. When the client has not wired
+     * its sink yet (a savegame is loaded by {@code postLoadInit} before its presenter exists) the
+     * notice is queued and delivered by {@link #setUserMessageSink}, so no problem stays log-only.
+     */
+    @Override
+    public void reportUserMessage(String title, String text) {
+        if (text == null || text.isEmpty()) {
+            return;
+        }
+        if (userMessageSink != null) {
+            userMessageSink.accept(title, text);
+            return;
+        }
+        if (pendingUserMessages == null) {
+            pendingUserMessages = new ArrayList<>();
+        }
+        pendingUserMessages.add(new PendingUserMessage(title, text));
+    }
+
+    @Override
+    public java.util.function.BiConsumer<String, String> getUserMessageSink() {
+        return this.userMessageSink;
     }
 
     @Override
@@ -1043,47 +1044,7 @@ public class Model implements letrain.mvp.Model {
     }
 
     private void setupStationSystemListeners(Station station) {
-        final int id = station.getId();
-        station.addSystemStationEventListener(new letrain.track.StationEventListener() {
-            @Override
-            public void onEnterTrain(Train train, boolean isForward) {
-                eventLogManager.addEntry("Train " + train.getId() + " entered Station " + id);
-            }
-
-            @Override
-            public void onExitTrain(Train train, boolean isForward) {
-                eventLogManager.addEntry("Train " + train.getId() + " exited Station " + id);
-            }
-
-            @Override
-            public void onLoad(Train train) {}
-
-            @Override
-            public void onUnload(Train train) {}
-
-            @Override
-            public void onStartLoad(Train train) {
-                eventLogManager
-                        .addEntry("Train " + train.getId() + " starting Load at Station " + id);
-            }
-
-            @Override
-            public void onEndLoad(Train train) {
-                eventLogManager.addEntry("Train " + train.getId() + " ended Load at Station " + id);
-            }
-
-            @Override
-            public void onStartUnload(Train train) {
-                eventLogManager
-                        .addEntry("Train " + train.getId() + " starting Unload at Station " + id);
-            }
-
-            @Override
-            public void onEndUnload(Train train) {
-                eventLogManager
-                        .addEntry("Train " + train.getId() + " ended Unload at Station " + id);
-            }
-        });
+        ModelListenerService.setupStationSystemListeners(this, station);
     }
 
     @Override
@@ -1095,6 +1056,11 @@ public class Model implements letrain.mvp.Model {
             getEconomyManager().onStationDestroyed();
             mapChanged = true;
         }
+    }
+
+    @Override
+    public void applyStationRoleByIndustry(Station station, Point position) {
+        TrackElementMovementService.applyStationRoleByIndustry(this.groundMap, station, position);
     }
 
     @Override
@@ -1150,40 +1116,17 @@ public class Model implements letrain.mvp.Model {
 
     @Override
     public boolean selectNextStation() {
-        if (getStations().isEmpty()) {
-            return false;
-        }
-        selectedStationIndex++;
-        if (selectedStationIndex >= getStations().size()) {
-            selectedStationIndex = 0;
-        }
-        selectedStation = getStations().get(selectedStationIndex);
-        return true;
+        return ModelSelectionService.selectNextStation(this);
     }
 
     @Override
     public boolean selectPrevStation() {
-        if (getStations().isEmpty()) {
-            return false;
-        }
-        selectedStationIndex--;
-        if (selectedStationIndex < 0) {
-            selectedStationIndex = getStations().size() - 1;
-        }
-        selectedStation = getStations().get(selectedStationIndex);
-        return true;
+        return ModelSelectionService.selectPrevStation(this);
     }
 
     @Override
     public boolean selectStation(int id) {
-        for (Station station : getStations()) {
-            if (station.getId() == id) {
-                selectedStation = station;
-                selectedStationIndex = stations.indexOf(station);
-                return true;
-            }
-        }
-        return false;
+        return ModelSelectionService.selectStation(this, id);
     }
 
     public void updateGroundMap(Point scrollOffset, int columns, int rows) {
@@ -1245,52 +1188,7 @@ public class Model implements letrain.mvp.Model {
     @JsonIgnore
     @Override
     public List<GameModeMenuOption> getMenuModel() {
-        return Arrays.asList(new GameModeMenuOption("&Rails",
-                "[⏴⏵⏶⏷/hjkl]:Move [Shift]:Add rail [Ctrl]:Remove rail [Ins]:Add sensor [Home]:Add sem [Del]:Add speed [End]:Add station [#]:Steps [Space]:Reset steps",
-                () -> true, () -> (this.getMode() == GameMode.RAILS), () -> (GameMode.RAILS)),
-                new GameModeMenuOption("&Add",
-                        "[n]:Station [e]:Sensor [s]:Semaphore [g]:Speed Signal",
-                        () -> true, () -> this.getMode() == GameMode.ADD, () -> GameMode.ADD),
-                new GameModeMenuOption("&Drive",
-                        "[⏴⏵/hl]:Select [o]:Locate [m]:Motor [⏶/k]:Accel [⏷/j]:Decel [Space]:Rev [Enter]:Load [#]:ID",
-                        () -> !this.getLocomotives().isEmpty(),
-                        () -> this.getMode() == GameMode.DRIVE, () -> GameMode.DRIVE),
-                new GameModeMenuOption("&Forks",
-                        "[⏴⏵/hl]:Select [o]:Locate [Space]:Toggle [#]:ID",
-                        () -> !this.getForks().isEmpty(), () -> this.getMode() == GameMode.FORKS,
-                        () -> GameMode.FORKS),
-                new GameModeMenuOption("&Semaphores",
-                        "[⏴⏵/hl]:Select [o]:Locate [Space]:Toggle [#]:ID",
-                        () -> !this.getSemaphores().isEmpty(),
-                        () -> this.getMode() == GameMode.SEMAPHORES, () -> GameMode.SEMAPHORES),
-                new GameModeMenuOption("S&ensors",
-                        "[⏴⏵/hl]:Select [o]:Locate [Space]:Invert [#]:ID",
-                        () -> getSensors().stream().anyMatch(s -> s.getClass() == letrain.track.Sensor.class),
-                        () -> this.getMode() == GameMode.SENSORS, () -> GameMode.SENSORS),
-                new GameModeMenuOption("Si&gnals",
-                        "[⏴⏵/hl]:Select [m]:Max/Min [⏶⏷/kj]:Limit [Space]:Invert",
-                        () -> !getSpeedSignals().isEmpty(),
-                        () -> this.getMode() == GameMode.SPEED_SIGNALS,
-                        () -> GameMode.SPEED_SIGNALS),
-                new GameModeMenuOption("&Trains",
-                        "[A-Z]: LOCOMOTIVE | [a-z]: WAGON | [ENTER]: FINISH",
-                        () -> this.getCursorRailTrack() != null,
-                        () -> this.getMode() == GameMode.TRAINS, () -> GameMode.TRAINS),
-                new GameModeMenuOption("&Couple",
-                        "[⏶⏷/kj]:Front/Back [⏴⏵/hl]:Sel wagons [o]:Locate [Space]:Couple",
-                        () -> this.canEnterLinkMode(), () -> this.getMode() == GameMode.LINK,
-                        () -> GameMode.LINK),
-                new GameModeMenuOption("&Uncouple",
-                        "[⏶⏷/kj]:Front/Back [⏴⏵/hl]:Sel wagons [o]:Locate [Space]:Uncouple",
-                        () -> this.canEnterUnlinkMode(), () -> this.getMode() == GameMode.UNLINK,
-                        () -> GameMode.UNLINK),
-                new GameModeMenuOption("&Program",
-                        "Integrated Development Environment (Apply/Save/Load/Cancel)", () -> true,
-                        () -> this.getMode() == GameMode.PROGRAM, () -> GameMode.PROGRAM),
-                new GameModeMenuOption("Statio&ns",
-                        "[⏴⏵/hl]:Select [o]:Locate [#]:ID",
-                        () -> !this.getStations().isEmpty(),
-                        () -> this.getMode() == GameMode.STATIONS, () -> GameMode.STATIONS));
+        return ModelReportService.createMenuModel(this);
     }
 
     @Override
@@ -1319,6 +1217,21 @@ public class Model implements letrain.mvp.Model {
     }
 
     @Override
+    public letrain.time.GameClock getGameClock() {
+        return gameClock;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("elapsedTicks")
+    public long getElapsedTicks() {
+        return gameClock.elapsedTicks();
+    }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("elapsedTicks")
+    public void setElapsedTicks(long elapsedTicks) {
+        gameClock.setElapsedTicks(elapsedTicks);
+    }
+
+    @Override
     public LocalDateTime getLastSaveTime() {
         return this.lastSaveTime;
     }
@@ -1326,21 +1239,14 @@ public class Model implements letrain.mvp.Model {
     @JsonIgnore
     @Override
     public CargoTypes getStationGhostCargoType() {
-        Integer terrain = groundMap.findClosestIndustry(cursor.getPosition(), 5);
-        if (terrain != null) {
-            return CargoTypes.IndustryMapper.getCargoForTerrain(terrain);
-        }
-        return CargoTypes.NONE;
+        return TrackElementMovementService.getStationGhostCargoType(groundMap,
+                cursor.getPosition());
     }
 
     @JsonIgnore
     @Override
     public CargoTypes.StationRole getStationGhostRole() {
-        Integer terrain = groundMap.findClosestIndustry(cursor.getPosition(), 5);
-        if (terrain != null) {
-            return CargoTypes.IndustryMapper.getRoleForTerrain(terrain);
-        }
-        return CargoTypes.StationRole.GENERIC;
+        return TrackElementMovementService.getStationGhostRole(groundMap, cursor.getPosition());
     }
 
     @Override
@@ -1349,113 +1255,31 @@ public class Model implements letrain.mvp.Model {
     }
 
     @JsonIgnore
+    private transient letrain.command.CommandJournal commandJournal;
+
+    @Override
+    public letrain.command.CommandJournal getCommandJournal() {
+        if (commandJournal == null) {
+            commandJournal = new letrain.command.CommandJournal();
+        }
+        return commandJournal;
+    }
+
+    /** Binds a presenter-owned journal so it survives model swaps (undo/redo/load). */
+    @Override
+    public void setCommandJournal(letrain.command.CommandJournal journal) {
+        this.commandJournal = journal;
+    }
+
+    @JsonIgnore
     @Override
     public String getGameObjectsReport() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("--- TRAINS ---\n");
-        java.util.Set<Train> processedTrains = new java.util.HashSet<>();
-        for (Locomotive loco : locomotives) {
-            Train train = loco.getTrain();
-            if (train != null && !processedTrains.contains(train)) {
-                processedTrains.add(train);
-                sb.append("Train ID: ").append(train.getId()).append("\n");
-                sb.append("  Segments Owned: ");
-                java.util.List<letrain.segments.Segment> owned =
-                        getBlockManager().getOwnedSegments(train);
-                for (letrain.segments.Segment s : owned)
-                    sb.append(s.getId()).append(" ");
-                sb.append("\n");
-
-                sb.append("  Current Segment: ")
-                        .append(train.getSafetyManager().getCurrentSegment() != null
-                                ? train.getSafetyManager().getCurrentSegment().getId()
-                                : "None")
-                        .append("\n");
-                sb.append("  Next Segment: ")
-                        .append(train.getSafetyManager().getNextSegment() != null
-                                ? train.getSafetyManager().getNextSegment().getId()
-                                : "None")
-                        .append("\n");
-                if (!train.getSafetyManager().hasPermissionToMove()
-                        && train.getSafetyManager().getNextSegment() != null) {
-                    java.util.List<Train> blockers =
-                            getBlockManager().getOwners(train.getSafetyManager().getNextSegment());
-                    sb.append("  Permission: WAITING (Blocked by: ");
-                    if (blockers.isEmpty()) {
-                        sb.append("Logic/Retry Timer");
-                    } else {
-                        for (Train b : blockers)
-                            sb.append("Train ").append(b.getId()).append(" ");
-                    }
-                    sb.append(")\n");
-                } else {
-                    sb.append("  Permission: ").append(
-                            train.getSafetyManager().hasPermissionToMove() ? "GRANTED" : "WAITING")
-                            .append("\n");
-                }
-
-                int wagonCount = 0;
-                for (letrain.vehicle.rail.Linker l : train.getLinkers()) {
-                    if (l instanceof Wagon) {
-                        wagonCount++;
-                    }
-                }
-                sb.append("  Wagons: ").append(wagonCount).append("\n");
-                if (train.getDirectorLinker() != null) {
-                    if (train.getDirectorLinker() instanceof letrain.vehicle.rail.Linker)
-                        sb.append("  Pos: ")
-                                .append(((letrain.vehicle.rail.Linker) train.getDirectorLinker())
-                                        .getPosition())
-                                .append("\n");
-                    sb.append("  Speed: ").append(train.getDirectorLinker().getSpeed())
-                            .append("\n");
-                }
-                if (train.getLogisticsManager().isLoading())
-                    sb.append("  State: LOADING at Station ")
-                            .append(train.getLogisticsManager().getStationAtTrain().getId())
-                            .append("\n");
-                else if (train.isStalled())
-                    sb.append("  State: STALLED\n");
-                else
-                    sb.append("  State: CRUIZING\n");
-                for (letrain.vehicle.rail.Linker linker : train.getLinkers()) {
-                    if (linker instanceof Wagon) {
-                        Wagon w = (Wagon) linker;
-                        if (w.getCargoAmount() > 0)
-                            sb.append("    Wagon: ").append(w.getCargoType()).append(" (")
-                                    .append(w.getCargoAmount()).append("/")
-                                    .append(w.getMaxCapacity()).append(")\n");
-                    }
-                }
-            }
-        }
-        sb.append("\n--- STATIONS ---\n");
-        for (Station s : stations) {
-            sb.append("Station ").append(s.getId()).append(": ").append(s.getRole()).append(" ")
-                    .append(s.getCargoType()).append(" (").append(s.getStorage()).append("/")
-                    .append(s.getMaxStorage()).append(") @ ").append(s.getPosition()).append("\n");
-        }
-        sb.append("\n--- SENSORS ---\n");
-        for (Sensor s : sensors) {
-            if (!(s instanceof Station))
-                sb.append("Sensor ").append(s.getId()).append(" @ ").append(s.getPosition())
-                        .append("\n");
-        }
-        sb.append("\n--- FORKS ---\n");
-        for (ForkRailTrack f : forks) {
-            sb.append("Fork ").append(f.getId()).append(" @ ").append(f.getPosition()).append(" (")
-                    .append(f.isUsingAlternativeRoute() ? "Alternative" : "Normal").append(")\n");
-        }
-        sb.append("\n--- SEMAPHORES ---\n");
-        for (RailSemaphore s : semaphores) {
-            sb.append("Semaphore ").append(s.getId()).append(" @ ").append(s.getPosition())
-                    .append(" (").append(s.isOpen() ? "OPEN" : "CLOSED").append(")\n");
-        }
-        return sb.toString();
+        return ModelReportService.generateGameObjectsReport(this);
     }
 
     private String commandText = "";
     private String commandError = "";
+    private String commandNotice = "";
 
     @Override
     public String getCommandText() {
@@ -1478,32 +1302,19 @@ public class Model implements letrain.mvp.Model {
     }
 
     @Override
+    public String getCommandNotice() {
+        return commandNotice;
+    }
+
+    @Override
+    public void setCommandNotice(String notice) {
+        this.commandNotice = notice;
+    }
+
+    @Override
     @JsonIgnore
     public String getRailwayGraphReport() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(getRailwayGraph().toString());
-
-        sb.append("\n\n--- SEGMENT OWNERSHIP ---\n");
-        letrain.segments.BlockManager bm = getBlockManager();
-        java.util.Set<letrain.segments.Segment> segments = bm.getAllLockedSegments();
-
-        if (segments.isEmpty()) {
-            sb.append("No active segment locks.\n");
-        } else {
-            for (letrain.segments.Segment s : segments) {
-                java.util.List<Train> owners = bm.getOwners(s);
-                if (!owners.isEmpty()) {
-                    sb.append("Segment ").append(s.getId()).append(" owned by: ");
-                    for (Train train : owners) {
-                        sb.append("Train ").append(train.getId()).append(" ");
-                    }
-                    sb.append("\n");
-                }
-            }
-        }
-
-        sb.append("\n").append(getGameObjectsReport());
-        return sb.toString();
+        return ModelReportService.generateRailwayGraphReport(this);
     }
 
     public void setEconomyManager(EconomyManager economyManager) {
@@ -1604,6 +1415,21 @@ public class Model implements letrain.mvp.Model {
         this.seed = seed;
     }
 
+    public int getSeed() {
+        return seed;
+    }
+
+    /**
+     * Creates a model whose procedural terrain is generated from {@code seed} (ADR-020 scenario
+     * import). Use it to rebuild a fresh world that a scenario file will be replayed onto, so the
+     * reconstructed infrastructure matches the original world.
+     */
+    public Model(int seed) {
+        this();
+        this.seed = seed;
+        this.groundMap = new letrain.ground.impl.GroundMap(seed, this.economyManager);
+    }
+
     public void setEventLogManager(EventLogManager eventLogManager) {
         this.eventLogManager = eventLogManager;
     }
@@ -1634,46 +1460,17 @@ public class Model implements letrain.mvp.Model {
 
     @Override
     public boolean selectSensor(int id) {
-        letrain.track.Sensor s = getSensor(id);
-        if (s != null && s.getClass() == letrain.track.Sensor.class) {
-            setSelectedSensor(s);
-            return true;
-        }
-        return false;
+        return ModelSelectionService.selectSensor(this, id);
     }
 
     @Override
     public boolean selectNextSensor() {
-        java.util.List<letrain.track.Sensor> pureSensors = getSensors().stream().filter(s -> s.getClass() == letrain.track.Sensor.class).collect(java.util.stream.Collectors.toList());
-        if (pureSensors.isEmpty()) return false;
-        if (selectedSensor == null) {
-            selectedSensor = pureSensors.get(0);
-            return true;
-        }
-        int i = pureSensors.indexOf(selectedSensor);
-        if (i < pureSensors.size() - 1) {
-            selectedSensor = pureSensors.get(i + 1);
-        } else {
-            selectedSensor = pureSensors.get(0);
-        }
-        return true;
+        return ModelSelectionService.selectNextSensor(this);
     }
 
     @Override
     public boolean selectPrevSensor() {
-        java.util.List<letrain.track.Sensor> pureSensors = getSensors().stream().filter(s -> s.getClass() == letrain.track.Sensor.class).collect(java.util.stream.Collectors.toList());
-        if (pureSensors.isEmpty()) return false;
-        if (selectedSensor == null) {
-            selectedSensor = pureSensors.get(pureSensors.size() - 1);
-            return true;
-        }
-        int i = pureSensors.indexOf(selectedSensor);
-        if (i > 0) {
-            selectedSensor = pureSensors.get(i - 1);
-        } else {
-            selectedSensor = pureSensors.get(pureSensors.size() - 1);
-        }
-        return true;
+        return ModelSelectionService.selectPrevSensor(this);
     }
 
 }

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.List;
+import letrain.map.Dir;
 import letrain.utils.SerializationHelper;
 import letrain.vehicle.rail.impl.Train;
 import letrain.visitor.Visitor;
@@ -184,6 +185,19 @@ public class Station extends Sensor {
     @Override
     public String toString() {
         return "Station [id=" + getId() + "]";
+    }
+
+    /**
+     * Inverts the station orientation: it faces the opposite direction along the rail and its
+     * platform side is recomputed (mirror of creation), so the visual platform switches sides of
+     * the track in both the 2D and 3D renderers.
+     */
+    public void flipOrientation() {
+        if (getCreationDir() != null) {
+            Dir dir = getCreationDir().inverse();
+            setCreationDir(dir);
+            setSideDir(dir.turnRight().turnRight());
+        }
     }
 
     private String name;

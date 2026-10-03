@@ -43,7 +43,7 @@ train "Expreso" set autopilot true;
 
 ### Implementación
 
-- Gramática ANTLR: `LeTrainProgram.g4` (comandos directos añadidos a los triggers existentes)
+- Gramática ANTLR: original en `LeTrainProgram.g4` (refactorizada posteriormente en `ScriptLogicParser.g4` y `PlayerCommandsParser.g4`)
 - Visitor: `CommandManager.java` — usa `ItineraryImpl` y `WaypointImpl` directamente
 - La ejecución ocurre en `AutomationEngine.setProgram()` al pulsar APPLY
 - El programa de texto es la **fuente de verdad**: cada APPLY borra y recrea el estado

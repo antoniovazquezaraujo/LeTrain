@@ -17,44 +17,204 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     private letrain.command.TurtleDelegate turtleDelegate;
     private java.util.function.BiConsumer<String, String> onMessage;
     private Runnable onQuit;
+    private java.util.function.IntConsumer onUndo;
+    private java.util.function.IntConsumer onRedo;
+    private java.util.function.Consumer<java.io.File> onExport;
+    private java.util.function.Consumer<java.io.File> onImport;
 
-    public PlayerCommandExecutor(Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad, letrain.command.TurtleDelegate turtleDelegate) {
+    /** Problem notices gathered while this typed command runs (D1 contextual channel). */
+    private final letrain.command.CommandNotices commandNotices =
+            new letrain.command.CommandNotices();
+
+    /**
+     * True once {@link #finishCommand()} ran: deferred notices become asynchronous from then on.
+     */
+    private boolean commandFinished;
+
+    public PlayerCommandExecutor(Model model, java.util.function.Consumer<java.io.File> onSave,
+            java.util.function.Consumer<java.io.File> onLoad,
+            letrain.command.TurtleDelegate turtleDelegate) {
         this(model, onSave, onLoad, turtleDelegate, null, null);
     }
-    
-    public PlayerCommandExecutor(Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad, letrain.command.TurtleDelegate turtleDelegate, java.util.function.BiConsumer<String, String> onMessage, Runnable onQuit) {
+
+    public PlayerCommandExecutor(Model model, java.util.function.Consumer<java.io.File> onSave,
+            java.util.function.Consumer<java.io.File> onLoad,
+            letrain.command.TurtleDelegate turtleDelegate,
+            java.util.function.BiConsumer<String, String> onMessage, Runnable onQuit) {
+        this(model, onSave, onLoad, turtleDelegate, onMessage, onQuit, null, null);
+    }
+
+    public PlayerCommandExecutor(Model model, java.util.function.Consumer<java.io.File> onSave,
+            java.util.function.Consumer<java.io.File> onLoad,
+            letrain.command.TurtleDelegate turtleDelegate,
+            java.util.function.BiConsumer<String, String> onMessage, Runnable onQuit,
+            java.util.function.IntConsumer onUndo, java.util.function.IntConsumer onRedo) {
+        this(model, onSave, onLoad, turtleDelegate, onMessage, onQuit, onUndo, onRedo, null, null);
+    }
+
+    public PlayerCommandExecutor(Model model, java.util.function.Consumer<java.io.File> onSave,
+            java.util.function.Consumer<java.io.File> onLoad,
+            letrain.command.TurtleDelegate turtleDelegate,
+            java.util.function.BiConsumer<String, String> onMessage, Runnable onQuit,
+            java.util.function.IntConsumer onUndo, java.util.function.IntConsumer onRedo,
+            java.util.function.Consumer<java.io.File> onExport,
+            java.util.function.Consumer<java.io.File> onImport) {
         this.model = model;
         this.onSave = onSave;
         this.onLoad = onLoad;
         this.turtleDelegate = turtleDelegate;
         this.onMessage = onMessage;
         this.onQuit = onQuit;
+        this.onUndo = onUndo;
+        this.onRedo = onRedo;
+        this.onExport = onExport;
+        this.onImport = onImport;
     }
 
     public PlayerCommandExecutor(Model model) {
         this(model, null, null, null);
     }
 
-    public static String execute(String commandText, Model model) {
-        return execute(commandText, model, null, null, null, null, null);
+    /**
+     * User-facing problem notice produced while this typed command runs. It is gathered for the
+     * console channel (D1 contextual): the command line when the whole set fits, the scrollable
+     * panel otherwise. {@link #finishCommand()} routes it when the command ends.
+     */
+    private void warn(String title, String text) {
+        log.warn("[DSL] {}", text);
+        commandNotices.add(title, text);
     }
 
-    public static String execute(String commandText, Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad, letrain.command.TurtleDelegate turtleDelegate) {
-        return execute(commandText, model, onSave, onLoad, turtleDelegate, null, null);
+    /**
+     * Ends the typed command: routes the gathered notices to their contextual channel (D1). A
+     * short, single-line set goes to the command bar; a long or multiline one opens the scrollable
+     * panel (same rule as syntax errors) and is not duplicated on the bar. Deferred notices fired
+     * from now on belong to asynchronous events and report to the panel.
+     */
+    private void finishCommand() {
+        commandFinished = true;
+        if (model == null) {
+            return;
+        }
+        if (commandNotices.isEmpty()) {
+            model.setCommandNotice("");
+            return;
+        }
+        if (commandNotices.needsPanel()) {
+            model.setCommandNotice("");
+            model.reportUserMessage("Command notice", commandNotices.panelText());
+        } else {
+            model.setCommandNotice(commandNotices.shortText());
+        }
     }
-    
-    public static String execute(String commandText, Model model, java.util.function.Consumer<java.io.File> onSave, java.util.function.Consumer<java.io.File> onLoad, letrain.command.TurtleDelegate turtleDelegate, java.util.function.BiConsumer<String, String> onMessage, Runnable onQuit) {
+
+    /**
+     * Deferred problem notice (trigger action, mission rejected/failed). While the typed command
+     * that armed it is still running it belongs to the console feedback; afterwards it is an
+     * asynchronous event, so it goes to the visible panel like programs and itineraries.
+     */
+    private void onDeferredNotice(String title, String text) {
+        if (!commandFinished) {
+            commandNotices.add(title, text);
+        } else if (model != null) {
+            model.reportUserMessage(title, text);
+        }
+    }
+
+    public static String execute(String commandText, Model model) {
+        return execute(commandText, model, null, null, null, null, null, null, null);
+    }
+
+    public static String execute(String commandText, Model model,
+            java.util.function.Consumer<java.io.File> onSave,
+            java.util.function.Consumer<java.io.File> onLoad,
+            letrain.command.TurtleDelegate turtleDelegate) {
+        return execute(commandText, model, onSave, onLoad, turtleDelegate, null, null, null, null);
+    }
+
+    public static String execute(String commandText, Model model,
+            java.util.function.Consumer<java.io.File> onSave,
+            java.util.function.Consumer<java.io.File> onLoad,
+            letrain.command.TurtleDelegate turtleDelegate,
+            java.util.function.BiConsumer<String, String> onMessage, Runnable onQuit) {
+        return execute(commandText, model, onSave, onLoad, turtleDelegate, onMessage, onQuit, null,
+                null);
+    }
+
+    public static String execute(String commandText, Model model,
+            java.util.function.Consumer<java.io.File> onSave,
+            java.util.function.Consumer<java.io.File> onLoad,
+            letrain.command.TurtleDelegate turtleDelegate,
+            java.util.function.BiConsumer<String, String> onMessage, Runnable onQuit,
+            java.util.function.IntConsumer onUndo, java.util.function.IntConsumer onRedo) {
+        return execute(commandText, model, onSave, onLoad, turtleDelegate, onMessage, onQuit,
+                onUndo, onRedo, true);
+    }
+
+    /**
+     * @param autoRecordJournal when false, the executor does not auto-record the raw command into
+     *        the {@link CommandJournal}; callers that capture a canonical, self-positioned form
+     *        (e.g. the console funnels prepend {@code go x,y; face d;}) do their own recording.
+     *        Pass false for internal replays (undo/redo/scenario) to avoid re-journaling them.
+     */
+    public static String execute(String commandText, Model model,
+            java.util.function.Consumer<java.io.File> onSave,
+            java.util.function.Consumer<java.io.File> onLoad,
+            letrain.command.TurtleDelegate turtleDelegate,
+            java.util.function.BiConsumer<String, String> onMessage, Runnable onQuit,
+            java.util.function.IntConsumer onUndo, java.util.function.IntConsumer onRedo,
+            boolean autoRecordJournal) {
+        return execute(commandText, model, onSave, onLoad, turtleDelegate, onMessage, onQuit,
+                onUndo, onRedo, null, null, autoRecordJournal);
+    }
+
+    /**
+     * @param autoRecordJournal when false, the executor does not auto-record the raw command into
+     *        the {@link CommandJournal}; callers that capture a canonical, self-positioned form
+     *        (e.g. the console funnels prepend {@code go x,y; face d;}) do their own recording.
+     *        Pass false for internal replays (undo/redo/scenario) to avoid re-journaling them.
+     */
+    public static String execute(String commandText, Model model,
+            java.util.function.Consumer<java.io.File> onSave,
+            java.util.function.Consumer<java.io.File> onLoad,
+            letrain.command.TurtleDelegate turtleDelegate,
+            java.util.function.BiConsumer<String, String> onMessage, Runnable onQuit,
+            java.util.function.IntConsumer onUndo, java.util.function.IntConsumer onRedo,
+            java.util.function.Consumer<java.io.File> onExport,
+            java.util.function.Consumer<java.io.File> onImport, boolean autoRecordJournal) {
+        // `help` is handled here (not in the grammar) so any topic works, reserved words included.
+        if (commandText != null) {
+            String trimmed = commandText.trim();
+            String lower = trimmed.toLowerCase(java.util.Locale.ROOT);
+            if (lower.startsWith("help")
+                    && (lower.length() == 4 || !Character.isLetterOrDigit(lower.charAt(4)))) {
+                String after = trimmed.substring(4);
+                int semi = after.indexOf(';');
+                if (semi >= 0) {
+                    after = after.substring(0, semi);
+                }
+                String text = letrain.command.GrammarReference.helpText(after.trim());
+                if (onMessage == null) {
+                    return text;
+                }
+                onMessage.accept("Help", text);
+                return null;
+            }
+        }
+
         if (!commandText.trim().endsWith(";")) {
             commandText = commandText.trim() + ";";
         }
-        
+
         List<String> errors = new ArrayList<>();
-        
+
         LeTrainLexer lexer = new LeTrainLexer(CharStreams.fromString(commandText));
         lexer.removeErrorListeners();
         lexer.addErrorListener(new org.antlr.v4.runtime.BaseErrorListener() {
             @Override
-            public void syntaxError(org.antlr.v4.runtime.Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, org.antlr.v4.runtime.RecognitionException e) {
+            public void syntaxError(org.antlr.v4.runtime.Recognizer<?, ?> recognizer,
+                    Object offendingSymbol, int line, int charPositionInLine, String msg,
+                    org.antlr.v4.runtime.RecognitionException e) {
                 errors.add("Token Error at " + charPositionInLine + ": " + msg);
             }
         });
@@ -63,7 +223,9 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         parser.removeErrorListeners();
         parser.addErrorListener(new org.antlr.v4.runtime.BaseErrorListener() {
             @Override
-            public void syntaxError(org.antlr.v4.runtime.Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, org.antlr.v4.runtime.RecognitionException e) {
+            public void syntaxError(org.antlr.v4.runtime.Recognizer<?, ?> recognizer,
+                    Object offendingSymbol, int line, int charPositionInLine, String msg,
+                    org.antlr.v4.runtime.RecognitionException e) {
                 errors.add("Syntax Error at " + charPositionInLine + ": " + msg);
             }
         });
@@ -74,104 +236,269 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         }
 
         try {
-            PlayerCommandExecutor executor = new PlayerCommandExecutor(model, onSave, onLoad, turtleDelegate, onMessage, onQuit);
-            executor.visit(tree);
-            return null; // No errors
+            PlayerCommandExecutor executor = new PlayerCommandExecutor(model, onSave, onLoad,
+                    turtleDelegate, onMessage, onQuit, onUndo, onRedo, onExport, onImport);
+            executor.setAutoRecordJournal(autoRecordJournal);
+            try {
+                executor.visit(tree);
+                if (autoRecordJournal && !executor.toggledRecording && model != null) {
+                    letrain.command.CommandJournal journal = model.getCommandJournal();
+                    if (journal != null && journal.isRecording()) {
+                        journal.record(commandText.trim());
+                    }
+                }
+                return null; // No errors
+            } finally {
+                // Flush on success and on a mid-command failure alike, so a notice already
+                // produced is never lost.
+                executor.finishCommand();
+            }
         } catch (Exception e) {
             log.error("Command execution error", e);
             return e.getMessage();
         }
     }
 
+    @Override
+    public Object visitUndoCommand(PlayerCommandsParser.UndoCommandContext ctx) {
+        toggledRecording = true;
+        int steps = ctx.NUMBER() != null ? Integer.parseInt(ctx.NUMBER().getText()) : 1;
+        if (onUndo == null) {
+            throw new RuntimeException(
+                    "Undo is not supported in this context (no undo handler wired).");
+        }
+        onUndo.accept(steps);
+        return null;
+    }
+
+    @Override
+    public Object visitRedoCommand(PlayerCommandsParser.RedoCommandContext ctx) {
+        toggledRecording = true;
+        int steps = ctx.NUMBER() != null ? Integer.parseInt(ctx.NUMBER().getText()) : 1;
+        if (onRedo == null) {
+            throw new RuntimeException(
+                    "Redo is not supported in this context (no redo handler wired).");
+        }
+        onRedo.accept(steps);
+        return null;
+    }
+
+    private boolean toggledRecording = false;
+
+    /** See the static {@code execute(..., boolean autoRecordJournal)} overload. */
+    private boolean autoRecordJournal = true;
+
+    public void setAutoRecordJournal(boolean autoRecordJournal) {
+        this.autoRecordJournal = autoRecordJournal;
+    }
+
+    @Override
+    public Object visitTimeCommand(PlayerCommandsParser.TimeCommandContext ctx) {
+        letrain.time.GameClock clock = model.getGameClock();
+        if (ctx.SET() == null) {
+            String text = clock.now().toString();
+            if (onMessage == null) {
+                return text;
+            }
+            onMessage.accept("Time", text);
+            return null;
+        }
+        int hour;
+        int minute;
+        if (ctx.TIME() != null) {
+            String[] parts = ctx.TIME().getText().split(":");
+            hour = Integer.parseInt(parts[0]);
+            minute = Integer.parseInt(parts[1]);
+        } else {
+            // U8: `time set 9` = 09:00; `time set 9:5` keeps the two-number form.
+            hour = Integer.parseInt(ctx.NUMBER(0).getText());
+            minute = ctx.NUMBER().size() > 1 ? Integer.parseInt(ctx.NUMBER(1).getText()) : 0;
+        }
+        if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+            // D1 / U8: `time set 25:99` used to wrap silently; it is an error with a visible
+            // warning now, and the clock stays untouched.
+            warn("Time", "Invalid time " + hour + ":" + minute
+                    + " (expected 00:00..23:59); the clock is unchanged");
+            return null;
+        }
+        letrain.time.GameTime target = new letrain.time.GameTime(clock.now().day(), hour, minute);
+        clock.setTime(target);
+        log.info("[time] set to {}", clock.now());
+        // No confirmation dialog: the change is already visible in the HUD clock.
+        return null;
+    }
+
+    @Override
+    public Object visitJournalCommand(PlayerCommandsParser.JournalCommandContext ctx) {
+        letrain.command.CommandJournal journal = model.getCommandJournal();
+        StringBuilder sb = new StringBuilder();
+        sb.append(journal.isRecording() ? "Recording: ON\n" : "Recording: OFF\n");
+        sb.append("Entries (").append(journal.applied()).append("/").append(journal.size())
+                .append("):");
+        int i = 1;
+        for (String entry : journal.appliedEntries()) {
+            sb.append("\n  ").append(i++).append(". ").append(entry);
+        }
+        String text = sb.toString();
+        log.info("[journal] {}", text.replace("\n", " | "));
+        if (onMessage == null) {
+            return text;
+        }
+        onMessage.accept("Command journal", text);
+        return null;
+    }
+
 
     public Object visitLsCommand(PlayerCommandsParser.LsCommandContext ctx) {
-        if (onMessage == null) return "Command 'ls' not supported in this context";
+        if (onMessage == null)
+            return "Command 'ls' not supported in this context";
+        String listing = listEntities(ctx.entityType());
+        if (listing.isEmpty()) {
+            return "Entity type not supported for 'ls'";
+        }
+        onMessage.accept("List", listing.stripTrailing());
+        return null;
+    }
+
+    /**
+     * Lists entities. When {@code type} is null every type is listed; otherwise only that type.
+     * Returns an empty string for an unsupported type.
+     */
+    private String listEntities(PlayerCommandsParser.EntityTypeContext type) {
+        boolean all = type == null;
         StringBuilder sb = new StringBuilder();
-        if (ctx.entityType().TRAIN() != null) {
+        if (all || type.TRAIN() != null) {
             sb.append("Trains:\n");
             for (letrain.vehicle.rail.impl.Locomotive l : model.getLocomotives()) {
-                sb.append(" - ").append(l.getId()).append(": ").append(l.getTrain().getName()).append("\n");
+                sb.append(" - ").append(l.getId()).append(": ").append(l.getTrain().getName())
+                        .append("\n");
             }
-        } else if (ctx.entityType().STATION() != null) {
+        }
+        if (all || type.STATION() != null) {
             sb.append("Stations:\n");
             for (letrain.track.Station s : model.getStations()) {
                 sb.append(" - ").append(s.getId()).append(": ").append(s.getName()).append("\n");
             }
-        } else if (ctx.entityType().SENSOR() != null) {
+        }
+        if (all || type.SENSOR() != null) {
             sb.append("Sensors:\n");
             for (letrain.track.Sensor s : model.getSensors()) {
                 sb.append(" - ").append(s.getId()).append(": ").append(s.getName()).append("\n");
             }
-        } else if (ctx.entityType().SEMAPHORE() != null) {
+        }
+        if (all || type.SEMAPHORE() != null) {
             sb.append("Semaphores:\n");
             for (letrain.track.RailSemaphore s : model.getSemaphores()) {
                 sb.append(" - ").append(s.getId()).append("\n");
             }
-        } else if (ctx.entityType().FORK() != null) {
+        }
+        if (all || type.FORK() != null) {
             sb.append("Forks:\n");
             for (letrain.track.rail.ForkRailTrack f : model.getForks()) {
                 sb.append(" - ").append(f.getId()).append("\n");
             }
-        } else if (ctx.entityType().SIGNAL() != null) {
+        }
+        if (all || type.SIGNAL() != null) {
             sb.append("Speed Signals:\n");
             for (letrain.track.SpeedSignal s : model.getSpeedSignals()) {
                 sb.append(" - ").append(s.getId()).append("\n");
             }
-        } else {
-            return "Entity type not supported for 'ls'";
         }
-        onMessage.accept("List", sb.toString());
-        return null;
+        return sb.toString();
     }
 
     public Object visitInfoCommand(PlayerCommandsParser.InfoCommandContext ctx) {
-        if (onMessage == null) return "Command 'info' not supported in this context";
+        if (onMessage == null)
+            return "Command 'info' not supported in this context";
+        PlayerCommandsParser.EntityTypeContext type = ctx.entityType();
+
+        // info; -> everything
+        if (type == null) {
+            if (ctx.NUMBER() != null || ctx.identifier() != null) {
+                // `info 5` has no entity type: the number used to be ignored in silence.
+                String ref =
+                        ctx.NUMBER() != null ? ctx.NUMBER().getText() : ctx.identifier().getText();
+                onMessage.accept("Info",
+                        "'info " + ref
+                                + "' ignores the reference (no entity type); use e.g. 'info train "
+                                + ref + "' or 'info;' for everything");
+                return null;
+            }
+            onMessage.accept("Info", model.getGameObjectsReport());
+            return null;
+        }
+
         int id = -1;
         String name = null;
-        if (ctx.NUMBER() != null) id = Integer.parseInt(ctx.NUMBER().getText());
-        if (ctx.identifier() != null) name = ctx.identifier().getText().replace("\"", "");
+        if (ctx.NUMBER() != null)
+            id = Integer.parseInt(ctx.NUMBER().getText());
+        if (ctx.identifier() != null)
+            name = ctx.identifier().getText().replace("\"", "");
+
+        // info <type>; -> list everything of that type
+        if (id == -1 && name == null) {
+            String listing = listEntities(type);
+            if (listing.isEmpty())
+                return "Entity type not supported for 'info'";
+            onMessage.accept("Info", listing.stripTrailing());
+            return null;
+        }
 
         StringBuilder sb = new StringBuilder();
-        if (ctx.entityType().TRAIN() != null) {
+        if (type.TRAIN() != null) {
             letrain.vehicle.rail.impl.Locomotive found = null;
             for (letrain.vehicle.rail.impl.Locomotive l : model.getLocomotives()) {
-                if ((name != null && name.equals(l.getTrain().getName())) || (id != -1 && l.getId() == id)) {
-                    found = l; break;
+                if ((name != null && name.equals(l.getTrain().getName()))
+                        || (id != -1 && l.getId() == id)) {
+                    found = l;
+                    break;
                 }
             }
             if (found != null) {
                 sb.append("Train ID: ").append(found.getId()).append("\n");
                 sb.append("Name: ").append(found.getTrain().getName()).append("\n");
                 sb.append("Speed: ").append(found.getSpeed()).append("\n");
-            } else return "Train not found";
-        } else if (ctx.entityType().STATION() != null) {
+                sb.append(found.getTrain().describeComposition());
+                // ADR-022 phase 2b: only trains with measured timetable deltas show the block.
+                letrain.itinerary.AutoPilot autopilot = found.getTrain().getAutopilot();
+                if (autopilot != null) {
+                    autopilot.punctuality()
+                            .ifPresent(punctuality -> sb.append(punctuality.describe()));
+                }
+            } else
+                return "Train not found";
+        } else if (type.STATION() != null) {
             letrain.track.Station found = null;
             for (letrain.track.Station s : model.getStations()) {
                 if ((name != null && name.equals(s.getName())) || (id != -1 && s.getId() == id)) {
-                    found = s; break;
+                    found = s;
+                    break;
                 }
             }
             if (found != null) {
                 sb.append("Station ID: ").append(found.getId()).append("\n");
                 sb.append("Name: ").append(found.getName()).append("\n");
                 sb.append("Position: ").append(found.getPosition()).append("\n");
-            } else return "Station not found";
-        } else if (ctx.entityType().SENSOR() != null) {
+            } else
+                return "Station not found";
+        } else if (type.SENSOR() != null) {
             letrain.track.Sensor found = null;
             for (letrain.track.Sensor s : model.getSensors()) {
                 if ((name != null && name.equals(s.getName())) || (id != -1 && s.getId() == id)) {
-                    found = s; break;
+                    found = s;
+                    break;
                 }
             }
             if (found != null) {
                 sb.append("Sensor ID: ").append(found.getId()).append("\n");
                 sb.append("Name: ").append(found.getName()).append("\n");
                 sb.append("Position: ").append(found.getPosition()).append("\n");
-            } else return "Sensor not found";
+            } else
+                return "Sensor not found";
         } else {
             return "Entity type not supported for 'info'";
         }
-        
+
         onMessage.accept("Info", sb.toString());
         return null;
     }
@@ -184,17 +511,20 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         } else if (ctx.STRING().size() > 1) {
             name = ctx.STRING(0).getText().replace("\"", "");
         }
-        
+
         String newName = ctx.STRING(ctx.STRING().size() - 1).getText().replace("\"", "");
 
         if (ctx.entityType().TRAIN() != null) {
             for (letrain.vehicle.rail.impl.Locomotive l : model.getLocomotives()) {
-                if ((name != null && name.equals(l.getTrain().getName())) || (id != -1 && l.getId() == id)) {
+                if ((name != null && name.equals(l.getTrain().getName()))
+                        || (id != -1 && l.getId() == id)) {
                     l.getTrain().setName(newName);
                     return null;
                 }
             }
-            return "Train not found";
+            warn("Name", "Train " + (name != null ? "'" + name + "'" : id)
+                    + " not found; name unchanged");
+            return null;
         } else if (ctx.entityType().STATION() != null) {
             for (letrain.track.Station s : model.getStations()) {
                 if ((name != null && name.equals(s.getName())) || (id != -1 && s.getId() == id)) {
@@ -202,7 +532,9 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                     return null;
                 }
             }
-            return "Station not found";
+            warn("Name", "Station " + (name != null ? "'" + name + "'" : id)
+                    + " not found; name unchanged");
+            return null;
         } else if (ctx.entityType().SENSOR() != null) {
             for (letrain.track.Sensor s : model.getSensors()) {
                 if ((name != null && name.equals(s.getName())) || (id != -1 && s.getId() == id)) {
@@ -210,11 +542,19 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                     return null;
                 }
             }
-            return "Sensor not found";
+            warn("Name", "Sensor " + (name != null ? "'" + name + "'" : id)
+                    + " not found; name unchanged");
+            return null;
         } else if (ctx.entityType().SEMAPHORE() != null) {
-            return "Semaphores cannot be renamed";
+            // The message used to be returned and discarded: now it reaches the console (D1).
+            warn("Name", "Semaphores cannot be renamed; name unchanged");
+            return null;
+        } else if (ctx.entityType().SIGNAL() != null) {
+            warn("Name", "Signals cannot be renamed; name unchanged");
+            return null;
         }
-        return "Entity type not supported for renaming";
+        warn("Name", "Entity type not supported for renaming");
+        return null;
     }
 
     public Object visitQuitCommand(PlayerCommandsParser.QuitCommandContext ctx) {
@@ -226,19 +566,94 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         return null;
     }
 
+    /**
+     * Console session registry (issue #632): the console re-parses every typed statement with its
+     * own {@link ScriptLogicParser} pass, so itinerary definitions would be lost between statements
+     * if each one built a fresh {@link CommandManager}. One manager is kept per live world: it
+     * survives across the statements of a console session and is replaced whenever the model is
+     * swapped (undo/redo, load, scenario replay), so its registry always belongs to the world the
+     * next statement will run against.
+     */
+    private static Model sessionModel;
+    private static CommandManager sessionManager;
+
+    /**
+     * The {@link CommandManager} shared by every statement of the console session running on
+     * {@code model} (a null model gets a throwaway manager). Kept in sync with the live model: a
+     * different instance means a swapped-in world, which starts with an empty registry.
+     */
+    private static synchronized CommandManager sessionManagerFor(Model model) {
+        if (model != null && sessionModel == model && sessionManager != null) {
+            return sessionManager;
+        }
+        if (model == null) {
+            return new CommandManager(null);
+        }
+        sessionModel = model;
+        sessionManager = new CommandManager(model);
+        return sessionManager;
+    }
+
     @Override
     public Object visitStatement(PlayerCommandsParser.StatementContext ctx) {
+        // `PlayerCommandsParser` overrides `setNameCommand` so the console accepts a STRING
+        // reference (`station "old" set name "new"`), which the strict ScriptLogicParser does not.
+        // Handle it here: re-parsing would reject it and the rename would be lost in silence.
+        if (ctx.directCommand() != null && ctx.directCommand().setNameCommand() != null) {
+            return visitSetNameCommand(ctx.directCommand().setNameCommand());
+        }
+
         // Since it's a script logic statement, we can re-parse it with ScriptLogicParser
         // This avoids duplicating all the visitor logic for trains, semaphores, etc.
         // Wait, ANTLR4 tokens contain the start and stop index!
         int start = ctx.getStart().getStartIndex();
         int stop = ctx.getStop().getStopIndex();
-        String originalText = ctx.getStart().getInputStream().getText(new org.antlr.v4.runtime.misc.Interval(start, stop));
-        
-        ScriptLogicParser scriptParser = new ScriptLogicParser(new CommonTokenStream(new LeTrainLexer(CharStreams.fromString(originalText))));
+        String originalText = ctx.getStart().getInputStream()
+                .getText(new org.antlr.v4.runtime.misc.Interval(start, stop));
+
+        List<String> innerErrors = new ArrayList<>();
+        LeTrainLexer innerLexer = new LeTrainLexer(CharStreams.fromString(originalText));
+        innerLexer.removeErrorListeners();
+        innerLexer.addErrorListener(new org.antlr.v4.runtime.BaseErrorListener() {
+            @Override
+            public void syntaxError(org.antlr.v4.runtime.Recognizer<?, ?> recognizer,
+                    Object offendingSymbol, int line, int charPositionInLine, String msg,
+                    org.antlr.v4.runtime.RecognitionException e) {
+                innerErrors.add("Token error at " + line + ":" + charPositionInLine + " " + msg);
+            }
+        });
+        ScriptLogicParser scriptParser = new ScriptLogicParser(new CommonTokenStream(innerLexer));
+        scriptParser.removeErrorListeners();
+        scriptParser.addErrorListener(new org.antlr.v4.runtime.BaseErrorListener() {
+            @Override
+            public void syntaxError(org.antlr.v4.runtime.Recognizer<?, ?> recognizer,
+                    Object offendingSymbol, int line, int charPositionInLine, String msg,
+                    org.antlr.v4.runtime.RecognitionException e) {
+                innerErrors.add("Syntax error at " + line + ":" + charPositionInLine + " " + msg);
+            }
+        });
         ScriptLogicParser.ScriptStartContext scriptTree = scriptParser.scriptStart();
-        CommandManager scriptManager = new CommandManager(model);
-        scriptManager.visit(scriptTree);
+        if (!innerErrors.isEmpty()) {
+            // D1: a statement the script engine cannot execute is never a silent no-op.
+            warn("Command",
+                    "Not supported by the script engine: " + String.join(" | ", innerErrors));
+            return null;
+        }
+        CommandManager scriptManager = sessionManagerFor(model);
+        // Immediate problems (unknown entity, rejected itinerary…) are console feedback for a
+        // typed command (D1 contextual channel).
+        scriptManager.setWarningSink((title, text) -> commandNotices.add(title, text));
+        // Deferred blocks (triggers) and mission notices: they fire later, so they report to the
+        // panel; while this command is still running they are folded into its feedback. The sink is
+        // rebound on every statement (and cleared without a visible channel) because the session
+        // manager outlives this executor: a previous call's sink must never survive into this one.
+        scriptManager.setDeferredWarningSink(
+                onMessage != null && model != null ? this::onDeferredNotice : null);
+        // Visit the statements directly instead of the parsed root: visitScriptStart resets the
+        // registry, which would drop the itineraries created by the previous console statements.
+        for (ScriptLogicParser.StatementContext statement : scriptTree.statement()) {
+            scriptManager.visit(statement);
+        }
         return null;
     }
 
@@ -249,32 +664,46 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             int y = Integer.parseInt(ctx.NUMBER(1).getText());
             model.getCursor().getPosition().setX(x);
             model.getCursor().getPosition().setY(y);
-        } else if (ctx.entityType() != null && ctx.NEXT() == null && ctx.PREV() == null && ctx.GN() == null && ctx.GP() == null) {
+        } else if (ctx.entityType() != null && ctx.NEXT() == null && ctx.PREV() == null
+                && ctx.GN() == null && ctx.GP() == null) {
             // Absolute entity Go
             int id = -1;
             String name = null;
-            if (ctx.NUMBER(0) != null) id = Integer.parseInt(ctx.NUMBER(0).getText());
-            if (ctx.identifier() != null) name = ctx.identifier().getText().replace("\"", "");
+            if (ctx.NUMBER(0) != null)
+                id = Integer.parseInt(ctx.NUMBER(0).getText());
+            if (ctx.identifier() != null)
+                name = ctx.identifier().getText().replace("\"", "");
 
             letrain.map.Point targetPos = null;
             if (ctx.entityType().STATION() != null) {
-                letrain.track.Station st = name != null ? model.findStationByName(name) : model.getStation(id);
-                if (st != null && st.getTrack() != null) targetPos = st.getTrack().getPosition();
+                letrain.track.Station st =
+                        name != null ? model.findStationByName(name) : model.getStation(id);
+                if (st != null && st.getTrack() != null)
+                    targetPos = st.getTrack().getPosition();
             } else if (ctx.entityType().SENSOR() != null) {
-                letrain.track.Sensor s = name != null ? model.findSensorByName(name) : model.getSensor(id);
-                if (s != null && !(s instanceof letrain.track.SpeedSignal) && !(s instanceof letrain.track.Station) && s.getTrack() != null) targetPos = s.getTrack().getPosition();
+                letrain.track.Sensor s =
+                        name != null ? model.findSensorByName(name) : model.getSensor(id);
+                if (s != null && !(s instanceof letrain.track.SpeedSignal)
+                        && !(s instanceof letrain.track.Station) && s.getTrack() != null)
+                    targetPos = s.getTrack().getPosition();
             } else if (ctx.entityType().SIGNAL() != null) {
-                letrain.track.SpeedSignal s = name != null ? model.findSpeedSignalByName(name) : model.getSpeedSignal(id);
-                if (s != null && s.getTrack() != null) targetPos = s.getTrack().getPosition();
+                letrain.track.SpeedSignal s =
+                        name != null ? model.findSpeedSignalByName(name) : model.getSpeedSignal(id);
+                if (s != null && s.getTrack() != null)
+                    targetPos = s.getTrack().getPosition();
             } else if (ctx.entityType().SEMAPHORE() != null) {
                 letrain.track.RailSemaphore s = model.getSemaphore(id);
-                if (s != null) targetPos = s.getPosition();
+                if (s != null)
+                    targetPos = s.getPosition();
             } else if (ctx.entityType().FORK() != null) {
                 letrain.track.rail.ForkRailTrack f = model.getFork(id);
-                if (f != null) targetPos = f.getPosition();
+                if (f != null)
+                    targetPos = f.getPosition();
             } else if (ctx.entityType().TRAIN() != null) {
-                letrain.vehicle.rail.impl.Train t = name != null ? model.findTrainByName(name) : model.getTrainFromLocomotiveId(id);
-                if (t != null && t.getDirectorLinker() != null) targetPos = ((letrain.vehicle.Vehicle<?>) t.getDirectorLinker()).getPosition();
+                letrain.vehicle.rail.impl.Train t = name != null ? model.findTrainByName(name)
+                        : model.getTrainFromLocomotiveId(id);
+                if (t != null && t.getDirectorLinker() != null)
+                    targetPos = ((letrain.vehicle.Vehicle<?>) t.getDirectorLinker()).getPosition();
             }
 
             if (targetPos != null) {
@@ -284,8 +713,10 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                 throw new RuntimeException("Target entity not found.");
             }
 
-        } else if (ctx.MARK() != null || ctx.M() != null || (ctx.identifier() != null && ctx.entityType() == null)) {
-            String name = ctx.identifier() != null ? ctx.identifier().getText().replace("\"", "") : ctx.NUMBER(0).getText();
+        } else if (ctx.MARK() != null || ctx.M() != null
+                || (ctx.identifier() != null && ctx.entityType() == null)) {
+            String name = ctx.identifier() != null ? ctx.identifier().getText().replace("\"", "")
+                    : ctx.NUMBER(0).getText();
             letrain.map.Point p = model.getMark(name);
             if (p != null) {
                 model.getCursor().getPosition().setX(p.getX());
@@ -293,27 +724,32 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             } else {
                 throw new RuntimeException("Mark '" + name + "' not found.");
             }
-        } else if (ctx.NEXT() != null || ctx.PREV() != null || ctx.END() != null || ctx.GN() != null || ctx.GP() != null) {
+        } else if (ctx.NEXT() != null || ctx.PREV() != null || ctx.END() != null || ctx.GN() != null
+                || ctx.GP() != null) {
             // Topological navigation
             letrain.map.Point p = model.getCursor().getPosition();
             letrain.track.Track t = model.getRailMap().getTrackAt(p.getX(), p.getY());
-            if (t == null) throw new RuntimeException("Cursor is not on a track.");
-            
+            if (t == null)
+                throw new RuntimeException("Cursor is not on a track.");
+
             letrain.map.Dir searchDir = model.getCursor().getDir();
-            if (ctx.PREV() != null || ctx.GP() != null) searchDir = searchDir.inverse();
-            
+            if (ctx.PREV() != null || ctx.GP() != null)
+                searchDir = searchDir.inverse();
+
             boolean found = false;
             while (t != null) {
                 letrain.track.Track nextTrack = t.getConnected(searchDir);
-                if (nextTrack == null) break;
-                
+                if (nextTrack == null)
+                    break;
+
                 letrain.map.Dir incoming = searchDir.inverse();
                 letrain.map.Dir outgoing = nextTrack.getDir(incoming);
-                if (outgoing == null) break;
-                
+                if (outgoing == null)
+                    break;
+
                 t = nextTrack;
                 searchDir = outgoing;
-                
+
                 if (ctx.END() != null) {
                     // Just keep going until the end
                     continue;
@@ -321,19 +757,26 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                     if (ctx.entityType().RAIL() != null) {
                         found = true;
                         break;
-                    } else if (ctx.entityType().FORK() != null && t instanceof letrain.track.rail.ForkRailTrack) {
+                    } else if (ctx.entityType().FORK() != null
+                            && t instanceof letrain.track.rail.ForkRailTrack) {
                         found = true;
                         break;
-                    } else if (ctx.entityType().STATION() != null && t.getComponent() instanceof letrain.track.Station) {
+                    } else if (ctx.entityType().STATION() != null
+                            && t.getComponent() instanceof letrain.track.Station) {
                         found = true;
                         break;
-                    } else if (ctx.entityType().SENSOR() != null && t.getComponent() instanceof letrain.track.Sensor && !(t.getComponent() instanceof letrain.track.Station) && !(t.getComponent() instanceof letrain.track.SpeedSignal)) {
+                    } else if (ctx.entityType().SENSOR() != null
+                            && t.getComponent() instanceof letrain.track.Sensor
+                            && !(t.getComponent() instanceof letrain.track.Station)
+                            && !(t.getComponent() instanceof letrain.track.SpeedSignal)) {
                         found = true;
                         break;
-                    } else if (ctx.entityType().SIGNAL() != null && t.getComponent() instanceof letrain.track.SpeedSignal) {
+                    } else if (ctx.entityType().SIGNAL() != null
+                            && t.getComponent() instanceof letrain.track.SpeedSignal) {
                         found = true;
                         break;
-                    } else if (ctx.entityType().SEMAPHORE() != null && model.getSemaphoreAt(t.getPosition()) != null) {
+                    } else if (ctx.entityType().SEMAPHORE() != null
+                            && model.getSemaphoreAt(t.getPosition()) != null) {
                         found = true;
                         break;
                     } else if (ctx.entityType().TRAIN() != null && t.getLinker() != null) {
@@ -342,7 +785,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                     }
                 }
             }
-            
+
             if (ctx.END() != null) {
                 model.getCursor().getPosition().setX(t.getPosition().getX());
                 model.getCursor().getPosition().setY(t.getPosition().getY());
@@ -363,57 +806,81 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     public Object visitFaceCommand(PlayerCommandsParser.FaceCommandContext ctx) {
         if (ctx.entityType() == null && ctx.MARK() == null && ctx.M() == null) {
             letrain.map.Dir dir = null;
-            if (ctx.DIR_N() != null) dir = letrain.map.Dir.N;
-            else if (ctx.DIR_S() != null) dir = letrain.map.Dir.S;
-            else if (ctx.DIR_E() != null) dir = letrain.map.Dir.E;
-            else if (ctx.DIR_W() != null) dir = letrain.map.Dir.W;
-            else if (ctx.DIR_NE() != null) dir = letrain.map.Dir.NE;
-            else if (ctx.DIR_NW() != null) dir = letrain.map.Dir.NW;
-            else if (ctx.DIR_SE() != null) dir = letrain.map.Dir.SE;
-            else if (ctx.DIR_SW() != null) dir = letrain.map.Dir.SW;
-            
+            if (ctx.DIR_N() != null)
+                dir = letrain.map.Dir.N;
+            else if (ctx.DIR_S() != null)
+                dir = letrain.map.Dir.S;
+            else if (ctx.DIR_E() != null)
+                dir = letrain.map.Dir.E;
+            else if (ctx.DIR_W() != null)
+                dir = letrain.map.Dir.W;
+            else if (ctx.DIR_NE() != null)
+                dir = letrain.map.Dir.NE;
+            else if (ctx.DIR_NW() != null)
+                dir = letrain.map.Dir.NW;
+            else if (ctx.DIR_SE() != null)
+                dir = letrain.map.Dir.SE;
+            else if (ctx.DIR_SW() != null)
+                dir = letrain.map.Dir.SW;
+
             if (dir != null) {
                 model.getCursor().setDir(dir);
             }
         } else if (ctx.MARK() != null || ctx.M() != null) {
-            String name = ctx.identifier() != null ? ctx.identifier().getText().replace("\"", "") : ctx.NUMBER().getText();
+            String name = ctx.identifier() != null ? ctx.identifier().getText().replace("\"", "")
+                    : ctx.NUMBER().getText();
             letrain.map.Point targetPos = model.getMark(name);
             if (targetPos != null) {
                 letrain.map.Dir dir = model.getCursor().getPosition().locate(targetPos);
-                if (dir != null) model.getCursor().setDir(dir);
+                if (dir != null)
+                    model.getCursor().setDir(dir);
             } else {
                 throw new RuntimeException("Mark not found.");
             }
         } else {
             int id = -1;
             String name = null;
-            if (ctx.NUMBER() != null) id = Integer.parseInt(ctx.NUMBER().getText());
-            if (ctx.identifier() != null) name = ctx.identifier().getText().replace("\"", "");
+            if (ctx.NUMBER() != null)
+                id = Integer.parseInt(ctx.NUMBER().getText());
+            if (ctx.identifier() != null)
+                name = ctx.identifier().getText().replace("\"", "");
 
             letrain.map.Point targetPos = null;
             if (ctx.entityType().STATION() != null) {
-                letrain.track.Station st = name != null ? model.findStationByName(name) : model.getStation(id);
-                if (st != null && st.getTrack() != null) targetPos = st.getTrack().getPosition();
+                letrain.track.Station st =
+                        name != null ? model.findStationByName(name) : model.getStation(id);
+                if (st != null && st.getTrack() != null)
+                    targetPos = st.getTrack().getPosition();
             } else if (ctx.entityType().SENSOR() != null) {
-                letrain.track.Sensor s = name != null ? model.findSensorByName(name) : model.getSensor(id);
-                if (s != null && !(s instanceof letrain.track.SpeedSignal) && !(s instanceof letrain.track.Station) && s.getTrack() != null) targetPos = s.getTrack().getPosition();
+                letrain.track.Sensor s =
+                        name != null ? model.findSensorByName(name) : model.getSensor(id);
+                if (s != null && !(s instanceof letrain.track.SpeedSignal)
+                        && !(s instanceof letrain.track.Station) && s.getTrack() != null)
+                    targetPos = s.getTrack().getPosition();
             } else if (ctx.entityType().SIGNAL() != null) {
-                letrain.track.SpeedSignal s = name != null ? model.findSpeedSignalByName(name) : model.getSpeedSignal(id);
-                if (s != null && s.getTrack() != null) targetPos = s.getTrack().getPosition();
+                letrain.track.SpeedSignal s =
+                        name != null ? model.findSpeedSignalByName(name) : model.getSpeedSignal(id);
+                if (s != null && s.getTrack() != null)
+                    targetPos = s.getTrack().getPosition();
             } else if (ctx.entityType().SEMAPHORE() != null) {
                 letrain.track.RailSemaphore s = model.getSemaphore(id);
-                if (s != null) targetPos = s.getPosition();
+                if (s != null)
+                    targetPos = s.getPosition();
             } else if (ctx.entityType().FORK() != null) {
                 letrain.track.rail.ForkRailTrack f = model.getFork(id);
-                if (f != null) targetPos = f.getPosition();
+                if (f != null)
+                    targetPos = f.getPosition();
             } else if (ctx.entityType().TRAIN() != null) {
-                letrain.vehicle.rail.impl.Train t = name != null ? model.findTrainByName(name) : model.getTrainFromLocomotiveId(id);
-                if (t != null && t.getDirectorLinker() != null) targetPos = ((letrain.vehicle.Vehicle<?>) t.getDirectorLinker()).getPosition();
+                letrain.vehicle.rail.impl.Train t = name != null ? model.findTrainByName(name)
+                        : model.getTrainFromLocomotiveId(id);
+                if (t != null && t.getDirectorLinker() != null)
+                    targetPos = ((letrain.vehicle.Vehicle<?>) t.getDirectorLinker()).getPosition();
             }
 
             if (targetPos != null) {
                 letrain.map.Dir dir = model.getCursor().getPosition().locate(targetPos);
-                if (dir != null) model.getCursor().setDir(dir);
+                if (dir != null)
+                    model.getCursor().setDir(dir);
             } else {
                 throw new RuntimeException("Target entity not found.");
             }
@@ -422,8 +889,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     }
 
 
-    
-    
+
     @Override
     public Object visitNewCommand(PlayerCommandsParser.NewCommandContext ctx) {
         letrain.map.Point pos = model.getCursor().getPosition();
@@ -431,98 +897,103 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         letrain.track.Track track = model.getRailMap().getTrackAt(pos.getX(), pos.getY());
 
         if (ctx.STATION() != null) {
-            if (track == null) throw new RuntimeException("Cannot place station: No track here.");
-            if (track.getComponent() != null) throw new RuntimeException("Cannot place station: Track already has a component.");
-            
+            if (track == null)
+                throw new RuntimeException("Cannot place station: No track here.");
+            if (track.getComponent() != null)
+                throw new RuntimeException("Cannot place station: Track already has a component.");
+
             letrain.track.Station station = new letrain.track.Station(model.nextStationId());
             station.setTrack(track);
             station.setCreationDir(dir);
             station.setSideDir(dir.turnRight().turnRight());
-            Integer foundTerrain = model.getGroundMap().findClosestIndustry(pos, 5);
-            if (foundTerrain != null) {
-                int densityCount = model.getGroundMap().countIndustryDensity(pos, 5, foundTerrain);
-                station.setCargoType(letrain.track.CargoTypes.IndustryMapper.getCargoForTerrain(foundTerrain));
-                station.setRole(letrain.track.CargoTypes.IndustryMapper.getRoleForTerrain(foundTerrain));
-                station.setIndustryCount(densityCount);
-                if (station.getRole() == letrain.track.CargoTypes.StationRole.PRODUCER) {
-                    station.setStorage(50);
-                }
-            } else {
-                station.setCargoType(letrain.track.CargoTypes.NONE);
-                station.setRole(letrain.track.CargoTypes.StationRole.GENERIC);
-            }
+            model.applyStationRoleByIndustry(station, pos);
             model.addStation(station);
             track.setComponent(station);
         } else if (ctx.SENSOR() != null) {
-            if (track == null) throw new RuntimeException("Cannot place sensor: No track here.");
-            if (track.getComponent() != null) throw new RuntimeException("Cannot place sensor: Track already has a component.");
-            
+            if (track == null)
+                throw new RuntimeException("Cannot place sensor: No track here.");
+            if (track.getComponent() != null)
+                throw new RuntimeException("Cannot place sensor: Track already has a component.");
+
             letrain.track.Sensor sensor = new letrain.track.Sensor(model.nextSensorId());
             sensor.setTrack(track);
             sensor.setCreationDir(dir);
             model.addSensor(sensor);
             track.setComponent(sensor);
         } else if (ctx.SEMAPHORE() != null) {
-            if (track == null) throw new RuntimeException("Cannot place semaphore: No track here.");
-            if (track.getComponent() != null) throw new RuntimeException("Cannot place semaphore: Track already has a component.");
-            letrain.track.RailSemaphore sem = model.getSemaphoreAt(pos);
-            if (sem != null) throw new RuntimeException("Cannot place semaphore: Already exists here.");
-            sem = new letrain.track.RailSemaphore(model.nextSemaphoreId(), pos);
+            if (track == null)
+                throw new RuntimeException("Cannot place semaphore: No track here.");
+            if (track.getComponent() != null)
+                throw new RuntimeException(
+                        "Cannot place semaphore: Track already has a component.");
+            letrain.track.RailSemaphore sem =
+                    new letrain.track.RailSemaphore(model.nextSemaphoreId());
             sem.setCreationDir(dir);
+            sem.setTrack(track);
             model.addSemaphore(sem);
         } else if (ctx.SIGNAL() != null) {
-            if (track == null) throw new RuntimeException("Cannot place signal: No track here.");
-            if (track.getComponent() != null) throw new RuntimeException("Cannot place signal: Track already has a component.");
-            
-            letrain.track.SpeedSignal speedSignal = new letrain.track.SpeedSignal(model.nextSpeedSignalId(), dir, 3, true);
+            if (track == null)
+                throw new RuntimeException("Cannot place signal: No track here.");
+            if (track.getComponent() != null)
+                throw new RuntimeException("Cannot place signal: Track already has a component.");
+
+            letrain.track.SpeedSignal speedSignal =
+                    new letrain.track.SpeedSignal(model.nextSpeedSignalId(), dir, 3, true);
             speedSignal.setTrack(track);
             model.addSensor(speedSignal);
             track.setComponent(speedSignal);
         } else if (ctx.FORK() != null) {
             throw new RuntimeException("Cannot place fork via script yet (use UI).");
         } else if (ctx.LOCOMOTIVE() != null || ctx.LOCO() != null) {
-            if (track == null) throw new RuntimeException("Cannot place locomotive: No track here.");
-            if (track.getLinker() != null) throw new RuntimeException("Cannot place locomotive: Track already occupied.");
-            
+            if (track == null)
+                throw new RuntimeException("Cannot place locomotive: No track here.");
+            if (track.getLinker() != null)
+                throw new RuntimeException("Cannot place locomotive: Track already occupied.");
+
             String colorStr = ctx.color() != null ? ctx.color().getText().toUpperCase() : "RED";
             int trainId = model.nextTrainId();
-            
+
             String aspect = ctx.aspectId().getText().replace("\"", "").toUpperCase();
-            letrain.vehicle.rail.impl.Locomotive loco = new letrain.vehicle.rail.impl.Locomotive(model.nextLocomotiveId(), aspect, colorStr);
+            letrain.vehicle.rail.impl.Locomotive loco = new letrain.vehicle.rail.impl.Locomotive(
+                    model.nextLocomotiveId(), aspect, colorStr);
 
             letrain.vehicle.rail.impl.Train train = new letrain.vehicle.rail.impl.Train(trainId);
-            
+
             train.pushBack(loco);
             train.setDirectorLinker(loco);
             loco.setTrain(train);
-            
+
             track.enterLinkerFromDir(dir.inverse(), loco);
             if (loco.getDir() == null) {
                 track.removeLinker();
                 throw new RuntimeException("Could not place locomotive");
             }
-            
+
             model.addLocomotive(loco);
             model.getEconomyManager().onLocomotiveConstructed(loco);
             train.getSafetyManager().claimOccupiedSegments();
 
         } else if (ctx.WAGON() != null) {
-            if (track == null) throw new RuntimeException("Cannot place wagon: No track here.");
-            if (track.getLinker() != null) throw new RuntimeException("Cannot place wagon: Track already occupied.");
-            
-            
-            
-            String typeStr = ctx.cargoType() != null ? ctx.cargoType().getText().toUpperCase() : "COAL";
+            if (track == null)
+                throw new RuntimeException("Cannot place wagon: No track here.");
+            if (track.getLinker() != null)
+                throw new RuntimeException("Cannot place wagon: Track already occupied.");
+
+
+
+            String typeStr =
+                    ctx.cargoType() != null ? ctx.cargoType().getText().toUpperCase() : "COAL";
             if (!typeStr.equals("GOLD") && !typeStr.equals("COAL") && !typeStr.equals("RUBY")) {
-                throw new RuntimeException("Invalid wagon type. Only GOLD, COAL, and RUBY are allowed.");
+                throw new RuntimeException(
+                        "Invalid wagon type. Only GOLD, COAL, and RUBY are allowed.");
             }
             letrain.track.CargoTypes type = letrain.track.CargoTypes.valueOf(typeStr);
-            
+
             String aspect = ctx.aspectId().getText().replace("\"", "").toLowerCase();
             letrain.vehicle.rail.impl.Wagon wagon = new letrain.vehicle.rail.impl.Wagon(aspect);
 
 
-            
+
             wagon.setExclusiveCargoType(type);
             track.enterLinkerFromDir(dir.inverse(), wagon);
             if (wagon.getDir() == null) {
@@ -541,44 +1012,79 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     public Object visitDelCommand(PlayerCommandsParser.DelCommandContext ctx) {
         int id = -1;
         String name = null;
-        if (ctx.NUMBER() != null) id = Integer.parseInt(ctx.NUMBER().getText());
-        if (ctx.identifier() != null) name = ctx.identifier().getText().replace("\"", "");
+        if (ctx.NUMBER() != null)
+            id = Integer.parseInt(ctx.NUMBER().getText());
+        if (ctx.identifier() != null)
+            name = ctx.identifier().getText().replace("\"", "");
 
         letrain.map.Point pos = model.getCursor().getPosition();
         letrain.track.Track track = model.getRailMap().getTrackAt(pos.getX(), pos.getY());
 
         if (ctx.entityType().STATION() != null) {
-            letrain.track.Station st = name != null ? model.findStationByName(name) : (id != -1 ? model.getStation(id) : (track != null && track.getComponent() instanceof letrain.track.Station ? (letrain.track.Station) track.getComponent() : null));
-            if (st != null) model.removeStation(st);
-            else throw new RuntimeException("Station not found.");
+            letrain.track.Station st = name != null ? model.findStationByName(name)
+                    : (id != -1 ? model.getStation(id)
+                            : (track != null
+                                    && track.getComponent() instanceof letrain.track.Station
+                                            ? (letrain.track.Station) track.getComponent()
+                                            : null));
+            if (st != null)
+                model.removeStation(st);
+            else
+                throw new RuntimeException("Station not found.");
         } else if (ctx.entityType().SENSOR() != null || ctx.entityType().SIGNAL() != null) {
             letrain.track.Sensor s = null;
             if (ctx.entityType().SIGNAL() != null) {
-                s = name != null ? model.findSpeedSignalByName(name) : (id != -1 ? model.getSpeedSignal(id) : (track != null && track.getComponent() instanceof letrain.track.SpeedSignal ? (letrain.track.Sensor) track.getComponent() : null));
+                s = name != null ? model.findSpeedSignalByName(name)
+                        : (id != -1 ? model.getSpeedSignal(id)
+                                : (track != null
+                                        && track.getComponent() instanceof letrain.track.SpeedSignal
+                                                ? (letrain.track.Sensor) track.getComponent()
+                                                : null));
             } else {
-                s = name != null ? model.findSensorByName(name) : (id != -1 ? model.getSensor(id) : (track != null && track.getComponent() instanceof letrain.track.Sensor && !(track.getComponent() instanceof letrain.track.Station) ? (letrain.track.Sensor) track.getComponent() : null));
+                s = name != null ? model.findSensorByName(name)
+                        : (id != -1 ? model.getSensor(id)
+                                : (track != null
+                                        && track.getComponent() instanceof letrain.track.Sensor
+                                        && !(track.getComponent() instanceof letrain.track.Station)
+                                                ? (letrain.track.Sensor) track.getComponent()
+                                                : null));
             }
             if (s != null) {
-                if (ctx.entityType().SIGNAL() != null && !(s instanceof letrain.track.SpeedSignal)) throw new RuntimeException("Target is not a signal.");
+                if (ctx.entityType().SIGNAL() != null && !(s instanceof letrain.track.SpeedSignal))
+                    throw new RuntimeException("Target is not a signal.");
                 model.removeSensor(s);
-            }
-            else throw new RuntimeException(ctx.entityType().SIGNAL() != null ? "Signal not found." : "Sensor not found.");
+            } else
+                throw new RuntimeException(ctx.entityType().SIGNAL() != null ? "Signal not found."
+                        : "Sensor not found.");
         } else if (ctx.entityType().SEMAPHORE() != null) {
-            letrain.track.RailSemaphore s = id != -1 ? model.getSemaphore(id) : (track != null ? (track.getComponent() instanceof letrain.track.RailSemaphore ? (letrain.track.RailSemaphore) track.getComponent() : null) : null);
-            if (s != null) model.removeSemaphore(s);
-            else throw new RuntimeException("Semaphore not found.");
+            letrain.track.RailSemaphore s = id != -1 ? model.getSemaphore(id)
+                    : (track != null ? (track.getComponent() instanceof letrain.track.RailSemaphore
+                            ? (letrain.track.RailSemaphore) track.getComponent()
+                            : null) : null);
+            if (s != null)
+                model.removeSemaphore(s);
+            else
+                throw new RuntimeException("Semaphore not found.");
         } else if (ctx.entityType().FORK() != null || ctx.entityType().RAIL() != null) {
             letrain.map.Point targetPos = null;
             if (ctx.entityType().FORK() != null) {
-                letrain.track.rail.ForkRailTrack f = id != -1 ? model.getFork(id) : (track instanceof letrain.track.rail.ForkRailTrack ? (letrain.track.rail.ForkRailTrack) track : null);
-                if (f != null) targetPos = f.getPosition();
+                letrain.track.rail.ForkRailTrack f = id != -1 ? model.getFork(id)
+                        : (track instanceof letrain.track.rail.ForkRailTrack
+                                ? (letrain.track.rail.ForkRailTrack) track
+                                : null);
+                if (f != null)
+                    targetPos = f.getPosition();
             } else if (ctx.entityType().RAIL() != null) {
-                throw new RuntimeException("Must provide specific entity type to delete, not just RAIL.");
+                throw new RuntimeException(
+                        "Must provide specific entity type to delete, not just RAIL.");
             }
-            if (targetPos != null) model.removeTrack(targetPos);
-            else throw new RuntimeException("Target entity not found.");
+            if (targetPos != null)
+                model.removeTrack(targetPos);
+            else
+                throw new RuntimeException("Target entity not found.");
         } else if (ctx.entityType().TRAIN() != null) {
-            throw new RuntimeException("Trains cannot be deleted via the DEL command. Use the CLEAR command instead (e.g., clear train 1).");
+            throw new RuntimeException(
+                    "Trains cannot be deleted via the DEL command. Use the CLEAR command instead (e.g., clear train 1).");
         }
         return null;
     }
@@ -587,11 +1093,14 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     public Object visitClearCommand(PlayerCommandsParser.ClearCommandContext ctx) {
         int id = -1;
         String name = null;
-        if (ctx.NUMBER() != null) id = Integer.parseInt(ctx.NUMBER().getText());
-        if (ctx.identifier() != null) name = ctx.identifier().getText().replace("\"", "");
+        if (ctx.NUMBER() != null)
+            id = Integer.parseInt(ctx.NUMBER().getText());
+        if (ctx.identifier() != null)
+            name = ctx.identifier().getText().replace("\"", "");
 
         if (ctx.entityType().TRAIN() != null) {
-            letrain.vehicle.rail.impl.Train t = name != null ? model.findTrainByName(name) : model.getTrainFromLocomotiveId(id);
+            letrain.vehicle.rail.impl.Train t =
+                    name != null ? model.findTrainByName(name) : model.getTrainFromLocomotiveId(id);
             if (t != null) {
                 for (letrain.vehicle.rail.Linker l : t.getLinkers()) {
                     if (l instanceof letrain.vehicle.rail.impl.Locomotive) {
@@ -599,13 +1108,74 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                     } else if (l instanceof letrain.vehicle.rail.impl.Wagon) {
                         model.removeWagon((letrain.vehicle.rail.impl.Wagon) l);
                     }
-                    if (l.getTrack() != null) l.getTrack().removeLinker();
+                    if (l.getTrack() != null)
+                        l.getTrack().removeLinker();
                 }
             } else {
                 throw new RuntimeException("Train not found.");
             }
         } else {
-            throw new RuntimeException("CLEAR command is only for vehicles (e.g. clear train 1). Use DEL for infrastructure.");
+            throw new RuntimeException(
+                    "CLEAR command is only for vehicles (e.g. clear train 1). Use DEL for infrastructure.");
+        }
+        return null;
+    }
+
+    @Override
+    public Object visitSlideCommand(PlayerCommandsParser.SlideCommandContext ctx) {
+        int id = -1;
+        String name = null;
+        if (ctx.slideTarget().NUMBER() != null) {
+            id = Integer.parseInt(ctx.slideTarget().NUMBER().getText());
+        } else if (ctx.slideTarget().identifier() != null) {
+            name = ctx.slideTarget().identifier().getText().replace("\"", "");
+        }
+
+        boolean forward = true;
+        if (ctx.FORWARD() == null && ctx.BACKWARD() != null) {
+            forward = false;
+        }
+        int steps = 1;
+        if (ctx.NUMBER() != null) {
+            steps = Integer.parseInt(ctx.NUMBER().getText());
+        }
+        if (steps < 1) {
+            throw new RuntimeException("Slide steps must be a positive number.");
+        }
+
+        letrain.track.Sensor target = null;
+        if (ctx.slideTarget().STATION() != null) {
+            letrain.track.Station st =
+                    name != null ? model.findStationByName(name) : model.getStation(id);
+            if (st == null)
+                throw new RuntimeException("Station not found.");
+            target = st;
+        } else if (ctx.slideTarget().SEMAPHORE() != null) {
+            letrain.track.RailSemaphore sm = model.getSemaphore(id);
+            if (sm == null)
+                throw new RuntimeException("Semaphore not found.");
+            target = sm;
+        } else if (ctx.slideTarget().SIGNAL() != null) {
+            letrain.track.SpeedSignal sg =
+                    name != null ? model.findSpeedSignalByName(name) : model.getSpeedSignal(id);
+            if (sg == null)
+                throw new RuntimeException("Signal not found.");
+            target = sg;
+        } else if (ctx.slideTarget().SENSOR() != null) {
+            letrain.track.Sensor sn =
+                    name != null ? model.findSensorByName(name) : model.getSensor(id);
+            if (sn == null)
+                throw new RuntimeException("Sensor not found.");
+            target = sn;
+        }
+
+        for (int i = 0; i < steps; i++) {
+            boolean moved =
+                    forward ? model.moveSensorForward(target) : model.moveSensorBackward(target);
+            if (!moved) {
+                throw new RuntimeException((forward ? "Forward" : "Backward")
+                        + " slide blocked or at the end of the line after " + i + " step(s).");
+            }
         }
         return null;
     }
@@ -625,25 +1195,29 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     @Override
     public Object visitTurtleCommand(PlayerCommandsParser.TurtleCommandContext ctx) {
         if (turtleDelegate == null) {
-            throw new RuntimeException("Turtle graphics not supported in this context (no UI handler available).");
+            throw new RuntimeException(
+                    "Turtle graphics not supported in this context (no UI handler available).");
         }
-        
+
         letrain.vehicle.Cursor.CursorMode cursorMode = letrain.vehicle.Cursor.CursorMode.MOVING;
         boolean isClearing = false;
-        if (ctx.WRITE() != null) cursorMode = letrain.vehicle.Cursor.CursorMode.DRAWING;
-        else if (ctx.DEL() != null) cursorMode = letrain.vehicle.Cursor.CursorMode.ERASING;
+        if (ctx.WRITE() != null)
+            cursorMode = letrain.vehicle.Cursor.CursorMode.DRAWING;
+        else if (ctx.DEL() != null)
+            cursorMode = letrain.vehicle.Cursor.CursorMode.ERASING;
         else if (ctx.CLEAR() != null) {
             cursorMode = letrain.vehicle.Cursor.CursorMode.MOVING;
             isClearing = true;
         }
-        
+
         letrain.vehicle.Cursor.CursorMode oldMode = model.getCursor().getMode();
         model.getCursor().setMode(cursorMode);
-        
+
         try {
             turtleDelegate.startSequence();
             if (ctx.turtleSequence() != null) {
-                java.util.List<PlayerCommandsParser.TurtleStepContext> steps = ctx.turtleSequence().turtleStep();
+                java.util.List<PlayerCommandsParser.TurtleStepContext> steps =
+                        ctx.turtleSequence().turtleStep();
                 for (int i = 0; i < steps.size(); i++) {
                     PlayerCommandsParser.TurtleStepContext stepCtx = steps.get(i);
                     if (stepCtx.NUMBER() != null) {
@@ -652,17 +1226,20 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                             if (isClearing) {
                                 clearTrainAtCursor();
                                 turtleDelegate.moveForward();
-                            } else if (cursorMode == letrain.vehicle.Cursor.CursorMode.DRAWING) turtleDelegate.buildForward();
+                            } else if (cursorMode == letrain.vehicle.Cursor.CursorMode.DRAWING)
+                                turtleDelegate.buildForward();
                             else if (cursorMode == letrain.vehicle.Cursor.CursorMode.ERASING) {
                                 clearTrainAtCursor(); // Force clear train so track can be deleted
                                 turtleDelegate.eraseForward();
-                            }
-                            else turtleDelegate.moveForward();
+                            } else
+                                turtleDelegate.moveForward();
                         }
                     } else if (stepCtx.L() != null || stepCtx.R() != null) {
-                        if (stepCtx.L() != null) turtleDelegate.turnLeft();
-                        else turtleDelegate.turnRight();
-                        
+                        if (stepCtx.L() != null)
+                            turtleDelegate.turnLeft();
+                        else
+                            turtleDelegate.turnRight();
+
                         // Look ahead to see if the next token is a number. If not, auto-advance 1.
                         boolean impliesOne = false;
                         if (i == steps.size() - 1) {
@@ -672,30 +1249,38 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                                 impliesOne = true;
                             }
                         }
-                        
+
                         if (impliesOne) {
                             if (isClearing) {
                                 clearTrainAtCursor();
                                 turtleDelegate.moveForward();
-                            } else if (cursorMode == letrain.vehicle.Cursor.CursorMode.DRAWING) turtleDelegate.buildForward();
+                            } else if (cursorMode == letrain.vehicle.Cursor.CursorMode.DRAWING)
+                                turtleDelegate.buildForward();
                             else if (cursorMode == letrain.vehicle.Cursor.CursorMode.ERASING) {
                                 clearTrainAtCursor();
                                 turtleDelegate.eraseForward();
-                            }
-                            else turtleDelegate.moveForward();
+                            } else
+                                turtleDelegate.moveForward();
                         }
+                    } else {
+                        // Steps with an identifier / `m name` / `mark name` parse but do nothing
+                        // yet: named marks in turtle sequences are not implemented (D1: no silent
+                        // no-ops). Implementing them is a separate batch.
+                        warn("Turtle", "Step " + (i + 1) + " ('" + stepCtx.getText()
+                                + "') ignored: named steps/marks are not implemented");
                     }
                 }
             } else {
                 if (isClearing) {
                     clearTrainAtCursor();
                     turtleDelegate.moveForward();
-                } else if (cursorMode == letrain.vehicle.Cursor.CursorMode.DRAWING) turtleDelegate.buildForward();
+                } else if (cursorMode == letrain.vehicle.Cursor.CursorMode.DRAWING)
+                    turtleDelegate.buildForward();
                 else if (cursorMode == letrain.vehicle.Cursor.CursorMode.ERASING) {
                     clearTrainAtCursor();
                     turtleDelegate.eraseForward();
-                }
-                else turtleDelegate.moveForward();
+                } else
+                    turtleDelegate.moveForward();
             }
         } finally {
             turtleDelegate.endSequence();
@@ -722,7 +1307,8 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                     } else if (l instanceof letrain.vehicle.rail.impl.Wagon) {
                         model.removeWagon((letrain.vehicle.rail.impl.Wagon) l);
                     }
-                    if (l.getTrack() != null) l.getTrack().removeLinker();
+                    if (l.getTrack() != null)
+                        l.getTrack().removeLinker();
                 }
             } else {
                 // Delete loose wagon or loco without a train (or empty train)
@@ -731,7 +1317,8 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                 } else if (linker instanceof letrain.vehicle.rail.impl.Wagon) {
                     model.removeWagon((letrain.vehicle.rail.impl.Wagon) linker);
                 }
-                if (linker.getTrack() != null) linker.getTrack().removeLinker();
+                if (linker.getTrack() != null)
+                    linker.getTrack().removeLinker();
             }
         }
     }
@@ -740,14 +1327,12 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     public Object visitSaveCommand(PlayerCommandsParser.SaveCommandContext ctx) {
         String filename = "quicksave.json";
         if (ctx.identifier() != null) {
-            String text = ctx.identifier().getText();
-            filename = text.substring(1, text.length() - 1);
-            if (!filename.endsWith(".json")) filename += ".json";
+            filename = FileNames.withSavegameExtension(unquote(ctx.identifier().getText()));
         }
         if (onSave != null) {
             onSave.accept(new java.io.File(filename));
         } else {
-             throw new RuntimeException("Save not supported in this context.");
+            throw new RuntimeException("Save not supported in this context.");
         }
         return null;
     }
@@ -756,15 +1341,51 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     public Object visitLoadCommand(PlayerCommandsParser.LoadCommandContext ctx) {
         String filename = "quicksave.json";
         if (ctx.identifier() != null) {
-            String text = ctx.identifier().getText();
-            filename = text.substring(1, text.length() - 1);
-            if (!filename.endsWith(".json")) filename += ".json";
+            filename = FileNames.withSavegameExtension(unquote(ctx.identifier().getText()));
         }
         if (onLoad != null) {
             onLoad.accept(new java.io.File(filename));
         } else {
-             throw new RuntimeException("Load not supported in this context.");
+            throw new RuntimeException("Load not supported in this context.");
         }
         return null;
+    }
+
+    @Override
+    public Object visitExportCommand(PlayerCommandsParser.ExportCommandContext ctx) {
+        toggledRecording = true;
+        if (model != null && model.getCommandJournal() != null
+                && model.getCommandJournal().isEmpty()) {
+            throw new RuntimeException(
+                    "Cannot export: nothing recorded yet (toggle Record/edit mode with 'R' and edit).");
+        }
+        String filename = ctx.identifier() != null
+                ? FileNames.withScenarioExtension(unquote(ctx.identifier().getText()))
+                : "scenario" + ScenarioFile.EXTENSION;
+        if (onExport == null) {
+            throw new RuntimeException("Export not supported in this context.");
+        }
+        onExport.accept(new java.io.File(filename));
+        return null;
+    }
+
+    @Override
+    public Object visitImportCommand(PlayerCommandsParser.ImportCommandContext ctx) {
+        toggledRecording = true;
+        String filename = ctx.identifier() != null
+                ? FileNames.withScenarioExtension(unquote(ctx.identifier().getText()))
+                : "scenario" + ScenarioFile.EXTENSION;
+        if (onImport == null) {
+            throw new RuntimeException("Import not supported in this context.");
+        }
+        onImport.accept(new java.io.File(filename));
+        return null;
+    }
+
+    private static String unquote(String text) {
+        if (text.length() >= 2 && text.charAt(0) == '"' && text.charAt(text.length() - 1) == '"') {
+            return text.substring(1, text.length() - 1);
+        }
+        return text;
     }
 }

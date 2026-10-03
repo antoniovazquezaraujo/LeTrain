@@ -15,9 +15,7 @@ import letrain.track.rail.ForkRailTrack;
 import letrain.vehicle.rail.impl.Locomotive;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
-@DisabledIfEnvironmentVariable(named = "CI", matches = "true")
 class TerminalPresenterResizeTest {
 
     @Test
@@ -27,10 +25,9 @@ class TerminalPresenterResizeTest {
         model.setMode(GameMode.RAILS);
         model.getCursor().setPosition(new Point(150, 60));
 
-        TerminalPresenter presenter = new TerminalPresenter(model);
         TerminalView view = mock(TerminalView.class);
         when(view.getScrollOffset()).thenReturn(new Point(70, 40));
-        presenter.view = view;
+        TerminalPresenter presenter = new TerminalPresenter(model, view);
 
         Page.setWidth(160);
         Page.setHeight(40);
@@ -50,10 +47,9 @@ class TerminalPresenterResizeTest {
         model.getLocomotives().add(loco);
         model.setSelectedLocomotive(loco);
 
-        TerminalPresenter presenter = new TerminalPresenter(model);
         TerminalView view = mock(TerminalView.class);
         when(view.getScrollOffset()).thenReturn(new Point(200, 165));
-        presenter.view = view;
+        TerminalPresenter presenter = new TerminalPresenter(model, view);
 
         Page.setWidth(100);
         Page.setHeight(30);
@@ -67,7 +63,7 @@ class TerminalPresenterResizeTest {
     @DisplayName("getActiveFocusPoint should return the correct point for each mode")
     void should_ReturnActiveFocusPoint_AccordingToGameMode() {
         Model model = new Model();
-        TerminalPresenter presenter = new TerminalPresenter(model);
+        TerminalPresenter presenter = new TerminalPresenter(model, mock(TerminalView.class));
 
         // 1. DRIVE mode with selected locomotive
         Locomotive loco = mock(Locomotive.class);

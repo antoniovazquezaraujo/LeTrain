@@ -26,6 +26,82 @@ public interface AutoPilot {
     /** Stop and return to manual control. */
     void deactivate();
 
+    /**
+     * Starts a one-shot mission (issue #619): drive to the destination and stop. Returns false
+     * without touching the train when the order is rejected (the train is running an itinerary, the
+     * destination is unreachable from both senses or there is no speed to run at); the reason is
+     * reported through the mission notifier and the log. A new mission replaces the previous one.
+     */
+    default boolean startMission(TrainMission mission) {
+        return false;
+    }
+
+    /** Last mission accepted by this autopilot (running or finished), if any. */
+    default Optional<TrainMission> mission() {
+        return Optional.empty();
+    }
+
+    /**
+     * Called after every real rail advance, right after the safety hook (issue #619). Missions use
+     * it to watch the destination and to apply the braking curve towards the stop point. No-op when
+     * there is no mission running.
+     */
+    default void onRailAdvanced() {}
+
+    /**
+     * Segment the active mission drives to, if any (ADR-022 phase 2f). The safety layer uses it to
+     * let a shunting maneuver enter the canton where its destination is (e.g. the loco-less part it
+     * must couple to), instead of waiting forever for that block.
+     */
+    default java.util.Optional<Segment> missionTargetSegment() {
+        return java.util.Optional.empty();
+    }
+
+    /**
+     * True when the train has already reached the current waypoint and is running its actions
+     * (issue #645 follow-up). The safety layer uses it so the current waypoint's segment does not
+     * block a parallel bypass: its stop is already served even if the train drives away from it
+     * (e.g. uncoupling at the station and then bypassing the occupied main line).
+     */
+    default boolean currentWaypointReached() {
+        return false;
+    }
+
+    /**
+     * Marks the current waypoint as reached. Called by the action manager when the waypoint's
+     * actions start; cleared when the plan advances to the next waypoint.
+     */
+    default void markCurrentWaypointReached() {}
+
+    /**
+     * One simulation tick of the train (issue #619). Missions use it as a stall watchdog: a mission
+     * train stopped without a block/schedule/loading reason fails after a grace period. No-op when
+     * there is no mission running.
+     */
+    default void onTick() {}
+
+    /**
+     * Low-speed physical contact of the train (issue #645). {@code stop on contact} missions
+     * complete here: the train ends stopped pressed against the vehicle (or buffer) ahead, ready
+     * for {@code couple}. No-op when the contact is not the target of the running mission.
+     */
+    default void onContact(letrain.map.Point pos, int speed) {}
+
+    /**
+     * Crash of the train (issues #645/#648): the contact happened at or above the crash threshold
+     * and the normal physics (destruction) applies. A running mission of any kind fails with a
+     * warning instead of waiting for a train that no longer exists.
+     */
+    default void onCrash(letrain.map.Point pos, int speed) {}
+
+    /**
+     * Sink for mission problem messages (rejection, unreachable, lost route, stall). The console
+     * sets it so typed orders warn on screen; when it is not set, warnings fall back to the model's
+     * user message sink (programs, loaded savegames) and only log when there is none (headless
+     * contexts). Success notices are log-only and never reach this sink (issue #619).
+     */
+    default void setMissionNotifier(java.util.function.Consumer<String> notifier) {}
+
     /** The currently targeted waypoint. */
     Optional<Waypoint> currentWaypoint();
 
@@ -55,4 +131,26 @@ public interface AutoPilot {
 
     /** Ensure the fork between 'from' and 'to' segments is oriented correctly. */
     default void ensureForkRoute(letrain.segments.Segment from, letrain.segments.Segment to) {}
+
+    /**
+     * Measures the arrival at a waypoint against its timetable (ADR-022 phase 2b). No-op when the
+     * waypoint has no {@code arrival} time.
+     */
+    default void measureArrival(Waypoint waypoint) {}
+
+    /**
+     * Checks the current waypoint's {@code departure} time (ADR-022 phase 2b). When the train is
+     * early it returns {@code true} and the autopilot switches to {@link Mode#WAITING} until the
+     * departure (a deterministic tick-scheduled release). When the departure is due or already
+     * passed it records the departure delta and returns {@code false}. No-op (returns false) when
+     * there is no departure or no clock, so waypoints without times keep the old behaviour.
+     */
+    default boolean retainUntilDeparture() {
+        return false;
+    }
+
+    /** Punctuality history of the current service (ADR-022 phase 2b). */
+    default Optional<Punctuality> punctuality() {
+        return Optional.empty();
+    }
 }

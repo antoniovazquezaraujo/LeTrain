@@ -144,4 +144,7 @@ public abstract class ModelMixin {
 
     @JsonIgnore
     Object internalSimService;
+
+    @JsonIgnore
+    Object userMessageSink;
 }

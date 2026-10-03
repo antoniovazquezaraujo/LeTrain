@@ -22,11 +22,27 @@ public interface EconomyManager {
 
     float getTotalExpenses();
 
+    /** Real seconds a full game day lasts (ADR-022). */
+    int getDayDurationSeconds();
+
+    /**
+     * World latitude for the solar day/night cycle (ADR-022 phase 1), from {@code world.latitude}.
+     */
+    double getLatitude();
+
     float getCost(ExpenseType type);
 
     void spend(ExpenseType type);
 
     void spend(ExpenseType type, int amount);
+
+    /**
+     * Free-construction mode (ADR-020 scenario "constructor libre"): while true, spending has no
+     * effect on the balance or totals (statistics counters still update).
+     */
+    void setFreeConstruction(boolean free);
+
+    boolean isFreeConstruction();
 
     void earn(ExpenseType type);
 
@@ -111,6 +127,16 @@ public interface EconomyManager {
 
     public void reloadConfig();
 
+    /**
+     * All effective settings (defaults + file overrides) as key=value entries, for scenario export.
+     */
+    java.util.Map<String, String> effectiveConfig();
+
+    /**
+     * Applies settings (from a scenario's {@code configuration} section); they win over the file.
+     */
+    void applyConfig(java.util.Map<String, String> config);
+
     public float getGoldThreshold();
 
     public float getCoalThreshold();
@@ -124,4 +150,17 @@ public interface EconomyManager {
     int getConstructionDelay(Presenter.TrackType type);
 
     public int getViewRadius();
+
+    /**
+     * Minimum number of simulation ticks that must pass between two curves for a train to be safe.
+     * If the head enters a curve sooner than this after the previous curve (at speed ≥
+     * {@link #getDerailMinSpeed()}), the train derails.
+     */
+    int getDerailMinCurveInterval();
+
+    /**
+     * Minimum current speed below which a train never derails from consecutive curves.
+     */
+    int getDerailMinSpeed();
+
 }

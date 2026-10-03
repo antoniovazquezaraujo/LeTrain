@@ -12,13 +12,28 @@ playerStatement : statement
                 | turtleCommand SEMI
                 | saveCommand SEMI
                 | loadCommand SEMI
+                | exportCommand SEMI
+                | importCommand SEMI
                 | markCommand SEMI
                 | faceCommand SEMI
                 | lsCommand SEMI
                 | infoCommand SEMI
                 | setNameCommand SEMI
+                | slideCommand SEMI
+                | journalCommand SEMI
+                | undoCommand SEMI
+                | redoCommand SEMI
+                | timeCommand SEMI
                 | quitCommand SEMI
                 ;
+
+journalCommand : JOURNAL ;
+
+timeCommand : TIME_KW (SET (TIME | NUMBER COLON NUMBER | NUMBER))? ;
+
+undoCommand : UNDO (NUMBER)? ;
+
+redoCommand : REDO (NUMBER)? ;
 
 goCmdToken : GO | G ;
 
@@ -49,6 +64,14 @@ delCommand : DEL entityType (NUMBER | identifier)? ;
 
 clearCommand : CLEAR entityType (NUMBER | identifier)? ;
 
+slideCommand : SLIDE slideTarget (FORWARD | BACKWARD)? (NUMBER)? ;
+
+slideTarget : STATION (NUMBER | identifier)
+            | SENSOR (NUMBER | identifier)
+            | SEMAPHORE (NUMBER | identifier)
+            | SIGNAL (NUMBER | identifier)
+            ;
+
 turtleCommand : (WRITE | MOVE | DEL | CLEAR) turtleSequence? ;
 
 turtleSequence : turtleStep (COMMA turtleStep)* ;
@@ -57,16 +80,20 @@ turtleStep : NUMBER | L | R | identifier | M identifier | MARK identifier ;
 
 saveCommand : SAVE identifier? ;
 loadCommand : LOAD identifier? ;
+exportCommand : EXPORT identifier? ;
+importCommand : IMPORT identifier? ;
 
 markCommand : (MARK | M) (identifier | NUMBER) ;
 
-lsCommand : LS entityType ;
-infoCommand : INFO entityType (NUMBER | identifier)? ;
+lsCommand : LS entityType? ;
+infoCommand : INFO entityType? (NUMBER | identifier)? ;
 setNameCommand : entityType (NUMBER | STRING) SET NAME STRING ;
 quitCommand : QUIT | Q | Q_BANG | WQ ;
 
 
-color : RED | GREEN | BLUE | YELLOW | BLACK | WHITE | ORANGE | PURPLE | GRAY | BROWN ;
+color : RED | GREEN | BLUE | YELLOW | BLACK | WHITE | ORANGE | PURPLE | GRAY | BROWN
+      | RED_BRIGHT | GREEN_BRIGHT | YELLOW_BRIGHT | BLUE_BRIGHT | MAGENTA_BRIGHT
+      | CYAN_BRIGHT | PINK ;
 cargoType : COAL | GOLD | RUBY ;
 
 

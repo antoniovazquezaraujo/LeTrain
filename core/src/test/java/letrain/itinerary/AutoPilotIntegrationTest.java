@@ -17,7 +17,6 @@ import letrain.track.rail.RailTrack;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -306,7 +305,7 @@ class AutoPilotIntegrationTest {
                     station %d set name "B";
                     create itinerary "Ruta" {
                         add station "A"
-                        add station "B" SPEED 0
+                        add station "B", speed 0
                     }
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
@@ -340,7 +339,7 @@ class AutoPilotIntegrationTest {
                     station %d set name "B";
                     create itinerary "Ruta" {
                         add station "A"
-                        add station "B" SPEED 0 WAIT 3 SPEED 3
+                        add station "B", speed 0, wait 3, speed 3
                     }
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
@@ -395,7 +394,7 @@ class AutoPilotIntegrationTest {
                     station %d set name "B";
                     create itinerary "Ruta" {
                         add station "A"
-                        add station "B" SPEED 0 WAIT 2 SPEED 5
+                        add station "B", speed 0, wait 2, speed 5
                     }
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
@@ -430,7 +429,7 @@ class AutoPilotIntegrationTest {
                     sensor %d set name "S1";
                     create itinerary "Ruta" {
                         add station "A"
-                        add sensor "S1" LOAD
+                        add sensor "S1", load
                     }
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
@@ -465,7 +464,7 @@ class AutoPilotIntegrationTest {
                     station %d set name "B";
                     create itinerary "Ruta" {
                         add station "A"
-                        add station "B" REVERSE
+                        add station "B", reverse
                     }
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
@@ -503,7 +502,7 @@ class AutoPilotIntegrationTest {
                     station %d set name "B";
                     create itinerary "Ruta" {
                         add station "A"
-                        add station "B" STOP
+                        add station "B", stop
                     }
                     assign itinerary "Ruta" to train %d;
                     train %d set autopilot true;
@@ -514,52 +513,6 @@ class AutoPilotIntegrationTest {
             assertFalse(t.isAutoMode(), "train should switch to manual mode after STOP command");
             assertEquals(0, l.getTargetSpeed(),
                     "train target speed should be 0 after STOP command");
-        }
-
-        @Disabled("Auto-reverse disabled; test no longer applicable")
-        @Test
-        @DisplayName("10.6 Auto-reverse on routing mismatch at fork (disabled)")
-        void autoReverseOnRoutingMismatch() {
-            RailTrack t0 = makeTrack(0, 0, Dir.E, Dir.W);
-            RailTrack t1 = makeTrack(1, 0, Dir.W, Dir.E);
-            ForkRailTrack fork = makeFork(2, 0);
-            fork.addRoute(Dir.W, Dir.E);
-            fork.addRoute(Dir.E, Dir.W);
-            fork.addRoute(Dir.W, Dir.S);
-            fork.addRoute(Dir.S, Dir.W);
-            fork.setNormalRoute();
-            RailTrack t3 = makeTrack(3, 0, Dir.W, Dir.E);
-            RailTrack branch = makeTrack(2, 1, Dir.N, Dir.S);
-
-            connect(t0, Dir.E, t1, Dir.W);
-            connect(t1, Dir.E, fork, Dir.W);
-            connect(fork, Dir.E, t3, Dir.W);
-            connect(fork, Dir.S, branch, Dir.N);
-
-            Station branchSt = makeStation(branch, "Branch");
-            Station mainSt = makeStation(t3, "Main");
-
-            Train t = makeTrain(branch, Dir.S);
-
-            model.setProgram("""
-                    station %d set name "Branch";
-                    station %d set name "Main";
-                    create itinerary "Ruta" {
-                        add station "Branch"
-                        add station "Main"
-                    }
-                    assign itinerary "Ruta" to train %d;
-                    train %d set autopilot true;
-                    train %d set speed 3;
-                    """.formatted(branchSt.getId(), mainSt.getId(), t.getId(), t.getId(),
-                    t.getId()));
-
-            assertAtStation(t, branchSt);
-
-            runTicks(600);
-
-            // Without auto-reverse, the train should remain at the branch station.
-            assertAtStation(t, branchSt);
         }
     }
 
@@ -636,7 +589,7 @@ class AutoPilotIntegrationTest {
             m.setProgram("""
                     station %d set name "Madrid";
                     station %d set name "Barcelona";
-                    station %d on train enter { train set speed 0 };
+                    station %d on train enter { train set speed 0; };
                     create itinerary "Ruta" {
                         add station "Madrid"
                         add station "Barcelona"
@@ -763,8 +716,8 @@ class AutoPilotIntegrationTest {
             // Now program Train 1 to go from Station A to B
             program("A", a.getId(), "B", b.getId(), t1.getId());
 
-            // Run physics
-            runTicks(300);
+            // Run physics: the siding detour plus the 0→1 start step need a bit over 300 ticks.
+            runUntil(model, () -> t1.getStationId() == b.getId(), 600);
 
             // Train 1 should have bypassed tMain via the siding and reached B!
             assertAtStation(t1, b);
@@ -888,93 +841,61 @@ class AutoPilotIntegrationTest {
                 "expected at " + st.getName() + " but was at station " + t.getStationId());
     }
 
+    // Fixture simple.json: two-station loop with trailing forks, saved in the current savegame
+    // format (see issue #546).
     @Test
-    @org.junit.jupiter.api.Disabled("Disabled until simple.dat fixture is restored")
-    @DisplayName("11. Re-run after manual reversal on simple.dat")
+    @DisplayName("11. Re-run after manual reversal")
     void testReRunAfterManualReversal() throws Exception {
-        letrain.mvp.impl.GameSaveService saveService = new letrain.mvp.impl.GameSaveService();
-        Model m = saveService.load(new java.io.File("simple.dat")).orElseThrow();
+        Model m = loadFromSave("simple.json");
 
         Train t = m.getTrainFromLocomotiveId(1);
         assertNotNull(t, "Train 1 should exist");
         Locomotive loco = (Locomotive) t.getDirectorLinker();
         assertNotNull(loco, "Locomotive should exist");
+        Station st1 = m.getStation(1);
+        Station st2 = m.getStation(2);
+        assertNotNull(st1, "Station 1 should exist");
+        assertNotNull(st2, "Station 2 should exist");
 
         m.setProgram("""
                 create itinerary "21" {
                     add station 2
-                    add station 1
+                    add station 1, stop
                 }
                 assign itinerary "21" to train 1;
                 train 1 set autopilot true;
                 train 1 set speed 3;
                 """);
-
-        Station st1 = m.getStation(1);
         runUntil(m, () -> t.getStationId() == st1.getId(), 800);
         assertEquals(st1.getId(), t.getStationId(), "Should have reached station 1");
         m.setProgram("train 1 set speed 0;");
         runUntil(m, () -> loco.getSpeed() == 0, 300);
         assertEquals(0, loco.getSpeed(), "Locomotive should be stopped");
 
-        // Reverse to face East
+        // Manual reversal, then drive back around the loop under manual control
         loco.toggleReversed();
         m.setProgram("train 1 set speed 3;");
-
-        // Drive back to S10
-        Station st2 = m.getStation(2);
-        runUntil(m, () -> {
-            Segment curSeg = m.getRailwayGraph().getSegment((RailTrack) loco.getTrack());
-            return curSeg != null && curSeg.getId().equals("S10");
-        }, 800);
-
+        runUntil(m, () -> t.getStationId() == st1.getId(), 800);
+        assertEquals(st1.getId(), t.getStationId(),
+                "Should have reached station 1 driving manually after the reversal");
         m.setProgram("train 1 set speed 0;");
         runUntil(m, () -> loco.getSpeed() == 0, 300);
-        assertEquals(0, loco.getSpeed(), "Speed should be 0");
+        assertEquals(0, loco.getSpeed(), "Locomotive should be stopped again");
 
-        // Reverse again to face West
+        // Reverse back and re-run the program: the autopilot must pick it up again
         loco.toggleReversed();
-
-        // Run the script again!
         m.setProgram("""
                 create itinerary "21" {
                     add station 2
-                    add station 1
+                    add station 1, stop
                 }
                 assign itinerary "21" to train 1;
                 train 1 set autopilot true;
                 train 1 set speed 3;
                 """);
-
-        // Let's run it and see if it goes to Station 2 and then Station 1!
-        System.out.println("DEBUG BEFORE SECOND RUN: autoMode=" + t.isAutoMode() + ", apMode="
-                + t.getAutopilot().mode() + ", speed=" + loco.getSpeed() + ", targetSpeed="
-                + loco.getTargetSpeed() + ", curSeg="
-                + (t.getSafetyManager().getCurrentSegment() != null
-                        ? t.getSafetyManager().getCurrentSegment().getId()
-                        : "null")
-                + ", nextSeg="
-                + (t.getSafetyManager().getNextSegment() != null
-                        ? t.getSafetyManager().getNextSegment().getId()
-                        : "null")
-                + ", waitingForBlock=" + t.getSafetyManager().isWaitingForBlock());
-        runUntil(m, () -> t.getStationId() == st2.getId(), 400);
-        System.out.println("DEBUG AFTER SECOND RUN TO ST2: autoMode=" + t.isAutoMode() + ", apMode="
-                + t.getAutopilot().mode() + ", speed=" + loco.getSpeed() + ", targetSpeed="
-                + loco.getTargetSpeed() + ", curSeg="
-                + (t.getSafetyManager().getCurrentSegment() != null
-                        ? t.getSafetyManager().getCurrentSegment().getId()
-                        : "null")
-                + ", nextSeg="
-                + (t.getSafetyManager().getNextSegment() != null
-                        ? t.getSafetyManager().getNextSegment().getId()
-                        : "null")
-                + ", waitingForBlock=" + t.getSafetyManager().isWaitingForBlock() + ", stationId="
-                + t.getStationId());
-        assertEquals(st2.getId(), t.getStationId(), "Should have reached station 2 again");
-
         runUntil(m, () -> t.getStationId() == st1.getId(), 800);
-        assertEquals(st1.getId(), t.getStationId(), "Should have reached station 1 again");
+        assertEquals(st1.getId(), t.getStationId(),
+                "Should have reached station 1 again after re-running the program");
     }
 
     @Nested

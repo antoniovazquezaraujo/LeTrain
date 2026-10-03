@@ -3,6 +3,7 @@ package letrain.audio;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import letrain.audio.core.AudioMixer;
 import letrain.audio.sources.WavSource;
@@ -16,7 +17,7 @@ import org.slf4j.LoggerFactory;
 
 public class AudioController {
     private static final Logger log = LoggerFactory.getLogger(AudioController.class);
-    private final Model model;
+    private Model model;
     private final Map<Integer, TrainSynthesizer> synthesizers = new HashMap<>();
     private final AudioMixer mixer;
     private boolean enabled = true;
@@ -38,35 +39,58 @@ public class AudioController {
     }
 
     /**
-     * Apaga el motor reproduciendo primero el segmento 'stop' del WAV. Una vez finalizado el
-     * sonido, retira el sintetizador del mixer.
+     * Apaga el motor de **toda la composición** reproduciendo primero el segmento 'stop' del WAV de
+     * la locomotora seleccionada. El motor es un mando del tren: apagar la cabeza para el resto de
+     * locomotoras (y sus bucles). Los sintetizadores se retiran del mixer desde {@link #update()}
+     * cuando termina su sonido de parada y no queda ninguna carga o descarga sonando; mientras haya
+     * una, sigue sonando solo el bucle de carga (issue #360).
      */
     public void stopEngineWithSound(int id, Locomotive loco) {
-        TrainSynthesizer synth = synthesizers.get(id);
-        if (synth == null) {
-            return;
+        for (Locomotive member : trainLocomotives(loco)) {
+            member.setEngineOn(false); // Apagado inmediato del estado para evitar recreaciones
         }
-        loco.setEngineOn(false); // <--- Inmediatamente apagamos el estado para evitar recreaciones
-        synthesizers.remove(id); // ya no recibe actualizaciones de throttle
-        synth.playStopSound(() -> {
-            mixer.removeSource(synth);
-        });
+        TrainSynthesizer synth = synthesizers.get(id);
+        if (synth != null && synth.isEngineRunning()) {
+            synth.playStopSound();
+        }
     }
 
-    /** Enciende el motor de una locomotora (crea su sintetizador si no existe). */
+    /**
+     * Enciende el motor de **toda la composición** (el motor es un mando del tren). Los
+     * sintetizadores se crearán en el próximo ciclo de {@link #update()}.
+     */
     public void startEngine(Locomotive loco) {
-        loco.setEngineOn(true);
-        // El synth se creará en el próximo ciclo de update()
+        for (Locomotive member : trainLocomotives(loco)) {
+            member.setEngineOn(true);
+        }
+    }
+
+    /** Las locomotoras de la composición de {@code loco}, o solo ella si va suelta. */
+    private static List<Locomotive> trainLocomotives(Locomotive loco) {
+        if (loco.getTrain() == null) {
+            return List.of(loco);
+        }
+        return loco.getTrain().getLocomotives();
     }
 
     public AudioController(Model model) {
-        this.model = model;
-        this.mixer = new AudioMixer();
+        this(model, new AudioMixer());
         loadSamples();
         // TrainSynthesizer handles its own resources now
         if (enabled) {
             mixer.start();
         }
+    }
+
+    /** Test seam: injects a mixer without starting the audio thread or loading samples. */
+    AudioController(Model model, AudioMixer mixer) {
+        this.model = model;
+        this.mixer = mixer;
+    }
+
+    /** Visible for tests: the synthesizer currently attached to a locomotive, or null. */
+    TrainSynthesizer getSynthesizer(int id) {
+        return synthesizers.get(id);
     }
 
     private void loadSamples() {
@@ -160,6 +184,10 @@ public class AudioController {
             return;
         }
 
+        // Paused editing (ADR-020): mute the continuous world sounds (locomotive synthesizers and
+        // ambience) while keeping their sources alive so they resume seamlessly when unpaused.
+        boolean worldPaused = model.isSimulationPaused();
+
         // 1. Remove synthesizers for destroyed locomotives
         Iterator<Map.Entry<Integer, TrainSynthesizer>> it = synthesizers.entrySet().iterator();
         while (it.hasNext()) {
@@ -191,11 +219,22 @@ public class AudioController {
             }
 
             TrainSynthesizer synth = synthesizers.get(loco.getId());
+
+            // Paused editing (ADR-020): silence the whole synthesizer (loco, wagons, brakes, load)
+            // via its master gain and keep its internal state frozen so it resumes seamlessly.
+            if (synth != null) {
+                synth.setMasterVolume(worldPaused ? 0f : 1f);
+            }
+            if (worldPaused) {
+                continue;
+            }
+
+            if (!loco.isEngineOn()) {
+                updateEngineOffSynth(loco.getId(), loco, synth);
+                continue;
+            }
+
             if (synth == null) {
-                // Solo crear el synth si el motor está encendido
-                if (!loco.isEngineOn()) {
-                    continue;
-                }
                 synth = new TrainSynthesizer();
 
                 synth.addListener(new TrainSynthesizer.SynthesizerListener() {
@@ -221,6 +260,10 @@ public class AudioController {
                 // Add to mixer
                 mixer.addSource(synth);
                 synthesizers.put(loco.getId(), synth);
+            } else {
+                // Engine switched back on: restart the engine voice if it was stopped or muted.
+                // A running load/unload loop is left untouched (issue #360).
+                synth.startAudio();
             }
 
             synth.update();
@@ -278,8 +321,37 @@ public class AudioController {
     }
 
     /**
-     * Updates ambient sounds based on camera mode and zoom level. Birds play in perspective/orbit
-     * mode, wind in top-down/map mode. Volume increases with camera distance (zoom out = louder).
+     * Handles the synthesizer of a locomotive whose engine is off: plays the stop sound and keeps
+     * the synth alive while a load/unload process is still sounding, retiring it once there is
+     * nothing left to play (issue #360).
+     */
+    private void updateEngineOffSynth(int id, Locomotive loco, TrainSynthesizer synth) {
+        if (synth == null) {
+            return;
+        }
+        boolean loading =
+                loco.getTrain() != null && loco.getTrain().getLogisticsManager().isLoading();
+        synth.setLoading(loading);
+
+        if (synth.isEngineRunning()) {
+            // Engine turned off outside the 'm' key (e.g. a script): play the stop sound now.
+            synth.playStopSound();
+        }
+
+        if (synth.isStopping() || loading || synth.isLoadSoundActive()) {
+            synth.update();
+            return;
+        }
+        mixer.removeSource(synth);
+        synthesizers.remove(id);
+    }
+
+    /**
+     * Updates ambient sounds based on camera mode and zoom level.
+     *
+     * <p>
+     * Perspective/orbit modes play birds. In top-down (map) views the two ambiences crossfade with
+     * the zoom: close-up favours birds, zooming out increases wind and reduces birds.
      *
      * @param isTopDown true for MAP/cenital mode, false for ORBIT/CAB
      * @param zoomFactor 0.0 (close) to 1.0 (far)
@@ -293,8 +365,17 @@ public class AudioController {
             return;
         }
 
-        float targetBirdsVol = isTopDown ? 0.0f : 0.3f + zoomFactor * 0.5f;
-        float targetWindVol = isTopDown ? 0.2f + zoomFactor * 0.4f : 0.0f;
+        // Paused editing: silence the world ambience (birds/wind) while keeping sources alive.
+        boolean worldPaused = model.isSimulationPaused();
+
+        float targetBirdsVol = isTopDown ? 0.25f * (1f - zoomFactor) : 0.3f + zoomFactor * 0.5f;
+        float targetWindVol = isTopDown ? 0.1f + zoomFactor * 0.3f : 0.0f;
+
+        // Paused editing: silence the world ambience (birds/wind) while keeping sources alive.
+        if (worldPaused) {
+            targetBirdsVol = 0f;
+            targetWindVol = 0f;
+        }
 
         // Birds
         if (targetBirdsVol > 0.01f) {
@@ -367,5 +448,22 @@ public class AudioController {
             synth.stopAudio();
         }
         synthesizers.clear();
+    }
+
+    /**
+     * Re-points this controller to a new live model without reloading samples or restarting the
+     * mixer (used by paused-editing undo swaps, ADR-020). During an undo the world is frozen and
+     * the restored model is deterministic, so existing locomotive synthesizers are <b>kept
+     * alive</b>: their internal sound state (throttle, motion, position) is unchanged while muted,
+     * and on the next {@link #update()} they are reconciled against the new model — synthesizers
+     * whose locomotive no longer exists are removed (step 1), the rest resume seamlessly. This
+     * preserves the "engine keeps running" feel across an undo/unpause instead of restarting from
+     * idle.
+     */
+    public void retarget(Model newModel) {
+        if (newModel == null || newModel == this.model) {
+            return;
+        }
+        this.model = newModel;
     }
 }

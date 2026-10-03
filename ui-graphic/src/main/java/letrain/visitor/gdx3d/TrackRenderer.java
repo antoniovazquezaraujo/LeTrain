@@ -272,7 +272,8 @@ public class TrackRenderer extends BaseSubRenderer {
             }
         }
         if (loco != null && loco.getColor() != null) {
-            return VehicleRenderer.getLibGdxColor(loco.getColor());
+            return resourceContext
+                    .attenuatePlayerColor(VehicleRenderer.getLibGdxColor(loco.getColor()));
         }
         return null;
     }

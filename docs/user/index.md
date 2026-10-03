@@ -37,10 +37,14 @@
 
 - **Advanced Automation & IDE:**
   - Includes a built-in programming language (parsed via ANTLR4) for true automation.
-  - Features an integrated development environment (IDE) directly within the game to write, compile, and execute train logistics scripts.
+  - A tabbed in-game editor (**Scenario / Program / Config**) with a per-tab quick reference, error navigation and a headless validator (`letrain-check`).
   - Automate switches, set up autopilot routes, and manage complex itineraries.
 
+- **Record, Undo & Scenarios:** Freeze the world and record every edit (`R`), undo/redo deterministically (`u` / `Ctrl+R`), and export your whole network as a small `.ltr` text recipe you can share, import and replay. The same seed rebuilds the same world — no savegame needed.
+
 - **Economy & Logistics:** Build tracks, manage resources, and balance your budget. The central economy system reacts to your decisions.
+
+![The LeTrain Editor with the Config tab selected](images/config-editor.png)
 
 ## 🚀 Quick Start
 
@@ -70,6 +74,8 @@ You can run either the modern 3D version or the classic 2D version:
 
 - [User Manual](manual.md)
 - [Scripting and Automation Grammar](grammar.md)
+- [Scenarios (.ltr) and the editor](scenarios.md)
+- [CLI Command Cheat Sheet](cheatsheet.md)
 
 ## 🎥 Media & Tutorials
 
@@ -124,7 +130,7 @@ You can run either the modern 3D version or the classic 2D version:
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/_rC-jeLiWSs" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/S8dJ6oAbT3k" frameborder="0" allowfullscreen></iframe></div>
 </div>
-- **Train Camera View (Cab View):** There are three cameras available: perspective camera, top-down camera, and locomotive camera (Cab View). Cycle through all three using the `c` key.<br><div><strong>3D Engine</strong><br><iframe width="1120" height="630" src="https://www.youtube.com/embed/sCCPhXLhoeo" frameborder="0" allowfullscreen></iframe></div>
+- **Train Camera View (Cab View):** There are three cameras available: perspective camera, top-down camera, and locomotive camera (Cab View). Cycle through all three using the `z` key.<br><div><strong>3D Engine</strong><br><iframe width="1120" height="630" src="https://www.youtube.com/embed/sCCPhXLhoeo" frameborder="0" allowfullscreen></iframe></div>
 - **Link and Unlink:** To couple and uncouple wagons and locomotives, use the `link` and `unlink` modes. In these modes, you first select which end you want to operate from using the up and down arrows. Then, with the left and right keys, you select the amount of vehicles you want to link or unlink. Finally, the spacebar executes the operation. A locomotive cannot push a vehicle unless it is properly coupled to it. These operations can only be performed while the train is stopped.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/StOnossHNFA" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/CK-gKHcVLTE" frameborder="0" allowfullscreen></iframe></div>

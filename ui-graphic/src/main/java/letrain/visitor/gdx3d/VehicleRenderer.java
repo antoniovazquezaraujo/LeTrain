@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
 import java.util.List;
+import letrain.palette.VisualPalette;
 import letrain.track.CargoTypes;
 import letrain.utils.PathGeometry;
 import letrain.vehicle.Tractor;
@@ -17,9 +18,14 @@ import letrain.vehicle.rail.impl.Wagon;
 public class VehicleRenderer extends BaseSubRenderer {
 
     public VehicleRenderer(Gdx3DResourceContext resourceContext, List<ModelInstance> instances,
-            List<ModelInstance> transparentInstances, List<Gdx3DRenderer.VehicleLabel> labels) {
+            List<ModelInstance> transparentInstances, List<Gdx3DRenderer.VehicleLabel> labels,
+            List<Headlights.Source> headlightSources) {
         super(resourceContext, instances, transparentInstances, labels);
+        this.headlightSources = headlightSources;
     }
+
+    /** Rendered headlight positions collected during the frame, for the real lights. */
+    private final List<Headlights.Source> headlightSources;
 
     @Override
     public void visitLocomotive(Locomotive locomotive) {
@@ -144,9 +150,21 @@ public class VehicleRenderer extends BaseSubRenderer {
 
         Model locoModelToUse = resourceContext.locomotiveModel;
 
+        boolean headlightsOn = !locomotive.isDestroying() && locomotive.isEngineOn()
+                && locomotive.isHeadLocomotive()
+                && VisualPalette.lightsOnFactor(resourceContext.getDayNightRatio()) > 0f;
+
+        // Headlight source at the rendered (interpolated) position, so the real light glides with
+        // the locomotive instead of jumping cell by cell.
+        if (headlightsOn) {
+            v1.set(renderTangent).nor();
+            headlightSources.add(new Headlights.Source(renderX, renderY, v1.x, v1.z));
+        }
+
         ModelInstance instance = resourceContext.getModelInstance(locoModelToUse);
         if (locomotive.getColor() != null && !instance.materials.isEmpty()) {
-            Color locoColor = getLibGdxColor(locomotive.getColor());
+            Color locoColor =
+                    resourceContext.attenuatePlayerColor(getLibGdxColor(locomotive.getColor()));
             if (locoColor != null) {
                 instance.materials.get(0)
                         .set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
@@ -185,6 +203,25 @@ public class VehicleRenderer extends BaseSubRenderer {
                 dot.transform.set(instance.transform);
                 dot.transform.translate(-0.25f, 0.41f, -0.25f);
                 instances.add(dot);
+            }
+        }
+
+        // Headlight lamps (phase 1e): always visible; emissive only with the engine running after
+        // dark, unlit by day or with the engine stopped
+        if (!locomotive.isDestroying() && resourceContext.headlightModel != null
+                && resourceContext.headlightOffModel != null) {
+            Model lampModel = headlightsOn ? resourceContext.headlightModel
+                    : resourceContext.headlightOffModel;
+            v1.set(renderTangent).nor();
+            float dxL = v1.x;
+            float dzL = v1.z;
+            float perpXL = dzL * 0.2f;
+            float perpZL = -dxL * 0.2f;
+            for (int side = -1; side <= 1; side += 2) {
+                ModelInstance lamp = resourceContext.getModelInstance(lampModel);
+                lamp.transform.setToTranslation(renderX + dxL * 0.42f + perpXL * side, 0.5f,
+                        renderY + dzL * 0.42f + perpZL * side);
+                instances.add(lamp);
             }
         }
 
@@ -235,6 +272,8 @@ public class VehicleRenderer extends BaseSubRenderer {
                     || locomotive.getColor().equalsIgnoreCase("YELLOW_BRIGHT"))) {
                 labelColor = Color.BLACK;
             }
+            // Decals no reciben la luz de la escena: se atenúan a mano de noche.
+            labelColor = resourceContext.attenuatePlayerColor(labelColor);
 
             addLabel(v1, "" + locomotive.getId(), v2, v3, labelColor, 0.5f);
 
@@ -291,12 +330,13 @@ public class VehicleRenderer extends BaseSubRenderer {
         Color chassisColor = Color.BLUE;
 
         if (wagon.getExclusiveCargoType() != CargoTypes.NONE) {
-            chassisColor = com.badlogic.gdx.graphics.Color.valueOf(wagon.getExclusiveCargoType().getColor());
+            chassisColor = com.badlogic.gdx.graphics.Color
+                    .valueOf(wagon.getExclusiveCargoType().getColor());
         }
 
         ModelInstance instance = resourceContext.getModelInstance(chassisModel);
         instance.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                .createDiffuse(chassisColor));
+                .createDiffuse(resourceContext.attenuatePlayerColor(chassisColor)));
 
         float renderX = wagon.getPosition().getX() + 0.5f;
         float renderY = wagon.getPosition().getY() + 0.5f;
@@ -424,8 +464,9 @@ public class VehicleRenderer extends BaseSubRenderer {
 
         // Jewel rendering
         if (wagon.getCargoAmount() > 0) {
-            Color cargoColor =
-                    (wagon.getCargoType() != null) ? com.badlogic.gdx.graphics.Color.valueOf(wagon.getCargoType().getColor()) : Color.YELLOW;
+            Color cargoColor = (wagon.getCargoType() != null)
+                    ? com.badlogic.gdx.graphics.Color.valueOf(wagon.getCargoType().getColor())
+                    : Color.YELLOW;
             float fullness = (float) wagon.getCargoAmount() / (float) wagon.getMaxCapacity();
             float maxHeight = 0.5f;
             float currentHeight = fullness * maxHeight;
@@ -451,11 +492,13 @@ public class VehicleRenderer extends BaseSubRenderer {
 
             v1.set(renderX + perpXW, 0.5f, renderY + perpZW);
             v2.set(perpXW, 0, perpZW).nor();
-            addLabel(v1, wagon.getAspect(), v2);
+            addLabel(v1, wagon.getAspect(), v2, null,
+                    resourceContext.attenuatePlayerColor(Color.WHITE), 1.0f);
 
             v1.set(renderX - perpXW, 0.5f, renderY - perpZW);
             v2.set(-perpXW, 0, -perpZW).nor();
-            addLabel(v1, wagon.getAspect(), v2);
+            addLabel(v1, wagon.getAspect(), v2, null,
+                    resourceContext.attenuatePlayerColor(Color.WHITE), 1.0f);
         }
     }
 

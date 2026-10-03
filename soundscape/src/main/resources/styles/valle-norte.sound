@@ -1,0 +1,139 @@
+# ============================================================
+#  Sound style — Valle del Norte (example)
+#  Plain text; comments start with #. Keys in English.
+# ============================================================
+
+# --- Climate calendar (ADR-027): day ranges with daily probabilities of
+#  rain, wind and storm. No years; text months to avoid day/month mix-ups.
+[seasons]
+Jan-01 to Mar-21   rain=0.60 wind=0.50 storm=0.25
+Mar-22 to Jun-20   rain=0.40 wind=0.35 storm=0.20
+Jun-21 to Sep-21   rain=0.12 wind=0.25 storm=0.05
+Sep-22 to Dec-31   rain=0.50 wind=0.45 storm=0.20
+
+# --- Weather presets (intensities 0.0–1.0) ------------------
+[climate]
+clear   = rain 0.0 wind 0.1 storm 0.0
+drizzle = rain 0.3 wind 0.1 storm 0.0
+storm   = rain 0.8 wind 0.6 storm 0.9
+
+# --- Sounds: whole-sample loops -----------------------------
+#  (roosters, dogs…: 10-20 s takes that already include silences)
+[sounds]
+waves             = sea/waves-*.wav
+seagulls          = sea/seagull-*.wav
+cicadas           = field/cicada-*.wav
+crickets          = field/cricket-*.wav
+dogs              = field/dog-*.wav
+roosters          = field/rooster-*.wav
+birds             = field/birds-*.wav
+wind              = mountain/wind-*.wav
+hawks             = mountain/hawk-*.wav
+producer-zone     = industrial/producer-zone-*.wav
+consumer-zone     = industrial/consumer-zone-*.wav
+
+# --- Zones: sound lists -------------------------------------
+[zones]
+sea          = waves, seagulls
+fields       = cicadas, crickets, dogs, roosters, birds
+mountain     = wind, hawks
+gold-mine    = producer-zone
+coal-mine    = producer-zone
+ruby-mine    = producer-zone
+gold-factory = consumer-zone
+coal-factory = consumer-zone
+ruby-factory = consumer-zone
+
+# --- Presence per band: dawn morning noon afternoon dusk night predawn
+[presence]
+waves             0.5 0.5 0.5 0.5 0.6 0.6 0.5
+seagulls          0.1 0.3 0.2 0.4 0.3 0.1 0.0
+cicadas           0.0 0.2 1.0 0.5 0.1 0.0 0.0
+crickets          0.1 0.0 0.0 0.0 0.5 0.8 0.9
+dogs              0.3 0.2 0.4 0.2 0.2 0.1 0.0
+roosters          0.9 0.2 0.0 0.0 0.0 0.0 0.1
+birds             0.9 0.7 0.4 0.5 0.7 0.0 0.2
+wind              0.4 0.3 0.3 0.4 0.5 0.5 0.4
+hawks             0.0 0.1 0.1 0.4 0.1 0.0 0.0
+producer-zone     0.0 0.5 0.5 0.5 0.0 0.0 0.0
+consumer-zone     0.1 0.6 0.6 0.5 0.1 0.0 0.0
+
+# --- Height sensitivity (0 = no change) ---------------------
+[height-by-sound]
+hawks      +0.8
+wind       +0.5
+waves      +0.4
+seagulls   +0.3
+dogs       +0.1
+birds      +0.1
+crickets   -0.8
+cicadas    -0.9
+
+# --- Climate sensitivity (0 = no change) --------------------
+#  order: rain, wind, storm
+[climate-by-sound]
+cicadas           -1.0 -0.4 -1.0
+crickets          -0.8 -0.2 -1.0
+seagulls          -0.7 +0.3 -1.0
+dogs               0.0  0.0 +0.2
+birds             -0.8 -0.3 -1.0
+waves              0.0 +0.4  0.0
+hawks             -0.5 +0.2 -1.0
+producer-zone      0.0  0.0 -0.3
+consumer-zone      0.0  0.0 -0.3
+
+# --- Behaviour gates: the sound stops when the condition holds
+#  Crickets and cicadas stop singing in the rain; cicadas also in strong wind.
+[silence-when]
+crickets = rain > 0.25
+cicadas  = rain > 0.20
+cicadas  = wind > 0.60
+birds    = rain > 0.50
+
+# --- Weather-provided sounds (volume = intensity) -----------
+[weather]
+rain  = weather/rain-*.wav
+wind  = weather/wind-*.wav
+storm = weather/thunder-*.wav
+
+# --- Height-provided sounds (volume = listening height) -----
+#  The wind you hear when zoomed out, not the weather wind.
+[height]
+wind = sky/wind-altitude-*.wav
+
+# --- Per-zone levels (1.0 = unchanged) ----------------------
+#  The fields are the default bed; the sea, mountain and industry
+#  stand out as soon as they enter the mix.
+[zone-gains]
+fields       = 0.35
+sea          = 1.0
+mountain     = 0.6
+gold-mine    = 1.3
+coal-mine    = 1.3
+ruby-mine    = 1.3
+gold-factory = 1.3
+coal-factory = 1.3
+ruby-factory = 1.3
+
+# --- Per-sound gains (1.0 = unchanged) ----------------------
+#  The field fauna is the default bed: kept low so it does not
+#  drown the rest. Calibrate in the GUI and export to overwrite.
+[gains]
+birds    = 0.6
+crickets = 0.55
+cicadas  = 0.5
+dogs     = 0.8
+roosters = 0.8
+
+# --- Minimum distance by sound (0 = can be next to the listener) ----
+#  Fauna sounds away from the listener even with the camera on the ground.
+[min-distance]
+birds    = 0.45
+crickets = 0.7
+cicadas  = 0.7
+
+# --- Optional distance sensitivity (0 = at the listener, 1 = full) -
+#  Ground sounds recede with the zoom; declare overrides here.
+# [distance-by-sound]
+#   hawks        = 0.3
+#   weather-rain = 0.8

@@ -1,0 +1,46 @@
+# ============================================================
+#  Sound style — Tour lab (zone crossings + tunnel layer)
+#  Zones for the demo tour plus a "tunnel" sound that is not in
+#  any zone: the tour raises it while enclosure > 0.
+# ============================================================
+
+[climate]
+clear   = rain 0.0 wind 0.1 storm 0.0
+drizzle = rain 0.3 wind 0.2 storm 0.0
+storm   = rain 0.8 wind 0.6 storm 0.9
+
+[sounds]
+birds         = field/birds-*.wav
+crickets      = field/cricket-*.wav
+dogs          = field/dog-*.wav
+roosters      = field/rooster-*.wav
+waves         = sea/waves-*.wav
+seagulls      = sea/seagull-*.wav
+wind          = mountain/wind-*.wav
+producer-zone = industrial/producer-zone-*.wav
+consumer-zone = industrial/consumer-zone-*.wav
+tunnel        = synth/wind-gale-*.wav
+
+[zones]
+fields       = birds, crickets, dogs, roosters
+sea          = waves, seagulls
+mountain     = wind
+gold-mine    = producer-zone
+gold-factory = consumer-zone
+
+[presence]
+birds         0.9 0.7 0.4 0.5 0.7 0.0 0.2
+crickets      0.1 0.0 0.0 0.0 0.5 0.8 0.9
+dogs          0.3 0.2 0.4 0.2 0.2 0.1 0.0
+roosters      0.9 0.2 0.0 0.0 0.0 0.0 0.1
+waves         0.5 0.5 0.5 0.5 0.6 0.6 0.5
+seagulls      0.1 0.3 0.2 0.4 0.3 0.1 0.0
+wind          0.4 0.3 0.3 0.4 0.5 0.5 0.4
+producer-zone 0.0 0.5 0.5 0.5 0.0 0.0 0.0
+consumer-zone 0.1 0.6 0.6 0.5 0.1 0.0 0.0
+tunnel        1.0 1.0 1.0 1.0 1.0 1.0 1.0
+
+[weather]
+rain  = weather/rain-*.wav
+wind  = weather/wind-*.wav
+storm = weather/thunder-*.wav

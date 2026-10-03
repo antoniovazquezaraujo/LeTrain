@@ -3,8 +3,12 @@ options { tokenVocab=LeTrainLexer; }
 
 scriptStart : statement+ EOF;
 
-statement : trigger commandBlock          // event-driven automation
-          | createItinerary               // } is the terminator, no ; needed
+// Block-terminated statements take an OPTIONAL trailing ';' after the closing '}': the console
+// funnels every typed line through PlayerCommandExecutor, which appends one when the text does not
+// end with ';', and users may type it explicitly. Without SEMI? the console could never create an
+// itinerary ("extraneous input ';'").
+statement : trigger commandBlock SEMI?    // event-driven automation
+          | createItinerary SEMI?         // } terminates the block; the ; after it is optional
           | directCommand SEMI            // other immediate commands need ;
           ;
 
@@ -15,6 +19,8 @@ directCommand : assignItinerary
               | directForkCommand
               | directSemaphoreCommand
               | directSignalCommand
+              | directStationCommand
+              | directSensorCommand
               ;
 
 directTrainCommand : TRAIN trainRef trainAction ;
@@ -34,18 +40,48 @@ bool : TRUE | FALSE ;
 
 trainRef : NUMBER | STRING ;
 
-waypoint : ADD STATION stationRef direction? action*
-         | ADD SENSOR  sensorRef  direction? action*
+/**
+ * A waypoint with a plan separates the reference (and its optional direction) from the first plan
+ * item with a comma (U7): `add station 1 ne, arrival 9:00, load, departure 10:30;`. A waypoint
+ * without a plan keeps the bare form: `add station 1;`. There is no legacy comma-less form.
+ */
+waypoint : ADD STATION stationRef direction? (COMMA waypointPlan)? SEMI?
+         | ADD SENSOR  sensorRef  direction? (COMMA waypointPlan)? SEMI?
          ;
+
+/**
+ * ADR-022 timetable attributes. Commas are mandatory between the plan items (the reference block
+ * is the first item). The order is mandatory: `arrival` first, then the actions in execution
+ * order, `departure` last.
+ */
+waypointPlan : departureAttr
+             | (arrivalAttr | action) (COMMA action)* (COMMA departureAttr)?
+             ;
+
+/** U8: `arrival 9` is 09:00; `arrival 9:20` (TIME) keeps the full form. */
+arrivalAttr   : ARRIVAL waypointTime ;
+departureAttr : DEPARTURE waypointTime ;
+
+waypointTime : TIME | NUMBER ;
 
 stationRef : STRING | NUMBER ;
 sensorRef  : STRING | NUMBER ;
 
 direction : dir ;
 
-action : LOAD | UNLOAD | REVERSE | STOP 
+/**
+ * ADR-022 phase 2f: waypoint actions are the same train orders as scripts, executed in order on
+ * arrival. Movement orders (`stop at …`, `stop when blocked …`) are missions that must complete
+ * before the next action; fork actions force or prepare switches; `couple`/`uncouple` leave or
+ * pick up vehicles. Commas are mandatory between actions.
+ */
+action : LOAD | UNLOAD | INVERT | STOP | PARK
        | WAIT NUMBER
        | SPEED NUMBER
+       | coupleAction
+       | uncoupleAction
+       | stopOrder
+       | forkSelector forkAction
        ;
 
 trigger :
@@ -53,16 +89,22 @@ trigger :
     | forkSelector      ON trainSelector trainEvent
     | semaphoreSelector ON trainSelector trainEvent
     | stationSelector   ON (trainSelector trainEvent | trainEvent trainSelector)
+    | trainSelector     ON trainEvent
     | trainSelector     ON (CRASH | CONTACT) (sense)?
     ;
 
-sensorSelector    : SENSOR NUMBER;
+/**
+ * U4: sensor and station references accept a number or an exact quoted name (strict case). Forks,
+ * semaphores and signals have no name and stay numeric. The name is resolved when the trigger is
+ * registered / the `train at` order runs; an unknown name warns and the trigger is not installed.
+ */
+sensorSelector    : SENSOR  (NUMBER | STRING);
 forkSelector      : FORK NUMBER;
 semaphoreSelector : SEMAPHORE NUMBER;
-stationSelector   : STATION NUMBER;
+stationSelector   : STATION (NUMBER | STRING);
 trainSelector     : TRAIN (NUMBER)?;
 
-trainEvent   : (ENTER | EXIT | COUPLE | UNCOUPLE) (sense)?;
+trainEvent   : (ENTER | EXIT) (sense)?;
 
 commandBlock : LBRACE commandItem* RBRACE;
 
@@ -74,15 +116,30 @@ commandItem : (
     SEMI
     ;
 
-trainExtractor : TRAIN_AT placeSelector;
+/**
+ * `train at <place>` is two tokens (`TRAIN AT`), not a single literal with an exact space: the old
+ * `'train at'` token made `train  at` (two spaces/tab) a syntax error (D3).
+ */
+trainExtractor : TRAIN AT placeSelector;
 placeSelector  : forkSelector | semaphoreSelector | stationSelector | sensorSelector;
 
 semaphoreAction : OPEN | CLOSED | CLOSE | SET semaphoreStatus | INVERT ;
 forkAction      : SET forkDirection | FLIP ;
 engineAction    : SET ENGINE (ON | OFF);
-trainAction     : SET trainSense | ACCELERATE | DECELERATE | SET SPEED? trainSpeed | INVERT | coupleAction | uncoupleAction | SET NAME STRING | LOAD | UNLOAD | engineAction;
-coupleAction    : COUPLE sense (NUMBER)?;
-uncoupleAction  : UNCOUPLE sense (NUMBER)?;
+trainAction     : SET trainSense | ACCELERATE | DECELERATE | SET SPEED trainSpeed | INVERT | PARK | STOP | coupleAction | uncoupleAction | SET NAME STRING | LOAD | UNLOAD | engineAction | stopOrder;
+/**
+ * Issue #619: one-shot "advance until X and stop" order. The destination is a station or sensor
+ * (by number or quoted name), the end of the track, the first block that stops the train, or the
+ * vehicle ahead (issue #645: {@code stop on contact}, the coupling approach). The optional speed
+ * belongs to the order: it is set when the mission starts and the train ends stopped; without it
+ * the train's current target speed is used.
+ */
+stopOrder       : STOP stopTarget missionSpeed?;
+stopTarget      : AT (STATION stationRef | SENSOR sensorRef | END) | WHEN BLOCKED | ON CONTACT;
+missionSpeed    : SPEED trainSpeed;
+coupleAction    : COUPLE sense vehicleCount?;
+uncoupleAction  : UNCOUPLE sense vehicleCount?;
+vehicleCount    : NUMBER | ALL;
 
 
 semaphoreStatus : OPEN | CLOSED;
@@ -103,3 +160,6 @@ signalAction        : SET LIMIT NUMBER
                     | INVERT
                     ;
 signalSelector      : SIGNAL NUMBER ;
+
+directStationCommand : STATION NUMBER INVERT ;
+directSensorCommand  : SENSOR NUMBER INVERT ;

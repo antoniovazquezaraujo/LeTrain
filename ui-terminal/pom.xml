@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.progmatic</groupId>
         <artifactId>JLeTrain</artifactId>
-        <version>1.0.0-beta.3</version>
+        <version>1.0.0-beta.5</version>
     </parent>
     <artifactId>JLeTrain-ui-terminal</artifactId>
     <packaging>jar</packaging>
@@ -15,6 +15,11 @@
         <dependency>
             <groupId>com.progmatic</groupId>
             <artifactId>JLeTrain-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.progmatic</groupId>
+            <artifactId>JLeTrain-game-audio</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -29,9 +34,27 @@
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-inline</artifactId>
+            <artifactId>mockito-core</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.6.4</version>
+                <executions>
+                    <execution>
+                        <id>palette-lab</id>
+                        <configuration>
+                            <mainClass>letrain.lab.terminal.PaletteLab</mainClass>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

@@ -43,8 +43,7 @@ class TrainActionManagerTest {
     }
 
     @Test
-    @DisplayName(
-            "should pass through without braking when train has no capable wagons or is already full")
+    @DisplayName("should pass through without braking when train has no capable wagons or is already full")
     void shouldPassThroughWithoutBrakingWhenTrainIsFull() {
         when(loco.getSpeed()).thenReturn(3);
         when(loco.getTargetSpeed()).thenReturn(3);
@@ -52,8 +51,9 @@ class TrainActionManagerTest {
         Station station = mock(Station.class);
         when(station.getName()).thenReturn("Station A");
         when(logisticsManager.getStationAtTrain()).thenReturn(station);
-        when(logisticsManager.getCapableWagons(station, false))
-                .thenReturn(List.of()); // No capable wagons / full
+        when(logisticsManager.getCapableWagons(station, false)).thenReturn(List.of()); // No capable
+                                                                                       // wagons /
+                                                                                       // full
 
         Waypoint waypoint =
                 new WaypointImpl(Waypoint.Type.STATION, 1, List.of(WaypointCommand.LOAD));
@@ -66,8 +66,7 @@ class TrainActionManagerTest {
     }
 
     @Test
-    @DisplayName(
-            "should initiate natural braking when waypoint has LOAD command and train has space in capable wagons")
+    @DisplayName("should initiate natural braking when waypoint has LOAD command and train has space in capable wagons")
     void shouldInitiateBrakingWhenMovingWithSpaceInCapableWagons() {
         when(loco.getSpeed()).thenReturn(3);
         when(loco.getTargetSpeed()).thenReturn(3);

@@ -31,6 +31,10 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     @com.fasterxml.jackson.annotation.JsonProperty("balance")
     float balance = 0f;
 
+    /** ADR-020 scenario constructor-libre: skip spending while building a scenario. */
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private boolean freeConstruction = false;
+
     @com.fasterxml.jackson.annotation.JsonProperty("prices")
     Map<ExpenseType, Float> prices = new HashMap<>();
 
@@ -45,6 +49,14 @@ public class EconomyManager implements letrain.economy.EconomyManager {
         return constructionDelays.getOrDefault(type, 0);
     }
 
+    private void initDefaultConstructionDelays() {
+        constructionDelays.put(Presenter.TrackType.NORMAL_TRACK, 0);
+        constructionDelays.put(Presenter.TrackType.BRIDGE_TRACK, 20);
+        constructionDelays.put(Presenter.TrackType.BRIDGE_GATE_TRACK, 20);
+        constructionDelays.put(Presenter.TrackType.TUNNEL_TRACK, 30);
+        constructionDelays.put(Presenter.TrackType.TUNNEL_GATE_TRACK, 30);
+    }
+
     @com.fasterxml.jackson.annotation.JsonProperty("fuelCostPerMeter")
     private float fuelCostPerMeter = 0.5f;
 
@@ -53,6 +65,8 @@ public class EconomyManager implements letrain.economy.EconomyManager {
 
     @com.fasterxml.jackson.annotation.JsonProperty("startingBalance")
     private float startingBalance = 0f;
+    private int dayDurationSeconds = letrain.time.GameClock.DEFAULT_DAY_DURATION_SECONDS;
+    private double latitude = letrain.time.SolarModel.DEFAULT_LATITUDE;
 
     @com.fasterxml.jackson.annotation.JsonProperty("goldThreshold")
     private float goldThreshold = 0.30f;
@@ -71,6 +85,12 @@ public class EconomyManager implements letrain.economy.EconomyManager {
 
     @com.fasterxml.jackson.annotation.JsonProperty("viewRadius")
     private int viewRadius = 15;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("derailMinCurveInterval")
+    private int derailMinCurveInterval = 12;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("derailMinSpeed")
+    private int derailMinSpeed = 3;
 
     private static final Logger log = LoggerFactory.getLogger(EconomyManager.class);
 
@@ -131,17 +151,13 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     @com.fasterxml.jackson.annotation.JsonProperty("destroyedWagons")
     int destroyedWagons = 0;
 
-    protected EconomyManager() {}
+    protected EconomyManager() {
+        initDefaultConstructionDelays();
+    }
 
     public EconomyManager(letrain.mvp.impl.EventLogManager eventLogManager) {
         this.eventLogManager = eventLogManager;
-        
-        // Construction Delays
-        constructionDelays.put(Presenter.TrackType.NORMAL_TRACK, 0);
-        constructionDelays.put(Presenter.TrackType.BRIDGE_TRACK, 20);
-        constructionDelays.put(Presenter.TrackType.BRIDGE_GATE_TRACK, 20);
-        constructionDelays.put(Presenter.TrackType.TUNNEL_TRACK, 30);
-        constructionDelays.put(Presenter.TrackType.TUNNEL_GATE_TRACK, 30);
+        initDefaultConstructionDelays();
 
         prices.put(ExpenseType.CONSTRUCTED_NORMAL_RAIL_TRACK, 100f);
         prices.put(ExpenseType.CONSTRUCTED_BRIDGE_RAIL_TRACK, 20000f);
@@ -180,6 +196,9 @@ public class EconomyManager implements letrain.economy.EconomyManager {
 
     @Override
     public void spend(ExpenseType type) {
+        if (freeConstruction) {
+            return;
+        }
         Float amount = prices.get(type);
         totalExpenses += amount;
         balance -= amount;
@@ -187,10 +206,23 @@ public class EconomyManager implements letrain.economy.EconomyManager {
 
     @Override
     public void spend(ExpenseType type, int amount) {
+        if (freeConstruction) {
+            return;
+        }
         Float price = prices.get(type);
         float total = price * amount;
         totalExpenses += total;
         balance -= total;
+    }
+
+    @Override
+    public void setFreeConstruction(boolean free) {
+        this.freeConstruction = free;
+    }
+
+    @Override
+    public boolean isFreeConstruction() {
+        return freeConstruction;
     }
 
     @Override
@@ -224,9 +256,6 @@ public class EconomyManager implements letrain.economy.EconomyManager {
             case TUNNEL_TRACK:
                 constructedTunnelRailTracks++;
                 spend(ExpenseType.CONSTRUCTED_TUNNEL_RAIL_TRACK);
-                break;
-            case STATION_TRACK:
-                // TODO pending
                 break;
         }
     }
@@ -283,9 +312,6 @@ public class EconomyManager implements letrain.economy.EconomyManager {
             case TUNNEL_TRACK:
                 destroyedTunnelRailTracks++;
                 spend(ExpenseType.DESTROYED_TUNNEL_RAIL_TRACK);
-                break;
-            case STATION_TRACK:
-                // Station destruction is handled by onStationDestroyed
                 break;
         }
     }
@@ -448,71 +474,195 @@ public class EconomyManager implements letrain.economy.EconomyManager {
         return totalIncome;
     }
 
+    /** Real seconds a full game day lasts (ADR-022), from {@code time.dayDurationSeconds}. */
     @Override
+    public int getDayDurationSeconds() {
+        return dayDurationSeconds;
+    }
+
+    /** World latitude for the solar cycle (ADR-022 phase 1), from {@code world.latitude}. */
+    @Override
+    public double getLatitude() {
+        return latitude;
+    }
+
     public float getTotalExpenses() {
         return totalExpenses;
     }
 
     @Override
     public void reloadConfig() {
-        File configFile = new File("economy.properties");
-        if (!configFile.exists()) {
+        File configFile = findConfigFile();
+        if (configFile == null) {
             return;
         }
-
         Properties props = new Properties();
         try (FileInputStream fis = new FileInputStream(configFile)) {
             props.load(fis);
-            log.info("Loading economy configuration from {}", configFile.getAbsolutePath());
-
-            // Load general costs
-            fuelCostPerMeter = Float.parseFloat(
-                    props.getProperty("fuelCostPerMeter", String.valueOf(fuelCostPerMeter)));
-            cargoLoadingFee = Float.parseFloat(
-                    props.getProperty("cargoLoadingFee", String.valueOf(cargoLoadingFee)));
-            float newStartingBalance = Float.parseFloat(
-                    props.getProperty("startingBalance", String.valueOf(startingBalance)));
-
-            // Only update current balance if it's the very beginning of the game (total
-            // income/expenses are zero)
-            if (totalIncome == 0 && totalExpenses == 0) {
-                balance = newStartingBalance;
-            }
-            startingBalance = newStartingBalance;
-
-            // Load thresholds
-            goldThreshold = Float.parseFloat(props.getProperty("threshold.GOLD", String.valueOf(goldThreshold)));
-            coalThreshold = Float.parseFloat(props.getProperty("threshold.COAL", String.valueOf(coalThreshold)));
-            rubyThreshold = Float.parseFloat(props.getProperty("threshold.RUBY", String.valueOf(rubyThreshold)));
-            waterThreshold = Float.parseFloat(props.getProperty("threshold.WATER", String.valueOf(waterThreshold)));
-            rockThreshold = Float.parseFloat(props.getProperty("threshold.ROCK", String.valueOf(rockThreshold)));
-            viewRadius = Integer.parseInt(props.getProperty("map.VIEW_RADIUS", String.valueOf(viewRadius)));
-
-            // Load Construction Delays
-            for (Presenter.TrackType type : Presenter.TrackType.values()) {
-                String key = "delay." + type.name();
-                int currentDelay = constructionDelays.getOrDefault(type, 0);
-                int delay = Integer.parseInt(props.getProperty(key, String.valueOf(currentDelay)));
-                constructionDelays.put(type, delay);
-            }
-
-            // Load ExpenseType prices
-            for (ExpenseType type : ExpenseType.values()) {
-                String key = "price." + type.name();
-                if (props.containsKey(key)) {
-                    prices.put(type, Float.parseFloat(props.getProperty(key)));
-                }
-            }
-
-            // Load CargoTypes values
-            for (CargoTypes type : CargoTypes.values()) {
-                String key = "cargo." + type.name();
-                if (props.containsKey(key)) {
-                    cargoBaseValues.put(type, Float.parseFloat(props.getProperty(key)));
-                }
-            }
+            log.info("Loading configuration from {}", configFile.getAbsolutePath());
+            applyProperties(props);
         } catch (IOException | NumberFormatException e) {
-            log.error("Error loading economy configuration: {}", e.getMessage());
+            log.error("Error loading configuration: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Finds {@code letrain.cfg}: the working directory first (so a local file overrides), then next
+     * to the application and its ancestors. This makes the packaged default work no matter where
+     * the launcher is started from.
+     */
+    static File findConfigFile() {
+        java.util.List<File> dirs = new java.util.ArrayList<>();
+        dirs.add(new File("."));
+        File dir = jarDirectory();
+        for (int i = 0; i < 3 && dir != null; i++) {
+            dirs.add(dir);
+            dir = dir.getParentFile();
+        }
+        return firstConfig(dirs);
+    }
+
+    /** First directory in {@code dirs} that holds a {@code letrain.cfg} file, or null. */
+    static File firstConfig(java.util.List<File> dirs) {
+        for (File dir : dirs) {
+            if (dir != null) {
+                File candidate = new File(dir, "letrain.cfg");
+                if (candidate.isFile()) {
+                    return candidate;
+                }
+            }
+        }
+        return null;
+    }
+
+    /** Directory holding this class's jar (or classes dir), or null when it cannot be resolved. */
+    private static File jarDirectory() {
+        try {
+            java.net.URL location =
+                    EconomyManager.class.getProtectionDomain().getCodeSource().getLocation();
+            if (location == null) {
+                return null;
+            }
+            File file = new File(location.toURI());
+            return file.isFile() ? file.getParentFile() : file;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Applies a configuration map (from a scenario's {@code configuration} section).
+     * Stored/imported settings win over the local file: this is how a scenario carries its own
+     * rules.
+     */
+    @Override
+    public void applyConfig(Map<String, String> config) {
+        if (config == null || config.isEmpty()) {
+            return;
+        }
+        Properties props = new Properties();
+        props.putAll(config);
+        try {
+            applyProperties(props);
+        } catch (NumberFormatException e) {
+            log.error("Error applying configuration: {}", e.getMessage());
+        }
+    }
+
+    /** Snapshot of the effective configuration (defaults + file overrides), for scenario export. */
+    @Override
+    public Map<String, String> effectiveConfig() {
+        Map<String, String> config = new java.util.LinkedHashMap<>();
+        config.put("fuelCostPerMeter", String.valueOf(fuelCostPerMeter));
+        config.put("cargoLoadingFee", String.valueOf(cargoLoadingFee));
+        config.put("startingBalance", String.valueOf(startingBalance));
+        for (ExpenseType type : ExpenseType.values()) {
+            config.put("price." + type.name(), String.valueOf(prices.getOrDefault(type, 0f)));
+        }
+        for (CargoTypes type : CargoTypes.values()) {
+            config.put("cargo." + type.name(),
+                    String.valueOf(cargoBaseValues.getOrDefault(type, 0f)));
+        }
+        config.put("threshold.GOLD", String.valueOf(goldThreshold));
+        config.put("threshold.COAL", String.valueOf(coalThreshold));
+        config.put("threshold.RUBY", String.valueOf(rubyThreshold));
+        config.put("threshold.WATER", String.valueOf(waterThreshold));
+        config.put("threshold.ROCK", String.valueOf(rockThreshold));
+        config.put("map.VIEW_RADIUS", String.valueOf(viewRadius));
+        for (Presenter.TrackType type : Presenter.TrackType.values()) {
+            config.put("delay." + type.name(), String.valueOf(getConstructionDelay(type)));
+        }
+        config.put("derail.minCurveInterval", String.valueOf(derailMinCurveInterval));
+        config.put("derail.minSpeed", String.valueOf(derailMinSpeed));
+        return config;
+    }
+
+    private void applyProperties(Properties props) {
+        dayDurationSeconds = Integer.parseInt(
+                props.getProperty("time.dayDurationSeconds", String.valueOf(dayDurationSeconds)));
+        double newLatitude =
+                Double.parseDouble(props.getProperty("world.latitude", String.valueOf(latitude)));
+        if (!Double.isNaN(newLatitude)) {
+            latitude = Math.max(-90.0, Math.min(90.0, newLatitude));
+        }
+
+        // Load general costs
+        fuelCostPerMeter = Float.parseFloat(
+                props.getProperty("fuelCostPerMeter", String.valueOf(fuelCostPerMeter)));
+        cargoLoadingFee = Float
+                .parseFloat(props.getProperty("cargoLoadingFee", String.valueOf(cargoLoadingFee)));
+        float newStartingBalance = Float
+                .parseFloat(props.getProperty("startingBalance", String.valueOf(startingBalance)));
+
+        // Only update current balance if it's the very beginning of the game (total
+        // income/expenses are zero)
+        if (totalIncome == 0 && totalExpenses == 0) {
+            balance = newStartingBalance;
+        }
+        startingBalance = newStartingBalance;
+
+        // Load thresholds
+        goldThreshold = Float
+                .parseFloat(props.getProperty("threshold.GOLD", String.valueOf(goldThreshold)));
+        coalThreshold = Float
+                .parseFloat(props.getProperty("threshold.COAL", String.valueOf(coalThreshold)));
+        rubyThreshold = Float
+                .parseFloat(props.getProperty("threshold.RUBY", String.valueOf(rubyThreshold)));
+        waterThreshold = Float
+                .parseFloat(props.getProperty("threshold.WATER", String.valueOf(waterThreshold)));
+        rockThreshold = Float
+                .parseFloat(props.getProperty("threshold.ROCK", String.valueOf(rockThreshold)));
+        viewRadius =
+                Integer.parseInt(props.getProperty("map.VIEW_RADIUS", String.valueOf(viewRadius)));
+
+        // Load derailment rules (issue #350)
+        derailMinCurveInterval = Integer.parseInt(props.getProperty("derail.minCurveInterval",
+                String.valueOf(derailMinCurveInterval)));
+        derailMinSpeed = Integer
+                .parseInt(props.getProperty("derail.minSpeed", String.valueOf(derailMinSpeed)));
+
+        // Load Construction Delays
+        for (Presenter.TrackType type : Presenter.TrackType.values()) {
+            String key = "delay." + type.name();
+            int currentDelay = constructionDelays.getOrDefault(type, 0);
+            int delay = Integer.parseInt(props.getProperty(key, String.valueOf(currentDelay)));
+            constructionDelays.put(type, delay);
+        }
+
+        // Load ExpenseType prices
+        for (ExpenseType type : ExpenseType.values()) {
+            String key = "price." + type.name();
+            if (props.containsKey(key)) {
+                prices.put(type, Float.parseFloat(props.getProperty(key)));
+            }
+        }
+
+        // Load CargoTypes values
+        for (CargoTypes type : CargoTypes.values()) {
+            String key = "cargo." + type.name();
+            if (props.containsKey(key)) {
+                cargoBaseValues.put(type, Float.parseFloat(props.getProperty(key)));
+            }
         }
     }
 
@@ -544,5 +694,15 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     @Override
     public int getViewRadius() {
         return viewRadius;
+    }
+
+    @Override
+    public int getDerailMinCurveInterval() {
+        return derailMinCurveInterval;
+    }
+
+    @Override
+    public int getDerailMinSpeed() {
+        return derailMinSpeed;
     }
 }

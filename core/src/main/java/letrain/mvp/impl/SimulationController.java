@@ -24,15 +24,26 @@ public class SimulationController {
 
     /** Performs one simulation tick. */
     public void tick() {
+        // Paused editing (ADR-020): while in a paused editing mode the world is frozen but track
+        // construction keeps running (and is made instantaneous by the track maker).
+        boolean paused = model.isSimulationPaused();
+
         // 0. Update the scheduler
-        if (model.getScheduler() != null) {
+        if (!paused && model.getScheduler() != null) {
             model.getScheduler().tick();
         }
 
-        // 1. Progress track construction if active
+        // 1. Progress track construction if active (always, even while paused so editing works)
         if (trackMaker != null) {
             trackMaker.makeTracks();
         }
+
+        if (paused) {
+            return;
+        }
+
+        // 1b. Advance the logical clock (ADR-022); paused editing freezes it
+        model.getGameClock().tick();
 
         // 2. Move all vehicles
         simulationService.moveVehicles();

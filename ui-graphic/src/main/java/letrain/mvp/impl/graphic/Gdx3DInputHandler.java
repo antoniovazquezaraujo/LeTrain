@@ -13,7 +13,10 @@ import letrain.mvp.Model;
 import letrain.mvp.impl.RailTrackMaker;
 import letrain.track.CargoTypes;
 import letrain.track.RailSemaphore;
+import letrain.track.Sensor;
+import letrain.track.SpeedSignal;
 import letrain.track.Station;
+import letrain.track.Track;
 import letrain.track.rail.RailTrack;
 import letrain.vehicle.rail.Linker;
 import letrain.vehicle.rail.impl.Locomotive;
@@ -36,7 +39,8 @@ public class Gdx3DInputHandler implements InputProcessor {
     private final AudioController audioController;
 
     // Multi-digit selection state
-    private final com.badlogic.gdx.utils.IntMap<Long> pressedKeys = new com.badlogic.gdx.utils.IntMap<>();
+    private final com.badlogic.gdx.utils.IntMap<Long> pressedKeys =
+            new com.badlogic.gdx.utils.IntMap<>();
     private static final long INITIAL_REPEAT_DELAY_MS = 400;
     private static final long REPEAT_INTERVAL_MS = 50;
 
@@ -96,6 +100,11 @@ public class Gdx3DInputHandler implements InputProcessor {
     }
 
     private boolean triggerKeyDown(int keycode) {
+        if (model.getMode() == Model.GameMode.TRAINS && isShiftedVimLetter(keycode)) {
+            // Shift+H/J/K/L are typed aspect letters here: keyTyped delivers them, so keyDown must
+            // neither move the cursor nor repeat them.
+            return false;
+        }
         InputEvent keyStroke = translateKeyCode(keycode);
         if (keyStroke != null) {
             boolean ctrlPressed = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT)
@@ -105,16 +114,63 @@ public class Gdx3DInputHandler implements InputProcessor {
             boolean shiftPressed = Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)
                     || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
 
-            view.onChar(
-                    new InputEvent(keyStroke.getKeyType(), keyStroke.getCharacter(), ctrlPressed, altPressed, shiftPressed));
+            view.onChar(new InputEvent(keyStroke.getKeyType(), keyStroke.getCharacter(),
+                    ctrlPressed, altPressed, shiftPressed));
             return true;
         }
         return false;
     }
 
+    private boolean isShiftedVimLetter(int keycode) {
+        if (keycode != Input.Keys.H && keycode != Input.Keys.J && keycode != Input.Keys.K
+                && keycode != Input.Keys.L) {
+            return false;
+        }
+        if (Gdx.input == null) {
+            return false;
+        }
+        return Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)
+                || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
+    }
+
     @Override
     public boolean keyDown(int keycode) {
-        pressedKeys.put(keycode, System.currentTimeMillis() + INITIAL_REPEAT_DELAY_MS);
+        // Esc must never enter the auto-repeat map: it is used to open/close modal UI, its keyUp
+        // is consumed by that UI, and repeating it would keep reopening the exit dialog.
+        if (keycode != Input.Keys.ESCAPE) {
+            pressedKeys.put(keycode, System.currentTimeMillis() + INITIAL_REPEAT_DELAY_MS);
+        }
+        // Ctrl+R -> redo paused editing (ADR-020 item 3). Handled on keyDown because LibGDX does
+        // not deliver a typed character for Ctrl+letter combos. Not intercepted while typing in the
+        // COMMAND console or the PROGRAM IDE.
+        boolean ctrlPressed = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT)
+                || Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT);
+        // Ctrl+P / Ctrl+N navigate the ':' command history on keyDown (LibGDX does not deliver a
+        // typed character for Ctrl+letter combos, so the arrows are the main path).
+        if (ctrlPressed && model.getMode() == Model.GameMode.COMMAND) {
+            if (keycode == Input.Keys.P) {
+                String text = view.getCommandHistory().up();
+                if (text != null) {
+                    model.setCommandText(text);
+                    model.setCommandError("");
+                    model.setCommandNotice("");
+                }
+                return true;
+            } else if (keycode == Input.Keys.N) {
+                String text = view.getCommandHistory().down();
+                if (text != null) {
+                    model.setCommandText(text);
+                    model.setCommandError("");
+                    model.setCommandNotice("");
+                }
+                return true;
+            }
+        }
+        if (ctrlPressed && keycode == Input.Keys.R && model.getMode() != Model.GameMode.COMMAND
+                && model.getMode() != Model.GameMode.PROGRAM) {
+            view.redo(1);
+            return true;
+        }
         return triggerKeyDown(keycode);
     }
 
@@ -128,7 +184,8 @@ public class Gdx3DInputHandler implements InputProcessor {
             boolean shiftPressed = Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)
                     || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
 
-            view.onKeyUp(new InputEvent(keyStroke.getKeyType(), keyStroke.getCharacter(), ctrlPressed, false, shiftPressed));
+            view.onKeyUp(new InputEvent(keyStroke.getKeyType(), keyStroke.getCharacter(),
+                    ctrlPressed, false, shiftPressed));
             return true;
         }
         return false;
@@ -136,8 +193,8 @@ public class Gdx3DInputHandler implements InputProcessor {
 
     @Override
     public boolean keyTyped(char character) {
-        // 1. Toggle de cámara
-        if (character == 'z' || character == 'Z') {
+        // 1. Toggle de cámara (en TRAINS la 'z' es una letra de aspecto, como en 2D)
+        if ((character == 'z' || character == 'Z') && model.getMode() != Model.GameMode.TRAINS) {
             cameraController.cycleMode(!model.getLocomotives().isEmpty());
             return true;
         }
@@ -147,13 +204,21 @@ public class Gdx3DInputHandler implements InputProcessor {
                 || Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT);
         boolean altPressed = Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT)
                 || Gdx.input.isKeyPressed(Input.Keys.ALT_RIGHT);
+        boolean shiftPressed = Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)
+                || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
 
         if (!Character.isISOControl(character)) {
             char lower = Character.toLowerCase(character);
             if (lower == 'h' || lower == 'j' || lower == 'k' || lower == 'l') {
-                return false; // Already handled in keyDown
+                // Lowercase vim keys move and are handled in keyDown; in TRAINS the shifted letter
+                // is a typed aspect letter (Shift+H/J/K/L build locomotives).
+                if (!(model.getMode() == Model.GameMode.TRAINS
+                        && Character.isUpperCase(character))) {
+                    return false; // Already handled in keyDown
+                }
             }
-            view.onChar(new InputEvent(character, ctrlPressed, altPressed));
+            view.onChar(new InputEvent(KeyType.Character, character, ctrlPressed, altPressed,
+                    shiftPressed));
             return true;
         }
         return false;
@@ -201,7 +266,7 @@ public class Gdx3DInputHandler implements InputProcessor {
 
     private InputEvent translateKeyCode(int keycode) {
         switch (keycode) {
-                        case Input.Keys.H:
+            case Input.Keys.H:
                 return new InputEvent(KeyType.Character, 'h', false, false, false);
             case Input.Keys.J:
                 return new InputEvent(KeyType.Character, 'j', false, false, false);
@@ -248,7 +313,7 @@ public class Gdx3DInputHandler implements InputProcessor {
 
     private InputEvent translateKeyCodeForUp(int keycode) {
         switch (keycode) {
-                        case Input.Keys.H:
+            case Input.Keys.H:
                 return new InputEvent(KeyType.Character, 'h', false, false, false);
             case Input.Keys.J:
                 return new InputEvent(KeyType.Character, 'j', false, false, false);
@@ -278,60 +343,106 @@ public class Gdx3DInputHandler implements InputProcessor {
     public void onChar(InputEvent stroke) {
         if (model.getMode() == Model.GameMode.COMMAND) {
             if (stroke.getKeyType() == KeyType.Escape) {
-                model.setMode(Model.GameMode.RAILS);
-                model.setCommandText("");
-                model.setCommandError("");
+                leaveCommandMode();
                 return;
             } else if (stroke.getKeyType() == KeyType.Enter) {
-                log.info("Execute command: " + model.getCommandText());
-                String error = letrain.command.PlayerCommandExecutor.execute(model.getCommandText(), model, file -> view.onSaveGame(file), file -> view.onLoadGame(file), new letrain.command.TurtleDelegate() {
-                    @Override public void startSequence() { trackMaker.reset(); trackMaker.makingTracks = false; }
-                    @Override public void moveForward() { trackMaker.cursorForward(); }
-                    @Override public void buildForward() { trackMaker.createTrack(null); }
-                    @Override public void eraseForward() { trackMaker.removeTrack(true); }
-                    @Override public void turnLeft() { trackMaker.cursorTurnLeft(); }
-                    @Override public void turnRight() { trackMaker.cursorTurnRight(); }
-                    @Override public void endSequence() { trackMaker.makingTracks = false; }
-                }, (title, msg) -> view.showMessage(title, msg), () -> view.onExitGame());
-
-                if (error != null) {
-                    model.setCommandError(error);
+                String cmd = model.getCommandText().trim();
+                if (cmd.isEmpty()) {
+                    leaveCommandMode();
                     return;
                 }
-                model.setMode(Model.GameMode.RAILS);
-                model.setCommandText("");
-                model.setCommandError("");
-                if (cameraController != null) cameraController.forceSnap();
+                view.getCommandHistory().remember(cmd);
+                executeConsoleCommand(model.getCommandText());
                 return;
             } else if (stroke.getKeyType() == KeyType.Backspace) {
                 String t = model.getCommandText();
                 if (t.length() > 0) {
                     model.setCommandText(t.substring(0, t.length() - 1));
                     model.setCommandError("");
+                    model.setCommandNotice("");
                 }
                 return;
             } else if (stroke.getKeyType() == KeyType.Character) {
                 Character c = stroke.getCharacter();
-                if (c != null) {
+                if (c != null && !stroke.isCtrlDown() && !stroke.isAltDown()) {
                     model.setCommandText(model.getCommandText() + c);
                     model.setCommandError("");
+                    model.setCommandNotice("");
+                }
+                return;
+            } else if (stroke.getKeyType() == KeyType.ArrowUp) {
+                String text = view.getCommandHistory().up();
+                if (text != null) {
+                    model.setCommandText(text);
+                    model.setCommandError("");
+                    model.setCommandNotice("");
+                }
+                return;
+            } else if (stroke.getKeyType() == KeyType.ArrowDown) {
+                String text = view.getCommandHistory().down();
+                if (text != null) {
+                    model.setCommandText(text);
+                    model.setCommandError("");
+                    model.setCommandNotice("");
                 }
                 return;
             }
             return; // Ignore other keys in COMMAND mode
         }
 
-        if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null && stroke.getCharacter() == ':') {
+        // '.' -> repeat the last console command (only outside COMMAND/PROGRAM to avoid stealing
+        // a literal '.' typed while editing a program).
+        if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null
+                && stroke.getCharacter() == '.' && model.getMode() != Model.GameMode.PROGRAM) {
+            String last = view.getCommandHistory().last();
+            if (last != null) {
+                executeConsoleCommand(last);
+            }
+            return;
+        }
+
+        // Shift+X toggles experiment mode (live sandbox with in-memory snapshot/restore). Not in
+        // TRAINS: there the letter is a locomotive aspect, like in the 2D terminal.
+        if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null
+                && stroke.getCharacter() == 'X' && !stroke.isCtrlDown() && !stroke.isAltDown()
+                && model.getMode() != Model.GameMode.PROGRAM
+                && model.getMode() != Model.GameMode.TRAINS) {
+            view.toggleExperimentMode();
+            return;
+        }
+
+        // Shift+R toggles the Record/edit mode (freeze + instant build + undo/redo + journal).
+        // Not in TRAINS, where 'R' builds the locomotive with aspect R.
+        if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null
+                && stroke.getCharacter() == 'R' && !stroke.isCtrlDown() && !stroke.isAltDown()
+                && model.getMode() != Model.GameMode.PROGRAM
+                && model.getMode() != Model.GameMode.TRAINS) {
+            togglePauseEditing();
+            return;
+        }
+
+        if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null
+                && stroke.getCharacter() == ':') {
             if (model.getMode() != Model.GameMode.PROGRAM) {
                 model.setMode(Model.GameMode.COMMAND);
                 model.setCommandText("");
                 model.setCommandError("");
+                model.setCommandNotice("");
+                view.getCommandHistory().resetToNew();
                 return;
             }
         }
 
         if (stroke.getKeyType() == KeyType.F1) {
             log.info("\n" + model.getRailwayGraphReport());
+            return;
+        }
+
+        // Tab cycles the HUD panel (full / compact / hidden), like the 2D terminal's help levels.
+        // Not in PROGRAM, where the IDE uses Tab.
+        if (getEffectiveKeyType(stroke) == KeyType.Tab
+                && model.getMode() != Model.GameMode.PROGRAM) {
+            view.cycleHelpLevel();
             return;
         }
 
@@ -360,7 +471,9 @@ public class Gdx3DInputHandler implements InputProcessor {
                 return;
             } else if (model.getMode() != Model.GameMode.DRIVE) {
                 lastCreatedLoco = null;
-                model.setMode(Model.GameMode.MENU);
+                // Finishing a train returns to the editing mode, not the empty main menu.
+                model.setMode(model.getMode() == Model.GameMode.TRAINS ? Model.GameMode.RAILS
+                        : Model.GameMode.MENU);
                 return;
             }
         }
@@ -410,6 +523,12 @@ public class Gdx3DInputHandler implements InputProcessor {
                         }
                         return;
                     case 'u':
+                        // While pause-editing is on (undo history active), 'u' = undo (vim-like).
+                        // Ctrl+Z is avoided because several window managers/toolkits intercept it.
+                        if (model.isSimulationPaused()) {
+                            view.undo(1);
+                            return;
+                        }
                         if (model.canEnterUnlinkMode()) {
                             model.setMode(Model.GameMode.UNLINK);
                             if (model.getSelectedLocomotive() != null
@@ -440,16 +559,25 @@ public class Gdx3DInputHandler implements InputProcessor {
             }
         }
 
+        // Esc opens the exit menu in the normal modes (COMMAND cancels above; ADD goes back below;
+        // PROGRAM is the modal editor, which handles Esc itself).
+        if (stroke.getKeyType() == KeyType.Escape && model.getMode() != Model.GameMode.ADD
+                && model.getMode() != Model.GameMode.PROGRAM) {
+            view.showExitDialog();
+            return;
+        }
+
         switch (model.getMode()) {
-                        case MENU:
-                if (stroke.getKeyType() == KeyType.ArrowUp ||
-                    stroke.getKeyType() == KeyType.ArrowDown ||
-                    stroke.getKeyType() == KeyType.ArrowLeft ||
-                    stroke.getKeyType() == KeyType.ArrowRight) {
+            case MENU:
+                if (stroke.getKeyType() == KeyType.ArrowUp
+                        || stroke.getKeyType() == KeyType.ArrowDown
+                        || stroke.getKeyType() == KeyType.ArrowLeft
+                        || stroke.getKeyType() == KeyType.ArrowRight) {
                     trackMaker.onChar(stroke);
                 } else if (stroke.getKeyType() == KeyType.Character) {
                     Character c = stroke.getCharacter();
-                    if (c != null && (c == 'h' || c == 'j' || c == 'k' || c == 'l' || c == 'H' || c == 'J' || c == 'K' || c == 'L')) {
+                    if (c != null && (c == 'h' || c == 'j' || c == 'k' || c == 'l' || c == 'H'
+                            || c == 'J' || c == 'K' || c == 'L')) {
                         trackMaker.onChar(stroke);
                     }
                 }
@@ -492,6 +620,124 @@ public class Gdx3DInputHandler implements InputProcessor {
                 break;
             default:
                 break;
+        }
+    }
+
+    private void togglePauseEditing() {
+        if (view.getExperimentSession().isActive()) {
+            log.info("Experiment ON: press X to exit and restore before pausing");
+            return;
+        }
+        boolean paused = !model.isPauseEditing();
+        model.setPauseEditing(paused);
+        view.setStatusBarText(
+                paused ? "Paused editing: ON (world freezes in edit modes; instant build)"
+                        : "Paused editing: OFF");
+        view.onPauseEditingChanged(paused);
+    }
+
+    /**
+     * Executes a console command typed in COMMAND mode (':'): captures the cursor prefix before
+     * running (so an undo replay is self-positioned and deterministic), wires the undo/redo DSL
+     * callbacks, and auto-captures the successful edit into the paused-editing history exactly like
+     * the terminal presenter's funnel.
+     */
+    private void executeConsoleCommand(String cmd) {
+        log.info("Execute command: " + cmd);
+        boolean fromConsole = model.getMode() == Model.GameMode.COMMAND;
+        Model.GameMode returnMode = model.getPreviousMode();
+        String prefix = cursorPrefix();
+        String error = letrain.command.PlayerCommandExecutor.execute(cmd, model,
+                file -> view.onSaveGame(file), file -> view.onLoadGame(file),
+                new letrain.command.TurtleBuilder(model, trackMaker),
+                (title, msg) -> view.showMessage(title, msg), () -> view.onExitGame(),
+                steps -> view.undo(steps), steps -> view.redo(steps),
+                file -> view.onExportScenario(file), file -> view.onImportScenario(file), false);
+
+        if (error != null) {
+            model.setCommandError(letrain.command.SyntaxMessages.shorten(error));
+            return;
+        }
+        // Use the presenter's live model: an undo/redo typed in the console swaps the model out
+        // from under this handler (applyModel rebuilds handler + model), so the cleanup and the
+        // auto-capture must target the current model, not the stale one this handler was built on.
+        letrain.mvp.Model current = view.getModel();
+        // Command journal (ADR-020 item 2): record the canonical, self-positioned form so an
+        // exported scenario replays at the right place. Same gate as undo, so both stay 1:1.
+        letrain.command.CommandJournal journal = current.getCommandJournal();
+        if (current.isSimulationPaused() && journal.isRecording()
+                && !letrain.command.EditCommandFilter.isNonRecordable(cmd)) {
+            journal.record(prefix + cmd);
+        }
+        // Auto-capture in pause (ADR-020 item 3): while pause-editing freezes the world, every
+        // successful editing command is journaled for undo/redo.
+        letrain.command.UndoRedoHistory history = view.getUndoRedoHistory();
+        if (history != null && current.isSimulationPaused()
+                && !letrain.command.EditCommandFilter.isNonRecordable(cmd)) {
+            history.record(prefix + cmd);
+        }
+        if (fromConsole && current.getMode() == Model.GameMode.COMMAND) {
+            // D1 contextual channel: with a console notice the command bar stays open so the
+            // player can read it (the input is cleared below); a silent success returns to the
+            // mode the player was in.
+            String notice = current.getCommandNotice();
+            if (notice == null || notice.isEmpty()) {
+                current.setMode(returnMode);
+            }
+        } else if (!fromConsole) {
+            // The '.' repeat path keeps the old behaviour of landing in RAILS.
+            current.setMode(Model.GameMode.RAILS);
+            String notice = current.getCommandNotice();
+            if (notice != null && !notice.isEmpty()) {
+                // Outside COMMAND mode no command bar is painted: surface the notice in the
+                // status bar.
+                view.setStatusBarText(notice);
+            }
+        }
+        current.setCommandText("");
+        current.setCommandError("");
+        if (view.getCameraController() != null) {
+            view.getCameraController().forceSnap();
+        }
+    }
+
+    /**
+     * Leaving the console (Esc or an empty Enter) returns to the mode the player was in before
+     * opening it, instead of always landing in RAILS.
+     */
+    private void leaveCommandMode() {
+        model.setMode(model.getPreviousMode());
+        model.setCommandText("");
+        model.setCommandError("");
+        model.setCommandNotice("");
+    }
+
+    /** Absolute cursor prefix: {@code "go x,y; face d; "} from the current cursor state. */
+    private String cursorPrefix() {
+        letrain.map.Point pos = model.getCursor().getPosition();
+        return "go " + pos.getX() + "," + pos.getY() + "; face "
+                + model.getCursor().getDir().name().toLowerCase() + "; ";
+    }
+
+    /**
+     * Records a keyboard state toggle (signal invert/mode/limit) as a canonical, self-positioned
+     * DSL command into the journal and the undo history, exactly like the console funnel. Only
+     * while the world is frozen in edit mode, so undo and the exported scenario stay 1:1 with the
+     * edits.
+     */
+    private void recordKeyboardEdit(String action) {
+        letrain.mvp.Model current = view.getModel();
+        if (current == null || !current.isSimulationPaused()) {
+            return;
+        }
+        String text = cursorPrefix() + action + ";";
+        letrain.command.CommandJournal journal = current.getCommandJournal();
+        if (journal != null && journal.isRecording()) {
+            journal.recordCoalescing(text);
+        }
+        letrain.command.UndoRedoHistory history = view.getUndoRedoHistory();
+        if (history != null) {
+            history.recordCoalescing(text);
         }
     }
 
@@ -549,13 +795,111 @@ public class Gdx3DInputHandler implements InputProcessor {
     private KeyType getEffectiveKeyType(InputEvent event) {
         if (event.getKeyType() == KeyType.Character && event.getCharacter() != null) {
             switch (Character.toLowerCase(event.getCharacter())) {
-                case 'k': return KeyType.ArrowUp;
-                case 'j': return KeyType.ArrowDown;
-                case 'h': return KeyType.ArrowLeft;
-                case 'l': return KeyType.ArrowRight;
+                case 'k':
+                    return KeyType.ArrowUp;
+                case 'j':
+                    return KeyType.ArrowDown;
+                case 'h':
+                    return KeyType.ArrowLeft;
+                case 'l':
+                    return KeyType.ArrowRight;
             }
         }
         return event.getKeyType();
+    }
+
+    private boolean tryMoveSelectedWithShift(InputEvent event) {
+        if (!event.isShiftDown() && !isShiftedVimMoveKey(event)) {
+            return false;
+        }
+        KeyType keyType = getEffectiveKeyType(event);
+        if (keyType == KeyType.ArrowUp) {
+            moveSelectedElement(true);
+            return true;
+        }
+        if (keyType == KeyType.ArrowDown) {
+            moveSelectedElement(false);
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isShiftedVimMoveKey(InputEvent event) {
+        Character c = event.getCharacter();
+        return c != null && (c == 'K' || c == 'J');
+    }
+
+    private Dir selectedElementDir() {
+        switch (model.getMode()) {
+            case STATIONS:
+                Station station = model.getSelectedStation();
+                return station != null ? station.getCreationDir() : null;
+            case SENSORS:
+                Sensor sensor = model.getSelectedSensor();
+                return sensor != null ? sensor.getCreationDir() : null;
+            case SPEED_SIGNALS:
+                SpeedSignal signal = model.getSelectedSpeedSignal();
+                return signal != null ? signal.getCreationDir() : null;
+            case SEMAPHORES:
+                RailSemaphore semaphore = model.getSelectedSemaphore();
+                return semaphore != null ? semaphore.getCreationDir() : null;
+            default:
+                return null;
+        }
+    }
+
+    private void moveSelectedElement(boolean forward) {
+        Track destTrack = null;
+        switch (model.getMode()) {
+            case STATIONS:
+                if (model.getSelectedStation() != null) {
+                    Station station = model.getSelectedStation();
+                    boolean moved = forward ? model.moveSensorForward(station)
+                            : model.moveSensorBackward(station);
+                    if (moved) {
+                        destTrack = station.getTrack();
+                    }
+                }
+                break;
+            case SENSORS:
+                if (model.getSelectedSensor() != null) {
+                    Sensor sensor = model.getSelectedSensor();
+                    boolean moved = forward ? model.moveSensorForward(sensor)
+                            : model.moveSensorBackward(sensor);
+                    if (moved) {
+                        destTrack = sensor.getTrack();
+                    }
+                }
+                break;
+            case SPEED_SIGNALS:
+                if (model.getSelectedSpeedSignal() != null) {
+                    SpeedSignal signal = model.getSelectedSpeedSignal();
+                    boolean moved = forward ? model.moveSensorForward(signal)
+                            : model.moveSensorBackward(signal);
+                    if (moved) {
+                        destTrack = signal.getTrack();
+                    }
+                }
+                break;
+            case SEMAPHORES:
+                RailSemaphore semaphore = model.getSelectedSemaphore();
+                if (semaphore != null) {
+                    boolean moved = forward ? model.moveSensorForward(semaphore)
+                            : model.moveSensorBackward(semaphore);
+                    if (moved) {
+                        destTrack = semaphore.getTrack();
+                    }
+                }
+                break;
+            default:
+                return;
+        }
+        if (destTrack == null) {
+            return;
+        }
+        model.getCursor().setPosition(destTrack.getPosition());
+        Dir front = selectedElementDir();
+        model.getCursor().setDir(front != null ? front : Dir.E);
     }
 
     private void handleDriveInput(InputEvent stroke) {
@@ -582,7 +926,8 @@ public class Gdx3DInputHandler implements InputProcessor {
             model.selectPrevLocomotive();
         } else if (getEffectiveKeyType(stroke) == KeyType.ArrowRight) {
             model.selectNextLocomotive();
-        } else if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() == ' ') {
+        } else if (getEffectiveKeyType(stroke) == KeyType.Character
+                && stroke.getCharacter() == ' ') {
             if (locomotiveIdAccumulator > 0) {
                 model.selectLocomotive(locomotiveIdAccumulator);
                 locomotiveIdAccumulator = 0;
@@ -642,7 +987,8 @@ public class Gdx3DInputHandler implements InputProcessor {
                 }
             }
             model.setMode(Model.GameMode.MENU);
-        } else if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() == 'm') {
+        } else if (getEffectiveKeyType(stroke) == KeyType.Character
+                && stroke.getCharacter() == 'm') {
             Locomotive loco = model.getSelectedLocomotive();
             if (loco != null) {
                 if (!loco.isEngineOn()) {
@@ -687,12 +1033,17 @@ public class Gdx3DInputHandler implements InputProcessor {
                     train.setNumLinkersToJoin(train.getNumLinkersToJoin() + 1);
                 }
             }
-        } else if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() == ' ') {
+        } else if (getEffectiveKeyType(stroke) == KeyType.Character
+                && stroke.getCharacter() == ' ') {
             Locomotive loco = model.getSelectedLocomotive();
             if (loco != null && loco.getTrain() != null) {
                 Train train = loco.getTrain();
                 if (!train.getLinkersToJoin().isEmpty() && train.getNumLinkersToJoin() > 0) {
+                    boolean forward = train.isJoinFront();
+                    int count = train.getNumLinkersToJoin();
                     train.getTrainCouplingManager().joinLinkers(train);
+                    view.journalEditingCommand("train " + loco.getId() + " couple "
+                            + (forward ? "forward" : "backward") + " " + count + ";");
                 }
                 model.setMode(model.getPreviousMode());
             }
@@ -711,9 +1062,17 @@ public class Gdx3DInputHandler implements InputProcessor {
                 train.getTrainCouplingManager().selectPrevDivisionLink(train);
             } else if (getEffectiveKeyType(stroke) == KeyType.ArrowRight) {
                 train.getTrainCouplingManager().selectNextDivisionLink(train);
-            } else if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() == ' ') {
+            } else if (getEffectiveKeyType(stroke) == KeyType.Character
+                    && stroke.getCharacter() == ' ') {
 
+                Locomotive loco = model.getSelectedLocomotive();
+                boolean forward = train.isDivisionFront() != loco.isReversed();
+                int count = train.getNumLinkersToRemove();
                 train.getTrainCouplingManager().divideTrain(train, () -> model.nextTrainId());
+                if (count > 0) {
+                    view.journalEditingCommand("train " + loco.getId() + " uncouple "
+                            + (forward ? "forward" : "backward") + " " + count + ";");
+                }
                 audioController.playOneShot("link",
                         (float) model.getSelectedLocomotive().getPosition().getX(),
                         (float) model.getSelectedLocomotive().getPosition().getY());
@@ -727,14 +1086,21 @@ public class Gdx3DInputHandler implements InputProcessor {
             model.selectPrevFork();
         } else if (getEffectiveKeyType(stroke) == KeyType.ArrowRight) {
             model.selectNextFork();
-        } else if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() == ' ') {
+        } else if (getEffectiveKeyType(stroke) == KeyType.Character
+                && stroke.getCharacter() == ' ') {
             if (forkIdAccumulator > 0) {
                 model.selectFork(forkIdAccumulator);
                 forkIdAccumulator = 0;
                 forkInputTimeout = 0;
             }
             if (model.getSelectedFork() != null) {
-                model.getSelectedFork().flipRoute();
+                letrain.track.rail.ForkRailTrack fork = model.getSelectedFork();
+                boolean wasAlternative = fork.isUsingAlternativeRoute();
+                fork.flipRoute();
+                if (fork.isUsingAlternativeRoute() != wasAlternative) {
+                    view.journalEditingCommand("fork " + fork.getId() + " set "
+                            + (fork.isUsingAlternativeRoute() ? "curved" : "straight") + ";");
+                }
                 audioController.playOneShot("fork",
                         (float) model.getSelectedFork().getPosition().getX(),
                         (float) model.getSelectedFork().getPosition().getY());
@@ -753,6 +1119,9 @@ public class Gdx3DInputHandler implements InputProcessor {
     }
 
     private void handleSpeedSignalsInput(InputEvent stroke) {
+        if (tryMoveSelectedWithShift(stroke)) {
+            return;
+        }
         switch (getEffectiveKeyType(stroke)) {
             case Backspace:
                 speedSignalId = speedSignalId / 10;
@@ -761,8 +1130,10 @@ public class Gdx3DInputHandler implements InputProcessor {
             case Character:
                 if (stroke.getCharacter() == 'm' || stroke.getCharacter() == 'M') {
                     if (model.getSelectedSpeedSignal() != null) {
-                        model.getSelectedSpeedSignal()
-                                .setMax(!model.getSelectedSpeedSignal().isMax());
+                        letrain.track.SpeedSignal sig = model.getSelectedSpeedSignal();
+                        sig.setMax(!sig.isMax());
+                        recordKeyboardEdit("signal " + sig.getId() + " set mode "
+                                + (sig.isMax() ? "max" : "min"));
                     }
                 } else if (stroke.getCharacter() == ' ') {
                     if (speedSignalId > 0) {
@@ -772,6 +1143,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                     if (model.getSelectedSpeedSignal() != null) {
                         letrain.track.SpeedSignal sig = model.getSelectedSpeedSignal();
                         sig.setCreationDir(sig.getCreationDir().inverse());
+                        recordKeyboardEdit("signal " + sig.getId() + " invert");
                         cameraController.forceSnap();
                     }
                 } else if (stroke.getCharacter() >= '0' && stroke.getCharacter() <= '9') {
@@ -781,6 +1153,8 @@ public class Gdx3DInputHandler implements InputProcessor {
                             val = 10;
                         }
                         model.getSelectedSpeedSignal().setLimit(val);
+                        recordKeyboardEdit("signal " + model.getSelectedSpeedSignal().getId()
+                                + " set limit " + val);
                     } else {
                         speedSignalId = speedSignalId * 10 + (stroke.getCharacter() - '0');
                     }
@@ -797,6 +1171,8 @@ public class Gdx3DInputHandler implements InputProcessor {
                     int l = model.getSelectedSpeedSignal().getLimit();
                     if (l < 10) {
                         model.getSelectedSpeedSignal().setLimit(l + 1);
+                        recordKeyboardEdit("signal " + model.getSelectedSpeedSignal().getId()
+                                + " set limit " + (l + 1));
                     }
                 }
                 break;
@@ -805,6 +1181,8 @@ public class Gdx3DInputHandler implements InputProcessor {
                     int l = model.getSelectedSpeedSignal().getLimit();
                     if (l > 1) {
                         model.getSelectedSpeedSignal().setLimit(l - 1);
+                        recordKeyboardEdit("signal " + model.getSelectedSpeedSignal().getId()
+                                + " set limit " + (l - 1));
                     }
                 }
                 break;
@@ -818,6 +1196,9 @@ public class Gdx3DInputHandler implements InputProcessor {
     private int sensorIdAccumulator = 0;
 
     private void handleSensorsInput(InputEvent stroke) {
+        if (tryMoveSelectedWithShift(stroke)) {
+            return;
+        }
         if (getEffectiveKeyType(stroke) == KeyType.ArrowLeft) {
             model.selectPrevSensor();
         } else if (getEffectiveKeyType(stroke) == KeyType.ArrowRight) {
@@ -828,7 +1209,8 @@ public class Gdx3DInputHandler implements InputProcessor {
                     sensorIdAccumulator * 10 + Character.getNumericValue(stroke.getCharacter());
             model.selectSensor(sensorIdAccumulator);
             sensorInputTimeout = System.currentTimeMillis() + 1000;
-        } else if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() == ' ') {
+        } else if (getEffectiveKeyType(stroke) == KeyType.Character
+                && stroke.getCharacter() == ' ') {
             if (sensorIdAccumulator > 0) {
                 model.selectSensor(sensorIdAccumulator);
                 sensorIdAccumulator = 0;
@@ -837,11 +1219,15 @@ public class Gdx3DInputHandler implements InputProcessor {
             if (model.getSelectedSensor() != null) {
                 letrain.track.Sensor sensor = model.getSelectedSensor();
                 sensor.setCreationDir(sensor.getCreationDir().inverse());
+                view.journalEditingCommand("sensor " + sensor.getId() + " invert;");
             }
         }
     }
 
     private void handleSemaphoreInput(InputEvent stroke) {
+        if (tryMoveSelectedWithShift(stroke)) {
+            return;
+        }
         if (getEffectiveKeyType(stroke) == KeyType.ArrowLeft) {
             model.selectPrevSemaphore();
         } else if (getEffectiveKeyType(stroke) == KeyType.ArrowRight) {
@@ -854,7 +1240,8 @@ public class Gdx3DInputHandler implements InputProcessor {
                 audioController.playOneShot("construction", (float) s.getPosition().getX(),
                         (float) s.getPosition().getY());
             }
-        } else if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() == ' ') {
+        } else if (getEffectiveKeyType(stroke) == KeyType.Character
+                && stroke.getCharacter() == ' ') {
             if (semaphoreIdAccumulator > 0) {
                 model.selectSemaphore(semaphoreIdAccumulator);
                 semaphoreIdAccumulator = 0;
@@ -863,6 +1250,7 @@ public class Gdx3DInputHandler implements InputProcessor {
             RailSemaphore s = model.getSelectedSemaphore();
             if (s != null && s.getCreationDir() != null) {
                 s.setCreationDir(s.getCreationDir().inverse());
+                view.journalEditingCommand("semaphore " + s.getId() + " invert;");
                 if (cameraController != null) {
                     cameraController.forceSnap();
                 }
@@ -882,11 +1270,15 @@ public class Gdx3DInputHandler implements InputProcessor {
     }
 
     private void handleStationInput(InputEvent stroke) {
+        if (tryMoveSelectedWithShift(stroke)) {
+            return;
+        }
         if (getEffectiveKeyType(stroke) == KeyType.ArrowLeft) {
             model.selectPrevStation();
         } else if (getEffectiveKeyType(stroke) == KeyType.ArrowRight) {
             model.selectNextStation();
-        } else if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() == ' ') {
+        } else if (getEffectiveKeyType(stroke) == KeyType.Character
+                && stroke.getCharacter() == ' ') {
             if (stationIdAccumulator > 0) {
                 model.selectStation(stationIdAccumulator);
                 stationIdAccumulator = 0;
@@ -895,10 +1287,16 @@ public class Gdx3DInputHandler implements InputProcessor {
             if (model.getSelectedStation() != null
                     && model.getSelectedStation().getTrack() != null) {
                 Linker linker = model.getSelectedStation().getTrack().getLinker();
+                Station station = model.getSelectedStation();
                 if (linker != null && linker.getTrain() != null) {
                     Train train = linker.getTrain();
-                    Station station = model.getSelectedStation();
                     train.getLogisticsManager().performIndustrialAction(station);
+                } else if (station.getCreationDir() != null) {
+                    station.flipOrientation();
+                    view.journalEditingCommand("station " + station.getId() + " invert;");
+                    if (cameraController != null) {
+                        cameraController.forceSnap();
+                    }
                 }
             }
         } else if (getEffectiveKeyType(stroke) == KeyType.Character
@@ -911,7 +1309,8 @@ public class Gdx3DInputHandler implements InputProcessor {
             stationIdAccumulator = stationIdAccumulator / 10;
             model.selectStation(stationIdAccumulator);
             stationInputTimeout = System.currentTimeMillis() + 1000;
-        } else if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() == '-') {
+        } else if (getEffectiveKeyType(stroke) == KeyType.Character
+                && stroke.getCharacter() == '-') {
             Station station = model.getSelectedStation();
             if (station != null) {
                 for (Locomotive loco : model.getLocomotives()) {
@@ -941,7 +1340,8 @@ public class Gdx3DInputHandler implements InputProcessor {
                         model.setMode(model.getPreviousMode());
                         break;
                     case 'e':
-                        trackMaker.onChar(new InputEvent(KeyType.Insert, null, false, false, false));
+                        trackMaker
+                                .onChar(new InputEvent(KeyType.Insert, null, false, false, false));
                         model.setMode(model.getPreviousMode());
                         break;
                     case 's':
@@ -949,7 +1349,8 @@ public class Gdx3DInputHandler implements InputProcessor {
                         model.setMode(model.getPreviousMode());
                         break;
                     case 'g':
-                        trackMaker.onChar(new InputEvent(KeyType.Delete, null, false, false, false));
+                        trackMaker
+                                .onChar(new InputEvent(KeyType.Delete, null, false, false, false));
                         model.setMode(model.getPreviousMode());
                         break;
                     default:
@@ -962,6 +1363,10 @@ public class Gdx3DInputHandler implements InputProcessor {
     private void handleTrainsInput(InputEvent stroke) {
         if (stroke.getKeyType() == KeyType.Character) {
             char c = stroke.getCharacter();
+            if (stroke.isShiftDown() && Character.isLetter(c)) {
+                // Some layouts report the unshifted character: Shift means the uppercase aspect.
+                c = Character.toUpperCase(c);
+            }
             if (Character.isDigit(c)) {
                 if (lastCreatedLoco != null) {
                     int colorIdx = c - '0';
@@ -994,6 +1399,7 @@ public class Gdx3DInputHandler implements InputProcessor {
         }
 
         Dir cursorDir = model.getCursor().getDir();
+        String prefix = cursorPrefix();
 
         if (Character.isUpperCase(c)) {
             int locoId = model.peekNextLocomotiveId();
@@ -1018,6 +1424,8 @@ public class Gdx3DInputHandler implements InputProcessor {
             train.getSafetyManager().claimOccupiedSegments();
             cursorDir = locomotive.getDir();
             lastCreatedLoco = locomotive;
+            view.journalEditingCommand(prefix + "new locomotive " + c + " "
+                    + locomotive.getColor().toLowerCase() + ";");
         } else {
             Wagon wagon = new Wagon("" + c);
             wagon.setExclusiveCargoType(model.getSelectedWagonType());
@@ -1036,6 +1444,10 @@ public class Gdx3DInputHandler implements InputProcessor {
             }
             cursorDir = wagon.getDir();
             lastCreatedLoco = null;
+            String cargoToken = wagon.getExclusiveCargoType() == null
+                    || wagon.getExclusiveCargoType() == CargoTypes.NONE ? ""
+                            : " " + wagon.getExclusiveCargoType().name().toLowerCase();
+            view.journalEditingCommand(prefix + "new wagon " + c + cargoToken + ";");
         }
         model.getCursor().setDir(cursorDir);
         model.getCursor().getPosition().move(cursorDir);

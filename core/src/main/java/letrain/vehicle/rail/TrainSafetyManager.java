@@ -1,5 +1,6 @@
 package letrain.vehicle.rail;
 
+import java.util.OptionalInt;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
 import letrain.track.rail.ForkRailTrack;
@@ -66,6 +67,20 @@ public interface TrainSafetyManager {
     void acquireInitialLocks();
 
     /**
+     * Cancela la espera de bloque y cualquier plan de frenada asociado. Se usa cuando una orden
+     * nueva sustituye a la espera anterior (issue #619): la evaluación de seguridad se rehace al
+     * arrancar. No restaura ninguna velocidad guardada.
+     */
+    void cancelBlockWait();
+
+    /**
+     * Registra la presencia física del tren compartiendo los cantones ocupados con otra parte del
+     * tren (ADR-022 phase 2f: división). No hay conflicto ni parada de emergencia porque las dos
+     * partes están realmente en el mismo cantón hasta que una lo abandone.
+     */
+    void claimSharedPresence();
+
+    /**
      * Evento reactivo que se dispara cuando la cabeza del tren entra en un desvío (Fork).
      *
      * @param fork el desvío físico.
@@ -107,6 +122,36 @@ public interface TrainSafetyManager {
     void onReverse();
 
     /**
+     * Anota el instante de simulación (tick) en que la cabeza del tren atravesó una curva. Es el
+     * único estado que mantiene la regla de descarrilamiento por curvas (issue #350).
+     *
+     * @param simTick instante de simulación en ticks.
+     */
+    void onCurveCrossed(long simTick);
+
+    /**
+     * Devuelve el instante (tick de simulación) de la última curva atravesada, o -1 si no hay
+     * historial (tren parado, invertido o recién creado).
+     */
+    long getLastCurveTick();
+
+    /**
+     * Comprueba si el tren debe descarrilar al entrar en una curva: hay una curva anterior y ha
+     * pasado menos de {@code minCurveIntervalTicks} desde ella.
+     *
+     * @param nowSimTick instante de simulación actual en ticks.
+     * @param minCurveIntervalTicks intervalo mínimo permitido entre curvas (en ticks).
+     * @return true si debe descarrilar.
+     */
+    boolean shouldDerailOnCurve(long nowSimTick, int minCurveIntervalTicks);
+
+    /**
+     * Limpia el historial de curvas. Se invoca cuando el tren se detiene por completo o invierte la
+     * marcha: a partir de ese momento la siguiente curva nunca descarrila por intervalo.
+     */
+    void resetDerailmentHistory();
+
+    /**
      * Determina cuál es el siguiente segmento al que se dirige el tren. Considera la ruta
      * planificada del piloto automático si está activa, o calcula el siguiente segmento topológico.
      *
@@ -125,4 +170,29 @@ public interface TrainSafetyManager {
      * @return el segmento topológicamente adyacente en la dirección de la marcha.
      */
     Segment findNextSegmentTopological(Linker head, RailwayGraph graph);
+
+    /**
+     * Vías que la cabeza física puede avanzar <b>sin salir del cantón actual</b> (issue #633). Es
+     * una consulta pura (no cambia estado ni frena): la capa de seguridad la usará para decidir
+     * cuándo empezar a frenar y detenerse en la frontera del cantón (el desvío/nodo).
+     *
+     * <ul>
+     * <li>{@code 0}: el siguiente avance ya saldría del cantón (la cabeza está en la última vía del
+     * cantón en su sentido de marcha; el nodo frontera cuenta como dentro).
+     * <li>{@code empty}: desconocido (cabeza fuera de vía, sin dirección, sin cantón o grafo, la
+     * vía se acaba antes de encontrar frontera, o el guard de iteraciones saltó en un bucle puro).
+     * </ul>
+     *
+     * @return el número de avances que quedan dentro del cantón, o vacío si no se puede determinar.
+     */
+    OptionalInt railsToBoundary();
+
+    /**
+     * La cabeza del tren ha avanzado una vía (issue #633). Lo dispara
+     * {@code TrainMovementManager.advance()} tras cada avance real, una sola vez por tren y vía
+     * (solo avanza la locomotora directora, así que el push-pull no cuenta doble). Alimenta el
+     * contador de la frenada programada hacia la frontera del cantón; no hace nada si no hay
+     * ninguna programada.
+     */
+    void onRailAdvanced();
 }

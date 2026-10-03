@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import letrain.map.Page;
 import letrain.map.Point;
 import letrain.mvp.GameViewListener;
@@ -48,6 +49,8 @@ public class TerminalView implements letrain.mvp.View {
     private String overlayTitle;
     private String overlayMessage;
     private int overlayScroll = 0;
+    private int overlayWidth = 60;
+    private boolean overlayMaximized = false;
     private static final Logger log = LoggerFactory.getLogger(TerminalView.class);
     private final GameViewListener gameViewListener;
     private Point scrollOffset = new Point(0, 0);
@@ -71,6 +74,11 @@ public class TerminalView implements letrain.mvp.View {
     private int flashDeadzoneTicks = 0;
     boolean endOfGame = false;
     private int helpLevel = 0;
+
+    /**
+     * Hand-edited scenario text kept between IDE openings; null means "regenerate from the world".
+     */
+    private String scenarioDraft = null;
 
     @Override
     public void setHelpLevel(int helpLevel) {
@@ -150,7 +158,9 @@ public class TerminalView implements letrain.mvp.View {
             }
         } catch (IOException e) {
             log.error("Error creating terminal for TerminalView", e);
-            throw new RuntimeException("Failed to initialize Lanterna terminal. If you are running this via double-click, try running it from a command line.", e);
+            throw new RuntimeException(
+                    "Failed to initialize Lanterna terminal. If you are running this via double-click, try running it from a command line.",
+                    e);
         }
         terminalSize = screen.getTerminalSize();
         gameBox = screen.newTextGraphics();
@@ -210,14 +220,15 @@ public class TerminalView implements letrain.mvp.View {
         // Implementation for status bar updates in terminal
     }
 
-    private void putStringWithColors(com.googlecode.lanterna.graphics.TextGraphics tg, com.googlecode.lanterna.TerminalPosition pos, String text) {
+    private void putStringWithColors(com.googlecode.lanterna.graphics.TextGraphics tg,
+            com.googlecode.lanterna.TerminalPosition pos, String text) {
         int x = pos.getColumn();
         int y = pos.getRow();
         com.googlecode.lanterna.TextColor defaultColor = tg.getForegroundColor();
-        
+
         java.util.regex.Pattern p = java.util.regex.Pattern.compile("<<([A-Z_]+)>>");
         java.util.regex.Matcher m = p.matcher(text);
-        
+
         int lastEnd = 0;
         while (m.find()) {
             String plain = text.substring(lastEnd, m.start());
@@ -226,12 +237,17 @@ public class TerminalView implements letrain.mvp.View {
                 x += plain.length();
             }
             String color = m.group(1);
-            if (color.equals("GREEN")) tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.GREEN_BRIGHT);
-            else if (color.equals("RED")) tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT);
-            else if (color.equals("YELLOW")) tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.YELLOW);
-            else if (color.equals("WHITE")) tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.WHITE_BRIGHT);
-            else if (color.equals("RESET")) tg.setForegroundColor(defaultColor);
-            
+            if (color.equals("GREEN"))
+                tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.GREEN_BRIGHT);
+            else if (color.equals("RED"))
+                tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT);
+            else if (color.equals("YELLOW"))
+                tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.YELLOW);
+            else if (color.equals("WHITE"))
+                tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.WHITE_BRIGHT);
+            else if (color.equals("RESET"))
+                tg.setForegroundColor(defaultColor);
+
             lastEnd = m.end();
         }
         String plain = text.substring(lastEnd);
@@ -341,52 +357,80 @@ public class TerminalView implements letrain.mvp.View {
                     }
                 }
             }
-            
+
+            // REC indicator: blinking red "REC" in the top-left corner while the journal records.
+            if (gameViewListener.isRecordingCommands()
+                    && (System.currentTimeMillis() / 500) % 2 == 0) {
+                String rec = "REC";
+                for (int i = 0; i < rec.length(); i++) {
+                    gameBox.setCharacter(i, 0,
+                            TextCharacter.fromCharacter(rec.charAt(i),
+                                    com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT,
+                                    com.googlecode.lanterna.TextColor.ANSI.BLACK)[0]);
+                }
+            }
+
+            // Game clock (ADR-022): dim label in the top-right corner of the map.
+            String clock = gameViewListener.getGameTimeText();
+            if (clock != null && !clock.isEmpty()) {
+                int clockX = gameBoxSize.getColumns() - clock.length() - 1;
+                if (clockX > 3) { // keep clear of the REC indicator on the left
+                    for (int i = 0; i < clock.length(); i++) {
+                        gameBox.setCharacter(clockX + i, 0,
+                                TextCharacter.fromCharacter(clock.charAt(i), TextColor.ANSI.YELLOW,
+                                        TextColor.ANSI.BLACK)[0]);
+                    }
+                }
+            }
+
             if (overlayMessage != null) {
-                int width = Math.min(60, screen.getTerminalSize().getColumns() - 2);
-                int height = Math.min(25, screen.getTerminalSize().getRows() - 2);
-                int startX = screen.getTerminalSize().getColumns() - width - 1;
+                int cols = screen.getTerminalSize().getColumns();
+                int rows = screen.getTerminalSize().getRows();
+                int width = overlayMaximized ? cols - 2
+                        : Math.min(Math.max(20, overlayWidth), cols - 2);
+                int height = overlayMaximized ? rows - 2 : Math.min(25, rows - 2);
+                int innerWidth = Math.max(10, width - 4);
+                int contentRows = Math.max(1, height - 4);
+                int startX = overlayMaximized ? 1 : cols - width - 1;
                 int startY = 1;
-                
+
+                java.util.List<String> wrapped =
+                        wrapLines(overlayMessage.split("\n", -1), innerWidth);
+                int maxScroll = Math.max(0, wrapped.size() - contentRows);
+                if (overlayScroll > maxScroll)
+                    overlayScroll = maxScroll;
+                if (overlayScroll < 0)
+                    overlayScroll = 0;
+
                 com.googlecode.lanterna.graphics.TextGraphics tg = screen.newTextGraphics();
                 tg.setBackgroundColor(com.googlecode.lanterna.TextColor.ANSI.BLUE);
                 tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.WHITE);
-                tg.fillRectangle(new com.googlecode.lanterna.TerminalPosition(startX, startY), new com.googlecode.lanterna.TerminalSize(width, height), ' ');
-                
+                tg.fillRectangle(new com.googlecode.lanterna.TerminalPosition(startX, startY),
+                        new com.googlecode.lanterna.TerminalSize(width, height), ' ');
+
                 // Draw title
                 if (overlayTitle != null) {
                     tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.GREEN_BRIGHT);
                     tg.putString(startX + 2, startY + 1, "== " + overlayTitle + " ==");
                     tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.WHITE);
                 }
-                
-                // Draw message
-                String[] lines = overlayMessage.split("\n");
-                
-                // Enforce max scroll
-                int maxScroll = Math.max(0, lines.length - (height - 4));
-                if (overlayScroll > maxScroll) overlayScroll = maxScroll;
-                
-                for (int i = 0; i < lines.length - overlayScroll && i < height - 4; i++) {
-                    String line = lines[i + overlayScroll];
-                    if (line.length() > width - 4) {
-                        line = line.substring(0, width - 4) + "...";
-                    }
-                    tg.putString(startX + 2, startY + 3 + i, line);
+
+                for (int i = 0; i < contentRows && i + overlayScroll < wrapped.size(); i++) {
+                    tg.putString(startX + 2, startY + 3 + i, wrapped.get(i + overlayScroll));
                 }
-                
+
                 if (overlayScroll > 0) {
                     tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.MAGENTA);
                     tg.putString(startX + width - 3, startY + 3, "^");
                 }
-                if (lines.length - overlayScroll > height - 4) {
+                if (overlayScroll + contentRows < wrapped.size()) {
                     tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.MAGENTA);
                     tg.putString(startX + width - 3, startY + height - 2, "v");
                 }
-                
-                
+
                 tg.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.YELLOW);
-                tg.putString(startX + 2, startY + height - 1, "[ESC to close | Up/Down to scroll]");
+                tg.putString(startX + 2, startY + height - 1,
+                        "[ESC close | j/k scroll | h/l width | PgUp/PgDn | F max]");
             }
 
             this.screen.refresh();
@@ -459,7 +503,8 @@ public class TerminalView implements letrain.mvp.View {
             return;
         }
         menuBox.setForegroundColor(DISABLED_FG_COLOR);
-        menuBox.putString(menuBoxPosition.withRelative(1, 4), text);
+        menuBox.putString(menuBoxPosition.withRelative(1, 4), text + " | [R]: Record "
+                + (gameViewListener.isRecordingCommands() ? "ON" : "OFF") + " | [X]: Experiment");
         menuBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
     }
 
@@ -642,24 +687,76 @@ public class TerminalView implements letrain.mvp.View {
     }
 
     @Override
+    public void showExportDialog() {
+        MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+        File result =
+                new FileDialogBuilder().setTitle("Export Scenario").setDescription("Choose a file:")
+                        .setActionLabel(LocalizedString.Save.toString()).build().showDialog(gui);
+        if (result != null) {
+            TerminalView.this.gameViewListener.onExportScenario(result);
+        }
+    }
+
+    @Override
+    public void showImportDialog() {
+        MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+        File result =
+                new FileDialogBuilder().setTitle("Import Scenario").setDescription("Choose a file:")
+                        .setActionLabel(LocalizedString.Open.toString()).build().showDialog(gui);
+        if (result != null) {
+            TerminalView.this.gameViewListener.onImportScenario(result);
+        }
+    }
+
+    @Override
     public void showIDE() {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+        gui.setTheme(centeredTitleTheme(gui.getTheme()));
         BasicWindow window = new BasicWindow();
-        window.setTitle("LT-IDE v1.1 - LeTrain Integrated Development Environment (2D)");
+        window.setTitle("LeTrain Editor " + letrain.BuildInfo.versionTag() + " (2D)");
         window.setHints(Arrays.asList(Window.Hint.CENTERED, Window.Hint.EXPANDED));
 
         Panel mainPanel = new Panel(new BorderLayout());
 
-        // Editor Area
-        final TextBox editor = new TextBox(new TerminalSize(60, 20), gameViewListener.getProgram(),
-                TextBox.Style.MULTI_LINE);
+        // Three tabs share one editor: Scenario (seed + on build + on start), Program
+        // (program { ... }) and Config (configuration { ... }). The Scenario draft persists
+        // between openings until the user hits Refresh.
+        final int tabScenario = 0;
+        final int tabProgram = 1;
+        final int tabConfig = 2;
+        final int[] activeTab = {tabScenario};
+        final String[] scenarioBuffer =
+                {scenarioDraft != null ? scenarioDraft : gameViewListener.getScenarioText()};
+        final String[] programBuffer =
+                {letrain.command.ScenarioFile.programSection(gameViewListener.getProgram())};
+        final String[] configBuffer =
+                {configSectionOrEmpty(gameViewListener.getConfigurationText())};
+
+        Panel tabBar = new Panel(new LinearLayout(Direction.HORIZONTAL));
+        mainPanel.addComponent(tabBar, BorderLayout.Location.TOP);
+
+        // Editor Area (the caret position is mirrored in the status bar below).
+        final Label statusLabel = new Label("");
+        final TextBox editor =
+                new TextBox(new TerminalSize(60, 20), scenarioBuffer[0], TextBox.Style.MULTI_LINE) {
+                    @Override
+                    public com.googlecode.lanterna.gui2.Interactable.Result handleKeyStroke(
+                            com.googlecode.lanterna.input.KeyStroke ks) {
+                        com.googlecode.lanterna.gui2.Interactable.Result result =
+                                super.handleKeyStroke(ks);
+                        updateStatusLabel(statusLabel, this);
+                        return result;
+                    }
+                };
+        final Runnable refreshStatus = () -> updateStatusLabel(statusLabel, editor);
+        refreshStatus.run();
         mainPanel.addComponent(editor, BorderLayout.Location.CENTER);
 
         // Side Panel (Reference)
         Panel sidePanel = new Panel(new LinearLayout(Direction.VERTICAL));
         sidePanel.addComponent(new Label("QUICK REFERENCE").setLabelWidth(30));
 
-        ActionListBox refList = new ActionListBox(new TerminalSize(30, 20)) {
+        ActionListBox refList = new ActionListBox(new TerminalSize(30, 30)) {
             private long lastClickTime = 0;
 
             @Override
@@ -691,6 +788,7 @@ public class TerminalView implements letrain.mvp.View {
                 } else if (node.snippet != null && node.children.isEmpty()) {
                     refList.addItem(indent + node.label, () -> {
                         insertAtCaret(editor, node.snippet);
+                        refreshStatus.run();
                     });
                 } else {
                     String prefix = node.expanded ? "[-]" : "[+]";
@@ -711,8 +809,13 @@ public class TerminalView implements letrain.mvp.View {
             public void run() {
                 int selected = refList.getSelectedIndex();
                 refList.clearItems();
+                letrain.command.GrammarReference.Group group =
+                        activeTab[0] == tabProgram ? letrain.command.GrammarReference.Group.PROGRAM
+                                : activeTab[0] == tabConfig
+                                        ? letrain.command.GrammarReference.Group.CONFIG
+                                        : letrain.command.GrammarReference.Group.BUILD;
                 for (letrain.command.GrammarReference.Node rootNode : letrain.command.GrammarReference
-                        .getReferenceTree()) {
+                        .getReferenceTree(group)) {
                     build(rootNode, "");
                 }
                 if (selected >= 0 && selected < refList.getItems().size()) {
@@ -723,41 +826,157 @@ public class TerminalView implements letrain.mvp.View {
         updateList.run();
         sidePanel.addComponent(refList);
 
-        sidePanel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
-        sidePanel.addComponent(new Label("OBJECTS STATUS:"));
-        TextBox objectsStatus =
-                new TextBox(new TerminalSize(30, 4), gameViewListener.getGameObjectsReport());
-        objectsStatus.setReadOnly(true);
-        sidePanel.addComponent(objectsStatus);
-
-        sidePanel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
-        sidePanel.addComponent(new Label("LATEST LOGS:"));
-        List<String> logs = gameViewListener.getEventLogEntries();
-        int start = Math.max(0, logs.size() - 5);
-        String recentLogs = String.join("\n", logs.subList(start, logs.size()));
-        TextBox logsBox = new TextBox(new TerminalSize(30, 4), recentLogs);
-        logsBox.setReadOnly(true);
-        sidePanel.addComponent(logsBox);
-
         mainPanel.addComponent(sidePanel, BorderLayout.Location.RIGHT);
 
-        // Footer (Buttons)
-        Panel footer = new Panel(new LinearLayout(Direction.HORIZONTAL));
-        Runnable applyAction = () -> {
-            gameViewListener.onEditCommands(editor.getText());
-            window.close();
+        // Footer: a fixed row with every action, independent of the active tab.
+        final Panel footer = new Panel(new LinearLayout(Direction.HORIZONTAL));
+
+        // Persists the editor content into the buffer of the active tab.
+        final Runnable saveActive = () -> {
+            if (activeTab[0] == tabProgram) {
+                programBuffer[0] = editor.getText();
+            } else if (activeTab[0] == tabConfig) {
+                configBuffer[0] = editor.getText();
+            } else {
+                scenarioBuffer[0] = editor.getText();
+                scenarioDraft = scenarioBuffer[0];
+            }
         };
-        Runnable saveAction = () -> {
-            gameViewListener.onEditCommands(editor.getText());
-            showSaveDialog();
+        final java.util.function.IntConsumer switchTo = tab -> {
+            if (activeTab[0] == tab) {
+                return;
+            }
+            saveActive.run();
+            activeTab[0] = tab;
+            if (tab == tabProgram) {
+                editor.setText(programBuffer[0]);
+            } else if (tab == tabConfig) {
+                editor.setText(configBuffer[0]);
+            } else {
+                editor.setText(scenarioBuffer[0]);
+            }
+            updateList.run();
+            refreshStatus.run();
+            window.invalidate();
         };
-        Runnable loadAction = () -> {
+        final Runnable switchToScenario = () -> switchTo.accept(tabScenario);
+        final Runnable switchToProgram = () -> switchTo.accept(tabProgram);
+        final Runnable switchToConfig = () -> switchTo.accept(tabConfig);
+
+        // Moves the caret to a line of a given tab (used by the error picker).
+        final java.util.function.BiConsumer<Integer, Integer> jumpTo = (tab, line) -> {
+            switchTo.accept(tab);
+            editor.setCaretPosition(Math.max(0, line - 1), 0);
+            editor.takeFocus();
+            refreshStatus.run();
+            window.invalidate();
+        };
+
+        // Composes the full scenario (recipe + settings + program) from the three tab buffers.
+        final java.util.function.Supplier<String> composeFull = () -> {
+            saveActive.run();
+            try {
+                return letrain.command.ScenarioFile.compose(scenarioBuffer[0], configBuffer[0],
+                        programBuffer[0]);
+            } catch (Exception e) {
+                return scenarioBuffer[0] + "\n" + configBuffer[0] + "\n" + programBuffer[0];
+            }
+        };
+
+        final Runnable refreshAction = () -> {
+            scenarioDraft = null;
+            scenarioBuffer[0] = gameViewListener.getScenarioText();
+            programBuffer[0] =
+                    letrain.command.ScenarioFile.programSection(gameViewListener.getProgram());
+            configBuffer[0] = gameViewListener.getConfigurationText();
+            if (activeTab[0] == tabProgram) {
+                editor.setText(programBuffer[0]);
+            } else if (activeTab[0] == tabConfig) {
+                editor.setText(configBuffer[0]);
+            } else {
+                editor.setText(scenarioBuffer[0]);
+            }
+            refreshStatus.run();
+        };
+        final Runnable exportAction = () -> {
+            String full = composeFull.get();
+            letrain.command.ScenarioCompiler.Result result =
+                    letrain.command.ScenarioCompiler.compile(full);
+            if (!result.ok() && !confirmExportAnyway(gui, diagnosticsText(result))) {
+                return;
+            }
+            MultiWindowTextGUI fileGui = new MultiWindowTextGUI(screen);
+            File file = new FileDialogBuilder().setTitle("Export Scenario")
+                    .setDescription("Choose a file:")
+                    .setActionLabel(LocalizedString.Save.toString()).build().showDialog(fileGui);
+            if (file != null) {
+                gameViewListener.onExportScenarioText(file, full);
+            }
+        };
+        final Runnable importAction = () -> {
+            MultiWindowTextGUI fileGui = new MultiWindowTextGUI(screen);
+            File file = new FileDialogBuilder().setTitle("Open Scenario")
+                    .setDescription("Choose a file:")
+                    .setActionLabel(LocalizedString.Open.toString()).build().showDialog(fileGui);
+            if (file == null) {
+                return;
+            }
+            try {
+                String fileText = java.nio.file.Files.readString(file.toPath());
+                letrain.command.ScenarioFile.Parts parts =
+                        letrain.command.ScenarioFile.split(fileText);
+                scenarioDraft = parts.scenarioText();
+                scenarioBuffer[0] = parts.scenarioText();
+                configBuffer[0] = configSectionOrEmpty(parts.configurationText());
+                programBuffer[0] = parts.programText();
+                editor.setText(activeTab[0] == tabProgram ? programBuffer[0]
+                        : activeTab[0] == tabConfig ? configBuffer[0] : scenarioBuffer[0]);
+                refreshStatus.run();
+            } catch (Exception ex) {
+                com.googlecode.lanterna.gui2.dialogs.MessageDialog.showMessageDialog(gui,
+                        "Scenario Error", String.valueOf(ex.getMessage()));
+            }
+        };
+        final Runnable reprogramAction = () -> {
+            saveActive.run();
+            gameViewListener.onEditCommands(
+                    letrain.command.ScenarioFile.programSectionBody(programBuffer[0]));
+        };
+        final Runnable rebuildAction = () -> {
+            String full = composeFull.get();
+            letrain.command.ScenarioCompiler.Result result =
+                    letrain.command.ScenarioCompiler.compile(full);
+            if (!result.ok()) {
+                Jump jump = pickDiagnostic(gui, result, full);
+                if (jump != null) {
+                    jumpTo.accept(jump.tab(), jump.line());
+                }
+                return;
+            }
+            gameViewListener.onPlayScenarioText(full);
+        };
+        final Runnable saveAction = () -> showSaveDialog();
+        final Runnable loadAction = () -> {
             showLoadDialog();
             window.close();
         };
-        Runnable cancelAction = window::close;
+        final Runnable cancelAction = () -> {
+            saveActive.run();
+            window.close();
+        };
 
-        com.googlecode.lanterna.gui2.InteractableRenderer<Button> mnemonicRenderer =
+        // Fixed footer row: every action is always available, independent of the active tab.
+        addFooterButton(footer, "Save", 'S', saveAction);
+        addFooterButton(footer, "Load", 'L', loadAction);
+        addFooterButton(footer, "Export", 'E', exportAction);
+        addFooterButton(footer, "Import", 'I', importAction);
+        addFooterButton(footer, "Refresh", 'R', refreshAction);
+        addFooterButton(footer, "Reprogram", 'P', reprogramAction);
+        addFooterButton(footer, "Rebuild", 'B', rebuildAction);
+        addFooterButton(footer, "Close", 'C', cancelAction);
+
+        // Tabs glow their own colour when active (distinct from the focus style).
+        com.googlecode.lanterna.gui2.InteractableRenderer<Button> tabRenderer =
                 new com.googlecode.lanterna.gui2.InteractableRenderer<Button>() {
                     @Override
                     public com.googlecode.lanterna.TerminalSize getPreferredSize(Button component) {
@@ -768,17 +987,34 @@ public class TerminalView implements letrain.mvp.View {
                     @Override
                     public void drawComponent(com.googlecode.lanterna.gui2.TextGUIGraphics graphics,
                             Button component) {
-                        if (component.isFocused()) {
+                        String label = component.getLabel();
+                        int tab = "Scenario".equals(label) ? tabScenario
+                                : "Program".equals(label) ? tabProgram : tabConfig;
+                        if (tab == activeTab[0]) {
+                            graphics.setForegroundColor(
+                                    com.googlecode.lanterna.TextColor.ANSI.BLACK);
+                            graphics.setBackgroundColor(
+                                    com.googlecode.lanterna.TextColor.ANSI.CYAN);
+                        } else if (component.isFocused()) {
                             graphics.applyThemeStyle(component.getThemeDefinition().getActive());
                         } else {
                             graphics.applyThemeStyle(component.getThemeDefinition().getNormal());
                         }
-                        String label = component.getLabel();
                         graphics.putString(0, 0, "< " + label + " >");
-                        graphics.setForegroundColor(
-                                com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT);
-                        if (label.length() > 0) {
-                            graphics.putString(2, 0, label.substring(0, 1));
+                        // Highlight the mnemonic letter (Alt+A / Alt+G / Alt+F) like the buttons.
+                        char mnemonic = tab == tabScenario ? 'A' : tab == tabProgram ? 'G' : 'F';
+                        int at = indexOfIgnoreCase(label, mnemonic);
+                        if (at >= 0) {
+                            if (tab == activeTab[0]) {
+                                graphics.setForegroundColor(
+                                        com.googlecode.lanterna.TextColor.ANSI.BLACK);
+                                graphics.enableModifiers(com.googlecode.lanterna.SGR.BOLD);
+                            } else {
+                                graphics.setForegroundColor(
+                                        com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT);
+                            }
+                            graphics.putString(2 + at, 0, label.substring(at, at + 1));
+                            graphics.disableModifiers(com.googlecode.lanterna.SGR.BOLD);
                         }
                     }
 
@@ -788,53 +1024,62 @@ public class TerminalView implements letrain.mvp.View {
                         return null;
                     }
                 };
-
-        Runnable togglePanelsAction = () -> {
-            if (sidePanel.getParent() != null) {
-                mainPanel.removeComponent(sidePanel);
-                editor.setPreferredSize(new TerminalSize(90, 20));
-            } else {
-                mainPanel.addComponent(sidePanel, BorderLayout.Location.RIGHT);
-                editor.setPreferredSize(new TerminalSize(60, 20));
-            }
-        };
-        Button togglePanelsBtn = new Button("Toggle", togglePanelsAction);
-        togglePanelsBtn.setRenderer(mnemonicRenderer);
-        footer.addComponent(togglePanelsBtn);
-
-        Button applyBtn = new Button("Apply", applyAction);
-        applyBtn.setRenderer(mnemonicRenderer);
-        footer.addComponent(applyBtn);
-
-        Button saveBtn = new Button("Save", saveAction);
-        saveBtn.setRenderer(mnemonicRenderer);
-        footer.addComponent(saveBtn);
-
-        Button loadBtn = new Button("Load", loadAction);
-        loadBtn.setRenderer(mnemonicRenderer);
-        footer.addComponent(loadBtn);
-
-        Button cancelBtn = new Button("Cancel", cancelAction);
-        cancelBtn.setRenderer(mnemonicRenderer);
-        footer.addComponent(cancelBtn);
+        Button scenarioTabBtn = new Button("Scenario", switchToScenario);
+        scenarioTabBtn.setRenderer(tabRenderer);
+        Button programTabBtn = new Button("Program", switchToProgram);
+        programTabBtn.setRenderer(tabRenderer);
+        Button configTabBtn = new Button("Config", switchToConfig);
+        configTabBtn.setRenderer(tabRenderer);
+        tabBar.addComponent(scenarioTabBtn);
+        tabBar.addComponent(programTabBtn);
+        tabBar.addComponent(configTabBtn);
         window.addWindowListener(new com.googlecode.lanterna.gui2.WindowListenerAdapter() {
             @Override
             public void onInput(com.googlecode.lanterna.gui2.Window w,
                     com.googlecode.lanterna.input.KeyStroke ks,
                     java.util.concurrent.atomic.AtomicBoolean deliverEvent) {
+                if (ks.getKeyType() == com.googlecode.lanterna.input.KeyType.Escape) {
+                    cancelAction.run();
+                    deliverEvent.set(false);
+                    return;
+                }
                 if (ks.isAltDown() && ks.getCharacter() != null) {
                     char c = Character.toLowerCase(ks.getCharacter());
-                    if (c == 't') {
-                        togglePanelsAction.run();
+                    if (c == '1') {
+                        switchToScenario.run();
                         deliverEvent.set(false);
-                    } else if (c == 'r') {
+                    } else if (c == '2') {
+                        switchToProgram.run();
+                        deliverEvent.set(false);
+                    } else if (c == '3') {
+                        switchToConfig.run();
+                        deliverEvent.set(false);
+                    } else if (c == 'a') {
+                        switchToScenario.run();
+                        deliverEvent.set(false);
+                    } else if (c == 'g') {
+                        switchToProgram.run();
+                        deliverEvent.set(false);
+                    } else if (c == 'f') {
+                        switchToConfig.run();
+                        deliverEvent.set(false);
+                    } else if (c == 'q') {
                         refList.takeFocus();
                         deliverEvent.set(false);
                     } else if (c == 'e') {
-                        editor.takeFocus();
+                        exportAction.run();
                         deliverEvent.set(false);
-                    } else if (c == 'a') {
-                        applyAction.run();
+                    } else if (c == 'i') {
+                        importAction.run();
+                        deliverEvent.set(false);
+                    } else if (c == 'r') {
+                        refreshAction.run();
+                        deliverEvent.set(false);
+                    } else if (c == 'p') {
+                        reprogramAction.run();
+                        deliverEvent.set(false);
+                    } else if (c == 'b') {
+                        rebuildAction.run();
                         deliverEvent.set(false);
                     } else if (c == 's') {
                         saveAction.run();
@@ -850,33 +1095,214 @@ public class TerminalView implements letrain.mvp.View {
             }
         });
 
-        mainPanel.addComponent(footer, BorderLayout.Location.BOTTOM);
+        // Footer with the caret status line below it.
+        Panel bottomPanel = new Panel(new LinearLayout(Direction.VERTICAL));
+        bottomPanel.addComponent(footer);
+        bottomPanel.addComponent(statusLabel);
+        mainPanel.addComponent(bottomPanel, BorderLayout.Location.BOTTOM);
 
         window.setComponent(mainPanel);
+        // Start with the caret in the editor, not on the tabs/buttons.
+        window.setFocusedInteractable(editor);
         gui.addWindowAndWait(window);
+    }
+
+    /** Mirrors the editor caret in the status bar as {@code Ln X, Col Y}. */
+    private static void updateStatusLabel(Label label, TextBox editor) {
+        TerminalPosition caret = editor.getCaretPosition();
+        label.setText("Ln " + (caret.getRow() + 1) + ", Col " + (caret.getColumn() + 1));
+    }
+
+    /** A location in the editor: which tab and which 1-based line inside it. */
+    record Jump(int tab, int line) {
+    }
+
+    /**
+     * Shows the diagnostics in a scrollable list; returns the location picked with Enter, or
+     * {@code null} if the dialog was just closed. Diagnostics refer to the composed scenario, so
+     * the line is mapped back to the tab that owns the section.
+     */
+    private static Jump pickDiagnostic(MultiWindowTextGUI gui,
+            letrain.command.ScenarioCompiler.Result result, String full) {
+        final Jump[] picked = {null};
+        BasicWindow dialog = new BasicWindow("Scenario errors");
+        dialog.setHints(Arrays.asList(Window.Hint.CENTERED, Window.Hint.MODAL));
+
+        Panel panel = new Panel(new LinearLayout(Direction.VERTICAL));
+        panel.addComponent(new Label("Select an error and press Enter to jump to its line:"));
+        ActionListBox list = new ActionListBox(new TerminalSize(60, 12));
+        for (letrain.command.ScenarioCompiler.Diagnostic d : result.diagnostics()) {
+            int line = d.line();
+            list.addItem(d.line() + ":" + d.col() + ": " + d.message(), () -> {
+                picked[0] = locateDiagnostic(full, line);
+                dialog.close();
+            });
+        }
+        panel.addComponent(list);
+        panel.addComponent(new Button("Close", dialog::close));
+        dialog.setComponent(panel);
+        dialog.setFocusedInteractable(list);
+        gui.addWindowAndWait(dialog);
+        return picked[0];
+    }
+
+    /**
+     * Maps a 1-based line of the composed scenario to the editor tab that owns it. The Scenario tab
+     * omits the {@code configuration} section (it has its own tab), so lines after it shift up.
+     */
+    static Jump locateDiagnostic(String full, int line) {
+        letrain.command.ScenarioFile.LineTarget target =
+                letrain.command.ScenarioFile.locateLine(full, line);
+        return new Jump(target.tab(), target.line());
+    }
+
+    /** Keeps the Config tab editable even when the world has no settings yet. */
+    private static String configSectionOrEmpty(String section) {
+        return section == null || section.isBlank() ? "configuration {\n}\n" : section;
+    }
+
+    /** Renders the diagnostics of a scenario check as one line per diagnostic. */
+    private static String diagnosticsText(letrain.command.ScenarioCompiler.Result result) {
+        // Keep the dialog on screen: show only the first few problems.
+        final int maxLines = 8;
+        StringBuilder sb = new StringBuilder();
+        int total = result.diagnostics().size();
+        int shown = 0;
+        for (letrain.command.ScenarioCompiler.Diagnostic d : result.diagnostics()) {
+            if (shown >= maxLines) {
+                break;
+            }
+            if (shown > 0) {
+                sb.append('\n');
+            }
+            sb.append(d.line()).append(':').append(d.col()).append(": ").append(d.message());
+            shown++;
+        }
+        if (total > shown) {
+            sb.append("\n... (").append(total - shown).append(" more)");
+        }
+        return sb.toString();
+    }
+
+    /** Asks whether to export a scenario that has syntax errors. */
+    private static boolean confirmExportAnyway(MultiWindowTextGUI gui, String diagnostics) {
+        com.googlecode.lanterna.gui2.dialogs.MessageDialogButton choice =
+                new com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder()
+                        .setTitle("Scenario has errors").setText(diagnostics + "\n\nExport anyway?")
+                        .addButton(com.googlecode.lanterna.gui2.dialogs.MessageDialogButton.Yes)
+                        .addButton(com.googlecode.lanterna.gui2.dialogs.MessageDialogButton.No)
+                        .build().showDialog(gui);
+        return choice == com.googlecode.lanterna.gui2.dialogs.MessageDialogButton.Yes;
+    }
+
+    /** Adds a footer button whose mnemonic letter is highlighted in the IDE style. */
+    private static void addFooterButton(Panel footer, String label, char mnemonic,
+            Runnable action) {
+        Button button = new Button(label, action);
+        button.setRenderer(mnemonicRenderer(mnemonic));
+        footer.addComponent(button);
+    }
+
+    /** A button renderer that highlights the mnemonic letter (red) inside {@code < label >}. */
+    private static com.googlecode.lanterna.gui2.InteractableRenderer<Button> mnemonicRenderer(
+            char mnemonic) {
+        return new com.googlecode.lanterna.gui2.InteractableRenderer<Button>() {
+            @Override
+            public com.googlecode.lanterna.TerminalSize getPreferredSize(Button component) {
+                return new com.googlecode.lanterna.TerminalSize(component.getLabel().length() + 4,
+                        1);
+            }
+
+            @Override
+            public void drawComponent(com.googlecode.lanterna.gui2.TextGUIGraphics graphics,
+                    Button component) {
+                if (component.isFocused()) {
+                    graphics.applyThemeStyle(component.getThemeDefinition().getActive());
+                } else {
+                    graphics.applyThemeStyle(component.getThemeDefinition().getNormal());
+                }
+                String label = component.getLabel();
+                graphics.putString(0, 0, "< " + label + " >");
+                if (!component.isEnabled()) {
+                    graphics.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.BLACK);
+                } else {
+                    graphics.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT);
+                }
+                int at = indexOfIgnoreCase(label, mnemonic);
+                if (at >= 0) {
+                    graphics.putString(2 + at, 0, label.substring(at, at + 1));
+                }
+            }
+
+            @Override
+            public com.googlecode.lanterna.TerminalPosition getCursorLocation(Button component) {
+                return null;
+            }
+        };
+    }
+
+    /** Case-insensitive index of {@code letter} in {@code text}, or -1. */
+    private static int indexOfIgnoreCase(String text, char letter) {
+        return text.toLowerCase().indexOf(Character.toLowerCase(letter));
+    }
+
+    /**
+     * Wraps a theme so the window decoration centers its title (lanterna's {@code CENTER_TITLE}
+     * property is false by default).
+     */
+    private static com.googlecode.lanterna.graphics.Theme centeredTitleTheme(
+            com.googlecode.lanterna.graphics.Theme base) {
+        return new com.googlecode.lanterna.graphics.DelegatingTheme(base) {
+            @Override
+            public com.googlecode.lanterna.graphics.ThemeDefinition getDefinition(Class<?> clazz) {
+                com.googlecode.lanterna.graphics.ThemeDefinition definition =
+                        super.getDefinition(clazz);
+                if (clazz == com.googlecode.lanterna.gui2.DefaultWindowDecorationRenderer.class) {
+                    return new com.googlecode.lanterna.graphics.DelegatingThemeDefinition(
+                            definition) {
+                        @Override
+                        public boolean getBooleanProperty(String name, boolean defaultValue) {
+                            return "CENTER_TITLE".equals(name)
+                                    || super.getBooleanProperty(name, defaultValue);
+                        }
+                    };
+                }
+                return definition;
+            }
+        };
     }
 
     private void insertAtCaret(TextBox editor, String text) {
         String current = editor.getText();
         TerminalPosition pos = editor.getCaretPosition();
 
-        // Convert TerminalPosition to linear offset
+        // Snap to the beginning of the caret's line so we never split an existing line.
         String[] lines = current.split("\n", -1);
+        int row = Math.min(pos.getRow(), lines.length - 1);
         int offset = 0;
-        for (int i = 0; i < pos.getRow() && i < lines.length; i++) {
+        for (int i = 0; i < row; i++) {
             offset += lines[i].length() + 1; // +1 for the newline
         }
-        offset += pos.getColumn();
-        offset = Math.min(offset, current.length());
 
         String before = current.substring(0, offset);
         String after = current.substring(offset);
-        editor.setText(before + text + after);
+        String insertion = text + "\n"; // finish the line so the next insert starts clean
+        String updated = before + insertion + after;
+        editor.setText(updated);
 
-        // Refocus and place caret after insertion would be nice, but
-        // setCaretPosition with TerminalPosition is complex to calculate accurately
-        // with multi-line snippets.
-        // For now, refocusing will suffice as the user can see the change.
+        // Leave the caret on the line after the inserted snippet, ready to insert another.
+        int caret = Math.min(offset + insertion.length(), updated.length());
+        int newRow = 0;
+        int col = 0;
+        for (int i = 0; i < caret; i++) {
+            if (updated.charAt(i) == '\n') {
+                newRow++;
+                col = 0;
+            } else {
+                col++;
+            }
+        }
+        editor.setCaretPosition(newRow, col);
         editor.takeFocus();
     }
 
@@ -886,8 +1312,59 @@ public class TerminalView implements letrain.mvp.View {
 
     public void scrollOverlay(int amount) {
         overlayScroll += amount;
-        if (overlayScroll < 0) overlayScroll = 0;
+        if (overlayScroll < 0)
+            overlayScroll = 0;
         paint();
+    }
+
+    /** Scrolls the overlay by one page (its visible content height). */
+    public void scrollOverlayPage(int direction) {
+        int rows = screen.getTerminalSize().getRows();
+        int height = overlayMaximized ? rows - 2 : Math.min(25, rows - 2);
+        int page = Math.max(1, height - 4);
+        scrollOverlay(direction * page);
+    }
+
+    /** Grows (positive) or shrinks (negative) the overlay width in columns. */
+    public void resizeOverlay(int deltaColumns) {
+        overlayWidth = Math.max(20, overlayWidth + deltaColumns);
+        overlayMaximized = false;
+        overlayScroll = 0;
+        paint();
+    }
+
+    /** Maximizes the overlay to fill the screen, or restores its previous width. */
+    public void toggleOverlayMaximize() {
+        overlayMaximized = !overlayMaximized;
+        overlayScroll = 0;
+        paint();
+    }
+
+    /** Word-wraps {@code lines} to {@code width} columns, hard-breaking words that don't fit. */
+    static java.util.List<String> wrapLines(String[] lines, int width) {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        for (String line : lines) {
+            if (line.length() <= width) {
+                out.add(line);
+                continue;
+            }
+            int start = 0;
+            while (start < line.length()) {
+                int end = Math.min(start + width, line.length());
+                if (end < line.length()) {
+                    int space = line.lastIndexOf(' ', end);
+                    if (space > start) {
+                        end = space;
+                    }
+                }
+                out.add(line.substring(start, end));
+                start = end;
+                while (start < line.length() && line.charAt(start) == ' ') {
+                    start++;
+                }
+            }
+        }
+        return out;
     }
 
     public boolean clearOverlay() {
@@ -895,13 +1372,17 @@ public class TerminalView implements letrain.mvp.View {
             overlayMessage = null;
             overlayTitle = null;
             overlayScroll = 0;
+            overlayMaximized = false;
             // Clear the screen right away to erase the overlay
-            try { screen.clear(); } catch (Exception e) {}
+            try {
+                screen.clear();
+            } catch (Exception e) {
+            }
             return true;
         }
         return false;
     }
-    
+
     @Override
     public void showExitDialog() {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
@@ -951,12 +1432,40 @@ public class TerminalView implements letrain.mvp.View {
                 // Ignore
             }
         }
+        boolean terminalClosed = false;
         if (terminal != null) {
             try {
+                // Lanterna saves the tty mode on construction and restores it here (and in its own
+                // shutdown hook), so it owns the terminal-state handback.
                 terminal.close();
+                terminalClosed = true;
             } catch (Exception e) {
                 // Ignore
             }
+        }
+        if (!terminalClosed) {
+            // Lanterna could not hand the terminal back (no terminal object, or close failed):
+            // best-effort recovery so the shell is not left in raw mode (no echo).
+            fallbackSttySane();
+        }
+    }
+
+    /** Last-resort tty recovery, only for when Lanterna could not close the terminal itself. */
+    private void fallbackSttySane() {
+        try {
+            System.out.print("\033[0m\033[?1049l\033[?25h");
+            System.out.flush();
+        } catch (Exception ignored) {
+            // Ignore
+        }
+        try {
+            Process p =
+                    Runtime.getRuntime().exec(new String[] {"sh", "-c", "stty sane < /dev/tty"});
+            if (!p.waitFor(2, TimeUnit.SECONDS)) {
+                p.destroyForcibly();
+            }
+        } catch (Exception ignored) {
+            // Not a Unix tty (e.g. Windows/Swing): nothing to restore here
         }
     }
 
@@ -966,34 +1475,65 @@ public class TerminalView implements letrain.mvp.View {
         this.overlayMessage = message;
         paint();
     }
-    
+
     @Override
     public void drawCommandLine(String text, String error) {
-        int screenRows = screen.getTerminalSize().getRows();
-        int screenCols = screen.getTerminalSize().getColumns();
-        if (screenRows < 2) return; // safety
-        
+        drawCommandLine(text, error, null);
+    }
+
+    @Override
+    public void drawCommandLine(String text, String error, String notice) {
+        if (screen == null) {
+            return;
+        }
+        drawCommandLine(screen.newTextGraphics(), screen.getTerminalSize(), text, error, notice);
+    }
+
+    /**
+     * Paints the command bar: the typed text plus its short feedback. The error is red and the
+     * notice (D1 contextual channel) yellow, both on the last screen row. Static and
+     * package-visible so tests can drive it with a mocked graphics.
+     */
+    static void drawCommandLine(TextGraphics g, TerminalSize size, String text, String error,
+            String notice) {
+        int screenRows = size.getRows();
+        int screenCols = size.getColumns();
+        if (screenRows < 2)
+            return; // safety
+
         int drawY = screenRows - 1; // Last line of the absolute screen
-        
-        TextGraphics g = screen.newTextGraphics();
+
         g.setBackgroundColor(TextColor.ANSI.BLACK);
         g.setForegroundColor(TextColor.ANSI.WHITE);
         g.putString(0, drawY, " ".repeat(screenCols)); // clear line
-        
+
         String prompt = ":" + text + "_";
         g.putString(0, drawY, prompt);
-        
+
+        int cursorX = prompt.length() + 2; // small gap after the prompt
         if (error != null && !error.isEmpty()) {
-            String errStr = " " + error.replace('\n', ' ').replace('\r', ' ') + " "; // Just the error, not [ERROR:]
-            int startX = prompt.length() + 2; // small gap
-            if (startX < screenCols) {
+            String errStr = " " + error.replace('\n', ' ').replace('\r', ' ') + " ";
+            if (cursorX < screenCols) {
                 // Truncate if it overflows
-                if (startX + errStr.length() > screenCols) {
-                    errStr = errStr.substring(0, screenCols - startX);
+                if (cursorX + errStr.length() > screenCols) {
+                    errStr = errStr.substring(0, screenCols - cursorX);
                 }
                 g.setBackgroundColor(TextColor.ANSI.RED);
                 g.setForegroundColor(TextColor.ANSI.WHITE);
-                g.putString(startX, drawY, errStr);
+                g.putString(cursorX, drawY, errStr);
+                cursorX += errStr.length() + 1;
+            }
+        }
+
+        if (notice != null && !notice.isEmpty()) {
+            String noticeStr = " " + notice.replace('\n', ' ').replace('\r', ' ') + " ";
+            if (cursorX < screenCols) {
+                if (cursorX + noticeStr.length() > screenCols) {
+                    noticeStr = noticeStr.substring(0, screenCols - cursorX);
+                }
+                g.setBackgroundColor(TextColor.ANSI.YELLOW);
+                g.setForegroundColor(TextColor.ANSI.BLACK);
+                g.putString(cursorX, drawY, noticeStr);
             }
         }
     }

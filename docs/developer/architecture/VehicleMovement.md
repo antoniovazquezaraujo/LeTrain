@@ -1,4 +1,4 @@
-[ [Índice] ] [[docs/architecture/Overview|⬅️ Arquitectura]] · [[docs/Index|⬅️ Volver al Índice]]
+[ [Índice] ] [[architecture/Overview|⬅️ Arquitectura]] · [[Index|⬅️ Volver al Índice]]
 
 # Bucle de Movimiento de Vehículos
 
@@ -544,17 +544,17 @@ Comandos disponibles:
 
 | Componente | Ruta |
 |---|---|
-| Locomotive | `src/main/java/letrain/vehicle/rail/impl/Locomotive.java` |
-| Train | `src/main/java/letrain/vehicle/rail/impl/Train.java` |
-| TrainMovementManager (impl) | `src/main/java/letrain/vehicle/rail/impl/TrainMovementManager.java` |
-| TrainSafetyManager (impl) | `src/main/java/letrain/vehicle/rail/impl/TrainSafetyManager.java` |
-| TrainActionManager (impl) | `src/main/java/letrain/itinerary/impl/TrainActionManager.java` |
-| AutoPilotImpl | `src/main/java/letrain/itinerary/impl/AutoPilotImpl.java` |
-| TrainCouplingManager (impl) | `src/main/java/letrain/vehicle/rail/impl/TrainCouplingManager.java` |
-| TrainLogisticsManager (impl) | `src/main/java/letrain/vehicle/rail/impl/TrainLogisticsManager.java` |
-| BlockManagerImpl | `src/main/java/letrain/segments/impl/BlockManagerImpl.java` |
-| RailwayGraphImpl | `src/main/java/letrain/segments/impl/RailwayGraphImpl.java` |
-| TopologyServiceImpl | `src/main/java/letrain/segments/impl/TopologyServiceImpl.java` |
-| RailIterator | `src/main/java/letrain/vehicle/rail/RailIterator.java` |
-| Linker | `src/main/java/letrain/vehicle/rail/Linker.java` |
-| Wagon | `src/main/java/letrain/vehicle/rail/impl/Wagon.java` |
+| Locomotive | `core/src/main/java/letrain/vehicle/rail/impl/Locomotive.java` |
+| Train | `core/src/main/java/letrain/vehicle/rail/impl/Train.java` |
+| TrainMovementManager (impl) | `core/src/main/java/letrain/vehicle/rail/impl/TrainMovementManager.java` |
+| TrainSafetyManager (impl) | `core/src/main/java/letrain/vehicle/rail/impl/TrainSafetyManager.java` |
+| TrainActionManager (impl) | `core/src/main/java/letrain/itinerary/impl/TrainActionManager.java` |
+| AutoPilotImpl | `core/src/main/java/letrain/itinerary/impl/AutoPilotImpl.java` |
+| TrainCouplingManager (impl) | `core/src/main/java/letrain/vehicle/rail/impl/TrainCouplingManager.java` |
+| TrainLogisticsManager (impl) | `core/src/main/java/letrain/vehicle/rail/impl/TrainLogisticsManager.java` |
+| BlockManagerImpl | `core/src/main/java/letrain/segments/impl/BlockManagerImpl.java` |
+| RailwayGraphImpl | `core/src/main/java/letrain/segments/impl/RailwayGraphImpl.java` |
+| TopologyServiceImpl | `core/src/main/java/letrain/segments/impl/TopologyServiceImpl.java` |
+| RailIterator | `core/src/main/java/letrain/vehicle/rail/RailIterator.java` |
+| Linker | `core/src/main/java/letrain/vehicle/rail/Linker.java` |
+| Wagon | `core/src/main/java/letrain/vehicle/rail/impl/Wagon.java` |

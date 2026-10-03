@@ -27,11 +27,10 @@ import letrain.visitor.Renderable;
         @JsonSubTypes.Type(value = letrain.track.rail.TunnelRailTrack.class,
                 name = "TunnelRailTrack"),
         @JsonSubTypes.Type(value = letrain.track.rail.TunnelGateRailTrack.class,
-                name = "TunnelGateRailTrack"),
-        @JsonSubTypes.Type(value = letrain.track.rail.StationRailTrack.class,
-                name = "StationRailTrack")})
+                name = "TunnelGateRailTrack")})
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 @JsonIgnoreProperties(ignoreUnknown = true)
+@SuppressWarnings("deprecation")
 public abstract class Track implements Router, Connectable, LinkerCompartment, Mappable,
         LinkerCompartmentListener, Renderable {
     @JsonIgnore
@@ -41,11 +40,18 @@ public abstract class Track implements Router, Connectable, LinkerCompartment, M
     private Linker reservation = null; // NEW: Track reservation to prevent race conditions during
                                        // multi-train ticks
     @com.fasterxml.jackson.annotation.JsonAlias({"sensor", "semaphore"})
-    @com.fasterxml.jackson.annotation.JsonSetter(nulls = com.fasterxml.jackson.annotation.Nulls.SKIP)
-    private TrackComponent component = null;
+    @com.fasterxml.jackson.annotation.JsonSetter(
+            nulls = com.fasterxml.jackson.annotation.Nulls.SKIP)
+    private Sensor component = null;
     private Point pos = new Point(0, 0);
 
-    @com.fasterxml.jackson.annotation.JsonProperty("connectedTracks")
+    /**
+     * Adjacency to the neighbouring tracks, indexed by direction. NOT serialized: it is derivable
+     * from the router routes plus the positions of the tracks in the rail map. Serializing it made
+     * Jackson recurse through the whole connectivity graph, so a long connected line blew the
+     * document nesting limit. {@code Model.postLoadInit} rebuilds it after loading.
+     */
+    @JsonIgnore
     protected Track[] connections;
 
     @JsonIgnore
@@ -279,11 +285,11 @@ public abstract class Track implements Router, Connectable, LinkerCompartment, M
         return getTrackDirector().canExit(this, dir);
     }
 
-    public TrackComponent getComponent() {
+    public Sensor getComponent() {
         return component;
     }
 
-    public void setComponent(TrackComponent component) {
+    public void setComponent(Sensor component) {
         this.component = component;
     }
 }

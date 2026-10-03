@@ -16,12 +16,13 @@ FALSE: 'false';
 ADD: 'add';
 LOAD: 'load';
 UNLOAD: 'unload';
-REVERSE: 'reverse';
 WAIT: 'wait';
 SPEED: 'speed';
 ON: 'on';
 OFF: 'off';
 ENGINE: 'engine';
+ARRIVAL: 'arrival';
+DEPARTURE: 'departure';
 
 CRASH: 'crash';
 CONTACT: 'contact';
@@ -29,10 +30,10 @@ ENTER: 'enter';
 EXIT: 'exit';
 COUPLE: 'couple';
 UNCOUPLE: 'uncouple';
+ALL: 'all';
 FORK: 'fork' | 'fk';
 SEMAPHORE: 'semaphore' | 'sm';
 SIGNAL: 'signal' | 'sg';
-TRAIN_AT: 'train at';
 OPEN: 'open';
 CLOSED: 'closed';
 STRAIGHT: 'straight';
@@ -42,10 +43,16 @@ FORWARD: 'forward' | 'fw';
 BACKWARD: 'backward' | 'bw';
 ACCELERATE: 'accelerate';
 DECELERATE: 'decelerate';
-INVERT: 'invert';
+// U2 (DSL review): a single token for both spellings; direct orders and waypoint actions accept
+// 'invert' and 'reverse' interchangeably.
+INVERT: 'invert' | 'reverse';
 
 // New Keywords for PlayerCommands
 NEW: 'new';
+JOURNAL: 'journal';
+UNDO: 'undo';
+REDO: 'redo';
+SLIDE: 'slide';
 LS: 'ls';
 INFO: 'info';
 Q: 'q';
@@ -63,6 +70,8 @@ R: 'r';
 FACE: 'face';
 STEP: 'step';
 SAVE: 'save';
+EXPORT: 'export';
+IMPORT: 'import';
 QUIT: 'quit';
 WQ: 'wq';
 MARK: 'mark';
@@ -74,6 +83,7 @@ GN: 'gn';
 GP: 'gp';
 RAIL: 'rail' | 'rl';
 END: 'end';
+TIME_KW: 'time';
 
 // Directions
 DIR_E: 'e';
@@ -90,9 +100,13 @@ LBRACE: '{';
 RBRACE: '}';
 SEMI: ';';
 COMMA: ',';
+COLON: ':';
 EQUALS: '=';
 
 // Data types
+// Time of day in 24 h format (H:MM or HH:MM). Out-of-range values (24:00, 9:60…) do not match
+// and are reported as syntax errors. Longest match wins over NUMBER, so 9:20 is one token.
+TIME : ([01]?[0-9] | '2' [0-3]) ':' [0-5][0-9] ;
 NUMBER : '-'? [0-9]+;
 STRING : '"' ~["]* '"' ;
 
@@ -105,8 +119,6 @@ LOCO: 'loco';
 WAGON: 'wagon';
 
 // Added keywords for signals and forks
-LEFT: 'left';
-RIGHT: 'right';
 CLOSE: 'close';
 MAX: 'max';
 LIMIT: 'limit';
@@ -122,6 +134,14 @@ ORANGE: 'orange';
 PURPLE: 'purple';
 GRAY: 'gray';
 BROWN: 'brown';
+// Locomotive palette variants (must cover Locomotive.COLOR_PALETTE for exact scenario replay)
+RED_BRIGHT: 'red_bright';
+GREEN_BRIGHT: 'green_bright';
+YELLOW_BRIGHT: 'yellow_bright';
+BLUE_BRIGHT: 'blue_bright';
+MAGENTA_BRIGHT: 'magenta_bright';
+CYAN_BRIGHT: 'cyan_bright';
+PINK: 'pink';
 
 // Cargos
 COAL: 'coal';
@@ -132,6 +152,18 @@ RUBY: 'ruby';
 MIN: 'min';
 
 STOP: 'stop';
+
+// ADR-022 phase 2b: hold at the waypoint with the engine off, keeping the autopilot
+PARK: 'park';
+
+// Issue #619: one-shot "stop at ..." / "stop when blocked" train orders
+AT: 'at';
+WHEN: 'when';
+BLOCKED: 'blocked';
+
+// Line comment: everything from '#' to the end of the line is ignored, in every entry point
+// (console, program, triggers, scenarios). The scenario guide already promised this.
+COMMENT : '#' ~[\r\n]* -> skip ;
 
 // Identifiers
 ID : [a-zA-Z0-9_]+ ;

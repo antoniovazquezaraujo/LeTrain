@@ -1,0 +1,925 @@
+package letrain.soundscape.gui;
+
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.Rectangle;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JProgressBar;
+import javax.swing.JScrollPane;
+import javax.swing.JSlider;
+import javax.swing.JTabbedPane;
+import javax.swing.JToggleButton;
+import javax.swing.Scrollable;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.Timer;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import letrain.soundscape.Composition;
+import letrain.soundscape.SoundscapeEngine;
+import letrain.soundscape.SoundGate;
+import letrain.soundscape.SoundscapeStyle;
+import letrain.soundscape.SpeedPreset;
+import letrain.soundscape.audio.AmbientPlayer;
+import letrain.soundscape.impl.SoundscapeEngineImpl;
+import letrain.soundscape.impl.TextStyleLoader;
+import letrain.soundscape.impl.TextStyleWriter;
+import letrain.soundscape.tour.Tour;
+import letrain.soundscape.tour.TourLoader;
+import letrain.soundscape.tour.TourState;
+
+/**
+ * Simple Swing playground for a style file: move time, zone weights, height and weather and watch
+ * the target mix change live. No audio yet; it prints the same numbers the engine feeds the mixer.
+ */
+public final class SoundscapePlayer {
+
+    private static final String DEFAULT_STYLE = "/styles/valle-norte.sound";
+    private static final String CUSTOM = "(custom)";
+
+    private final TextStyleLoader loader = new TextStyleLoader();
+    private final TextStyleWriter writer = new TextStyleWriter();
+    private final SoundscapeEngine engine = new SoundscapeEngineImpl();
+
+    private SoundscapeStyle style;
+    private PlayerState state;
+    private String styleName = "valle-norte.sound";
+    private List<String> sourceLines = List.of();
+
+    private JFrame frame;
+    private JLabel timeLabel;
+    private JLabel statusLabel;
+    private JLabel styleLabel;
+    private JSlider timeSlider;
+    private JSlider heightSlider;
+    private final Map<String, JSlider> weatherSliders = new LinkedHashMap<>();
+    private JComboBox<String> weatherCombo;
+    private JComboBox<SpeedPreset> speedCombo;
+    private JComboBox<String> previewCombo;
+    private int previewMultiplier = 1;
+    private double minutesAccumulator;
+    private JPanel zonesPanel;
+    private JPanel resultsPanel;
+    private JPanel mixPanel;
+    private JPanel responsesPanel;
+    private final Map<String, JSlider> zoneSliders = new LinkedHashMap<>();
+    private final Map<String, JLabel> zoneLabels = new LinkedHashMap<>();
+    private final Map<String, JSlider> gainSliders = new LinkedHashMap<>();
+    private final Map<String, JSlider> distanceSliders = new LinkedHashMap<>();
+    private final Map<String, Map<String, JSlider>> gateSliders = new LinkedHashMap<>();
+    private final Map<String, JProgressBar> volumeBars = new LinkedHashMap<>();
+    private final Map<String, JLabel> volumeLabels = new LinkedHashMap<>();
+
+    private boolean updating;
+    private Timer playTimer;
+    private JToggleButton listenButton;
+    private AmbientPlayer ambientPlayer;
+
+    private final TourLoader tourLoader = new TourLoader();
+    private Tour tour;
+    private JToggleButton tourButton;
+    private Timer tourTimer;
+    private long tourStartNanos;
+    private float tourEnclosure;
+    private String tourName = "";
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new SoundscapePlayer().show(args));
+    }
+
+    void show(String[] args) {
+        String styleArg = null;
+        String tourArg = null;
+        for (int i = 0; i < args.length; i++) {
+            if ("--tour".equals(args[i]) && i + 1 < args.length) {
+                tourArg = args[++i];
+            } else if (styleArg == null) {
+                styleArg = args[i];
+            }
+        }
+        try {
+            if (styleArg != null) {
+                Path path = Path.of(styleArg);
+                sourceLines = loader.readLines(path);
+                style = loader.parse(sourceLines);
+                styleName = path.getFileName().toString();
+            } else {
+                sourceLines = loader.readResourceLines(DEFAULT_STYLE);
+                style = loader.parse(sourceLines);
+                styleName = "valle-norte.sound";
+            }
+            if (tourArg != null) {
+                loadTour(Path.of(tourArg));
+            }
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(null, "Could not load style: " + e.getMessage(),
+                    "soundscape", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        state = new PlayerState(style);
+        buildFrame();
+        rebuildForStyle();
+        updateComposition();
+        frame.setVisible(true);
+    }
+
+    private void buildFrame() {
+        frame = new JFrame("Soundscape test player");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLayout(new BorderLayout(8, 8));
+        frame.add(buildControlsScroll(), BorderLayout.WEST);
+        frame.add(new JScrollPane(buildResultsPanel()), BorderLayout.CENTER);
+
+        statusLabel = new JLabel(" ");
+        statusLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 6, 8));
+        frame.add(statusLabel, BorderLayout.SOUTH);
+
+        frame.setSize(1020, 680);
+        frame.setLocationRelativeTo(null);
+    }
+
+    /** Right panel: mix faders with VU meters, plus the per-sound responses. */
+    JPanel buildResultsPanel() {
+        mixPanel = new JPanel(new GridBagLayout());
+        mixPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        responsesPanel = new JPanel(new GridBagLayout());
+        responsesPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        JTabbedPane tabs = new JTabbedPane();
+        tabs.addTab("Mix", mixPanel);
+        tabs.addTab("Responses", responsesPanel);
+        resultsPanel = new JPanel(new BorderLayout());
+        resultsPanel.add(tabs, BorderLayout.CENTER);
+        return resultsPanel;
+    }
+
+    /** Loads a style and prepares the state without opening a window (layout tests). */
+    void initStyle(SoundscapeStyle style, String name) {
+        initStyle(style, name, List.of());
+    }
+
+    /**
+     * Loads a style, its source text and the state without opening a window (calibration tests).
+     */
+    void initStyle(SoundscapeStyle style, String name, List<String> sourceLines) {
+        this.style = style;
+        this.styleName = name;
+        this.sourceLines = List.copyOf(sourceLines);
+        this.state = new PlayerState(style);
+    }
+
+    /** Builds the controls column; package-private so tests can lay it out without a window. */
+    JScrollPane buildControlsScroll() {
+        ScrollablePanel controls = new ScrollablePanel();
+        controls.setLayout(new GridBagLayout());
+        controls.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+
+        JPanel header = new JPanel(new BorderLayout());
+        styleLabel = new JLabel();
+        styleLabel.setHorizontalAlignment(SwingConstants.LEADING);
+        header.add(styleLabel, BorderLayout.CENTER);
+        JPanel styleButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+        JButton loadButton = new JButton("Load style…");
+        loadButton.addActionListener(e -> chooseStyle());
+        styleButtons.add(loadButton);
+        JButton exportButton = new JButton("Export style…");
+        exportButton.addActionListener(e -> exportStyle());
+        styleButtons.add(exportButton);
+        header.add(styleButtons, BorderLayout.EAST);
+        addRow(controls, header, true);
+
+        addRow(controls, section("Time"), true);
+        timeLabel = new JLabel();
+        addRow(controls, timeLabel, true);
+        timeSlider = new JSlider(0, 24 * 60 - 1, state.minuteOfDay());
+        timeSlider.addChangeListener(e -> {
+            if (!updating) {
+                state.setMinuteOfDay(timeSlider.getValue());
+                updateComposition();
+            }
+        });
+        addRow(controls, timeSlider, true);
+        JButton playButton = new JButton("▶ Full day");
+        playButton.addActionListener(e -> togglePlay(playButton));
+        addRow(controls, playButton, false);
+        listenButton = new JToggleButton("🔊 Listen");
+        listenButton.addActionListener(e -> toggleAudio());
+        addRow(controls, listenButton, false);
+
+        JPanel tourButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        JButton loadTourButton = new JButton("Load tour…");
+        loadTourButton.addActionListener(e -> chooseTour());
+        tourButtons.add(loadTourButton);
+        tourButton = new JToggleButton("▶ Tour");
+        tourButton.setEnabled(tour != null);
+        tourButton.addActionListener(e -> toggleTour());
+        tourButtons.add(tourButton);
+        addRow(controls, tourButtons, false);
+
+        addRow(controls, section("Height (zoom)"), true);
+        heightSlider = slider(100, 0);
+        addRow(controls, heightSlider, true);
+
+        addRow(controls, section("Speed"), true);
+        speedCombo = new JComboBox<>(SpeedPreset.values());
+        speedCombo.setSelectedItem(state.speed());
+        speedCombo.addActionListener(e -> {
+            if (!updating) {
+                state.setSpeed((SpeedPreset) speedCombo.getSelectedItem());
+                updateComposition();
+            }
+        });
+        addRow(controls, speedCombo, true);
+        previewCombo = new JComboBox<>(new String[] {"x1", "x10", "x60"});
+        previewCombo.addActionListener(e -> {
+            String selected = (String) previewCombo.getSelectedItem();
+            previewMultiplier = selected == null ? 1 : Integer.parseInt(selected.substring(1));
+            updateComposition();
+        });
+        addRow(controls, labelRow("preview", 80, previewCombo), true);
+
+        addRow(controls, section("Weather"), true);
+        weatherCombo = new JComboBox<>();
+        weatherCombo.addActionListener(e -> {
+            if (updating) {
+                return;
+            }
+            String name = (String) weatherCombo.getSelectedItem();
+            if (name == null || CUSTOM.equals(name)) {
+                return;
+            }
+            state.applyPreset(style.climatePresets().get(name));
+            syncWeatherSliders();
+            updateComposition();
+        });
+        addRow(controls, weatherCombo, true);
+        addRow(controls, weatherSliderRow("rain"), true);
+        addRow(controls, weatherSliderRow("wind"), true);
+        addRow(controls, weatherSliderRow("storm"), true);
+
+        addRow(controls, section("Zones"), true);
+        zonesPanel = new JPanel(new GridBagLayout());
+        addRow(controls, zonesPanel, true);
+
+        GridBagConstraints filler = new GridBagConstraints();
+        filler.gridx = 0;
+        filler.gridy = controls.getComponentCount();
+        filler.weighty = 1;
+        filler.fill = GridBagConstraints.VERTICAL;
+        controls.add(Box.createGlue(), filler);
+
+        JScrollPane scroll = new JScrollPane(controls);
+        scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll.setPreferredSize(new Dimension(360, 600));
+        return scroll;
+    }
+
+    /** Adds a row to a GridBagLayout panel; stretch=false keeps natural size at the west. */
+    private void addRow(JPanel panel, Component component, boolean stretch) {
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.gridx = 0;
+        constraints.gridy = panel.getComponentCount();
+        constraints.weightx = 1;
+        constraints.fill = stretch ? GridBagConstraints.HORIZONTAL : GridBagConstraints.NONE;
+        constraints.anchor = GridBagConstraints.WEST;
+        constraints.insets = new Insets(2, 0, 2, 0);
+        panel.add(component, constraints);
+    }
+
+    private JLabel section(String title) {
+        JLabel label = new JLabel(title);
+        label.setBorder(BorderFactory.createEmptyBorder(10, 0, 2, 0));
+        return label;
+    }
+
+    private JSlider slider(int max, int value) {
+        JSlider slider = new JSlider(0, max, value);
+        slider.addChangeListener(e -> {
+            if (!updating) {
+                onSliderChanged(slider);
+            }
+        });
+        return slider;
+    }
+
+    private JPanel weatherSliderRow(String key) {
+        JSlider slider = slider(100, 0);
+        weatherSliders.put(key, slider);
+        return labelRow(key, 80, slider);
+    }
+
+    private JPanel zoneRow(String text, int labelWidth, Component component, JLabel weight) {
+        JPanel row = labelRow(text, labelWidth, component);
+        row.add(weight, BorderLayout.EAST);
+        return row;
+    }
+
+    /** One control row with a fixed label width, so every slider starts at the same x. */
+    private JPanel labelRow(String text, int labelWidth, Component component) {
+        JLabel label = new JLabel(text);
+        Dimension size = new Dimension(labelWidth, 18);
+        label.setPreferredSize(size);
+        label.setMinimumSize(size);
+        label.setMaximumSize(size);
+        JPanel row = new JPanel(new BorderLayout(8, 0));
+        row.add(label, BorderLayout.WEST);
+        row.add(component, BorderLayout.CENTER);
+        row.setAlignmentX(Component.LEFT_ALIGNMENT);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
+        return row;
+    }
+
+    /** Visible for layout tests: the zone sliders by zone name. */
+    Map<String, JSlider> zoneSliders() {
+        return zoneSliders;
+    }
+
+    /** Visible for calibration tests: the gain sliders by sound key. */
+    Map<String, JSlider> gainSliders() {
+        return gainSliders;
+    }
+
+    /** Visible for calibration tests: the distance distance sliders by sound key. */
+    Map<String, JSlider> distanceSliders() {
+        return distanceSliders;
+    }
+
+    /** Visible for calibration tests: the silence gate sliders by sound key and variable. */
+    Map<String, Map<String, JSlider>> gateSliders() {
+        return gateSliders;
+    }
+
+    /** Visible for calibration tests: the VU meters by sound key. */
+    Map<String, JProgressBar> volumeBars() {
+        return volumeBars;
+    }
+
+    /** Visible for calibration tests: the right calibration panel. */
+    JPanel resultsPanel() {
+        return resultsPanel;
+    }
+
+    private void onSliderChanged(JSlider source) {
+        if (source == heightSlider) {
+            state.setHeight(source.getValue() / 100f);
+        } else if (weatherSliders.containsValue(source)) {
+            state.setWeather(valueOf("rain"), valueOf("wind"), valueOf("storm"));
+            markWeatherCustom();
+        } else {
+            for (Map.Entry<String, JSlider> zone : zoneSliders.entrySet()) {
+                if (zone.getValue() == source) {
+                    state.setZoneWeight(zone.getKey(), source.getValue() / 100f);
+                }
+            }
+        }
+        updateComposition();
+    }
+
+    private float valueOf(String weather) {
+        JSlider slider = weatherSliders.get(weather);
+        return slider == null ? 0f : slider.getValue() / 100f;
+    }
+
+    private void markWeatherCustom() {
+        if (!CUSTOM.equals(weatherCombo.getSelectedItem())) {
+            updating = true;
+            weatherCombo.setSelectedItem(CUSTOM);
+            updating = false;
+        }
+    }
+
+    private void togglePlay(JButton button) {
+        if (playTimer != null && playTimer.isRunning()) {
+            playTimer.stop();
+            button.setText("▶ Full day");
+            return;
+        }
+        button.setText("⏸ Pause");
+        minutesAccumulator = 0;
+        playTimer = new Timer(50, e -> {
+            double perSecond = state.speed().gameMinutesPerRealSecond() * previewMultiplier;
+            minutesAccumulator += perSecond * 0.05;
+            int advance = (int) minutesAccumulator;
+            if (advance <= 0) {
+                return;
+            }
+            minutesAccumulator -= advance;
+            state.advance(advance);
+            syncTimeSlider();
+            updateComposition();
+        });
+        playTimer.start();
+    }
+
+    private void chooseTour() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setFileFilter(new FileNameExtensionFilter("Soundscape tour (*.tour)", "tour"));
+        if (chooser.showOpenDialog(frame) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+        try {
+            loadTour(chooser.getSelectedFile().toPath());
+            statusLabel.setText("tour loaded: " + tourName);
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(frame, "Could not load tour: " + e.getMessage(),
+                    "soundscape", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void loadTour(Path path) throws IOException {
+        tour = tourLoader.load(path);
+        tourName = path.getFileName().toString();
+        if (tourButton != null) {
+            tourButton.setEnabled(true);
+            tourButton.setToolTipText(tourName + " · " + Math.round(tour.duration()) + " s");
+        }
+    }
+
+    private void toggleTour() {
+        if (tourTimer != null && tourTimer.isRunning()) {
+            tourTimer.stop();
+            tourButton.setText("▶ Tour");
+            tourEnclosure = 0f;
+            updateComposition();
+            return;
+        }
+        if (tour == null) {
+            JOptionPane.showMessageDialog(frame, "Load a .tour file first", "soundscape",
+                    JOptionPane.WARNING_MESSAGE);
+            tourButton.setSelected(false);
+            return;
+        }
+        tourButton.setText("⏸ Tour");
+        tourStartNanos = System.nanoTime();
+        tourTimer = new Timer(100, e -> {
+            double seconds = (System.nanoTime() - tourStartNanos) / 1e9;
+            applyTourState(tour.stateAt(seconds), seconds);
+        });
+        tourTimer.start();
+    }
+
+    private void applyTourState(TourState tourState, double seconds) {
+        updating = true;
+        for (Map.Entry<String, JSlider> zone : zoneSliders.entrySet()) {
+            float weight = tourState.zoneWeight(zone.getKey());
+            state.setZoneWeight(zone.getKey(), weight);
+            zone.getValue().setValue(Math.round(weight * 100));
+        }
+        state.setWeather(tourState.rain(), tourState.wind(), tourState.storm());
+        syncWeatherSliders();
+        String preset = tourState.weather();
+        if (preset != null && style.climatePresets().containsKey(preset)) {
+            state.applyPreset(style.climatePresets().get(preset));
+            syncWeatherSliders();
+            weatherCombo.setSelectedItem(preset);
+        } else if (!CUSTOM.equals(weatherCombo.getSelectedItem())) {
+            weatherCombo.setSelectedItem(CUSTOM);
+        }
+        updating = false;
+        tourEnclosure = tourState.enclosure();
+        double duration = Math.max(1.0, tour.duration());
+        statusLabel.setText(String.format(Locale.ROOT, "tour %s · t %.0f/%.0f s · enclosure %.2f",
+                tourName, seconds % duration, duration, tourEnclosure));
+        updateComposition();
+    }
+
+    private void chooseStyle() {
+        stopAudio();
+        if (listenButton != null) {
+            listenButton.setSelected(false);
+        }
+        JFileChooser chooser = new JFileChooser();
+        chooser.setFileFilter(new FileNameExtensionFilter("Soundscape style (*.sound)", "sound"));
+        if (chooser.showOpenDialog(frame) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+        File file = chooser.getSelectedFile();
+        try {
+            sourceLines = loader.readLines(file.toPath());
+            style = loader.parse(sourceLines);
+            styleName = file.getName();
+            state = new PlayerState(style);
+            rebuildForStyle();
+            updateComposition();
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(frame, "Could not load: " + e.getMessage(), "soundscape",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    void rebuildForStyle() {
+        updating = true;
+        styleLabel.setText(styleName);
+        styleLabel.setToolTipText(styleName);
+        zoneSliders.clear();
+        zoneLabels.clear();
+        zonesPanel.removeAll();
+        int zoneLabelWidth = 0;
+        for (String zone : style.zones().keySet()) {
+            zoneLabelWidth = Math.max(zoneLabelWidth, new JLabel(zone).getPreferredSize().width);
+        }
+        zoneLabelWidth += 6;
+        for (String zone : style.zones().keySet()) {
+            JSlider slider =
+                    slider(100, Math.round(state.zoneWeights().getOrDefault(zone, 0f) * 100));
+            zoneSliders.put(zone, slider);
+            JLabel weight = new JLabel("0.00");
+            weight.setPreferredSize(new Dimension(40, 18));
+            weight.setHorizontalAlignment(SwingConstants.RIGHT);
+            zoneLabels.put(zone, weight);
+            addRow(zonesPanel, zoneRow(zone, zoneLabelWidth, slider, weight), true);
+        }
+        if (resultsPanel != null) {
+            gainSliders.clear();
+            distanceSliders.clear();
+            gateSliders.clear();
+            volumeBars.clear();
+            volumeLabels.clear();
+            mixPanel.removeAll();
+            responsesPanel.removeAll();
+            List<String> gainKeys = gainKeys();
+            int nameWidth = 0;
+            for (String key : gainKeys) {
+                nameWidth = Math.max(nameWidth, new JLabel(key).getPreferredSize().width);
+            }
+            nameWidth += 6;
+            addMixHeader(nameWidth);
+            addResponsesHeader(nameWidth);
+            int row = 1;
+            for (String key : gainKeys) {
+                addMixRow(key, nameWidth, row);
+                addResponsesRow(key, nameWidth, row);
+                row++;
+            }
+        }
+        weatherCombo.removeAllItems();
+        for (String preset : style.climatePresets().keySet()) {
+            weatherCombo.addItem(preset);
+        }
+        weatherCombo.addItem(CUSTOM);
+        weatherCombo.setSelectedItem(
+                style.climatePresets().keySet().stream().findFirst().orElse(CUSTOM));
+        syncWeatherSliders();
+        syncTimeSlider();
+        updating = false;
+        if (frame != null) {
+            frame.revalidate();
+            frame.repaint();
+        }
+    }
+
+    /** Every key the engine can multiply: catalog sounds plus the provided weather and height. */
+    private List<String> gainKeys() {
+        List<String> keys = new ArrayList<>(style.sounds().keySet());
+        for (String weather : style.weatherSounds().keySet()) {
+            keys.add("weather-" + weather);
+        }
+        for (String height : style.heightSounds().keySet()) {
+            keys.add("height-" + height);
+        }
+        return keys;
+    }
+
+    private void addMixHeader(int nameWidth) {
+        JLabel sound = new JLabel("sound");
+        sound.setPreferredSize(new Dimension(nameWidth, 18));
+        addCell(mixPanel, sound, 0, 0, 0, GridBagConstraints.NONE);
+        addCell(mixPanel, new JLabel("gain"), 1, 0, 0, GridBagConstraints.NONE);
+        addCell(mixPanel, new JLabel("level"), 3, 0, 1, GridBagConstraints.HORIZONTAL);
+    }
+
+    /** One mix row: sound, 0-200% gain slider, its percentage and a live VU meter. */
+    private void addMixRow(String key, int nameWidth, int row) {
+        JLabel name = new JLabel(key);
+        name.setPreferredSize(new Dimension(nameWidth, 18));
+        addCell(mixPanel, name, 0, row, 0, GridBagConstraints.NONE);
+
+        JSlider slider = new JSlider(0, 200, Math.round(style.gainOf(key) * 100));
+        slider.setPreferredSize(new Dimension(130, 16));
+        JLabel percent = new JLabel(slider.getValue() + "%");
+        percent.setPreferredSize(new Dimension(42, 18));
+        percent.setHorizontalAlignment(SwingConstants.RIGHT);
+        slider.addChangeListener(e -> {
+            percent.setText(slider.getValue() + "%");
+            applyGain(key, slider.getValue() / 100f);
+        });
+        gainSliders.put(key, slider);
+        addCell(mixPanel, slider, 1, row, 0, GridBagConstraints.HORIZONTAL);
+        addCell(mixPanel, percent, 2, row, 0, GridBagConstraints.NONE);
+
+        JProgressBar bar = new JProgressBar(0, 100);
+        bar.setPreferredSize(new Dimension(120, 16));
+        volumeBars.put(key, bar);
+        addCell(mixPanel, bar, 3, row, 1, GridBagConstraints.HORIZONTAL);
+
+        JLabel volume = new JLabel("0.00");
+        volume.setPreferredSize(new Dimension(42, 18));
+        volume.setHorizontalAlignment(SwingConstants.RIGHT);
+        volumeLabels.put(key, volume);
+        addCell(mixPanel, volume, 4, row, 0, GridBagConstraints.NONE);
+    }
+
+    private void addResponsesHeader(int nameWidth) {
+        JLabel sound = new JLabel("sound");
+        sound.setPreferredSize(new Dimension(nameWidth, 18));
+        addCell(responsesPanel, sound, 0, 0, 0, GridBagConstraints.NONE);
+        String[] labels = {"distance", "rain", "wind", "storm"};
+        for (int i = 0; i < labels.length; i++) {
+            addCell(responsesPanel, new JLabel(labels[i]), 1 + i * 2, 0, 0,
+                    GridBagConstraints.NONE);
+        }
+    }
+
+    /** One responses row: distance sensitivity and the rain/wind/storm silence gates. */
+    private void addResponsesRow(String key, int nameWidth, int row) {
+        JLabel name = new JLabel(key);
+        name.setPreferredSize(new Dimension(nameWidth, 18));
+        addCell(responsesPanel, name, 0, row, 0, GridBagConstraints.NONE);
+
+        JSlider distance = new JSlider(0, 100, Math.round(style.distanceSensitivityOf(key) * 100));
+        distance.setPreferredSize(new Dimension(80, 16));
+        distance.setToolTipText("distance sensitivity: 0 keeps the sound close, 100 recedes fully");
+        JLabel distanceValue = valueLabel(distance.getValue() + "%");
+        distance.addChangeListener(e -> {
+            distanceValue.setText(distance.getValue() + "%");
+            applyDistance(key, distance.getValue() / 100f);
+        });
+        distanceSliders.put(key, distance);
+        addCell(responsesPanel, distance, 1, row, 0, GridBagConstraints.HORIZONTAL);
+        addCell(responsesPanel, distanceValue, 2, row, 0, GridBagConstraints.NONE);
+
+        Map<String, JSlider> soundGates = new LinkedHashMap<>();
+        gateSliders.put(key, soundGates);
+        String[] variables = {"rain", "wind", "storm"};
+        for (int i = 0; i < variables.length; i++) {
+            String variable = variables[i];
+            JSlider gate = gateSlider(key, variable);
+            gate.setPreferredSize(new Dimension(64, 16));
+            gate.setToolTipText(variable + " gate: the sound stops above this level (100% = off)");
+            JLabel gateValue = valueLabel("");
+            updateGateLabel(gateValue, gate.getValue());
+            gate.addChangeListener(e -> {
+                updateGateLabel(gateValue, gate.getValue());
+                applyGate(key, variable, gate.getValue() >= 100 ? null : gate.getValue() / 100f);
+            });
+            soundGates.put(variable, gate);
+            addCell(responsesPanel, gate, 3 + i * 2, row, 0, GridBagConstraints.HORIZONTAL);
+            addCell(responsesPanel, gateValue, 4 + i * 2, row, 0, GridBagConstraints.NONE);
+        }
+    }
+
+    private JSlider gateSlider(String key, String variable) {
+        for (SoundGate gate : style.gatesOf(key)) {
+            if (gate.variable().equals(variable)) {
+                return new JSlider(0, 100, Math.round(gate.threshold() * 100));
+            }
+        }
+        return new JSlider(0, 100, 100);
+    }
+
+    private JLabel valueLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setPreferredSize(new Dimension(38, 18));
+        label.setHorizontalAlignment(SwingConstants.RIGHT);
+        return label;
+    }
+
+    private void updateGateLabel(JLabel label, int value) {
+        label.setText(value >= 100 ? "off" : value + "%");
+    }
+
+    private void addCell(JPanel panel, Component component, int x, int y, double weightx,
+            int fill) {
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.gridx = x;
+        constraints.gridy = y;
+        constraints.weightx = weightx;
+        constraints.fill = fill;
+        constraints.anchor = GridBagConstraints.WEST;
+        constraints.insets = new Insets(2, 3, 2, 3);
+        panel.add(component, constraints);
+    }
+
+    private void applyGain(String key, float gain) {
+        Map<String, Float> updated = new LinkedHashMap<>(style.gains());
+        if (Math.abs(gain - 1f) < 1e-3f) {
+            updated.remove(key);
+        } else {
+            updated.put(key, gain);
+        }
+        style = style.withCalibration(updated, style.distanceSensitivity(), style.gates());
+        updateComposition();
+    }
+
+    private void applyDistance(String key, float sensitivity) {
+        Map<String, Float> updated = new LinkedHashMap<>(style.distanceSensitivity());
+        if (Math.abs(sensitivity - 1f) < 1e-3f) {
+            updated.remove(key);
+        } else {
+            updated.put(key, sensitivity);
+        }
+        style = style.withCalibration(style.gains(), updated, style.gates());
+        updateComposition();
+    }
+
+    private void applyGate(String key, String variable, Float threshold) {
+        Map<String, List<SoundGate>> updated = new LinkedHashMap<>();
+        for (Map.Entry<String, List<SoundGate>> entry : style.gates().entrySet()) {
+            updated.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+        }
+        List<SoundGate> soundGates = updated.computeIfAbsent(key, sound -> new ArrayList<>());
+        soundGates.removeIf(gate -> gate.variable().equals(variable));
+        if (threshold != null) {
+            soundGates.add(new SoundGate(variable, threshold));
+            soundGates.sort(
+                    (left, right) -> gateOrder(left.variable()) - gateOrder(right.variable()));
+        }
+        if (soundGates.isEmpty()) {
+            updated.remove(key);
+        }
+        style = style.withCalibration(style.gains(), style.distanceSensitivity(), updated);
+        updateComposition();
+    }
+
+    private int gateOrder(String variable) {
+        return switch (variable) {
+            case "rain" -> 0;
+            case "wind" -> 1;
+            default -> 2;
+        };
+    }
+
+    /** Exports the calibration as text, keeping the original and replacing only its sections. */
+    List<String> exportLines() {
+        return writer.withCalibration(sourceLines, style.gains(), style.distanceSensitivity(),
+                style.gates());
+    }
+
+    private void exportStyle() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setFileFilter(new FileNameExtensionFilter("Soundscape style (*.sound)", "sound"));
+        chooser.setSelectedFile(new File(defaultExportName()));
+        if (chooser.showSaveDialog(frame) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+        Path target = chooser.getSelectedFile().toPath();
+        try {
+            writer.write(target, sourceLines, style.gains(), style.distanceSensitivity(),
+                    style.gates());
+            statusLabel.setText("exported " + target.getFileName());
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(frame, "Could not export: " + e.getMessage(),
+                    "soundscape", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private String defaultExportName() {
+        String base = styleName.endsWith(".sound")
+                ? styleName.substring(0, styleName.length() - ".sound".length())
+                : styleName;
+        return base + "-calibrated.sound";
+    }
+
+    private void syncTimeSlider() {
+        updating = true;
+        timeSlider.setValue(state.minuteOfDay());
+        updating = false;
+    }
+
+    private void syncWeatherSliders() {
+        updating = true;
+        weatherSliders.get("rain").setValue(Math.round(state.rain() * 100));
+        weatherSliders.get("wind").setValue(Math.round(state.wind() * 100));
+        weatherSliders.get("storm").setValue(Math.round(state.storm() * 100));
+        updating = false;
+    }
+
+    private void toggleAudio() {
+        if (!listenButton.isSelected()) {
+            stopAudio();
+            return;
+        }
+        stopAudio();
+        AmbientPlayer player = new AmbientPlayer(style, 1);
+        if (player.sampleCount() == 0) {
+            JOptionPane.showMessageDialog(frame,
+                    "No sound could be loaded. Check the style materials.", "soundscape",
+                    JOptionPane.WARNING_MESSAGE);
+            listenButton.setSelected(false);
+            return;
+        }
+        try {
+            player.start();
+            ambientPlayer = player;
+            if (!player.missingSounds().isEmpty()) {
+                statusLabel.setText("missing sounds: " + player.missingSounds());
+            }
+        } catch (javax.sound.sampled.LineUnavailableException e) {
+            JOptionPane.showMessageDialog(frame, "No audio device: " + e.getMessage(), "soundscape",
+                    JOptionPane.ERROR_MESSAGE);
+            listenButton.setSelected(false);
+        }
+        updateComposition();
+    }
+
+    private void stopAudio() {
+        if (ambientPlayer != null) {
+            ambientPlayer.close();
+            ambientPlayer = null;
+        }
+    }
+
+    private void updateComposition() {
+        Composition composition = engine.compose(style, state.toInput());
+        if (tourEnclosure > 0f) {
+            Map<String, Float> volumes = new LinkedHashMap<>();
+            for (Map.Entry<String, Float> entry : composition.volumes().entrySet()) {
+                volumes.put(entry.getKey(), entry.getValue() * (1f - tourEnclosure));
+            }
+            if (style.sounds().containsKey("tunnel")) {
+                volumes.put("tunnel", tourEnclosure);
+            }
+            composition = new Composition(volumes, composition.distance());
+        }
+        if (ambientPlayer != null) {
+            ambientPlayer.updateTargets(composition);
+        }
+        timeLabel.setText(String.format(Locale.ROOT, "%02d:%02d", state.time().getHour(),
+                state.time().getMinute()));
+        for (Map.Entry<String, JLabel> zone : zoneLabels.entrySet()) {
+            zone.getValue().setText(String.format(Locale.ROOT, "%.2f",
+                    state.zoneWeights().getOrDefault(zone.getKey(), 0f)));
+        }
+        if (statusLabel != null) {
+            statusLabel.setText(String.format(Locale.ROOT,
+                    "rain %.2f · wind %.2f · storm %.2f · height %.2f · %s · preview x%d",
+                    state.rain(), state.wind(), state.storm(), state.height(), state.speed(),
+                    previewMultiplier));
+        }
+        if (resultsPanel != null) {
+            updateMeters(composition);
+        }
+    }
+
+    /** Moves every VU meter to the sound's current composed volume. */
+    private void updateMeters(Composition composition) {
+        for (Map.Entry<String, JProgressBar> meter : volumeBars.entrySet()) {
+            float volume = composition.volumeOf(meter.getKey());
+            meter.getValue().setValue(Math.round(Math.min(1f, volume) * 100));
+            JLabel label = volumeLabels.get(meter.getKey());
+            if (label != null) {
+                label.setText(String.format(Locale.ROOT, "%.2f", volume));
+            }
+        }
+    }
+
+    /** Scroll view that always matches the viewport width, so rows never overflow horizontally. */
+    private static final class ScrollablePanel extends JPanel implements Scrollable {
+        @Override
+        public Dimension getPreferredScrollableViewportSize() {
+            return getPreferredSize();
+        }
+
+        @Override
+        public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation,
+                int direction) {
+            return 16;
+        }
+
+        @Override
+        public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation,
+                int direction) {
+            return 64;
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportWidth() {
+            return true;
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportHeight() {
+            return false;
+        }
+    }
+
+}
