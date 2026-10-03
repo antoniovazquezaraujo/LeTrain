@@ -12,6 +12,7 @@ El proyecto LeTrain utiliza una arquitectura desacoplada para separar la simulac
 - **Seguridad**: Gestionada por el [[infrastructure/BlockSystem|Sistema de Colisiones]].
 - **Movimiento**: Implementado en la [[vehicles/Physics|Física de Vehículos]].
 - **Automatización**: Procesada por el [[systems/CommandPattern|Motor de Automatización (ANTLR)]].
+- **Tiempo y clima**: El reloj lógico (`letrain.time.GameClock`) deriva de los ticks la hora, el día y el ciclo día/noche (ADR-022); el generador determinista por semilla (`letrain.weather.WeatherGenerator`) cruza la hora de juego con el calendario `[seasons]` del estilo y alimenta hoy el soundscape (fase 1 de ADR-027; quedan pendientes la exposición en las vistas, la fauna estacional y la nieve).
 
 ## Símbolos Clave
 - `letrain.mvp.impl.Model`: El "hub" central del estado. Gestiona la persistencia con Jackson y Mixins.
