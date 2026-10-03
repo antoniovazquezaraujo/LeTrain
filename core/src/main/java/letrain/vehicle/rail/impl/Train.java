@@ -1,5 +1,6 @@
 package letrain.vehicle.rail.impl;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 import java.util.Deque;
 import java.util.LinkedList;
@@ -247,10 +248,17 @@ public class Train implements Renderable {
         return this.pendingReverse;
     }
 
+    /**
+     * Runtime intent ("switch to manual once the train stops"), never persistent state. Both
+     * accessors are ignored by Jackson so the flag cannot leak into a savegame and drop a loaded
+     * train to manual on its next full stop (issue #636).
+     */
+    @JsonIgnore
     public boolean isPendingManualMode() {
         return this.pendingManualMode;
     }
 
+    @JsonIgnore
     public void setPendingManualMode(boolean pending) {
         this.pendingManualMode = pending;
     }
