@@ -43,6 +43,21 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
     }
 
     /**
+     * A plan change (new itinerary, program re-apply) supersedes everything the old plan left
+     * pending: its actions, its deferred command/mission and its stop bookkeeping must not resume
+     * against the new plan (#653).
+     */
+    @Override
+    public void resetPendingActions() {
+        pendingCommands.clear();
+        pendingMission = null;
+        pendingCommandToResume = null;
+        currentProcessingWaypoint = null;
+        waitTicks = 0;
+        savedTargetSpeed = 0;
+    }
+
+    /**
      * Arrival bookkeeping shared by the arrival callback and the consecutive-waypoint chain:
      * measures the arrival, brakes for a scheduled departure and loads the waypoint's actions.
      */

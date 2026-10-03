@@ -87,6 +87,11 @@ activa; al elegir uno se inserta en una línea nueva. El pie tiene `Save`/`Load`
 el Program) y `Rebuild` (validar y jugar el escenario). `Esc` cierra el editor. Si hay errores,
 aparece una lista con scroll que te lleva a la línea del fallo.
 
+`Reprogram` vuelve a aplicar el Program desde cero: los trenes en marcha se reinician (se cancelan
+las misiones, se limpian las esperas de bloque y el tren frena) y un itinerario reasignado vuelve a
+empezar por su primer waypoint. Se avisa de cada tren que estaba en marcha, así que un re-program
+en caliente nunca repite una maniobra a medias en silencio.
+
 ---
 
 Ver también: **[grammar_es.md](grammar_es.md)** para el lenguaje de comandos y la consola.

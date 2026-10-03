@@ -212,6 +212,10 @@ public class AutoPilotImpl implements AutoPilot {
     public void setItinerary(Itinerary it) {
         log.info("[AP] setItinerary waypoints={}", it != null ? it.waypoints().size() : 0);
         cancelMissionQuietly();
+        if (train != null && train.getActionManager() != null) {
+            // The old plan's pending waypoint actions must not resume against the new one (#653).
+            train.getActionManager().resetPendingActions();
+        }
         this.itinerary = it;
         this.mode = Mode.IDLE;
         this.currentRoute = List.of();

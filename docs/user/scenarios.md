@@ -83,6 +83,11 @@ selecting one inserts it on a new line. The footer holds `Save`/`Load` (savegame
 Program) and `Rebuild` (validate and play the scenario). `Esc` closes the editor. When there are
 errors, a small scrollable list lets you jump to the offending line.
 
+`Reprogram` applies the Program again from scratch: trains that are running are reset (missions
+cancelled, block waits cleared and the train braked) and a reassigned itinerary restarts from its
+first waypoint. Every train that was running is announced, so a hot re-program never re-runs a
+maneuver in progress silently.
+
 ---
 
 See also: **[grammar.md](grammar.md)** for the command language and the console.
