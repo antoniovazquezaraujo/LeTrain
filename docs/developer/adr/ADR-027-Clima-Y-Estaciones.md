@@ -1,6 +1,8 @@
 # ADR-027: Clima y estaciones (fecha de juego, tablas estacionales y clima determinista)
 
-## Estado: PROPUESTO (borrador para revisión)
+## Estado: PROPUESTO — fase 1 implementada (calendario `[seasons]` en el estilo, generador horario determinista con semilla y su wiring al soundscape del juego, con demo en `tours/clima-demo.tour`); pendientes la exposición en las vistas (fase 2), la fauna estacional (fase 3) y la nieve (fase 4)
+
+> **Nota (beta.5):** `WeatherGenerator`, `ClimateCalendar`, `SeasonRange`, `WeatherProbabilities` y `WeatherState` viven en `core`; `SoundscapeAmbience` consume el estado generado en cada hora de juego. El día del año se deriva en ese glue del soundscape (`(day - 1) % 366 + 1`), ya que `GameTime` sigue exponiendo solo el contador de día. La decisión de diseño no cambia: lo pendiente sigue pendiente.
 
 ## Contexto
 
