@@ -245,17 +245,20 @@ class StopOnContactUserScenarioIntegrationTest {
     class MinimalWithoutDeparture {
 
         @Test
-        @DisplayName("the diagnostic minimal resumes the cruise instead of freezing silently")
-        void minimalWithoutDeparture_resumesCruise() {
+        @DisplayName("the diagnostic minimal warns about the missing route and holds instead of rolling away")
+        void minimalWithoutDeparture_noRoute_holdsWithWarning() {
             World w = buildWorld();
             Train subject = placeConsist(w.westTail, 13, 1);
             Locomotive loco = (Locomotive) subject.getDirectorLinker();
             int locoId = loco.getId();
             setTime(13, 0);
+            List<String> messages = new ArrayList<>();
+            model.setUserMessageSink((title, text) -> messages.add(text));
 
             // The return to station 4 needs a reverse the plan does not write (same shape as
-            // Bicho's minimal diagnostic): the fix under test is that the plan does not stay
-            // frozen with targetSpeed 0 after the waypoint actions.
+            // Bicho's minimal diagnostic). Issue #649 refines the old "never stay frozen" rule:
+            // a plan without a route to the next waypoint warns visibly and holds the train
+            // instead of resuming the cruise towards the dead end.
             List<String> errors = model.setProgram("""
                     create itinerary "m" {
                         add station %d, arrival 12:00,
@@ -272,19 +275,17 @@ class StopOnContactUserScenarioIntegrationTest {
             assertTrue(errors.isEmpty(), "unexpected errors: " + errors);
 
             runUntil(() -> subject.getAutopilot().currentWaypointIndex() == 1, 4000);
+            runTicks(200);
 
             assertEquals(1, subject.getAutopilot().currentWaypointIndex(),
                     "the plan must advance to the next waypoint");
             assertEquals(3, subject.getProgrammedSpeed(),
                     "the mission must not destroy the plan's cruise speed");
-            assertEquals(3, loco.getTargetSpeed(),
-                    "the resumed cruise must be applied after the waypoint actions");
-            assertFalse(subject.getSafetyManager().isWaitingForBlock());
-
-            int xAtTransition = loco.getPosition().getX();
-            runUntil(() -> loco.getPosition().getX() != xAtTransition, 600);
-            assertTrue(loco.getPosition().getX() != xAtTransition,
-                    "the train must continue moving instead of staying frozen");
+            assertTrue(messages.stream().anyMatch(m -> m.contains("no route")),
+                    "the missing route must warn visibly: " + messages);
+            assertEquals(0, loco.getTargetSpeed(),
+                    "without a route the cruise must be held, not resumed towards the dead end");
+            assertEquals(0, loco.getSpeed(), "the held train must stay stopped");
             assertFalse(subject.isPendingManualMode());
         }
 
