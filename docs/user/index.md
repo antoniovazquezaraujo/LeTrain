@@ -35,10 +35,12 @@
   
 - **Infinite Procedural World:** The terrain is dynamically generated using Perlin noise, creating endless landscapes to explore and build upon.
 
+- **Game Time & Day/Night:** A deterministic game clock, shown in the HUD of both clients, drives sunrise/sunset and a full day/dusk/night palette in the 2D and 3D views. Locomotive headlights light the track after dark, and the clock can be set from the console (`time;`, `time set 9:30;`).
+
 - **Advanced Automation & IDE:**
   - Includes a built-in programming language (parsed via ANTLR4) for true automation.
   - A tabbed in-game editor (**Scenario / Program / Config**) with a per-tab quick reference, error navigation and a headless validator (`letrain-check`).
-  - Automate switches, set up autopilot routes, and manage complex itineraries.
+  - Automate switches, set up autopilot routes with timetables (`arrival`/`departure` and punctuality), and manage complex itineraries with shunting maneuvers.
 
 - **Record, Undo & Scenarios:** Freeze the world and record every edit (`R`), undo/redo deterministically (`u` / `Ctrl+R`), and export your whole network as a small `.ltr` text recipe you can share, import and replay. The same seed rebuilds the same world — no savegame needed.
 
