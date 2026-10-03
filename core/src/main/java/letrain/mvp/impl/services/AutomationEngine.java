@@ -6,11 +6,15 @@ import java.util.List;
 import letrain.command.CommandManager;
 import letrain.command.LeTrainLexer;
 import letrain.command.ScriptLogicParser;
+import letrain.itinerary.AutoPilot;
+import letrain.itinerary.TrainMission;
 import letrain.mvp.impl.Model;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.Station;
 import letrain.track.rail.ForkRailTrack;
+import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Train;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -34,7 +38,7 @@ public class AutomationEngine {
      * left in place, so headless callers keep working (D1 contract).
      */
     public List<String> setProgram(String program) {
-        return applyProgram(program, model.getUserMessageSink() != null);
+        return applyProgram(program, model.getUserMessageSink() != null, true);
     }
 
     /**
@@ -46,13 +50,16 @@ public class AutomationEngine {
      * the log (D1 residual).
      */
     public List<String> setProgramFromDisk(String program) {
-        return applyProgram(program, true);
+        return applyProgram(program, true, false);
     }
 
-    private List<String> applyProgram(String program, boolean userChannel) {
+    private List<String> applyProgram(String program, boolean userChannel, boolean resetRunning) {
         List<String> errors = new ArrayList<>();
         if (program == null || program.trim().isEmpty()) {
             clearAllAutomationListeners();
+            if (resetRunning) {
+                resetAutomationState(userChannel);
+            }
             return errors;
         }
 
@@ -97,6 +104,9 @@ public class AutomationEngine {
                 return errors;
             }
             clearAllAutomationListeners();
+            if (resetRunning) {
+                resetAutomationState(userChannel);
+            }
             CommandManager manager = new CommandManager(model);
             if (userChannel) {
                 // Route through the model, not a captured sink: reportUserMessage resolves the
@@ -122,5 +132,70 @@ public class AutomationEngine {
         model.getForks().forEach(ForkRailTrack::removeAllForkEventListeners);
         model.getSemaphores().forEach(RailSemaphore::removeAllSemaphoreEventListeners);
         model.removeAllScriptTrainEventListeners();
+    }
+
+    /**
+     * Wipes the per-train automation state before the new program builds it again (ADR-009: every
+     * APPLY wipes and recreates the state). A cancelled mission plus a reset of the pending
+     * waypoint actions keeps a half-done maneuver from resuming against the new plan, and clearing
+     * the block wait rescues a train stuck on a release that will never come (#653). A train that
+     * was running is announced through the user channel: the new program restarts its service, so a
+     * hot swap is never silent.
+     */
+    private void resetAutomationState(boolean userChannel) {
+        for (Train train : trains()) {
+            boolean wasRunning = train.isAutoMode() && isAutomationActive(train);
+            if (wasRunning) {
+                // Safe stop: the new program re-evaluates the movement from a stopped train. The
+                // deferred speed of the old program is dropped below so it cannot come back.
+                train.getMovementManager().initiateBraking();
+            }
+            if (train.getActionManager() != null) {
+                train.getActionManager().resetPendingActions();
+            }
+            if (train.getAutopilot() != null) {
+                train.getAutopilot().deactivate();
+            }
+            if (train.getSafetyManager() != null) {
+                train.getSafetyManager().cancelBlockWait();
+            }
+            train.setSavedTargetSpeed(-1);
+            if (wasRunning) {
+                reportProgramReset(train, userChannel);
+            }
+        }
+    }
+
+    private static boolean isAutomationActive(Train train) {
+        AutoPilot autopilot = train.getAutopilot();
+        if (autopilot == null) {
+            return false;
+        }
+        return autopilot.mode() != AutoPilot.Mode.IDLE
+                || autopilot.mission().filter(TrainMission::isActive).isPresent();
+    }
+
+    private void reportProgramReset(Train train, boolean userChannel) {
+        String text = "Train " + train.getId()
+                + " was running: the new program reset its automation (a reassigned itinerary"
+                + " restarts from the first waypoint). Stop the train before reprogramming to"
+                + " avoid restarting a maneuver in progress.";
+        if (userChannel) {
+            model.reportUserMessage("Program", text);
+        } else {
+            log.warn("[DSL] {}", text);
+        }
+    }
+
+    /** Every train of the model, each one once even when it carries several locomotives. */
+    private List<Train> trains() {
+        List<Train> trains = new ArrayList<>();
+        for (Locomotive locomotive : model.getLocomotives()) {
+            Train train = locomotive.getTrain();
+            if (train != null && !trains.contains(train)) {
+                trains.add(train);
+            }
+        }
+        return trains;
     }
 }

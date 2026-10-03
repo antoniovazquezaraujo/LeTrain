@@ -424,8 +424,9 @@ class BrakeAtBoundaryIntegrationTest {
     /** Orders a speed through the DSL (console path), as a user or a trigger would. */
     private void orderSpeed(Train subject, int speed) {
         int locoId = ((Locomotive) subject.getDirectorLinker()).getId();
-        List<String> errors = model.setProgram("train " + locoId + " set speed " + speed + ";");
-        assertTrue(errors.isEmpty(), "unexpected errors: " + errors);
+        String error = letrain.command.PlayerCommandExecutor
+                .execute("train " + locoId + " set speed " + speed + ";", model);
+        assertTrue(error == null, "unexpected error: " + error);
     }
 
     /** Parks a train (engine off) and claims its segment so it blocks the path. */
