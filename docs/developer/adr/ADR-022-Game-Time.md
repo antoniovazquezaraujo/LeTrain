@@ -376,6 +376,15 @@ add station "B", arrival 06:27,
   velocidad, destino inexistente), se emite el aviso y se **abortan las acciones restantes de ese
   waypoint** para no seguir la coreografía en un estado raro; el `departure` y la ruta al siguiente
   waypoint siguen su curso.
+- **Objetivo desaparecido en tiempo de ejecución (issue #647)**: si el destino de una acción
+  (`stop at …`) deja de existir después de crear el itinerario (p. ej. edición de vías, o una
+  partida cargada en un mapa donde el sensor no existe), el arranque de la misión falla, avisa
+  (`sensor/estación N not found`) y aborta las acciones restantes como en un rechazo. Una acción
+  guardada sin destino (partida antigua/corrupta) también aborta en vez de desaparecer en silencio.
+- **Choque dentro de un itinerario (issue #648)**: un choque (velocidad ≥ umbral) falla la misión
+  en curso con aviso y **aborta las acciones pendientes del waypoint**, incluidas las esperas ya
+  programadas (`wait`/carga): la coreografía no continúa sobre la composición destruida. El choque
+  en sí queda además en el registro de eventos (`CRASH! Train …`).
 - **Después de la maniobra** la ruta al siguiente waypoint se recalcula desde donde haya quedado el
   tren (posición y sentido).
 - **Las órdenes sueltas no pisan el plan**: si el tren está cumpliendo un itinerario, una orden

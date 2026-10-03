@@ -88,8 +88,8 @@ public interface AutoPilot {
     default void onContact(letrain.map.Point pos, int speed) {}
 
     /**
-     * Crash of the train (issue #645): the contact happened at or above the crash threshold and the
-     * normal physics (destruction) applies. A running {@code stop on contact} mission fails with a
+     * Crash of the train (issues #645/#648): the contact happened at or above the crash threshold
+     * and the normal physics (destruction) applies. A running mission of any kind fails with a
      * warning instead of waiting for a train that no longer exists.
      */
     default void onCrash(letrain.map.Point pos, int speed) {}
