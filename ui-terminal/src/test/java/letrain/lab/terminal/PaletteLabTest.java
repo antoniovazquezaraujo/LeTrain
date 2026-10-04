@@ -76,16 +76,20 @@ class PaletteLabTest {
     }
 
     @Test
-    @DisplayName("every token keeps the minimum contrast across the whole fade")
+    @DisplayName("every token keeps the minimum contrast against its backdrop across the whole fade")
     void should_KeepMinimumContrast_AcrossTheFade() {
         for (int i = 0; i <= 50; i++) {
             double ratio = PaletteLab.LIGHT_NIGHTFALL + i / 100.0;
             PaletteLab.Pal pal = PaletteLab.blend(0, ratio);
-            double bg = luminance(pal.ground());
-            int[] tokens = {pal.rail(), pal.water(), pal.station(), pal.sensor(), pal.label(),
-                    pal.cursorDrawing()};
-            for (int token : tokens) {
-                double delta = Math.abs(luminance(token) - bg);
+            double field = luminance(pal.ground());
+            double sea = luminance(pal.waterBg());
+            double mountain = luminance(pal.rockBg());
+            double[][] checks = {{luminance(pal.rail()), field}, {luminance(pal.station()), field},
+                    {luminance(pal.sensor()), field}, {luminance(pal.label()), field},
+                    {luminance(pal.cursorDrawing()), field}, {luminance(pal.water()), sea},
+                    {luminance(pal.rock()), mountain}};
+            for (double[] check : checks) {
+                double delta = Math.abs(check[0] - check[1]);
                 assertTrue(delta >= PaletteLab.MIN_CONTRAST - 8,
                         "ratio=" + ratio + " delta=" + delta);
             }
