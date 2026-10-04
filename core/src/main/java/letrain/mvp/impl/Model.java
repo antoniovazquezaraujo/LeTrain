@@ -728,6 +728,11 @@ public class Model implements letrain.mvp.Model {
             selectedFork = getForks().get(0);
             selectedForkIndex = 0;
         }
+        if (mode == GameMode.DRIVE && selectedLocomotive == null) {
+            // Entering Drive with nothing selected lands on the first available locomotive (issue
+            // #700): the HUD data, the camera follow and the zone ambience all read the selection.
+            selectFirstLocomotive();
+        }
     }
 
     @Override
@@ -794,6 +799,11 @@ public class Model implements letrain.mvp.Model {
     @Override
     public boolean selectPrevLocomotive() {
         return ModelSelectionService.selectPrevLocomotive(this);
+    }
+
+    @Override
+    public boolean selectFirstLocomotive() {
+        return ModelSelectionService.selectFirstLocomotive(this);
     }
 
     @Override
