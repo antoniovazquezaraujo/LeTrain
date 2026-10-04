@@ -178,15 +178,34 @@ public class RenderVisitor implements Visitor {
         return litCells.get(cellKey(x, y));
     }
 
-    /** Enciende el fondo de la celda: papel nocturno mezclado hacia el diurno. */
-    private void applyHeadlightBackground(int x, int y) {
+    /**
+     * Pinta el fondo de la celda con el tono del token de fondo que toque (campo, mar, montaña),
+     * mezclado hacia su color diurno cuando el haz del faro ilumina la celda.
+     */
+    private void applyBackground(int x, int y, TerminalPalette.Token background) {
+        int value = rgb(background);
         Float lit = litFactor(x, y);
-        if (lit == null || lit <= 0f) {
-            return;
+        if (lit != null && lit > 0f) {
+            value = TerminalPalette.mix(value, dayColors.rgb(background),
+                    lit * Headlight.MAX_LIGHT);
         }
-        int board = TerminalPalette.mix(rgb(TerminalPalette.Token.BOARD),
-                dayColors.rgb(TerminalPalette.Token.BOARD), lit * Headlight.MAX_LIGHT);
-        view.setBgColor(palette.colorOf(board));
+        view.setBgColor(palette.colorOf(value));
+    }
+
+    /** Token de fondo del terreno bajo la celda: mar, montaña o campo si no hay dato. */
+    private TerminalPalette.Token backgroundTokenAt(int x, int y) {
+        if (model == null || model.getGroundMap() == null) {
+            return TerminalPalette.Token.BOARD;
+        }
+        Integer value = model.getGroundMap().getValueAt(x, y);
+        if (value == null) {
+            return TerminalPalette.Token.BOARD;
+        }
+        return switch (value) {
+            case GroundMap.WATER -> TerminalPalette.Token.WATER_BG;
+            case GroundMap.ROCK -> TerminalPalette.Token.ROCK_BG;
+            default -> TerminalPalette.Token.BOARD;
+        };
     }
 
     /** Color del token con el faro aplicado: mezcla su versión nocturna con la diurna. */
@@ -289,7 +308,7 @@ public class RenderVisitor implements Visitor {
         } else {
             view.setFgColor(headlightColor(TerminalPalette.Token.RAIL, x, y));
         }
-        applyHeadlightBackground(x, y);
+        applyBackground(x, y, backgroundTokenAt(x, y));
         view.set(x, y, aspect);
         resetColors();
     }
@@ -565,7 +584,9 @@ public class RenderVisitor implements Visitor {
         }
         TextColor locoColor = parseColor(locomotive.getColor());
         view.setFgColor(locoColor != null ? locoColor : color(TerminalPalette.Token.LOCO));
-        applyHeadlightBackground(locomotive.getPosition().getX(), locomotive.getPosition().getY());
+        applyBackground(locomotive.getPosition().getX(), locomotive.getPosition().getY(),
+                backgroundTokenAt(locomotive.getPosition().getX(),
+                        locomotive.getPosition().getY()));
         if (locomotive == selectedLocomotive) {
             view.setUnderline(true);
         }
@@ -615,7 +636,8 @@ public class RenderVisitor implements Visitor {
         } else {
             view.setFgColor(color(TerminalPalette.Token.WAGON));
         }
-        applyHeadlightBackground(wagon.getPosition().getX(), wagon.getPosition().getY());
+        applyBackground(wagon.getPosition().getX(), wagon.getPosition().getY(),
+                backgroundTokenAt(wagon.getPosition().getX(), wagon.getPosition().getY()));
         highlightIfSelected(wagon);
         view.set(wagon.getPosition().getX(), wagon.getPosition().getY(), wagon.getAspect());
         resetColors();
@@ -649,7 +671,8 @@ public class RenderVisitor implements Visitor {
                 view.setFgColor(color(TerminalPalette.Token.CURSOR_MOVING));
                 break;
         }
-        applyHeadlightBackground(cursor.getPosition().getX(), cursor.getPosition().getY());
+        applyBackground(cursor.getPosition().getX(), cursor.getPosition().getY(),
+                backgroundTokenAt(cursor.getPosition().getX(), cursor.getPosition().getY()));
         view.set(cursor.getPosition().getX(), cursor.getPosition().getY(), aspect);
         resetColors();
     }
@@ -824,7 +847,11 @@ public class RenderVisitor implements Visitor {
             }
         }
         view.setFgColor(token != null ? headlightColor(token, x, y) : color);
-        applyHeadlightBackground(x, y);
+        applyBackground(x, y, switch (type) {
+            case GroundMap.WATER -> TerminalPalette.Token.WATER_BG;
+            case GroundMap.ROCK -> TerminalPalette.Token.ROCK_BG;
+            default -> TerminalPalette.Token.BOARD;
+        });
         view.set(x, y, aspect);
         resetColors();
     }

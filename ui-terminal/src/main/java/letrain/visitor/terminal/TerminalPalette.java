@@ -16,6 +16,9 @@ import org.slf4j.LoggerFactory;
  * El <b>blanco queda reservado para la nieve futura</b>: el campo de día es verde (#692), nunca
  * papel. En 2D el token {@code BOARD} es la superficie que se ve (las celdas de campo se pintan
  * como un espacio sobre el fondo), así que acompaña al verde del terreno; no hay marco neutro.
+ * Desde #692 v2 cada terreno tiene su fondo de celda ({@code BOARD} campo, {@code WATER_BG} mar,
+ * {@code ROCK_BG} montaña) y cada glifo contrasta con el suyo (las olas sobre el mar, la roca sobre
+ * la montaña), no siempre con el campo.
  *
  * <p>
  * Es data pura y matemáticas: no conoce Lanterna salvo al traducir el RGB al modo que soporte el
@@ -27,7 +30,7 @@ public final class TerminalPalette {
     private static final Logger log = LoggerFactory.getLogger(TerminalPalette.class);
 
     public enum Token {
-        GROUND, WATER, ROCK, RAIL, RAIL_INACTIVE, RAIL_INVALID, STATION, STATION_SELECTED, PRODUCER, CONSUMER, SENSOR, SEMAPHORE_OPEN, SEMAPHORE_CLOSED, SIGNAL_MAX, SIGNAL_MIN, DEAD_END, TUNNEL, BRIDGE, LOCO, WAGON, CARGO_COAL, CARGO_GOLD, CARGO_RUBY, CURSOR_DRAWING, CURSOR_MOVING, CURSOR_ERASING, HIGHLIGHT, LABEL, BOARD, FORK, FORK_SELECTED, SELECTION_LINK, CRASH
+        GROUND, WATER, ROCK, RAIL, RAIL_INACTIVE, RAIL_INVALID, STATION, STATION_SELECTED, PRODUCER, CONSUMER, SENSOR, SEMAPHORE_OPEN, SEMAPHORE_CLOSED, SIGNAL_MAX, SIGNAL_MIN, DEAD_END, TUNNEL, BRIDGE, LOCO, WAGON, CARGO_COAL, CARGO_GOLD, CARGO_RUBY, CURSOR_DRAWING, CURSOR_MOVING, CURSOR_ERASING, HIGHLIGHT, LABEL, BOARD, FORK, FORK_SELECTED, SELECTION_LINK, CRASH, WATER_BG, ROCK_BG
     }
 
     /** Modo de color del terminal, de mejor a peor fidelidad. */
@@ -62,23 +65,26 @@ public final class TerminalPalette {
     // ES el terreno visible. 0x4CA331 es el mismo tono (~106°) y la misma luminosidad percibida
     // (136) con la saturación mínima para que el fallback ANSI-16 caiga en el verde del tema;
     // 0x66994C puro caía en el gris brillante (slot 8). El blanco no se usa: queda para la nieve.
-    private static final int[] DAY = {rgb(76, 163, 49), rgb(40, 90, 190), rgb(170, 60, 60),
+    // WATER_BG/ROCK_BG son fondos de celda (mar y montaña) y no se fuerzan contra BOARD: el glifo
+    // de cada terreno (olas cyan, roca clara) contrasta con SU fondo, no con el campo.
+    private static final int[] DAY = {rgb(76, 163, 49), rgb(0, 169, 192), rgb(200, 160, 107),
             rgb(50, 50, 55), rgb(150, 150, 150), rgb(200, 160, 0), rgb(25, 25, 30),
             rgb(200, 30, 30), rgb(170, 130, 0), rgb(90, 85, 70), rgb(0, 130, 130), rgb(0, 130, 60),
             rgb(200, 30, 30), rgb(200, 30, 30), rgb(40, 70, 170), rgb(200, 160, 0), rgb(90, 90, 95),
             rgb(70, 70, 80), rgb(40, 40, 45), rgb(90, 90, 95), rgb(20, 20, 20), rgb(150, 120, 0),
             rgb(180, 0, 50), rgb(0, 110, 40), rgb(170, 140, 0), rgb(190, 40, 40), rgb(25, 25, 30),
             rgb(60, 60, 65), rgb(76, 163, 49), rgb(25, 25, 30), rgb(200, 30, 30), rgb(150, 20, 120),
-            rgb(200, 60, 30)};
-    private static final int[] DUSK = {rgb(82, 122, 56), rgb(45, 80, 165), rgb(160, 70, 55),
+            rgb(200, 60, 30), rgb(26, 62, 143), rgb(112, 58, 26)};
+    private static final int[] DUSK = {rgb(82, 122, 56), rgb(47, 127, 152), rgb(169, 133, 94),
             rgb(60, 52, 48), rgb(140, 130, 115), rgb(180, 140, 20), rgb(60, 40, 25),
             rgb(190, 50, 40), rgb(160, 115, 10), rgb(95, 80, 60), rgb(20, 120, 120),
             rgb(20, 115, 55), rgb(190, 50, 40), rgb(190, 50, 40), rgb(50, 75, 160),
             rgb(180, 140, 20), rgb(95, 85, 75), rgb(85, 75, 65), rgb(55, 45, 40), rgb(95, 85, 75),
             rgb(35, 30, 28), rgb(160, 115, 10), rgb(175, 30, 55), rgb(20, 110, 45),
             rgb(160, 120, 10), rgb(180, 55, 45), rgb(70, 55, 40), rgb(80, 65, 55), rgb(82, 122, 56),
-            rgb(60, 40, 25), rgb(190, 50, 40), rgb(150, 40, 120), rgb(190, 70, 40)};
-    private static final int[] NIGHT = {rgb(22, 25, 35), rgb(60, 95, 180), rgb(150, 100, 95),
+            rgb(60, 40, 25), rgb(190, 50, 40), rgb(150, 40, 120), rgb(190, 70, 40), rgb(20, 44, 92),
+            rgb(70, 38, 26)};
+    private static final int[] NIGHT = {rgb(22, 25, 35), rgb(78, 147, 168), rgb(150, 100, 95),
             rgb(150, 150, 160), rgb(70, 72, 80), rgb(200, 190, 70), rgb(225, 228, 240),
             rgb(235, 90, 80), rgb(230, 200, 40), rgb(215, 210, 190), rgb(90, 200, 205),
             rgb(80, 200, 120), rgb(235, 90, 80), rgb(235, 90, 80), rgb(95, 125, 235),
@@ -86,7 +92,7 @@ public final class TerminalPalette {
             rgb(190, 192, 205), rgb(45, 45, 55), rgb(230, 200, 40), rgb(235, 40, 90),
             rgb(70, 190, 90), rgb(230, 200, 40), rgb(235, 90, 80), rgb(225, 228, 240),
             rgb(160, 165, 180), rgb(22, 25, 35), rgb(225, 228, 240), rgb(235, 90, 80),
-            rgb(230, 120, 210), rgb(255, 120, 60)};
+            rgb(230, 120, 210), rgb(255, 120, 60), rgb(8, 19, 38), rgb(28, 18, 11)};
 
     private final Depth depth;
 
@@ -213,32 +219,49 @@ public final class TerminalPalette {
         Map<Token, TextColor> colors = new EnumMap<>(Token.class);
         rgb.forEach((token, value) -> colors.put(token, colorOf(value)));
         if (depth == Depth.ANSI_16) {
-            keepTokensOffTheBoard(rgb, colors);
+            keepTokensOffTheirBackdrop(rgb, colors);
         }
         return new Resolved(rgb, colors);
     }
 
+    /** Tokens de fondo de celda (campo, mar, montaña): no son glifos y no llevan contraste. */
+    static boolean isBackground(Token token) {
+        return token == Token.BOARD || token == Token.GROUND || token == Token.WATER_BG
+                || token == Token.ROCK_BG;
+    }
+
+    /** Fondo sobre el que se pinta cada glifo: las olas sobre el mar y la roca sobre la montaña. */
+    static Token backgroundOf(Token token) {
+        return switch (token) {
+            case WATER -> Token.WATER_BG;
+            case ROCK -> Token.ROCK_BG;
+            default -> Token.BOARD;
+        };
+    }
+
     /**
-     * Con 16 colores la cuantización puede colapsar un token en el slot del tablero y hacerlo
+     * Con 16 colores la cuantización puede colapsar un token en el slot de su fondo y hacerlo
      * desaparecer (p. ej. el semáforo abierto o el cursor de dibujo verdes sobre el campo verde de
      * #692). Solo se recoloca el token a otro slot cuando en RGB sí se distinguía del fondo (el
      * suelo de contraste ya lo garantiza); si el fondo es tan oscuro que el RGB tampoco se separa,
      * se respeta el fundido y no se toca. El slot elegido conserva además una diferencia de
-     * luminosidad de al menos {@link #MIN_CONTRAST} con el del tablero.
+     * luminosidad de al menos {@link #MIN_CONTRAST} con el de su fondo.
      */
-    private static void keepTokensOffTheBoard(Map<Token, Integer> rgb,
+    private static void keepTokensOffTheirBackdrop(Map<Token, Integer> rgb,
             Map<Token, TextColor> colors) {
-        int boardRgb = rgb.get(Token.BOARD);
-        TextColor board = colors.get(Token.BOARD);
-        double boardLuminance = luminance(boardRgb);
         for (Token token : Token.values()) {
-            if (token == Token.BOARD || !board.equals(colors.get(token))) {
+            if (isBackground(token)) {
                 continue;
             }
-            if (Math.abs(luminance(rgb.get(token)) - boardLuminance) < MIN_CONTRAST) {
+            Token backdrop = backgroundOf(token);
+            if (!colors.get(backdrop).equals(colors.get(token))) {
                 continue;
             }
-            colors.put(token, nearestAnsi(rgb.get(token), boardLuminance));
+            double backdropLuminance = luminance(rgb.get(backdrop));
+            if (Math.abs(luminance(rgb.get(token)) - backdropLuminance) < MIN_CONTRAST) {
+                continue;
+            }
+            colors.put(token, nearestAnsi(rgb.get(token), backdropLuminance));
         }
     }
 
@@ -246,16 +269,19 @@ public final class TerminalPalette {
     static Map<Token, Integer> rgbFor(float ratio) {
         float clamped = Math.max(0f, Math.min(1f, ratio));
         Map<Token, Integer> resolved = new EnumMap<>(Token.class);
-        int board = blendKey(Token.BOARD, clamped);
-        resolved.put(Token.BOARD, board);
         for (Token token : Token.values()) {
-            if (token == Token.BOARD || token == Token.GROUND) {
-                // El campo es el mismo verde que el fondo (en 2D el tablero es el terreno): no se
-                // fuerza contraste. El blanco queda reservado para la nieve futura.
+            if (isBackground(token)) {
+                // El campo, el mar y la montaña son fondos: se resuelven tal cual. El blanco queda
+                // reservado para la nieve futura.
                 resolved.put(token, blendKey(token, clamped));
+            }
+        }
+        for (Token token : Token.values()) {
+            if (isBackground(token)) {
                 continue;
             }
-            resolved.put(token, contrast(blendKey(token, clamped), luminance(board)));
+            resolved.put(token, contrast(blendKey(token, clamped),
+                    luminance(resolved.get(backgroundOf(token)))));
         }
         return resolved;
     }

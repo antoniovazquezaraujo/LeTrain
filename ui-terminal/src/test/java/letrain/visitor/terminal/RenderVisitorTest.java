@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.googlecode.lanterna.TextColor;
 import java.util.List;
+import letrain.ground.Ground;
+import letrain.ground.GroundMap;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.mvp.Model;
@@ -559,5 +561,63 @@ class RenderVisitorTest {
 
         verify(view, never()).setBgColor(litBoard(palette, 1, 0));
         verify(view, atLeastOnce()).setBgColor(litBoard(palette, 2, 1));
+    }
+
+    @Test
+    @DisplayName("visitGround paints the sea backdrop under the water cell")
+    void visitGround_shouldPaintSeaBackdrop_whenWater() {
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        RenderVisitor visitor = new RenderVisitor(view, palette);
+
+        Ground ground = mock(Ground.class);
+        when(ground.getType()).thenReturn(GroundMap.WATER);
+        when(ground.getPosition()).thenReturn(new Point(2, 3));
+
+        visitor.visitModel(mock(Model.class));
+        visitor.visitGround(ground);
+
+        int seaBg = TerminalPalette.rgbFor(0f).get(TerminalPalette.Token.WATER_BG);
+        verify(view, atLeastOnce()).setBgColor(palette.colorOf(seaBg));
+    }
+
+    @Test
+    @DisplayName("visitGround paints the mountain backdrop under the rock cell")
+    void visitGround_shouldPaintMountainBackdrop_whenRock() {
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        RenderVisitor visitor = new RenderVisitor(view, palette);
+
+        Ground ground = mock(Ground.class);
+        when(ground.getType()).thenReturn(GroundMap.ROCK);
+        when(ground.getPosition()).thenReturn(new Point(4, 1));
+
+        visitor.visitModel(mock(Model.class));
+        visitor.visitGround(ground);
+
+        int rockBg = TerminalPalette.rgbFor(0f).get(TerminalPalette.Token.ROCK_BG);
+        verify(view, atLeastOnce()).setBgColor(palette.colorOf(rockBg));
+    }
+
+    @Test
+    @DisplayName("a rail over water keeps the sea backdrop, not the green field")
+    void visitRailTrack_shouldKeepSeaBackdrop_whenOverWater() {
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        RenderVisitor visitor = new RenderVisitor(view, palette);
+
+        Model model = mock(Model.class);
+        letrain.ground.GroundMap groundMap = mock(letrain.ground.GroundMap.class);
+        when(model.getGroundMap()).thenReturn(groundMap);
+        when(groundMap.getValueAt(5, 5)).thenReturn(letrain.ground.GroundMap.WATER);
+
+        RailTrack track = new RailTrack();
+        track.setPosition(new Point(5, 5));
+
+        visitor.visitModel(model);
+        visitor.visitRailTrack(track);
+
+        int seaBg = TerminalPalette.rgbFor(0f).get(TerminalPalette.Token.WATER_BG);
+        verify(view, atLeastOnce()).setBgColor(palette.colorOf(seaBg));
     }
 }

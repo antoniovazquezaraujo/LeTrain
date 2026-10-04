@@ -40,9 +40,11 @@ Lo que hay en `develop` a día de hoy; el detalle por fase está al final de la 
 - **2D** (`ui-terminal`): `TerminalPalette` (familia clara) resuelve los tokens con degradación
   **24-bit → 256 → 16 ANSI** según `COLORTERM`/`TERM`; el `RenderVisitor` cuantiza el ratio en
   **20 niveles** (`BANDS = 19`) con histéresis direccional y suelo de contraste, y mezcla el fondo
-  con su color diurno dentro del haz del faro. El suelo de día y crepúsculo es **verde de campo**
-  (`0x4CA331` / `0x527A38`, ajuste del `VisualPalette.TERRAIN_FIELDS` de 3D), no papel: el
-  **blanco queda reservado para la nieve futura** (#692).
+  con su color diurno dentro del haz del faro. Cada terreno tiene su **fondo de celda**: campo
+  verde (`BOARD`/`GROUND`), **mar azul** (`WATER_BG`) y **montaña marrón** (`ROCK_BG`), con las
+  olas en cyan sobre el mar y la roca clara sobre la montaña; el suelo de día y crepúsculo es
+  verde de campo (`0x4CA331` / `0x527A38`, ajuste del `VisualPalette.TERRAIN_FIELDS` de 3D), no
+  papel: el **blanco queda reservado para la nieve futura** (#692).
 - **Faros**: umbral compartido `VisualPalette.LIGHTS_ON_RATIO = 0,1` y rampa `lightsOnFactor`. En 3D
   `HeadlightGlows` + `HeadlightGlowRenderer` dibujan hasta 4 charcos suaves (quad con falloff
   cuadrático por fragmento y alpha blending) delante de la locomotora y
@@ -105,6 +107,10 @@ los valores vivos están hoy en `VisualPalette` (ambiente y 3D) y `TerminalPalet
 Actualización (beta.6, #692): en 2D `terrain.fields` ya no es `WHITE`; el campo y el tablero son
 verde de día (`0x4CA331`) y crepúsculo (`0x527A38`), y el blanco queda reservado para la nieve
 futura. En 3D `TERRAIN_FIELDS` no cambia.
+
+Actualización (beta.6, #692 v2): en 2D `terrain.water` y `terrain.mountain` tienen además fondo de
+celda propio (mar azul `WATER_BG`, montaña marrón `ROCK_BG`) y sus glifos (olas cyan, roca clara)
+se contrastan contra él; en 3D no hay cambio.
 
 ### Terreno y estructura
 
@@ -193,13 +199,14 @@ esferas (la activa a color, la otra muy oscura). Limpieza pendiente: en 2D `SEMA
 ## Reglas y guardarraíles
 
 1. **Determinismo**: la paleta depende solo de `getDayNightRatio()` (ticks), nunca del reloj real.
-2. **Contraste mínimo en 2D**: cada variante debe contrastar con el fondo de su franja (familia
-   clara: glifos oscuros sobre campo verde de día y claros sobre oscuro de noche); mejor cambiar de
-   tono que acercarse al fondo. Las fronteras usan histéresis para no parpadear. Cuando el fondo
-   del fundido baja de `MIN_CONTRAST` de luminosidad, el máximo contraste alcanzable es el que
-   permite el extremo (negro o blanco); el test exige ese máximo físico. En **16 colores** la
-   cuantización puede colapsar un token en el slot del tablero (p. ej. el semáforo abierto verde
-   sobre el campo verde): `resolve()` recoloca entonces el token al slot más cercano que mantenga
+2. **Contraste mínimo en 2D**: cada variante debe contrastar con **su** fondo de celda (campo,
+   mar o montaña; familia clara: glifos oscuros de día y claros sobre oscuro de noche); mejor
+   cambiar de tono que acercarse al fondo. Las fronteras usan histéresis para no parpadear. Cuando
+   el fondo del fundido baja de `MIN_CONTRAST` de luminosidad, el máximo contraste alcanzable es el
+   que permite el extremo (negro o blanco); el test exige ese máximo físico. En **16 colores** la
+   cuantización puede colapsar un token en el slot de su fondo (p. ej. el semáforo abierto verde
+   sobre el campo verde, o las olas sobre el mar): `resolve()` recoloca entonces el token al slot
+   más cercano que mantenga
    `MIN_CONTRAST` de separación con el del fondo.
 3. **Los avisos no se apagan**: vía inválida, bloque ocupado, semáforos, señales, cursor y
    resaltados conservan color y contraste de noche (son información de juego, no decorado).
@@ -249,14 +256,22 @@ Pendiente de 1e: farolas/ventanas, acabado de cielo y niebla fina. El resto de l
   con el ratio del reloj, inversión de polaridad y suelo de contraste. El `RenderVisitor` lee el
   ratio una vez por frame (`model.getGameClock().getDayNightRatio()`) y resuelve la paleta solo
   cuando cambia de nivel (ver *Escalonado*); cada token (terreno, vía, estaciones, señales, trenes,
-  cursor, resaltados) se pinta con su color y el fondo del mapa es el token `BOARD`.
-  **`GROUND` y `BOARD` son el mismo verde** (día `0x4CA331`, crepúsculo `0x527A38`): en 2D las
-  celdas de campo se pintan como un espacio sobre el tablero, así que el tablero *es* el terreno
-  visible; no existe un marco neutro que conservar. `0x4CA331` es el `TERRAIN_FIELDS` de 3D
-  (`0x66994C`) con la misma luminosidad percibida (136) y el mismo tono (~106°), subiendo solo la
-  saturación lo justo para que el fallback de 16 colores caiga en el **verde del tema** y no en el
-  gris brillante (slot 8). La noche (`0x161923` y sus claves) no cambia, y el **blanco no se usa
-  como suelo: queda reservado para la nieve futura** (#692).
+  cursor, resaltados) se pinta con su color.
+  **Fondos por terreno** (#692 v2): el campo (`BOARD`/`GROUND`), el mar (`WATER_BG`) y la montaña
+  (`ROCK_BG`) son tokens de fondo; `visitGround` fija el de su celda antes del glifo, y vía, trenes
+  y cursor lo conservan (`backgroundTokenAt` consulta el terreno bajo la celda), también bajo el
+  haz del faro (que mezcla el token de fondo de esa celda, no siempre `BOARD`). `resetColors()`
+  sigue restaurando `BOARD` para el resto. **`GROUND` y `BOARD` son el mismo verde** (día
+  `0x4CA331`, crepúsculo `0x527A38`): en 2D las celdas de campo se pintan como un espacio sobre el
+  tablero, así que el tablero *es* el terreno visible; no existe un marco neutro que conservar.
+  El agua es **azul marino** (`0x1A3E8F` / `0x142C5C` / `0x081326`) con las **olas en cyan**
+  (`0x00A9C0` / `0x2F7F98` / `0x4E93A8`), y la montaña **marrón oscuro** (`0x703A1A` / `0x46261A` /
+  `0x1C120B`) con la **roca clara** (`0xC8A06B` / `0xA9855E` / `0x96645F`). Cada glifo contrasta
+  con **su** fondo, no con el campo. `0x4CA331` es el `TERRAIN_FIELDS` de 3D (`0x66994C`) con la
+  misma luminosidad percibida (136) y el mismo tono (~106°), subiendo solo la saturación lo justo
+  para que el fallback de 16 colores caiga en el **verde del tema** y no en el gris brillante
+  (slot 8). La noche del campo (`0x161923`) no cambia, y el **blanco no se usa como suelo: queda
+  reservado para la nieve futura** (#692).
   Traducción de color: **24-bit → 256 → 16 ANSI** según `COLORTERM`/`TERM`. El HUD (`menuBox`) y
   el `InfoVisitor` se quedan como estaban.
   **Escalonado**: el ratio solar es continuo y, interpolado, obligaba al terminal a repintar el
@@ -314,6 +329,14 @@ Pendiente de 1e: farolas/ventanas, acabado de cielo y niebla fina. El resto de l
   para que el fallback ANSI-16 use el verde del tema. **El blanco queda reservado para la nieve
   futura**: ningún suelo lo usa (mientras no exista nieve, el blanco no aparece como terreno).
   La noche no cambia.
+- **2D: fondo propio por terreno** (#692 v2). El mar (`WATER_BG`, azul marino) y la montaña
+  (`ROCK_BG`, marrón oscuro) son tokens de fondo con claves día/crepúsculo/noche, como el campo.
+  Las olas (`WATER`) pasan a cyan para separarse del mar y la roca (`ROCK`) se aclara para leerse
+  sobre el marrón; cada glifo se contrasta contra su fondo (no contra `BOARD`). `visitGround` pinta
+  el fondo de la celda, y vía, trenes y cursor lo conservan incluso bajo el haz del faro
+  (`backgroundTokenAt`). En 16 colores el guard recoloca cualquier glifo que caiga en el slot de
+  **su** fondo. De día: mar `BLUE` + olas `CYAN`, montaña `RED` + roca `BLACK_BRIGHT`, campo
+  `GREEN`, todo distinguible.
 - **2D: color 24-bit con degradación 256 → 16 ANSI** (detección por `COLORTERM`/`TERM`, sin
   autodetección del fondo del terminal). Las constantes muertas del 2D
   (`SEMAPHORE_COLOR`, `SELECTED_SEMAPHORE_COLOR`, `SELECTED_FORK_COLOR`,
