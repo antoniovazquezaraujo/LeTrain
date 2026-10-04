@@ -242,6 +242,10 @@ public class TrackRenderer extends BaseSubRenderer {
         if (modelRef == null || track == null) {
             return null;
         }
+        letrain.economy.EconomyManager economyManager = modelRef.getEconomyManager();
+        if (economyManager != null && !economyManager.isHighlightBlockedTracks()) {
+            return null;
+        }
         letrain.vehicle.rail.impl.Train ownerTrain = null;
         letrain.segments.RailwayGraph graph = modelRef.getRailwayGraph();
         letrain.segments.BlockManager blockManager = modelRef.getBlockManager();

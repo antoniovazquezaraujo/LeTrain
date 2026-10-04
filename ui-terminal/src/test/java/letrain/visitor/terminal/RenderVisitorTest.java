@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.googlecode.lanterna.TextColor;
 import java.util.List;
+import letrain.economy.EconomyManager;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.mvp.Model;
@@ -51,6 +52,73 @@ class RenderVisitorTest {
         visitor.visitRailTrack(track);
 
         // Verify that view.setFgColor was called with GREEN_BRIGHT
+        verify(view, atLeastOnce()).setFgColor(TextColor.ANSI.GREEN_BRIGHT);
+    }
+
+    @Test
+    @DisplayName("visitRailTrack keeps the rail colour when blocked-track highlighting is off")
+    void visitRailTrack_shouldKeepRailColor_whenHighlightingIsOff() {
+        TerminalView view = mock(TerminalView.class);
+        RenderVisitor visitor =
+                new RenderVisitor(view, new TerminalPalette(TerminalPalette.Depth.TRUECOLOR));
+
+        Model model = mock(Model.class);
+        EconomyManager economy = mock(EconomyManager.class);
+        RailwayGraph graph = mock(RailwayGraph.class);
+        BlockManager blockManager = mock(BlockManager.class);
+        Segment segment = mock(Segment.class);
+        Train train = mock(Train.class);
+        Locomotive loco = new Locomotive(1, "A", "GREEN_BRIGHT");
+
+        when(economy.isHighlightBlockedTracks()).thenReturn(false);
+        when(model.getEconomyManager()).thenReturn(economy);
+        when(train.getDirectorLinker()).thenReturn(loco);
+
+        RailTrack track = new RailTrack();
+        track.setPosition(new Point(5, 5));
+
+        when(model.getRailwayGraph()).thenReturn(graph);
+        when(model.getBlockManager()).thenReturn(blockManager);
+        when(graph.getSegment(track)).thenReturn(segment);
+        when(blockManager.getOwners(segment)).thenReturn(List.of(train));
+
+        visitor.visitModel(model);
+        visitor.visitRailTrack(track);
+
+        // No train livery: the reserved segment falls back to the normal rail colour
+        verify(view, never()).setFgColor(TextColor.ANSI.GREEN_BRIGHT);
+        verify(view, atLeastOnce()).setFgColor(new TextColor.RGB(50, 50, 55));
+    }
+
+    @Test
+    @DisplayName("visitRailTrack paints the livery when blocked-track highlighting is on")
+    void visitRailTrack_shouldPaintWithLocomotiveColor_whenHighlightingIsOn() {
+        TerminalView view = mock(TerminalView.class);
+        RenderVisitor visitor = new RenderVisitor(view);
+
+        Model model = mock(Model.class);
+        EconomyManager economy = mock(EconomyManager.class);
+        RailwayGraph graph = mock(RailwayGraph.class);
+        BlockManager blockManager = mock(BlockManager.class);
+        Segment segment = mock(Segment.class);
+        Train train = mock(Train.class);
+        Locomotive loco = new Locomotive(1, "A", "GREEN_BRIGHT");
+
+        when(economy.isHighlightBlockedTracks()).thenReturn(true);
+        when(model.getEconomyManager()).thenReturn(economy);
+        when(train.getDirectorLinker()).thenReturn(loco);
+
+        RailTrack track = new RailTrack();
+        track.setPosition(new Point(5, 5));
+
+        when(model.getRailwayGraph()).thenReturn(graph);
+        when(model.getBlockManager()).thenReturn(blockManager);
+        when(graph.getSegment(track)).thenReturn(segment);
+        when(blockManager.getOwners(segment)).thenReturn(List.of(train));
+
+        visitor.visitModel(model);
+        visitor.visitRailTrack(track);
+
         verify(view, atLeastOnce()).setFgColor(TextColor.ANSI.GREEN_BRIGHT);
     }
 

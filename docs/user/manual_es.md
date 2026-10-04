@@ -113,6 +113,9 @@ Empiezas con tu cuenta a cero. Para ganar dinero debes:
 
 Puedes ajustar los costes y recompensas base modificando el archivo `letrain.cfg`. Se distribuye
 junto al juego; un `letrain.cfg` en el directorio de trabajo tiene prioridad sobre el empaquetado.
+Además de los costes, el archivo incluye otros ajustes, como `ui.highlightBlockedTracks=true` (el
+valor por defecto), que pinta las vías reservadas/bloqueadas con la librea del tren propietario en
+ambos clientes; ponlo a `false` para conservar el color normal de la vía.
 
 ## 🕐 Reloj de Juego y Día/Noche
 

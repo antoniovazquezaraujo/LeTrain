@@ -92,6 +92,13 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     @com.fasterxml.jackson.annotation.JsonProperty("derailMinSpeed")
     private int derailMinSpeed = 3;
 
+    /**
+     * Tint reserved/blocked tracks with the owning train's livery
+     * ({@code ui.highlightBlockedTracks}, issue #694). Default true keeps the historical behaviour.
+     */
+    @com.fasterxml.jackson.annotation.JsonProperty("highlightBlockedTracks")
+    private boolean highlightBlockedTracks = true;
+
     private static final Logger log = LoggerFactory.getLogger(EconomyManager.class);
 
     @com.fasterxml.jackson.annotation.JsonProperty("eventLogManager")
@@ -641,6 +648,10 @@ public class EconomyManager implements letrain.economy.EconomyManager {
         derailMinSpeed = Integer
                 .parseInt(props.getProperty("derail.minSpeed", String.valueOf(derailMinSpeed)));
 
+        // UI: tint reserved/blocked tracks with the owning train's livery (issue #694)
+        highlightBlockedTracks = Boolean.parseBoolean(props.getProperty("ui.highlightBlockedTracks",
+                String.valueOf(highlightBlockedTracks)));
+
         // Load Construction Delays
         for (Presenter.TrackType type : Presenter.TrackType.values()) {
             String key = "delay." + type.name();
@@ -704,5 +715,15 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     @Override
     public int getDerailMinSpeed() {
         return derailMinSpeed;
+    }
+
+    @Override
+    public boolean isHighlightBlockedTracks() {
+        return highlightBlockedTracks;
+    }
+
+    @Override
+    public void setHighlightBlockedTracks(boolean highlight) {
+        this.highlightBlockedTracks = highlight;
     }
 }

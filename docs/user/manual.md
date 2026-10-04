@@ -108,7 +108,10 @@ You start with your account at zero. To earn money you must:
 3. Transport the cargo. **Profit is calculated based on the distance traveled**: the longer the journey from the producing zone to the consuming zone, the higher the payout!
 
 You can adjust the base costs and rewards by modifying the `letrain.cfg` file. It ships next to the
-game; a `letrain.cfg` in the working directory overrides the packaged one.
+game; a `letrain.cfg` in the working directory overrides the packaged one. Besides costs, the file
+holds other settings, such as `ui.highlightBlockedTracks=true` (the default), which tints
+reserved/blocked tracks with the owning train's livery in both clients; set it to `false` to keep
+the normal rail colour.
 
 ## 🕐 Game Time & Day/Night
 
