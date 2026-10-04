@@ -620,4 +620,70 @@ class RenderVisitorTest {
         int seaBg = TerminalPalette.rgbFor(0f).get(TerminalPalette.Token.WATER_BG);
         verify(view, atLeastOnce()).setBgColor(palette.colorOf(seaBg));
     }
+
+    @Test
+    @DisplayName("a rail over water uses a light colour that stands out from the sea")
+    void visitRailTrack_shouldLightenRail_whenOverWater() {
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        RenderVisitor visitor = new RenderVisitor(view, palette);
+
+        Model model = mock(Model.class);
+        GroundMap groundMap = mock(GroundMap.class);
+        when(model.getGroundMap()).thenReturn(groundMap);
+        when(groundMap.getValueAt(5, 5)).thenReturn(GroundMap.WATER);
+
+        RailTrack track = new RailTrack();
+        track.setPosition(new Point(5, 5));
+
+        visitor.visitModel(model);
+        visitor.visitRailTrack(track);
+
+        int seaBg = TerminalPalette.rgbFor(0f).get(TerminalPalette.Token.WATER_BG);
+        int rail = TerminalPalette
+                .lightenOn(TerminalPalette.rgbFor(0f).get(TerminalPalette.Token.RAIL), seaBg);
+        verify(view, atLeastOnce()).setFgColor(palette.colorOf(rail));
+
+        // Sobre el campo la vía se queda como la resolvió la paleta (sin aclarar).
+        RailTrack onLand = new RailTrack();
+        onLand.setPosition(new Point(9, 9));
+        visitor.visitRailTrack(onLand);
+        verify(view, atLeastOnce()).setFgColor(
+                palette.colorOf(TerminalPalette.rgbFor(0f).get(TerminalPalette.Token.RAIL)));
+    }
+
+    @Test
+    @DisplayName("a blocked-track livery is adjusted so it does not vanish into the sea")
+    void visitRailTrack_shouldAdjustBlockedLivery_whenOverWater() {
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        RenderVisitor visitor = new RenderVisitor(view, palette);
+
+        Model model = mock(Model.class);
+        GroundMap groundMap = mock(GroundMap.class);
+        when(model.getGroundMap()).thenReturn(groundMap);
+        when(groundMap.getValueAt(5, 5)).thenReturn(GroundMap.WATER);
+
+        RailwayGraph graph = mock(RailwayGraph.class);
+        BlockManager blockManager = mock(BlockManager.class);
+        Segment segment = mock(Segment.class);
+        Train train = mock(Train.class);
+        Locomotive loco = new Locomotive(1, "B", "BLUE");
+        when(train.getDirectorLinker()).thenReturn(loco);
+        when(model.getRailwayGraph()).thenReturn(graph);
+        when(model.getBlockManager()).thenReturn(blockManager);
+
+        RailTrack track = new RailTrack();
+        track.setPosition(new Point(5, 5));
+        when(graph.getSegment(track)).thenReturn(segment);
+        when(blockManager.getOwners(segment)).thenReturn(List.of(train));
+
+        visitor.visitModel(model);
+        visitor.visitRailTrack(track);
+
+        int seaBg = TerminalPalette.rgbFor(0f).get(TerminalPalette.Token.WATER_BG);
+        int livery = TextColor.ANSI.BLUE.toColor().getRGB() & 0xFFFFFF;
+        verify(view, atLeastOnce())
+                .setFgColor(palette.colorOf(TerminalPalette.contrastOn(livery, seaBg)));
+    }
 }

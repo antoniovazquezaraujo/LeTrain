@@ -208,15 +208,46 @@ public class RenderVisitor implements Visitor {
         };
     }
 
-    /** Color del token con el faro aplicado: mezcla su versión nocturna con la diurna. */
-    private TextColor headlightColor(TerminalPalette.Token token, int x, int y) {
+    /** RGB del token con el faro aplicado: mezcla su versión nocturna con la diurna. */
+    private int litValue(TerminalPalette.Token token, int x, int y) {
         Float lit = litFactor(x, y);
         if (lit == null || lit <= 0f) {
-            return color(token);
+            return rgb(token);
         }
-        int value =
-                TerminalPalette.mix(rgb(token), dayColors.rgb(token), lit * Headlight.MAX_LIGHT);
+        return TerminalPalette.mix(rgb(token), dayColors.rgb(token), lit * Headlight.MAX_LIGHT);
+    }
+
+    /** Color del token con el faro aplicado: mezcla su versión nocturna con la diurna. */
+    private TextColor headlightColor(TerminalPalette.Token token, int x, int y) {
+        return palette.colorOf(litValue(token, x, y));
+    }
+
+    /**
+     * Color de un glifo de vía (vía, puente, vía muerta, señales) adaptado al fondo real de su
+     * celda: sobre el campo se queda como lo resolvió la paleta (contraste con {@code BOARD});
+     * sobre mar o montaña se aclara, porque son fondos oscuros y la vía oscura se perdía.
+     */
+    private TextColor trackGlyphColor(TerminalPalette.Token token, int x, int y,
+            TerminalPalette.Token backdrop) {
+        int value = litValue(token, x, y);
+        if (backdrop != TerminalPalette.Token.BOARD) {
+            value = TerminalPalette.lightenOn(value, rgb(backdrop));
+        }
         return palette.colorOf(value);
+    }
+
+    /**
+     * Librea de un tren que bloquea la vía, adaptada al fondo real de la celda: sobre mar o montaña
+     * se aclara u oscurece lo justo para seguir distinguiéndose (una librea azul no puede fundirse
+     * con el mar). Sobre el campo manda tal cual.
+     */
+    private TextColor blockedColorOnBackdrop(TextColor blocked, TerminalPalette.Token backdrop) {
+        if (backdrop == TerminalPalette.Token.BOARD) {
+            return blocked;
+        }
+        java.awt.Color color = blocked.toColor();
+        return palette
+                .colorOf(TerminalPalette.contrastOn(color.getRGB() & 0xFFFFFF, rgb(backdrop)));
     }
 
     boolean isShowId() {
@@ -294,21 +325,22 @@ public class RenderVisitor implements Visitor {
         String aspect = getTrackAspect(track);
         int x = track.getPosition().getX();
         int y = track.getPosition().getY();
+        TerminalPalette.Token backdrop = backgroundTokenAt(x, y);
 
         if (blockedColor != null) {
-            view.setFgColor(blockedColor);
+            view.setFgColor(blockedColorOnBackdrop(blockedColor, backdrop));
         } else if (track.getComponent() instanceof letrain.track.Sensor) {
             if (track.getComponent() instanceof Station) {
-                view.setFgColor(headlightColor(TerminalPalette.Token.STATION, x, y));
+                view.setFgColor(trackGlyphColor(TerminalPalette.Token.STATION, x, y, backdrop));
             } else {
-                view.setFgColor(headlightColor(TerminalPalette.Token.SENSOR, x, y));
+                view.setFgColor(trackGlyphColor(TerminalPalette.Token.SENSOR, x, y, backdrop));
             }
         } else if (DEAD_END_ASPECT.equals(aspect)) {
-            view.setFgColor(headlightColor(TerminalPalette.Token.DEAD_END, x, y));
+            view.setFgColor(trackGlyphColor(TerminalPalette.Token.DEAD_END, x, y, backdrop));
         } else {
-            view.setFgColor(headlightColor(TerminalPalette.Token.RAIL, x, y));
+            view.setFgColor(trackGlyphColor(TerminalPalette.Token.RAIL, x, y, backdrop));
         }
-        applyBackground(x, y, backgroundTokenAt(x, y));
+        applyBackground(x, y, backdrop);
         view.set(x, y, aspect);
         resetColors();
     }
@@ -515,15 +547,18 @@ public class RenderVisitor implements Visitor {
 
     @Override
     public void visitForkRailTrack(ForkRailTrack track) {
+        int x = track.getPosition().getX();
+        int y = track.getPosition().getY();
+        TerminalPalette.Token backdrop = backgroundTokenAt(x, y);
         TextColor blockedColor = getTrackBlockedColor(track);
         if (blockedColor != null) {
-            view.setFgColor(blockedColor);
+            view.setFgColor(blockedColorOnBackdrop(blockedColor, backdrop));
         } else {
-            view.setFgColor(color(TerminalPalette.Token.FORK));
+            view.setFgColor(trackGlyphColor(TerminalPalette.Token.FORK, x, y, backdrop));
         }
+        applyBackground(x, y, backdrop);
 
-        view.set(track.getPosition().getX(), track.getPosition().getY(),
-                dirGraphicAspect(track.getFirstOpenDir()));
+        view.set(x, y, dirGraphicAspect(track.getFirstOpenDir()));
 
         if (this.mode == GameMode.FORKS) {
             if (track == selectedFork) {

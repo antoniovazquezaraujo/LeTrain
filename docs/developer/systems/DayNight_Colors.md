@@ -267,7 +267,12 @@ Pendiente de 1e: farolas/ventanas, acabado de cielo y niebla fina. El resto de l
   El agua es **azul marino** (`0x1A3E8F` / `0x142C5C` / `0x081326`) con las **olas en cyan**
   (`0x00A9C0` / `0x2F7F98` / `0x4E93A8`), y la montaña **marrón oscuro** (`0x703A1A` / `0x46261A` /
   `0x1C120B`) con la **roca clara** (`0xC8A06B` / `0xA9855E` / `0x96645F`). Cada glifo contrasta
-  con **su** fondo, no con el campo. `0x4CA331` es el `TERRAIN_FIELDS` de 3D (`0x66994C`) con la
+  con **su** fondo, no con el campo. La **vía, el puente y demás glifos de vía** se adaptan además
+  al fondo **real** de su celda: sobre mar o montaña se aclaran (`lightenOn`, contraste ≥
+  `MIN_CONTRAST`), porque `RAIL` está resuelto contra el campo; la **librea** de un tren que bloquea
+  la vía se aclara u oscurece con el mismo criterio (`contrastOn`), conservando su color (la
+  configuración para desactivar ese coloreado la lleva #694). `0x4CA331` es el `TERRAIN_FIELDS` de
+  3D (`0x66994C`) con la
   misma luminosidad percibida (136) y el mismo tono (~106°), subiendo solo la saturación lo justo
   para que el fallback de 16 colores caiga en el **verde del tema** y no en el gris brillante
   (slot 8). La noche del campo (`0x161923`) no cambia, y el **blanco no se usa como suelo: queda
@@ -337,6 +342,13 @@ Pendiente de 1e: farolas/ventanas, acabado de cielo y niebla fina. El resto de l
   (`backgroundTokenAt`). En 16 colores el guard recoloca cualquier glifo que caiga en el slot de
   **su** fondo. De día: mar `BLUE` + olas `CYAN`, montaña `RED` + roca `BLACK_BRIGHT`, campo
   `GREEN`, todo distinguible.
+- **2D: vía y librea legibles sobre cualquier fondo** (#692 v3). El color de vía (`RAIL`, puente,
+  vía muerta, señales sobre vía) se resuelve en la paleta contra `BOARD`, así que el renderer lo
+  adapta al fondo **real** de su celda: sobre mar/montaña lo aclara (`lightenOn`, día `#323237` →
+  `#747479` sobre el mar, contraste ≥ `MIN_CONTRAST`); sobre el campo no cambia. La librea del tren
+  que bloquea la vía sigue mandando, pero se aclara u oscurece lo justo para no fundirse con el
+  mar/montaña (`contrastOn`). La opción de configuración para desactivar ese coloreado de bloqueo
+  la lleva Alex en #694 (no implementada aquí).
 - **2D: color 24-bit con degradación 256 → 16 ANSI** (detección por `COLORTERM`/`TERM`, sin
   autodetección del fondo del terminal). Las constantes muertas del 2D
   (`SEMAPHORE_COLOR`, `SELECTED_SEMAPHORE_COLOR`, `SELECTED_FORK_COLOR`,

@@ -93,6 +93,59 @@ class TerminalPaletteTest {
     }
 
     @Test
+    @DisplayName("track glyphs lighten over sea and mountain to keep MIN_CONTRAST")
+    void should_LightenTrackGlyphs_OnTerrainBackdrops() {
+        Token[] glyphs = {Token.RAIL, Token.BRIDGE, Token.DEAD_END, Token.FORK};
+        for (float ratio : new float[] {0f, 0.5f, 1f}) {
+            Map<Token, Integer> rgb = TerminalPalette.rgbFor(ratio);
+            for (Token backdrop : new Token[] {Token.WATER_BG, Token.ROCK_BG}) {
+                double backdropLuminance = TerminalPalette.luminance(rgb.get(backdrop));
+                for (Token glyph : glyphs) {
+                    int adjusted = TerminalPalette.lightenOn(rgb.get(glyph), rgb.get(backdrop));
+                    double distance =
+                            Math.abs(TerminalPalette.luminance(adjusted) - backdropLuminance);
+                    assertTrue(distance >= TerminalPalette.MIN_CONTRAST - 1, glyph + " over "
+                            + backdrop + " at ratio " + ratio + " has contrast " + distance);
+                }
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("a blocked-track livery is nudged away from the sea and the mountain")
+    void should_AdjustBlockedLivery_OnTerrainBackdrops() {
+        for (float ratio : new float[] {0f, 0.5f, 1f}) {
+            Map<Token, Integer> rgb = TerminalPalette.rgbFor(ratio);
+            for (Token backdrop : new Token[] {Token.WATER_BG, Token.ROCK_BG}) {
+                // La librea más difícil: exactamente el color del fondo (un tren azul sobre el
+                // mar).
+                int sameAsBackdrop = rgb.get(backdrop);
+                int adjusted = TerminalPalette.contrastOn(sameAsBackdrop, rgb.get(backdrop));
+                double distance = Math.abs(TerminalPalette.luminance(adjusted)
+                        - TerminalPalette.luminance(sameAsBackdrop));
+                assertTrue(distance >= TerminalPalette.MIN_CONTRAST - 1, "livery over " + backdrop
+                        + " at ratio " + ratio + " has contrast " + distance);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("the adapted rail over sea stays out of the sea slot in 16 colours")
+    void should_KeepRailOverSeaDistinct_When_Ansi16() {
+        TerminalPalette palette = new TerminalPalette(Depth.ANSI_16);
+        Map<Token, Integer> day = TerminalPalette.rgbFor(0f);
+        TextColor sea = palette.colorOf(day.get(Token.WATER_BG));
+        TextColor rail = palette
+                .colorOf(TerminalPalette.lightenOn(day.get(Token.RAIL), day.get(Token.WATER_BG)));
+        TextColor railOnMountain = palette
+                .colorOf(TerminalPalette.lightenOn(day.get(Token.RAIL), day.get(Token.ROCK_BG)));
+
+        assertNotEquals(sea, rail, "the rail must not vanish into the sea");
+        assertNotEquals(palette.colorOf(day.get(Token.ROCK_BG)), railOnMountain,
+                "the rail must not vanish into the mountain");
+    }
+
+    @Test
     @DisplayName("blending is deterministic and monotonic at the ends")
     void should_BlendDeterministically() {
         assertEquals(TerminalPalette.rgbFor(0.3f), TerminalPalette.rgbFor(0.3f));

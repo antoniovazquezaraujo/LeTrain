@@ -314,6 +314,28 @@ public final class TerminalPalette {
         return pushTo(rgb, backgroundLuminance - MIN_CONTRAST, false);
     }
 
+    /**
+     * Ajusta un color para que contraste con el fondo real de su celda cuando no es el campo: la
+     * vía, el puente y demás glifos de vía se aclaran para leerse sobre mar y montaña (fondos
+     * oscuros), conservando su tono. Si el fondo fuese claro, oscurecería en su lugar.
+     */
+    static int lightenOn(int rgb, int backdropRgb) {
+        double backdrop = luminance(backdropRgb);
+        if (backdrop + MIN_CONTRAST <= 255) {
+            return pushTo(rgb, backdrop + MIN_CONTRAST, true);
+        }
+        return pushTo(rgb, backdrop - MIN_CONTRAST, false);
+    }
+
+    /**
+     * Aclara u oscurece un color (p. ej. la librea de un tren que bloquea la vía) lo justo para
+     * separarse {@link #MIN_CONTRAST} de la luminosidad del fondo real de la celda; conserva el
+     * tono y no toca los colores que ya se distinguían.
+     */
+    static int contrastOn(int rgb, int backdropRgb) {
+        return contrast(rgb, luminance(backdropRgb));
+    }
+
     private static int pushTo(int rgb, double target, boolean towardWhite) {
         double clamped = Math.max(0, Math.min(255, target));
         boolean reached = towardWhite ? luminance(rgb) >= clamped : luminance(rgb) <= clamped;
