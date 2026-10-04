@@ -294,6 +294,8 @@ public class AudioController {
             } else {
                 int targetNotch = Math.min(loco.getTargetSpeed(), 10);
                 synth.setThrottle(targetNotch);
+                // Physical notch, slave source for the event-driven material engine (ADR-029 §2).
+                synth.setCurrentNotch(loco.getSpeed());
             }
 
             // Sync Motion (Rolling Sound)

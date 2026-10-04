@@ -3,10 +3,14 @@ package letrain.audio.synth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import letrain.audio.core.AudioSource;
+import letrain.audio.material.LoopPoints;
 import letrain.audio.material.MaterialBank;
 import letrain.audio.material.MaterialId;
+import letrain.audio.material.MaterialId.Role;
 import letrain.audio.material.MaterialProfile;
+import letrain.audio.material.MaterialRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,11 +29,17 @@ import org.slf4j.LoggerFactory;
  *
  * <p>
  * Desde la PR C de ADR-029 el synth también posee un bus de mezcla de {@link Voice}s (loco, coach,
- * brake, load, trans) y un selector {@link SoundMode}. {@link SoundMode#LEGACY} es el modo por
- * defecto y ejecuta el código de siempre sin cambios; {@link SoundMode#MATERIAL} lee cada voz en su
- * propio buffer scratch y aplica la envolvente de ganancia por muestra (ADR-029 §4) más la ganancia
- * de material en la suma. MATERIAL todavía no selecciona transiciones: esa integración llega en la
- * PR D.
+ * brake, load, trans) y un selector {@link SoundMode}. {@link SoundMode#LEGACY} ejecuta el código
+ * de siempre sin cambios; {@link SoundMode#MATERIAL} usa los dos motores de locomotora como pareja
+ * de voces: una suena el loop/one-shot actual y la otra queda silenciosa para preparar el siguiente
+ * sample (regla "nunca cambiar el sample de una voz con gain &gt; 0").
+ *
+ * <p>
+ * PR D (integración event-driven): {@link #AUTO} es el modo por defecto, {@code AudioController}
+ * reporta {@code Locomotive.currentSpeed} con {@link #setCurrentNotch(int)} junto al target, y el
+ * synth resuelve el snapshot en un único punto por frame ({@link #updateState}). La selección usa
+ * {@link TransitionPlanner} (cadena de fallbacks de ADR-029 §3), coalescing de 400 ms, fade-in de
+ * onset, crossfade al loop destino y corte corto cuando la física abandona el tramo (ADR-029 §4).
  */
 public class TrainSynthesizer implements AudioSource {
 
@@ -39,10 +49,11 @@ public class TrainSynthesizer implements AudioSource {
     public static final String SOUND_MODE_PROPERTY = "letrain.audio.trainSound";
 
     /**
-     * Mode used when the property is absent or invalid. PR C keeps LEGACY as the default so the
-     * audible result does not change; PR D flips the default to {@link SoundMode#AUTO}.
+     * Mode used when the property is absent or invalid. PR D flips the default to
+     * {@link SoundMode#AUTO}: material when the generic profile declares notch material, legacy
+     * otherwise (ADR-029 §3).
      */
-    private static final SoundMode DEFAULT_SOUND_MODE = SoundMode.LEGACY;
+    private static final SoundMode DEFAULT_SOUND_MODE = SoundMode.AUTO;
 
     /** ADR-029 §4 onset fade-in for one-shot transitions (range 10-20 ms). */
     static final float ONSET_FADE_SECONDS = 0.015f;
@@ -53,14 +64,24 @@ public class TrainSynthesizer implements AudioSource {
     /** ADR-029 §4 cut when the physical state abandons the segment (range 50-150 ms). */
     static final float CUT_SECONDS = 0.100f;
 
+    /** ADR-029 §2 debounce window for the {@code currentNotch != targetNotch} edge. */
+    public static final float COALESCE_WINDOW_SECONDS = 0.400f;
+
     /**
-     * Sound engine selection (ADR-029, phase PR C).
+     * Audited pitch ratio between adjacent notches (f0 39,95 -> 110,25 Hz over 9 steps ≈ 1,12x,
+     * ADR-029 §5). Only used by the emergency loop fallback when neither the notch material nor the
+     * legacy segment exists.
+     */
+    static final float NOTCH_PITCH_RATIO = 1.12f;
+
+    /**
+     * Sound engine selection (ADR-029).
      *
      * <ul>
      * <li>{@code AUTO}: MATERIAL when the profile declares at least one {@code notch.*} material,
-     * LEGACY otherwise.</li>
-     * <li>{@code MATERIAL}: material bank path. Experimental in this PR: the voice/envelope mix bus
-     * exists, but no transition is selected yet (PR D).</li>
+     * LEGACY otherwise. Default since PR D.</li>
+     * <li>{@code MATERIAL}: event-driven material engine (notch loops, ordered transitions,
+     * level-3/4 fallbacks).</li>
      * <li>{@code LEGACY}: today's {@code train-sound.wav} behaviour, unchanged.</li>
      * </ul>
      */
@@ -147,6 +168,68 @@ public class TrainSynthesizer implements AudioSource {
     private final MaterialBank materialBank;
     private SoundMode soundMode;
 
+    // --- Motor event-driven de MATERIAL (ADR-029 §2/§3/§4, PR D) ---
+    /**
+     * True when the material engine drives the locomotive: {@link SoundMode#MATERIAL} with at least
+     * one declared material. An explicitly requested MATERIAL mode over an empty profile
+     * degenerates to the legacy paths (nothing can be selected).
+     */
+    private boolean materialActive;
+
+    /**
+     * Physical notch reported by {@link #setCurrentNotch(int)} ({@code Locomotive.currentSpeed}).
+     */
+    private int materialCurrentNotch = 0;
+
+    /** Notch seen by the previous material evaluation, to detect physical step completions. */
+    private int lastEvaluatedNotch = 0;
+
+    /** Set by the snapshot setters; consumed once per frame by the material evaluation. */
+    private boolean materialSnapshotDirty = false;
+
+    /** Voice currently sounding the engine (loop or one-shot); the other one is the spare. */
+    private Voice engineVoice;
+    private Voice spareVoice;
+
+    /** Notch of the loop loaded on the engine voice, or -1 when it carries a one-shot. */
+    private int engineLoopNotch = -1;
+
+    /** Loop handover deferred because neither engine voice could swap its sample yet. */
+    private int pendingLoopNotch = -1;
+
+    /** One-shot stage in flight; null while a loop/wait state owns the engine. */
+    private TransitionPlanner.Step activeStage;
+    private float stageElapsed = 0f;
+    private float stageDuration = 0f;
+
+    /** One-shot stage waiting for a silent voice to swap its sample. */
+    private TransitionPlanner.Step pendingStage;
+
+    /** Coalescing timer for a fresh {@code currentNotch != targetNotch} edge. */
+    private float pendingStepSeconds = 0f;
+
+    /** True while a transition sequence is under way (including the wait-for-step gaps). */
+    private boolean riding = false;
+
+    /** True when no one-shot sounds but a physical step is still pending (wait loop). */
+    private boolean waitingForStep = false;
+
+    /** True while the material 'start' one-shot runs the STARTING lifecycle. */
+    private boolean materialStartPlaying = false;
+
+    /** Stop one-shot deferred because both engine voices were mid-fade when the engine stopped. */
+    private AudioSample pendingStopSample;
+    private double pendingStopGain;
+
+    /** Start one-shot deferred because both engine voices were mid-fade when the engine started. */
+    private AudioSample pendingStartSample;
+    private double pendingStartGain;
+
+    /** Resolved loop audio: material, nearest material (re-pitched) or legacy segment. */
+    private record LoopSource(AudioSample sample, float loopStart, float loopEnd, float speed,
+            double gainDb, int notch, boolean legacy) {
+    }
+
     // --- Segmentos (en segundos, de las labels) ---
     private double startSegStart = 0, startSegEnd = 0;
     private double stopSegStart = 0, stopSegEnd = 0;
@@ -174,6 +257,7 @@ public class TrainSynthesizer implements AudioSource {
     TrainSynthesizer(SoundMode requestedMode, MaterialBank materialBank) {
         this.materialBank = materialBank;
         this.soundMode = resolveMode(requestedMode != null ? requestedMode : DEFAULT_SOUND_MODE);
+        this.materialActive = resolveMaterialActive();
 
         locoEngine = new GrainEngine();
         locoEngine.setLoopMode(GrainEngine.LoopMode.PING_PONG);
@@ -205,13 +289,24 @@ public class TrainSynthesizer implements AudioSource {
 
         loadResources();
 
-        // The mix bus is the only gain stage in MATERIAL mode: the legacy voices pass through at
-        // gain 1 (their engines keep shaping volume as today) and the transition voice stays
-        // silent until PR D selects a transition for it.
-        locoVoice.setGain(1.0f);
+        // The mix bus is the only gain stage in MATERIAL mode: the legacy sub-voices (coach, brake,
+        // load) pass through at gain 1 and their engines keep shaping volume as today. The two
+        // locomotive voices start silent because the material engine fades them in/out per event;
+        // in LEGACY they stay at gain 1 (readLegacy bypasses the voices anyway, the mix bus is
+        // byte-identical to the direct engine sum).
+        locoVoice.setGain(materialActive ? 0.0f : 1.0f);
         coachVoice.setGain(1.0f);
         brakeVoice.setGain(1.0f);
         loadVoice.setGain(1.0f);
+        engineVoice = locoVoice;
+        spareVoice = transVoice;
+    }
+
+    /**
+     * True when the material engine can select something: MATERIAL mode over a non-empty profile.
+     */
+    private boolean resolveMaterialActive() {
+        return soundMode == SoundMode.MATERIAL && !materialBank().profile().materials().isEmpty();
     }
 
     // =====================================================================
@@ -228,7 +323,7 @@ public class TrainSynthesizer implements AudioSource {
         return resolveModeFromProperty(System.getProperty(SOUND_MODE_PROPERTY));
     }
 
-    /** Pure property parser, visible for tests; null/blank/unknown values fall back to LEGACY. */
+    /** Pure property parser, visible for tests; null/blank/unknown values use the default mode. */
     static SoundMode resolveModeFromProperty(String value) {
         if (value == null) {
             return DEFAULT_SOUND_MODE;
@@ -337,6 +432,7 @@ public class TrainSynthesizer implements AudioSource {
      */
     public void setSample(AudioSample sample) {
         soundMode = SoundMode.LEGACY;
+        materialActive = false;
         sharedSample = sample;
         if (sharedLabels != null) {
             initNotchesFromLabels(sharedLabels, sample);
@@ -477,8 +573,12 @@ public class TrainSynthesizer implements AudioSource {
     // Loop points
     // =====================================================================
 
-    /** Aplica los puntos de bucle del notch N al locoEngine. */
+    /** Aplica los puntos de bucle del notch N al locoEngine (modo legado). */
     private void applyLoopForNotch(int notchIdx) {
+        if (materialActive) {
+            playLoop(notchIdx, CROSSFADE_SECONDS, CROSSFADE_SECONDS);
+            return;
+        }
         if (sharedSample == null) {
             return;
         }
@@ -541,8 +641,9 @@ public class TrainSynthesizer implements AudioSource {
 
     /**
      * MATERIAL path (ADR-029 §2/§4): every voice reads into its own scratch buffer and is summed
-     * with its per-sample gain envelope plus its material gain. Experimental in PR C: it runs the
-     * legacy state machine through the new mix bus; transition material selection lands in PR D.
+     * with its per-sample gain envelope plus its material gain. Since PR D the two locomotive
+     * voices carry notch loops and transition one-shots selected by the event-driven evaluation;
+     * the legacy sub-voices (coach, brake, load) keep their old engines.
      */
     private void readMixed(float[] buffer) {
         if (state != State.LOAD_ONLY) {
@@ -615,6 +716,12 @@ public class TrainSynthesizer implements AudioSource {
         isStopping = false;
         audioRunning = true;
         lastUpdateTime = 0;
+        materialStartPlaying = false;
+
+        if (materialActive && startMaterialAudio()) {
+            coachEngine.setVolume(0f);
+            return;
+        }
 
         if (startSegEnd > startSegStart && sharedSample != null) {
             log.info("Starting engine engine: sequence [{}, {}]", startSegStart, startSegEnd);
@@ -639,17 +746,69 @@ public class TrainSynthesizer implements AudioSource {
         coachEngine.setVolume(0f);
     }
 
+    /**
+     * Material start (ADR-029 §1/§4): the {@code start} one-shot fades in on a free engine voice
+     * while the previous loop (if any) fades out. Returns false when there is no start material or
+     * no free voice, so the caller can use the legacy segment.
+     */
+    private boolean startMaterialAudio() {
+        MaterialId id = MaterialId.of(Role.START);
+        AudioSample start = materialSample(id);
+        if (start == null) {
+            return false;
+        }
+        materialStartPlaying = true;
+        state = State.STARTING;
+        stateTimer = start.getLength() / start.getSampleRate();
+        engineStarting = true;
+        if (!playOneShot(start, materialGain(id), ONSET_FADE_SECONDS, CUT_SECONDS)) {
+            pendingStartSample = start;
+            pendingStartGain = materialGain(id);
+        }
+        return true;
+    }
+
     public void stopAudio() {
         audioRunning = false;
         locoEngine.setVolume(0f);
         coachEngine.setVolume(0f);
+        pendingStopSample = null;
+        pendingStartSample = null;
+        if (materialActive) {
+            silenceEngineVoices();
+        }
     }
 
-    /** Reproduce el segmento STOP una vez; el controller retira el synth cuando termina. */
+    /**
+     * Reproduce el segmento STOP una vez; el controller retira el synth cuando termina. En MATERIAL
+     * usa el one-shot {@code stop} del perfil y deja el motor al silencio al terminar el timer.
+     */
     public void playStopSound() {
         if (state == State.STOPPING) {
             return;
         }
+
+        if (materialActive) {
+            MaterialId id = MaterialId.of(Role.STOP);
+            AudioSample stop = materialSample(id);
+            if (stop != null) {
+                isStopping = true;
+                state = State.STOPPING;
+                stateTimer = stop.getLength() / stop.getSampleRate();
+                lastUpdateTime = 0;
+                clearStage();
+                pendingStepSeconds = 0f;
+                pendingStartSample = null;
+                if (!playOneShot(stop, materialGain(id), ONSET_FADE_SECONDS, CUT_SECONDS)) {
+                    // Both engine voices are mid-fade; retry from the next updateState() call.
+                    pendingStopSample = stop;
+                    pendingStopGain = materialGain(id);
+                }
+                coachEngine.setVolume(0f);
+                return;
+            }
+        }
+
         if (stopSegEnd <= stopSegStart || sharedSample == null) {
             audioRunning = false;
             state = State.OFF;
@@ -681,6 +840,9 @@ public class TrainSynthesizer implements AudioSource {
         this.baseLocoVolume = vol;
         if (audioRunning) {
             locoEngine.setVolume(vol);
+            if (materialActive) {
+                transVoice.engine().setVolume(vol);
+            }
         }
     }
 
@@ -816,19 +978,39 @@ public class TrainSynthesizer implements AudioSource {
     }
 
     public boolean isTransitioning() {
-        return state == State.TRANSITIONING_UP || state == State.TRANSITIONING_DOWN;
+        if (state == State.TRANSITIONING_UP || state == State.TRANSITIONING_DOWN) {
+            return true;
+        }
+        return materialActive && activeStage != null;
     }
 
-    /**
-     * Solicita cambiar al notch 'index'. Si ya hay transición en curso, actualiza el target y deja
-     * que el hilo la detecte en el siguiente paso.
-     */
     /**
      * Fuerza una transición inmediata a ralentí (notch 0), saltándose cualquier rampa en curso. Se
      * usa cuando un tren choca o llega a un fin de vía.
      */
     public synchronized void forceIdle() {
         if (state == State.OFF || state == State.STOPPING || state == State.LOAD_ONLY) {
+            return;
+        }
+
+        if (materialActive) {
+            materialCurrentNotch = 0;
+            lastEvaluatedNotch = 0;
+            currentNotchIndex = 0;
+            targetNotchIndex = 0;
+            pendingStepSeconds = 0f;
+            pendingLoopNotch = -1;
+            pendingStartSample = null;
+            clearStage();
+            engineStarting = false;
+            materialStartPlaying = false;
+            if (engineVoice != null && !engineVoice.isSilent()) {
+                engineVoice.fadeTo(0f, CUT_SECONDS);
+            }
+            playLoop(0, CROSSFADE_SECONDS, CUT_SECONDS);
+            state = State.IDLE;
+            setBraking(false);
+            notifyNotch(0);
             return;
         }
 
@@ -844,6 +1026,29 @@ public class TrainSynthesizer implements AudioSource {
         notifyNotch(0);
     }
 
+    /**
+     * Reports the physical notch (Locomotive.currentSpeed) for the event-driven material engine.
+     * Only stores the snapshot and marks it pending: the single evaluation point is the start of
+     * {@link #updateState(float, long)} (ADR-029 §2). Ignored in LEGACY mode.
+     */
+    public synchronized void setCurrentNotch(int notch) {
+        if (!materialActive) {
+            return;
+        }
+        if (notch < 0 || notch > 10) {
+            return;
+        }
+        if (notch == materialCurrentNotch) {
+            return;
+        }
+        materialCurrentNotch = notch;
+        materialSnapshotDirty = true;
+    }
+
+    /**
+     * Solicita cambiar al notch 'index'. En LEGACY arranca la rampa de hoy; en MATERIAL solo guarda
+     * el snapshot y la evaluación por frame lanza la transición con coalescing (ADR-029 §2).
+     */
     public synchronized void setThrottle(int index) {
         if (state == State.STOPPING || state == State.STARTING || state == State.LOAD_ONLY) {
             return;
@@ -852,6 +1057,12 @@ public class TrainSynthesizer implements AudioSource {
             return;
         }
         if (index == targetNotchIndex) {
+            return;
+        }
+
+        if (materialActive) {
+            targetNotchIndex = index;
+            materialSnapshotDirty = true;
             return;
         }
 
@@ -915,15 +1126,25 @@ public class TrainSynthesizer implements AudioSource {
     }
 
     private void updateState(float deltaTime, long now) {
+        if (materialActive) {
+            evaluateMaterial(deltaTime);
+        }
         switch (state) {
             case STARTING:
                 stateTimer -= deltaTime;
                 if (stateTimer <= 0) {
+                    engineStarting = false;
+                    if (materialStartPlaying) {
+                        materialStartPlaying = false;
+                        currentNotchIndex = 0;
+                        applyLoopForNotch(0);
+                        state = State.IDLE;
+                        break;
+                    }
                     locoEngine.setLoopMode(GrainEngine.LoopMode.PING_PONG);
                     locoEngine.setTurnProbability(0.15f);
                     applyLoopForNotch(0);
                     locoEngine.setSpeed(notches[0].cruiseSpeed);
-                    engineStarting = false;
                     state = State.IDLE;
                     if (targetNotchIndex != currentNotchIndex) {
                         startTransition();
@@ -935,6 +1156,9 @@ public class TrainSynthesizer implements AudioSource {
                 stateTimer -= deltaTime;
                 if (stateTimer <= 0) {
                     isStopping = false;
+                    if (materialActive) {
+                        silenceEngineVoices();
+                    }
                     if (loading) {
                         // The load/unload process is still running: mute the engine voices and
                         // keep the synth alive so the load loop keeps playing (issue #360).
@@ -1020,6 +1244,455 @@ public class TrainSynthesizer implements AudioSource {
     }
 
     // =====================================================================
+    // Motor event-driven de MATERIAL (ADR-029 §2/§3/§4, PR D)
+    // =====================================================================
+
+    /**
+     * Único punto de evaluación por frame (ADR-029 §2): consume el snapshot que dejaron
+     * {@link #setCurrentNotch(int)} / {@link #setThrottle(int)}, avanza el timer del tramo activo y
+     * resuelve la cadena de fallbacks con {@link TransitionPlanner}.
+     */
+    private void evaluateMaterial(float deltaTime) {
+        if (pendingStartSample != null) {
+            if (playOneShot(pendingStartSample, pendingStartGain, ONSET_FADE_SECONDS,
+                    CUT_SECONDS)) {
+                pendingStartSample = null;
+            }
+            return;
+        }
+        if (pendingStopSample != null) {
+            if (playOneShot(pendingStopSample, pendingStopGain, ONSET_FADE_SECONDS, CUT_SECONDS)) {
+                pendingStopSample = null;
+            }
+            return;
+        }
+        if (state != State.IDLE && state != State.CRUISING) {
+            return; // STARTING/STOPPING/LOAD_ONLY lifecycle owns the voices
+        }
+
+        boolean snapshotChanged = materialSnapshotDirty;
+        materialSnapshotDirty = false;
+        flushPendingMaterialActions();
+
+        int current = materialCurrentNotch;
+        int target = targetNotchIndex;
+        boolean physicalStepCompleted = current != lastEvaluatedNotch;
+        lastEvaluatedNotch = current;
+
+        if (activeStage != null) {
+            stageElapsed += deltaTime;
+            if (activeStage.kind() == TransitionPlanner.Kind.LEGACY_RAMP) {
+                updateLegacyRampSpeed();
+            }
+        }
+
+        if (!snapshotChanged && activeStage == null && pendingStage == null && pendingLoopNotch < 0
+                && !waitingForStep && !riding && current == target) {
+            syncMaterialState(current);
+            return;
+        }
+
+        boolean stageHandled = false;
+        if (activeStage != null && current == activeStage.to() && target == activeStage.to()) {
+            // Arrived: crossfade to the loop of the reached notch (ADR-029 §4).
+            applyLoopForNotch(current);
+            clearStage();
+            stageHandled = true;
+        } else if (activeStage != null && current == activeStage.to()) {
+            // The physical step completed and the lever wants more: chain the next stage.
+            startStage(firstStage(current, target));
+            stageHandled = true;
+        } else if (activeStage != null && !covers(activeStage, current, target)) {
+            // The physical state abandoned the segment: cut short and re-evaluate (ADR-029 §4).
+            abandonStage(current);
+        } else if (activeStage != null && stageElapsed >= stageDuration - CROSSFADE_SECONDS) {
+            // One-shot/ramp ends before the physical step: wait on the reached loop (ADR-029 §4).
+            applyLoopForNotch(current);
+            activeStage = null;
+            waitingForStep = true;
+        }
+
+        if (!stageHandled && activeStage == null && waitingForStep && current == target) {
+            applyLoopForNotch(current);
+            clearStage();
+        } else if (!stageHandled && activeStage == null && waitingForStep
+                && physicalStepCompleted) {
+            startStage(firstStage(current, target));
+        } else if (activeStage == null && !waitingForStep && !riding && current == target
+                && physicalStepCompleted) {
+            // Steady notch change with no transition to sound (e.g. the immediate 0 -> 1 step):
+            // the loop follows the physics with a plain crossfade.
+            applyLoopForNotch(current);
+        }
+
+        if (activeStage == null && !waitingForStep && !riding && current != target) {
+            pendingStepSeconds += deltaTime;
+            if (pendingStepSeconds >= COALESCE_WINDOW_SECONDS) {
+                riding = true;
+                startStage(firstStage(current, target));
+            }
+        } else if (current == target) {
+            pendingStepSeconds = 0f;
+        }
+
+        syncMaterialState(current);
+    }
+
+    /** Retries a loop/stage handover that had to wait for a silent voice. */
+    private void flushPendingMaterialActions() {
+        if (pendingLoopNotch >= 0) {
+            int notch = pendingLoopNotch;
+            pendingLoopNotch = -1;
+            playLoop(notch, CROSSFADE_SECONDS, CROSSFADE_SECONDS);
+        }
+        if (pendingStage != null) {
+            TransitionPlanner.Step stage = pendingStage;
+            pendingStage = null;
+            startStage(stage);
+        }
+    }
+
+    /** First stage of the planner's fallback chain for the ride {@code from -> to}. */
+    private TransitionPlanner.Step firstStage(int from, int to) {
+        TransitionPlanner.Plan plan = TransitionPlanner.plan(from, to,
+                id -> materialBank().profile().has(id), legacyRampAvailable());
+        return plan.first();
+    }
+
+    /** True while the legacy {@code train-sound.wav} cruise segment can still serve level 3. */
+    private boolean legacyRampAvailable() {
+        return sharedSample != null && cruiseEnd > cruiseStart && notches[0] != null;
+    }
+
+    /** Starts a planned stage, deferring it when no engine voice can swap its sample yet. */
+    private void startStage(TransitionPlanner.Step stage) {
+        if (stage == null) {
+            clearStage();
+            return;
+        }
+        switch (stage.kind()) {
+            case MATERIAL -> startMaterialStage(stage);
+            case LEGACY_RAMP -> startLegacyRampStage(stage);
+            case LOOP_CROSSFADE -> {
+                // Level 4: no one-shot material, the loop of the reached notch keeps sounding while
+                // the physical steps complete; the arrival logic crossfades to the destination.
+                activeStage = null;
+                stageElapsed = 0f;
+                stageDuration = 0f;
+                waitingForStep = true;
+            }
+        }
+    }
+
+    private void startMaterialStage(TransitionPlanner.Step stage) {
+        AudioSample sample = materialBank().transition(stage.from(), stage.to()).orElse(null);
+        if (sample == null) {
+            startStage(downgrade(stage));
+            return;
+        }
+        if (!playOneShot(sample, materialGain(stage.materialId()), ONSET_FADE_SECONDS,
+                CUT_SECONDS)) {
+            pendingStage = stage;
+            return;
+        }
+        activeStage = stage;
+        stageElapsed = 0f;
+        stageDuration = sample.getLength() / sample.getSampleRate();
+        waitingForStep = false;
+    }
+
+    private void startLegacyRampStage(TransitionPlanner.Step stage) {
+        if (!legacyRampAvailable()) {
+            startStage(downgrade(stage));
+            return;
+        }
+        float rate = sharedSample.getSampleRate();
+        float loopStart = convertSamplesToNorm((float) (cruiseStart * rate), sharedSample);
+        float loopEnd = convertSamplesToNorm((float) (cruiseEnd * rate), sharedSample);
+        if (!playSource(sharedSample, loopStart, loopEnd, true, notches[stage.from()].cruiseSpeed,
+                0.0, ONSET_FADE_SECONDS, CUT_SECONDS)) {
+            pendingStage = stage;
+            return;
+        }
+        activeStage = stage;
+        stageElapsed = 0f;
+        stageDuration = Math.max(0.001f, notches[stage.to()].rampTime);
+        waitingForStep = false;
+    }
+
+    /** Level 3 when possible, level 4 otherwise. */
+    private TransitionPlanner.Step downgrade(TransitionPlanner.Step stage) {
+        TransitionPlanner.Kind kind = legacyRampAvailable() ? TransitionPlanner.Kind.LEGACY_RAMP
+                : TransitionPlanner.Kind.LOOP_CROSSFADE;
+        return new TransitionPlanner.Step(stage.from(), stage.to(), kind);
+    }
+
+    /** Legacy pitch ramp over the retained {@code cruise} segment (ADR-029 §3 level 3). */
+    private void updateLegacyRampSpeed() {
+        if (sharedSample == null || engineVoice == null || activeStage == null
+                || engineVoice.engine().getSample() != sharedSample) {
+            return;
+        }
+        float progress = Math.min(1f, stageElapsed / Math.max(0.001f, stageDuration));
+        float fromPitch = notches[activeStage.from()].cruiseSpeed;
+        float toPitch = notches[activeStage.to()].cruiseSpeed;
+        engineVoice.engine().setSpeed(fromPitch + (toPitch - fromPitch) * progress);
+    }
+
+    /**
+     * True while the active stage still covers the physical state: physics inside the stage span,
+     * same direction, and the stage destination still on the way to the lever target.
+     */
+    private boolean covers(TransitionPlanner.Step stage, int current, int target) {
+        if (current == target) {
+            return false;
+        }
+        int direction = target > current ? 1 : -1;
+        int stageDirection = stage.to() > stage.from() ? 1 : -1;
+        if (direction != stageDirection) {
+            return false;
+        }
+        if (direction > 0) {
+            return current >= stage.from() && current <= stage.to() && target >= stage.to();
+        }
+        return current <= stage.from() && current >= stage.to() && target <= stage.to();
+    }
+
+    /** Cuts the active stage with a short fade and re-evaluates from the new snapshot. */
+    private void abandonStage(int current) {
+        activeStage = null;
+        pendingStage = null;
+        waitingForStep = false;
+        riding = false;
+        pendingStepSeconds = 0f;
+        if (engineVoice != null && !engineVoice.isSilent()) {
+            engineVoice.fadeTo(0f, CUT_SECONDS);
+        }
+        if (current == targetNotchIndex) {
+            // Dwell: the lever stopped on the reached notch; restore its loop.
+            playLoop(current, CROSSFADE_SECONDS, CUT_SECONDS);
+        }
+    }
+
+    private void clearStage() {
+        activeStage = null;
+        pendingStage = null;
+        stageElapsed = 0f;
+        stageDuration = 0f;
+        riding = false;
+        waitingForStep = false;
+    }
+
+    private void syncMaterialState(int current) {
+        if (state == State.IDLE && current > 0) {
+            state = State.CRUISING;
+        } else if (state == State.CRUISING && current == 0) {
+            state = State.IDLE;
+        }
+    }
+
+    // --- Handover de las dos voces de locomotora ---
+
+    /**
+     * Plays a one-shot on a free engine voice. The other voice is used as the incoming voice when
+     * the current one is still audible, so the outgoing sample is never swapped in place.
+     */
+    private boolean playOneShot(AudioSample sample, double gainDb, float fadeIn, float fadeOut) {
+        if (!playSource(sample, 0f, 1f, false, 1.0f, gainDb, fadeIn, fadeOut)) {
+            return false;
+        }
+        engineLoopNotch = -1;
+        return true;
+    }
+
+    private boolean playSource(AudioSample sample, float loopStart, float loopEnd, boolean loop,
+            float speed, double gainDb, float fadeIn, float fadeOut) {
+        if (sample == null || engineVoice == null || spareVoice == null) {
+            return false;
+        }
+        Voice target;
+        if (engineVoice.isSilent()) {
+            target = engineVoice;
+        } else if (spareVoice.isSilent()) {
+            target = spareVoice;
+        } else {
+            return false;
+        }
+        prepareVoice(target, sample, loopStart, loopEnd, loop, speed, gainDb, fadeIn);
+        if (target == spareVoice) {
+            engineVoice.fadeTo(0f, fadeOut);
+            Voice previous = engineVoice;
+            engineVoice = spareVoice;
+            spareVoice = previous;
+        }
+        return true;
+    }
+
+    private void prepareVoice(Voice voice, AudioSample sample, float loopStart, float loopEnd,
+            boolean loop, float speed, double gainDb, float fadeIn) {
+        GrainEngine engine = voice.engine();
+        voice.setSample(sample);
+        engine.setSampleRate(sample.getSampleRate());
+        engine.setLoopMode(loop ? GrainEngine.LoopMode.WRAP : GrainEngine.LoopMode.PLAY_ONCE);
+        engine.setTurnProbability(0f);
+        engine.setReverse(false);
+        engine.setLoopPoints(clamp01(loopStart), clamp01(loopEnd));
+        engine.setSpeed(speed);
+        engine.setVolume(baseLocoVolume);
+        voice.setMaterialGainDb(gainDb);
+        voice.setGain(0f);
+        voice.fadeTo(1f, fadeIn);
+    }
+
+    private static float clamp01(float value) {
+        return Math.max(0f, Math.min(1f, value));
+    }
+
+    // --- Resolución de loops ---
+
+    /** Plays (or keeps) the loop of a physical notch: material, legacy segment or nearest notch. */
+    private void playLoop(int notch, float fadeIn, float fadeOut) {
+        if (notch < 0 || notch > 10 || playingLoop(notch)) {
+            return;
+        }
+        LoopSource source = resolveLoop(notch);
+        if (source == null) {
+            log.debug("no loop material or legacy segment for notch {}", notch);
+            return;
+        }
+        if (source.legacy() && engineVoice == locoVoice && locoVoice.isSilent()) {
+            playLegacyLoopInPlace(source, fadeIn);
+            return;
+        }
+        if (playSource(source.sample(), source.loopStart(), source.loopEnd(), true, source.speed(),
+                source.gainDb(), fadeIn, fadeOut)) {
+            engineLoopNotch = notch;
+        } else {
+            pendingLoopNotch = notch;
+        }
+    }
+
+    private boolean playingLoop(int notch) {
+        return engineVoice != null && engineLoopNotch == notch && !engineVoice.isSilent()
+                && engineVoice.getTargetGain() > 0f;
+    }
+
+    /**
+     * Loop resolution for a physical notch: material first, then the retained legacy segment
+     * (re-pitched {@code cruise}/ralenti), then the nearest declared notch re-pitched by the
+     * audited ratio, and finally nothing (the caller keeps whatever is sounding).
+     */
+    private LoopSource resolveLoop(int notch) {
+        MaterialId id = loopMaterialId(notch);
+        Optional<AudioSample> sample = materialBank().resolve(id);
+        if (sample.isPresent()) {
+            LoopSource source = materialLoopSource(id, sample.get(), notch, 1.0f);
+            if (source != null) {
+                return source;
+            }
+        }
+        if (sharedSample != null && notches[notch] != null) {
+            return legacyLoopSource(notch);
+        }
+        return nearestMaterialLoop(notch);
+    }
+
+    private static MaterialId loopMaterialId(int notch) {
+        return notch == 0 ? MaterialId.of(Role.IDLE) : MaterialId.notch(notch);
+    }
+
+    private LoopSource materialLoopSource(MaterialId id, AudioSample sample, int notch,
+            float speed) {
+        MaterialRef ref = materialBank().material(id).orElse(null);
+        if (ref == null || ref.loop().isEmpty() || sample.getLength() <= 0) {
+            return null;
+        }
+        LoopPoints points = ref.loop().get();
+        float rate = sample.getSampleRate();
+        float length = sample.getLength();
+        float loopStart = (float) (points.startSeconds() * rate / length);
+        float loopEnd = (float) (points.endSeconds() * rate / length);
+        return new LoopSource(sample, loopStart, loopEnd, speed, ref.gainDb(), notch, false);
+    }
+
+    private LoopSource legacyLoopSource(int notch) {
+        SpeedNotch notchDef = notches[notch];
+        return new LoopSource(sharedSample, convertSamplesToNorm(notchDef.loopStart, sharedSample),
+                convertSamplesToNorm(notchDef.loopEnd, sharedSample), notchDef.cruiseSpeed, 0.0,
+                notch, true);
+    }
+
+    private LoopSource nearestMaterialLoop(int notch) {
+        for (int distance = 1; distance <= 10; distance++) {
+            for (int candidate : new int[] {notch - distance, notch + distance}) {
+                if (candidate < 0 || candidate > 10) {
+                    continue;
+                }
+                MaterialId id = loopMaterialId(candidate);
+                Optional<AudioSample> sample = materialBank().resolve(id);
+                if (sample.isPresent()) {
+                    float speed = (float) Math.pow(NOTCH_PITCH_RATIO, notch - candidate);
+                    LoopSource source = materialLoopSource(id, sample.get(), notch, speed);
+                    if (source != null) {
+                        return source;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Exact legacy loop in place (same {@code locoEngine} calls as today's path): used only when
+     * the loco voice is the silent engine voice, so no sample is swapped under an audible voice.
+     */
+    private void playLegacyLoopInPlace(LoopSource source, float fadeIn) {
+        int notch = source.notch();
+        SpeedNotch notchDef = notches[notch];
+        if (locoEngine.getSample() != sharedSample) {
+            locoEngine.setSample(sharedSample);
+        }
+        locoEngine.setSampleRate(sharedSample.getSampleRate());
+        locoEngine.setLoopMode(GrainEngine.LoopMode.PING_PONG);
+        locoEngine.setTurnProbability(0.15f);
+        locoEngine.setLoopPoints(convertSamplesToNorm(notchDef.loopStart, sharedSample),
+                convertSamplesToNorm(notchDef.loopEnd, sharedSample));
+        locoEngine.setSpeed(notchDef.cruiseSpeed);
+        locoEngine.setVolume(baseLocoVolume);
+        locoVoice.setMaterialGainDb(0.0);
+        locoVoice.setGain(0f);
+        locoVoice.fadeTo(1f, fadeIn);
+        engineVoice = locoVoice;
+        spareVoice = transVoice;
+        engineLoopNotch = notch;
+    }
+
+    private void silenceEngineVoices() {
+        pendingStopSample = null;
+        pendingStartSample = null;
+        if (locoVoice != null) {
+            locoVoice.setGain(0f);
+        }
+        if (transVoice != null) {
+            transVoice.setGain(0f);
+        }
+        engineVoice = locoVoice;
+        spareVoice = transVoice;
+        engineLoopNotch = -1;
+        pendingLoopNotch = -1;
+        clearStage();
+        pendingStepSeconds = 0f;
+    }
+
+    private AudioSample materialSample(MaterialId id) {
+        return materialBank().resolve(id).orElse(null);
+    }
+
+    private double materialGain(MaterialId id) {
+        return materialBank().material(id).map(MaterialRef::gainDb).orElse(0.0);
+    }
+
+    // =====================================================================
     // Helpers
     // =====================================================================
 
@@ -1058,5 +1731,25 @@ public class TrainSynthesizer implements AudioSource {
 
     Voice getTransVoice() {
         return transVoice;
+    }
+
+    // --- Seams de test del motor event-driven de MATERIAL (PR D) ---
+
+    /** Voice currently sounding the engine (loop or one-shot); the other one is the spare. */
+    Voice getEngineVoice() {
+        return engineVoice;
+    }
+
+    /** Notch of the loop loaded on the engine voice, or -1 when it carries a one-shot. */
+    int getEngineLoopNotch() {
+        return engineLoopNotch;
+    }
+
+    TransitionPlanner.Step getActiveStage() {
+        return activeStage;
+    }
+
+    boolean isMaterialSnapshotDirty() {
+        return materialSnapshotDirty;
     }
 }

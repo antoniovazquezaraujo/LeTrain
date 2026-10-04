@@ -76,6 +76,17 @@ public final class MaterialBank {
         return profile.material(id);
     }
 
+    /**
+     * Decoded audio for any material id (idle, notches, transitions, ...), resolved through the
+     * shared cache. Empty when the profile does not declare it or the resolver cannot decode it.
+     */
+    public Optional<AudioSample> resolve(MaterialId id) {
+        if (id == null || !profile.has(id)) {
+            return Optional.empty();
+        }
+        return resolveCached(id);
+    }
+
     /** Decodes {@code id} into the cache if it was not resolved yet. */
     public void prefetch(MaterialId id) {
         resolve(id);
@@ -113,7 +124,7 @@ public final class MaterialBank {
         return profile;
     }
 
-    private Optional<AudioSample> resolve(MaterialId id) {
+    private Optional<AudioSample> resolveCached(MaterialId id) {
         return cache.computeIfAbsent(id, key -> {
             Optional<AudioSample> resolved = resolver.resolve(key);
             return resolved == null ? Optional.empty() : resolved;
