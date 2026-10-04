@@ -42,14 +42,16 @@ Lo que hay en `develop` a día de hoy; el detalle por fase está al final de la 
   **20 niveles** (`BANDS = 19`) con histéresis direccional y suelo de contraste, y mezcla el fondo
   con su color diurno dentro del haz del faro.
 - **Faros**: umbral compartido `VisualPalette.LIGHTS_ON_RATIO = 0,1` y rampa `lightsOnFactor`. En 3D
-  `HeadlightGlows` + `HeadlightGlowRenderer` dibujan hasta 4 charcos suaves (quad con falloff radial
-  por fragmento y alpha blending, delante de la locomotora y alineado con su rumbo) en las
-  locomotoras más cercanas a la cámara (posición **renderizada** interpolada) y `VehicleRenderer`
-  pinta las dos lámparas (emisivas o apagadas); en 2D el `RenderVisitor` simula el cono
-  (`Headlight`). Los charcos sustituyen a los `PointLight` originales, que sobre el suelo de un quad
-  por celda se veían como manchas **cuadradas** siguiendo la rejilla (#690). En ambos clientes las
-  luces y el haz solo se encienden con el motor en marcha (`isEngineOn()`) y en la locomotora de
-  cabeza (`isHeadLocomotive()`); en 3D tampoco durante el descarrilamiento (`isDestroying()`).
+  `HeadlightGlows` + `HeadlightGlowRenderer` dibujan hasta 4 charcos suaves (dos capas — halo amplio
+  + núcleo — con falloff gaussiano por fragmento y alpha blending) delante de la locomotora y
+  alineados con su rumbo en las locomotoras más cercanas a la cámara (posición **renderizada**
+  interpolada) y `VehicleRenderer` pinta las dos lámparas (emisivas o apagadas); en 2D el
+  `RenderVisitor` simula el cono (`Headlight`). Los charcos sustituyen a los `PointLight` originales,
+  que sobre el suelo de un quad por celda se veían como manchas **cuadradas** siguiendo la rejilla
+  (#690); su plano se pinta por encima del balasto (y por debajo de vía y tren) para que las cajas
+  por celda del balasto no lo recorten. En ambos clientes las luces y el haz solo se encienden con el
+  motor en marcha (`isEngineOn()`) y en la locomotora de cabeza (`isHeadLocomotive()`); en 3D tampoco
+  durante el descarrilamiento (`isDestroying()`).
 
 ## Cómo funcionaba antes de implementar (histórico)
 
@@ -247,13 +249,16 @@ Pendiente de 1e: farolas/ventanas, acabado de cielo y niebla fina. El resto de l
   lo que está.
 - Faros (1e parcial): token `EMISSIVE_HEADLIGHT` (constante a cualquier hora). En 3D el
   `GraphicPresenter` dibuja hasta **4 charcos suaves** de suelo (`HeadlightGlows` +
-  `HeadlightGlowRenderer`, falloff radial por fragmento y alpha blending) en las locomotoras más
+  `HeadlightGlowRenderer`: dos capas, halo amplio + núcleo, con falloff gaussiano por fragmento,
+  corte antes del borde del quad y alpha blending) en las locomotoras más
   cercanas a la cámara (`Headlights.nearestTo`) con opacidad proporcional al ratio, y el
   `VehicleRenderer` pinta dos lámparas en el frontal que
   **siempre se ven**: emisivas (`headlightModel`) con el motor en marcha y oscuro
   (`headlightOffModel`), apagadas de día o con el motor parado (y en 3D tampoco si está
   descarrilada). Los charcos sustituyen a los `PointLight` originales (#690): la luz por vértice
-  sobre el suelo de un quad por celda dibujaba la rejilla como manchas cuadradas. El charco usa la
+  sobre el suelo de un quad por celda dibujaba la rejilla como manchas cuadradas, y su plano se
+  pinta por encima del balasto (y por debajo de vía y tren) porque las cajas por celda del balasto
+  recortaban el charco en agujeros alineados con la rejilla. El charco usa la
   posición **renderizada** (interpolada) que el `VehicleRenderer` publica cada frame
   (`Gdx3DRenderer.getHeadlightSources()`), así se desliza con el tren en vez de saltar de celda en
   celda. Luces y haz solo se encienden con el motor en marcha (`Locomotive.isEngineOn()`), en la

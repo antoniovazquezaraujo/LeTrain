@@ -1450,24 +1450,21 @@ public class GraphicPresenter extends ApplicationAdapter
     }
 
     /**
-     * Draws one soft ground pool for each of the nearest locomotive headlights; off while the sun
-     * is up (phase 1e). Positions come from the rendered sources collected by the vehicle renderer
-     * this frame, so the pool glides with the train instead of jumping cell by cell. The falloff is
-     * computed per fragment (#690): raw point lights traced the cell grid, and a first
-     * texture-based quad still aliased at grazing angles.
+     * Draws the soft ground pools of the nearest locomotive headlights; off while the sun is up
+     * (phase 1e). Positions come from the rendered sources collected by the vehicle renderer this
+     * frame, so the pool glides with the train instead of jumping cell by cell. The falloff is
+     * computed per fragment (#690) and the plane sits above the per-cell ballast boxes, so no cell
+     * structure is visible.
      */
     private void renderHeadlightGlows(double ratio) {
-        if (headlightGlowRenderer == null || cam == null) {
-            return;
-        }
-        float opacity = HeadlightGlows.opacity(ratio);
-        if (opacity <= 0f) {
+        if (headlightGlowRenderer == null || cam == null
+                || VisualPalette.lightsOnFactor(ratio) <= 0f) {
             return;
         }
         setColor(headlightColor, palette.color(VisualPalette.Token.EMISSIVE_HEADLIGHT, ratio));
         List<Headlights.Source> nearest = Headlights.nearestTo(renderer.getHeadlightSources(),
                 cam.position, HeadlightGlows.MAX_SOURCES);
-        headlightGlowRenderer.render(cam, nearest, headlightColor, opacity);
+        headlightGlowRenderer.render(cam, nearest, headlightColor, ratio);
     }
 
     /**
