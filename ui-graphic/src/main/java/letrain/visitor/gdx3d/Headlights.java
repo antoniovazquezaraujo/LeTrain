@@ -6,13 +6,13 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Picks which locomotive headlights get a real light (ADR-022 phase 1e). Real lights are expensive
- * and the default shader only holds a handful, so only the nearest ones to the camera are lit; the
- * rest keep the emissive lamp dot.
+ * Picks which locomotive headlights get a ground pool (ADR-022 phase 1e, #690). Rendering a pool
+ * for every locomotive would be wasteful and the far ones are barely visible, so only the nearest
+ * ones to the camera are drawn; the rest keep the emissive lamp dot.
  *
  * <p>
  * A {@link Source} holds the <em>rendered</em> position of the locomotive (interpolated along its
- * route, the same the mesh uses), so the light glides with the train instead of jumping cell by
+ * route, the same the mesh uses), so the pool glides with the train instead of jumping cell by
  * cell.
  */
 public final class Headlights {

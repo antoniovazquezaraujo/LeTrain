@@ -14,7 +14,6 @@ import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
-import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import letrain.mvp.input.InputEvent;
 import java.io.File;
@@ -33,6 +32,8 @@ import letrain.vehicle.rail.CoreTrainEventListener;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
 import letrain.visitor.gdx3d.Gdx3DRenderer;
+import letrain.visitor.gdx3d.HeadlightGlowRenderer;
+import letrain.visitor.gdx3d.HeadlightGlows;
 import letrain.visitor.gdx3d.Headlights;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,14 +90,13 @@ public class GraphicPresenter extends ApplicationAdapter
     private final VisualPalette palette = new VisualPalette();
     private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute ambientAttribute;
     private com.badlogic.gdx.graphics.g3d.environment.DirectionalLight sunLight;
-    /** Real lights for the nearest locomotive headlights (ADR-022 phase 1e). */
-    private static final int HEADLIGHT_POOL = 4;
-
-    private static final float HEADLIGHT_INTENSITY = 25f;
-    private final com.badlogic.gdx.graphics.g3d.environment.PointLight[] headlightLights =
-            new com.badlogic.gdx.graphics.g3d.environment.PointLight[HEADLIGHT_POOL];
+    /**
+     * Draws the soft ground pools of the nearest locomotive headlights (ADR-022 phase 1e, #690).
+     * Replaces the raw {@code PointLight}s, whose per-vertex lighting over the 1x1 ground cells
+     * showed up as square patches that traced the cell grid.
+     */
+    private HeadlightGlowRenderer headlightGlowRenderer;
     private final Color headlightColor = new Color();
-    private final Vector3 headlightPosition = new Vector3();
     private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute tableDiffuse;
     private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute gridDiffuse;
     private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute boxDiffuse;
@@ -227,6 +227,8 @@ public class GraphicPresenter extends ApplicationAdapter
     public void create() {
         resourceContext.init();
         renderer.init();
+        headlightGlowRenderer = new HeadlightGlowRenderer();
+        headlightGlowRenderer.init();
         modelBatch = new ModelBatch();
         environment = new Environment();
         ambientAttribute = new ColorAttribute(ColorAttribute.AmbientLight, 0.5f, 0.5f, 0.5f, 1f);
@@ -234,10 +236,6 @@ public class GraphicPresenter extends ApplicationAdapter
         sunLight = new DirectionalLight();
         sunLight.set(0.8f, 0.8f, 0.8f, -1f, -0.8f, -0.2f);
         environment.add(sunLight);
-        for (int i = 0; i < headlightLights.length; i++) {
-            headlightLights[i] = new com.badlogic.gdx.graphics.g3d.environment.PointLight();
-            environment.add(headlightLights[i]);
-        }
 
         cam = cameraController.init(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
@@ -381,7 +379,6 @@ public class GraphicPresenter extends ApplicationAdapter
         // Actualizar instancias desde el modelo
         renderer.clear();
         renderer.visitModel(model, cam);
-        updateHeadlights(dayNightRatio());
         modelBatch.begin(cam);
         modelBatch.render(renderer.getInstances(), environment);
         // Render the background table slightly below ground level
@@ -391,6 +388,9 @@ public class GraphicPresenter extends ApplicationAdapter
         }
         modelBatch.render(tableInstance, environment);
         modelBatch.end();
+
+        // Ground pools of the headlights: alpha-blended and unlit, after the lit scene.
+        renderHeadlightGlows(dayNightRatio());
 
         // Renderizado de Etiquetas 3D (Decals)
         if (!renderer.getLabels().isEmpty()) {
@@ -1318,6 +1318,9 @@ public class GraphicPresenter extends ApplicationAdapter
         if (audioController != null) {
             audioController.stop();
         }
+        if (headlightGlowRenderer != null) {
+            headlightGlowRenderer.dispose();
+        }
         if (resourceContext != null) {
             resourceContext.dispose();
         }
@@ -1447,27 +1450,21 @@ public class GraphicPresenter extends ApplicationAdapter
     }
 
     /**
-     * Lights the nearest locomotive headlights; off while the sun is up (phase 1e). Uses the
-     * rendered positions collected by the vehicle renderer this frame, so the light glides with the
-     * train.
+     * Draws the soft ground pools of the nearest locomotive headlights; off while the sun is up
+     * (phase 1e). Positions come from the rendered sources collected by the vehicle renderer this
+     * frame, so the pool glides with the train instead of jumping cell by cell. The falloff is
+     * computed per fragment (#690) and the plane sits above the per-cell ballast boxes, so no cell
+     * structure is visible.
      */
-    private void updateHeadlights(double ratio) {
-        float intensity = HEADLIGHT_INTENSITY * VisualPalette.lightsOnFactor(ratio);
-        setColor(headlightColor, palette.color(VisualPalette.Token.EMISSIVE_HEADLIGHT, ratio));
-        for (com.badlogic.gdx.graphics.g3d.environment.PointLight light : headlightLights) {
-            light.intensity = 0f;
-        }
-        if (cam == null || intensity <= 0f) {
+    private void renderHeadlightGlows(double ratio) {
+        if (headlightGlowRenderer == null || cam == null
+                || VisualPalette.lightsOnFactor(ratio) <= 0f) {
             return;
         }
+        setColor(headlightColor, palette.color(VisualPalette.Token.EMISSIVE_HEADLIGHT, ratio));
         List<Headlights.Source> nearest = Headlights.nearestTo(renderer.getHeadlightSources(),
-                cam.position, headlightLights.length);
-        for (int i = 0; i < nearest.size(); i++) {
-            Headlights.Source source = nearest.get(i);
-            headlightPosition.set(source.x() + source.dirX() * 0.6f, 0.7f,
-                    source.z() + source.dirZ() * 0.6f);
-            headlightLights[i].set(headlightColor, headlightPosition, intensity);
-        }
+                cam.position, HeadlightGlows.MAX_SOURCES);
+        headlightGlowRenderer.render(cam, nearest, headlightColor, ratio);
     }
 
     /**

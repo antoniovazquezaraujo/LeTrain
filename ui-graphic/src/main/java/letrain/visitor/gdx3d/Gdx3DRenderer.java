@@ -22,7 +22,7 @@ public class Gdx3DRenderer implements Visitor {
     private final List<ModelInstance> instances = new ArrayList<>();
     private final List<ModelInstance> transparentInstances = new ArrayList<>();
     private final List<VehicleLabel> labels = new ArrayList<>();
-    /** Rendered locomotive positions of the frame, used to place the real headlights. */
+    /** Rendered locomotive positions of the frame, used to place the headlight ground pools. */
     private final List<Headlights.Source> headlightSources = new ArrayList<>();
     private final com.badlogic.gdx.utils.Pool<VehicleLabel> labelPool =
             new com.badlogic.gdx.utils.Pool<VehicleLabel>() {

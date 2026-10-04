@@ -266,6 +266,8 @@
 - [[letrain.visitor.gdx3d.Gdx3DRenderer|Gdx3DRenderer]] (ui-graphic)
 - [[letrain.visitor.gdx3d.Gdx3DResourceContext|Gdx3DResourceContext]] (ui-graphic)
 - [[letrain.visitor.gdx3d.GroundRenderer|GroundRenderer]] (ui-graphic)
+- [[letrain.visitor.gdx3d.HeadlightGlowRenderer|HeadlightGlowRenderer]] (ui-graphic)
+- [[letrain.visitor.gdx3d.HeadlightGlows|HeadlightGlows]] (ui-graphic)
 - [[letrain.visitor.gdx3d.Headlights|Headlights]] (ui-graphic)
 - [[letrain.visitor.gdx3d.InfrastructureRenderer|InfrastructureRenderer]] (ui-graphic)
 - [[letrain.visitor.gdx3d.TrackRenderer|TrackRenderer]] (ui-graphic)
