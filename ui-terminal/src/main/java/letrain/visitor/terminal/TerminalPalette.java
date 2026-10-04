@@ -8,9 +8,14 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Paleta día/noche del cliente 2D (ADR-022 fase 1d, ver
- * {@code docs/developer/systems/DayNight_Colors.md}). Familia clara: de día el mapa es papel con
- * glifos oscuros y de noche se funde a oscuro con glifos claros; en la transición se invierte la
- * polaridad y un suelo de contraste evita cualquier banda ilegible.
+ * {@code docs/developer/systems/DayNight_Colors.md}). Familia clara: de día el mapa es un campo
+ * verde con glifos oscuros y de noche se funde a oscuro con glifos claros; en la transición se
+ * invierte la polaridad y un suelo de contraste evita cualquier banda ilegible.
+ *
+ * <p>
+ * El <b>blanco queda reservado para la nieve futura</b>: el campo de día es verde (#692), nunca
+ * papel. En 2D el token {@code BOARD} es la superficie que se ve (las celdas de campo se pintan
+ * como un espacio sobre el fondo), así que acompaña al verde del terreno; no hay marco neutro.
  *
  * <p>
  * Es data pura y matemáticas: no conoce Lanterna salvo al traducir el RGB al modo que soporte el
@@ -53,23 +58,26 @@ public final class TerminalPalette {
     public static final float BAND_MARGIN = 0.1f;
 
     // Claves día / crepúsculo / noche, en el orden de Token.
-    private static final int[] DAY = {rgb(242, 240, 232), rgb(40, 90, 190), rgb(170, 60, 60),
+    // GROUND y BOARD comparten el verde del campo 3D (TERRAIN_FIELDS, 0x66994C): en 2D el tablero
+    // ES el terreno visible. 0x4CA331 es el mismo tono (~106°) y la misma luminosidad percibida
+    // (136) con la saturación mínima para que el fallback ANSI-16 caiga en el verde del tema;
+    // 0x66994C puro caía en el gris brillante (slot 8). El blanco no se usa: queda para la nieve.
+    private static final int[] DAY = {rgb(76, 163, 49), rgb(40, 90, 190), rgb(170, 60, 60),
             rgb(50, 50, 55), rgb(150, 150, 150), rgb(200, 160, 0), rgb(25, 25, 30),
             rgb(200, 30, 30), rgb(170, 130, 0), rgb(90, 85, 70), rgb(0, 130, 130), rgb(0, 130, 60),
             rgb(200, 30, 30), rgb(200, 30, 30), rgb(40, 70, 170), rgb(200, 160, 0), rgb(90, 90, 95),
             rgb(70, 70, 80), rgb(40, 40, 45), rgb(90, 90, 95), rgb(20, 20, 20), rgb(150, 120, 0),
             rgb(180, 0, 50), rgb(0, 110, 40), rgb(170, 140, 0), rgb(190, 40, 40), rgb(25, 25, 30),
-            rgb(60, 60, 65), rgb(242, 240, 232), rgb(25, 25, 30), rgb(200, 30, 30),
-            rgb(150, 20, 120), rgb(200, 60, 30)};
-    private static final int[] DUSK = {rgb(186, 183, 178), rgb(45, 80, 165), rgb(160, 70, 55),
+            rgb(60, 60, 65), rgb(76, 163, 49), rgb(25, 25, 30), rgb(200, 30, 30), rgb(150, 20, 120),
+            rgb(200, 60, 30)};
+    private static final int[] DUSK = {rgb(82, 122, 56), rgb(45, 80, 165), rgb(160, 70, 55),
             rgb(60, 52, 48), rgb(140, 130, 115), rgb(180, 140, 20), rgb(60, 40, 25),
             rgb(190, 50, 40), rgb(160, 115, 10), rgb(95, 80, 60), rgb(20, 120, 120),
             rgb(20, 115, 55), rgb(190, 50, 40), rgb(190, 50, 40), rgb(50, 75, 160),
             rgb(180, 140, 20), rgb(95, 85, 75), rgb(85, 75, 65), rgb(55, 45, 40), rgb(95, 85, 75),
             rgb(35, 30, 28), rgb(160, 115, 10), rgb(175, 30, 55), rgb(20, 110, 45),
-            rgb(160, 120, 10), rgb(180, 55, 45), rgb(70, 55, 40), rgb(80, 65, 55),
-            rgb(186, 183, 178), rgb(60, 40, 25), rgb(190, 50, 40), rgb(150, 40, 120),
-            rgb(190, 70, 40)};
+            rgb(160, 120, 10), rgb(180, 55, 45), rgb(70, 55, 40), rgb(80, 65, 55), rgb(82, 122, 56),
+            rgb(60, 40, 25), rgb(190, 50, 40), rgb(150, 40, 120), rgb(190, 70, 40)};
     private static final int[] NIGHT = {rgb(22, 25, 35), rgb(60, 95, 180), rgb(150, 100, 95),
             rgb(150, 150, 160), rgb(70, 72, 80), rgb(200, 190, 70), rgb(225, 228, 240),
             rgb(235, 90, 80), rgb(230, 200, 40), rgb(215, 210, 190), rgb(90, 200, 205),
@@ -215,7 +223,8 @@ public final class TerminalPalette {
         resolved.put(Token.BOARD, board);
         for (Token token : Token.values()) {
             if (token == Token.BOARD || token == Token.GROUND) {
-                // El campo es el mismo papel que el fondo: no se fuerza contraste.
+                // El campo es el mismo verde que el fondo (en 2D el tablero es el terreno): no se
+                // fuerza contraste. El blanco queda reservado para la nieve futura.
                 resolved.put(token, blendKey(token, clamped));
                 continue;
             }

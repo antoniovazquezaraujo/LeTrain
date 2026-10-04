@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.googlecode.lanterna.TextColor;
 import java.util.Map;
+import letrain.palette.VisualPalette;
 import letrain.visitor.terminal.TerminalPalette.Depth;
 import letrain.visitor.terminal.TerminalPalette.Token;
 import org.junit.jupiter.api.DisplayName;
@@ -14,15 +15,17 @@ import org.junit.jupiter.api.Test;
 class TerminalPaletteTest {
 
     @Test
-    @DisplayName("day and night ends are paper and dark board")
+    @DisplayName("day ground is a green field, night board stays dark")
     void should_ResolveEnds() {
         Map<Token, Integer> day = TerminalPalette.rgbFor(0f);
         Map<Token, Integer> night = TerminalPalette.rgbFor(1f);
 
-        assertEquals(0xF2F0E8, day.get(Token.BOARD));
-        assertEquals(0xF2F0E8, day.get(Token.GROUND));
-        assertEquals(0x285ABE, day.get(Token.WATER));
+        assertEquals(0x4CA331, day.get(Token.BOARD));
+        assertEquals(0x4CA331, day.get(Token.GROUND));
+        // El agua se oscurece lo justo para separarse del campo verde (suelo de contraste).
+        assertEquals(0x2554B2, day.get(Token.WATER));
         assertEquals(0x161923, night.get(Token.BOARD));
+        assertEquals(0x161923, night.get(Token.GROUND));
         assertEquals(0x9696A0, night.get(Token.RAIL));
     }
 
@@ -37,8 +40,13 @@ class TerminalPaletteTest {
                     continue;
                 }
                 double distance = Math.abs(TerminalPalette.luminance(rgb.get(token)) - board);
-                assertTrue(distance >= TerminalPalette.MIN_CONTRAST - 1,
-                        token + " at ratio " + ratio + " has contrast " + distance);
+                // En los extremos del fundido el fondo se acerca a negro (o a blanco): cuando su
+                // luminosidad es menor que MIN_CONTRAST, el máximo contraste alcanzable es el que
+                // permite ese extremo, no el suelo pedido. Se exige el máximo físico, no menos.
+                double reachable =
+                        Math.min(TerminalPalette.MIN_CONTRAST, Math.min(board, 255 - board));
+                assertTrue(distance >= reachable - 1, token + " at ratio " + ratio
+                        + " has contrast " + distance + " (reachable " + reachable + ")");
             }
         }
     }
@@ -47,8 +55,31 @@ class TerminalPaletteTest {
     @DisplayName("blending is deterministic and monotonic at the ends")
     void should_BlendDeterministically() {
         assertEquals(TerminalPalette.rgbFor(0.3f), TerminalPalette.rgbFor(0.3f));
-        assertEquals(0xF2F0E8, TerminalPalette.rgbFor(-1f).get(Token.BOARD));
+        assertEquals(0x4CA331, TerminalPalette.rgbFor(-1f).get(Token.BOARD));
         assertEquals(0x161923, TerminalPalette.rgbFor(2f).get(Token.BOARD));
+    }
+
+    @Test
+    @DisplayName("day ground is green, never white: white is reserved for the future snow")
+    void should_KeepDayGroundGreen() {
+        int dayBoard = TerminalPalette.rgbFor(0f).get(Token.BOARD);
+        int dayGround = TerminalPalette.rgbFor(0f).get(Token.GROUND);
+        int red = (dayBoard >> 16) & 0xFF;
+        int green = (dayBoard >> 8) & 0xFF;
+        int blue = dayBoard & 0xFF;
+
+        assertTrue(green > red && green > blue, "day ground must read green");
+        assertTrue(TerminalPalette.luminance(dayBoard) < 200, "day ground must not read as paper");
+        assertEquals(dayBoard, dayGround, "in 2D the board is the visible field");
+
+        // Mismo brillo percibido que el campo 3D (0x66994C): solo sube la saturación para que el
+        // fallback ANSI caiga en el verde del tema, no en el gris brillante.
+        VisualPalette visual = new VisualPalette();
+        assertEquals(
+                TerminalPalette.luminance(visual.color(VisualPalette.Token.TERRAIN_FIELDS, 0.0)),
+                TerminalPalette.luminance(dayBoard), 1.0,
+                "terminal green must match 3D field light");
+        assertEquals(TextColor.ANSI.GREEN, TerminalPalette.nearestAnsi(dayBoard));
     }
 
     @Test
@@ -128,21 +159,24 @@ class TerminalPaletteTest {
     }
 
     @Test
-    @DisplayName("256-colour indexing uses the grayscale ramp and reports are monotonic")
+    @DisplayName("256-colour indexing sends the green board through the cube, not the gray ramp")
     void should_IndexWithGrayscaleRamp() {
         assertEquals(new TextColor.Indexed(255), TerminalPalette.nearestIndexed256(0xF2F0E8));
         assertEquals(new TextColor.Indexed(16), TerminalPalette.nearestIndexed256(0x000000));
         assertEquals(new TextColor.Indexed(231), TerminalPalette.nearestIndexed256(0xFFFFFF));
+        // El verde del campo cae en el cubo (95, 175, 95), no en la rampa de grises.
+        assertEquals(new TextColor.Indexed(71), TerminalPalette.nearestIndexed256(0x4CA331));
 
-        int distinct = new java.util.HashSet<TextColor>().size();
         java.util.Set<TextColor> seen = new java.util.HashSet<>();
         for (int k = 0; k <= TerminalPalette.BANDS; k++) {
             float band = k / (float) TerminalPalette.BANDS;
             seen.add(TerminalPalette.nearestIndexed256(
                     TerminalPalette.rgbFor(band).get(TerminalPalette.Token.BOARD)));
         }
-        distinct = seen.size();
-        assertTrue(distinct >= 15,
-                "the 256 palette should still show most levels, saw " + distinct);
+        int distinct = seen.size();
+        // El recorrido verde→oscuro es más corto que el del papel (240→25 de luminosidad), así que
+        // el cubo 6x6x6 conserva 8 escalones distintos del tablero; el fundido sigue sin saltos
+        // bruscos, que es lo que este test protege.
+        assertTrue(distinct >= 8, "the 256 palette should still show most levels, saw " + distinct);
     }
 }

@@ -60,25 +60,25 @@ public class PaletteLab {
     /** [familia][franja]: familia 0 = clara (por defecto), 1 = oscura. */
     static Pal[][] palettes() {
         Pal[] light = {
-                // Día "mapa papel": fondo claro, glifos oscuros.
-                new Pal(rgb(242, 240, 232), rgb(40, 90, 190), rgb(170, 60, 60), rgb(50, 50, 55),
+                // Día "campo verde": fondo verde (paridad con el campo 3D), glifos oscuros.
+                new Pal(rgb(76, 163, 49), rgb(40, 90, 190), rgb(170, 60, 60), rgb(50, 50, 55),
                         rgb(150, 150, 150), rgb(200, 160, 0), rgb(25, 25, 30), rgb(200, 30, 30),
                         rgb(170, 130, 0), rgb(90, 85, 70), rgb(0, 130, 130), rgb(0, 130, 60),
                         rgb(200, 30, 30), rgb(200, 30, 30), rgb(40, 70, 170), rgb(200, 160, 0),
                         rgb(90, 90, 95), rgb(70, 70, 80), rgb(40, 40, 45), rgb(90, 90, 95),
                         rgb(20, 20, 20), rgb(150, 120, 0), rgb(180, 0, 50), rgb(0, 110, 40),
                         rgb(170, 140, 0), rgb(190, 40, 40), rgb(25, 25, 30), rgb(60, 60, 65),
-                        rgb(242, 240, 232), rgb(25, 25, 30), rgb(200, 30, 30), rgb(150, 20, 120),
+                        rgb(76, 163, 49), rgb(25, 25, 30), rgb(200, 30, 30), rgb(150, 20, 120),
                         rgb(200, 60, 30)),
-                // Crepúsculo claro: papel gris cálido.
-                new Pal(rgb(186, 183, 178), rgb(45, 80, 165), rgb(160, 70, 55), rgb(60, 52, 48),
+                // Crepúsculo: verde de campo apagado.
+                new Pal(rgb(82, 122, 56), rgb(45, 80, 165), rgb(160, 70, 55), rgb(60, 52, 48),
                         rgb(140, 130, 115), rgb(180, 140, 20), rgb(60, 40, 25), rgb(190, 50, 40),
                         rgb(160, 115, 10), rgb(95, 80, 60), rgb(20, 120, 120), rgb(20, 115, 55),
                         rgb(190, 50, 40), rgb(190, 50, 40), rgb(50, 75, 160), rgb(180, 140, 20),
                         rgb(95, 85, 75), rgb(85, 75, 65), rgb(55, 45, 40), rgb(95, 85, 75),
                         rgb(35, 30, 28), rgb(160, 115, 10), rgb(175, 30, 55), rgb(20, 110, 45),
                         rgb(160, 120, 10), rgb(180, 55, 45), rgb(70, 55, 40), rgb(80, 65, 55),
-                        rgb(186, 183, 178), rgb(60, 40, 25), rgb(190, 50, 40), rgb(150, 40, 120),
+                        rgb(82, 122, 56), rgb(60, 40, 25), rgb(190, 50, 40), rgb(150, 40, 120),
                         rgb(190, 70, 40)),
                 // Noche: vuelve al look oscuro.
                 new Pal(rgb(22, 25, 35), rgb(60, 95, 180), rgb(150, 100, 95), rgb(150, 150, 160),
@@ -124,7 +124,7 @@ public class PaletteLab {
         return new Pal[][] {light, dark};
     }
 
-    private static final String[] FAMILY_NAMES = {"CLARA (papel)", "OSCURA"};
+    private static final String[] FAMILY_NAMES = {"CLARA (campo)", "OSCURA"};
     private static final TextColor.ANSI[] ANSI_SLOTS = {TextColor.ANSI.BLACK, TextColor.ANSI.RED,
             TextColor.ANSI.GREEN, TextColor.ANSI.YELLOW, TextColor.ANSI.BLUE,
             TextColor.ANSI.MAGENTA, TextColor.ANSI.CYAN, TextColor.ANSI.WHITE,
@@ -275,8 +275,8 @@ public class PaletteLab {
 
     /**
      * Transición gradual con el ratio del reloj. En la familia clara el día y la noche tienen
-     * polaridad inversa (glifos oscuros sobre papel / glifos claros sobre negro), así que la
-     * inversión se funde directamente de un régimen al otro a ritmo constante durante la hora
+     * polaridad inversa (glifos oscuros sobre el campo verde / glifos claros sobre negro), así que
+     * la inversión se funde directamente de un régimen al otro a ritmo constante durante la hora
      * restante, con un suelo de contraste que evita la banda confusa; la familia oscura interpola
      * lineal.
      */
@@ -313,7 +313,7 @@ public class PaletteLab {
     }
 
     /**
-     * El papel claro alcanza su tono de crepúsculo en este ratio (0.5 = 20:00) y a partir de ahí
+     * El campo claro alcanza su tono de crepúsculo en este ratio (0.5 = 20:00) y a partir de ahí
      * empieza el fundido a oscuro, repartido por la hora restante para que no haya un salto.
      */
     static final double LIGHT_NIGHTFALL = 0.5;
@@ -478,7 +478,7 @@ public class PaletteLab {
             }
         }
         put(tg, 1, rows - 1,
-                "el campo no tiene glifo: es el fondo · familia clara = papel de día / oscuro de noche",
+                "el campo no tiene glifo: es el fondo · familia clara = campo verde de día / oscuro de noche",
                 ansi(0x777777), chromeBg);
     }
 

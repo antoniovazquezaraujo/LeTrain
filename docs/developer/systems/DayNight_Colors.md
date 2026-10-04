@@ -40,7 +40,9 @@ Lo que hay en `develop` a día de hoy; el detalle por fase está al final de la 
 - **2D** (`ui-terminal`): `TerminalPalette` (familia clara) resuelve los tokens con degradación
   **24-bit → 256 → 16 ANSI** según `COLORTERM`/`TERM`; el `RenderVisitor` cuantiza el ratio en
   **20 niveles** (`BANDS = 19`) con histéresis direccional y suelo de contraste, y mezcla el fondo
-  con su color diurno dentro del haz del faro.
+  con su color diurno dentro del haz del faro. El suelo de día y crepúsculo es **verde de campo**
+  (`0x4CA331` / `0x527A38`, ajuste del `VisualPalette.TERRAIN_FIELDS` de 3D), no papel: el
+  **blanco queda reservado para la nieve futura** (#692).
 - **Faros**: umbral compartido `VisualPalette.LIGHTS_ON_RATIO = 0,1` y rampa `lightsOnFactor`. En 3D
   `HeadlightGlows` + `HeadlightGlowRenderer` dibujan hasta 4 charcos suaves (quad con falloff
   cuadrático por fragmento y alpha blending) delante de la locomotora y
@@ -85,8 +87,8 @@ El diseño aprobado y llevado a código:
    `SolarModel`.
 3. **2D**: `TerminalPalette.resolve(band)` con 20 escalones de ratio espaciados por luminosidad
    percibida e histéresis (`band(ratio, currentBand)`); el terminal no interpola. **Familia por
-   defecto: clara** (día tipo “mapa papel”: fondo claro y glifos oscuros; noche: fondo oscuro y
-   glifos claros), elegida tras ver la demo. El color se emite en **24-bit cuando el terminal lo
+   defecto: clara** (día de campo verde con glifos oscuros; noche: fondo oscuro y glifos claros),
+   elegida tras ver la demo. El color se emite en **24-bit cuando el terminal lo
    soporta** (`COLORTERM`, `TERM=*-direct`) y si no se degrada a **256** o a los **16 slots ANSI**.
    La configuración `terminal.palette=auto|light|dark|theme` quedó aplazada (siempre familia clara).
 4. Los colores **de jugador** (paleta de locomotoras, carga) no se rediseñan: se atenúan con
@@ -99,6 +101,10 @@ Convención: `n` = `[0–1]` por canal. 2D en colores ANSI de Lanterna.
 Nota: las columnas «2D actual» / «3D actual» son el inventario **previo a implementar**; se
 conservan como referencia. Las columnas Día/Crepúsculo/Noche son el mapeo acordado que se aplicó, y
 los valores vivos están hoy en `VisualPalette` (ambiente y 3D) y `TerminalPalette` (2D).
+
+Actualización (beta.6, #692): en 2D `terrain.fields` ya no es `WHITE`; el campo y el tablero son
+verde de día (`0x4CA331`) y crepúsculo (`0x527A38`), y el blanco queda reservado para la nieve
+futura. En 3D `TERRAIN_FIELDS` no cambia.
 
 ### Terreno y estructura
 
@@ -188,8 +194,10 @@ esferas (la activa a color, la otra muy oscura). Limpieza pendiente: en 2D `SEMA
 
 1. **Determinismo**: la paleta depende solo de `getDayNightRatio()` (ticks), nunca del reloj real.
 2. **Contraste mínimo en 2D**: cada variante debe contrastar con el fondo de su franja (familia
-   clara: glifos oscuros sobre papel de día y claros sobre oscuro de noche); mejor cambiar de tono
-   que acercarse al fondo. Las fronteras usan histéresis para no parpadear.
+   clara: glifos oscuros sobre campo verde de día y claros sobre oscuro de noche); mejor cambiar de
+   tono que acercarse al fondo. Las fronteras usan histéresis para no parpadear. Cuando el fondo
+   del fundido baja de `MIN_CONTRAST` de luminosidad, el máximo contraste alcanzable es el que
+   permite el extremo (negro o blanco); el test exige ese máximo físico.
 3. **Los avisos no se apagan**: vía inválida, bloque ocupado, semáforos, señales, cursor y
    resaltados conservan color y contraste de noche (son información de juego, no decorado).
 4. **Colores de jugador**: solo atenuación global (≤ 45 % de noche); no se re-mapean a variantes.
@@ -234,11 +242,18 @@ Pendiente de 1e: farolas/ventanas, acabado de cielo y niebla fina. El resto de l
   paredes de agua del `GroundRenderer` usan el color resuelto del terreno. La rejilla y las cajas de
   decorado del `GraphicPresenter` también siguen su token.
 - 2D (1d): `TerminalPalette` (`ui-terminal`, `letrain.visitor.terminal`) con la **familia clara**
-  afinada en el laboratorio: día papel, crepúsculo, noche; fundido con el ratio del reloj,
-  inversión de polaridad y suelo de contraste. El `RenderVisitor` lee el ratio una vez por frame
-  (`model.getGameClock().getDayNightRatio()`) y resuelve la paleta solo cuando cambia de nivel (ver
-  *Escalonado*); cada token (terreno, vía, estaciones, señales, trenes, cursor, resaltados) se pinta
-  con su color y el fondo del mapa es el token `BOARD`.
+  afinada en el laboratorio: día de campo verde, crepúsculo verde apagado, noche oscura; fundido
+  con el ratio del reloj, inversión de polaridad y suelo de contraste. El `RenderVisitor` lee el
+  ratio una vez por frame (`model.getGameClock().getDayNightRatio()`) y resuelve la paleta solo
+  cuando cambia de nivel (ver *Escalonado*); cada token (terreno, vía, estaciones, señales, trenes,
+  cursor, resaltados) se pinta con su color y el fondo del mapa es el token `BOARD`.
+  **`GROUND` y `BOARD` son el mismo verde** (día `0x4CA331`, crepúsculo `0x527A38`): en 2D las
+  celdas de campo se pintan como un espacio sobre el tablero, así que el tablero *es* el terreno
+  visible; no existe un marco neutro que conservar. `0x4CA331` es el `TERRAIN_FIELDS` de 3D
+  (`0x66994C`) con la misma luminosidad percibida (136) y el mismo tono (~106°), subiendo solo la
+  saturación lo justo para que el fallback de 16 colores caiga en el **verde del tema** y no en el
+  gris brillante (slot 8). La noche (`0x161923` y sus claves) no cambia, y el **blanco no se usa
+  como suelo: queda reservado para la nieve futura** (#692).
   Traducción de color: **24-bit → 256 → 16 ANSI** según `COLORTERM`/`TERM`. El HUD (`menuBox`) y
   el `InfoVisitor` se quedan como estaban.
   **Escalonado**: el ratio solar es continuo y, interpolado, obligaba al terminal a repintar el
@@ -276,17 +291,26 @@ Pendiente de 1e: farolas/ventanas, acabado de cielo y niebla fina. El resto de l
 - ¿`VisualPalette` en `core` (`letrain.palette`) o módulo aparte `palette`?
 - Configuración del 2D (`terminal.palette=auto|light|dark|theme`), familia oscura y comando de
   consola en caliente: **aplazados**; de momento va siempre la familia clara.
-- Contraste de los colores de jugador (locomotoras, carga) sobre el papel: hoy se mantienen tal
-  cual (los fundidos los ajusta solo el suelo de contraste de los tokens). A revisar cuando se
+- Contraste de los colores de jugador (locomotoras, carga) sobre el campo verde: hoy se mantienen
+  tal cual (los fundidos los ajusta solo el suelo de contraste de los tokens). A revisar cuando se
   juegue en 2D a fondo.
+- **Nieve**: el blanco está reservado para un futuro suelo nevado (token/variante propia, sin
+  reutilizar el papel); no implementado todavía (#692).
 - Curvas de ratio: `SolarModel` sustituyó las franjas fijas 05/07/19/21 por elevación solar con
   banda de crepúsculo; revisar si hace falta una curva propia (más suave) por franja.
 
 ## Decisiones tomadas
 
-- **2D: familia clara por defecto** (día “mapa papel”, noche oscura), elegida tras la demo y
+- **2D: familia clara por defecto** (día de campo verde, noche oscura), elegida tras la demo y
   afinada en `PaletteLab` (tecla `p` para volcar los valores). El fondo del mapa es un token más
   (`BOARD`).
+- **2D: el tablero es el terreno, no papel** (#692). `GROUND` y `BOARD` comparten el verde de campo
+  (día `0x4CA331`, crepúsculo `0x527A38`), porque las celdas de campo se pintan como un espacio
+  sobre el fondo: en 2D no hay marco neutro que conservar. `0x4CA331` replica la luminosidad (136)
+  y el tono (~106°) del `TERRAIN_FIELDS` de 3D (`0x66994C`) subiendo solo la saturación necesaria
+  para que el fallback ANSI-16 use el verde del tema. **El blanco queda reservado para la nieve
+  futura**: ningún suelo lo usa (mientras no exista nieve, el blanco no aparece como terreno).
+  La noche no cambia.
 - **2D: color 24-bit con degradación 256 → 16 ANSI** (detección por `COLORTERM`/`TERM`, sin
   autodetección del fondo del terminal). Las constantes muertas del 2D
   (`SEMAPHORE_COLOR`, `SELECTED_SEMAPHORE_COLOR`, `SELECTED_FORK_COLOR`,
