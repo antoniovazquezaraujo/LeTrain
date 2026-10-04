@@ -42,11 +42,14 @@ Lo que hay en `develop` a día de hoy; el detalle por fase está al final de la 
   **20 niveles** (`BANDS = 19`) con histéresis direccional y suelo de contraste, y mezcla el fondo
   con su color diurno dentro del haz del faro.
 - **Faros**: umbral compartido `VisualPalette.LIGHTS_ON_RATIO = 0,1` y rampa `lightsOnFactor`. En 3D
-  se encienden hasta 4 `PointLight` reales en las locomotoras más cercanas a la cámara (posición
+  `HeadlightGlows` coloca hasta 4 charcos aditivos (quad con textura de gradiente radial, delante de
+  la locomotora y alineado con su rumbo) en las locomotoras más cercanas a la cámara (posición
   **renderizada** interpolada) y `VehicleRenderer` pinta las dos lámparas (emisivas o apagadas); en
-  2D el `RenderVisitor` simula el cono (`Headlight`). En ambos clientes las luces y el haz solo se
-  encienden con el motor en marcha (`isEngineOn()`) y en la locomotora de cabeza
-  (`isHeadLocomotive()`); en 3D tampoco durante el descarrilamiento (`isDestroying()`).
+  2D el `RenderVisitor` simula el cono (`Headlight`). Los charcos sustituyen a los `PointLight`
+  originales, que sobre el suelo de un quad por celda se veían como manchas **cuadradas** siguiendo
+  la rejilla (#690). En ambos clientes las luces y el haz solo se encienden con el motor en marcha
+  (`isEngineOn()`) y en la locomotora de cabeza (`isHeadLocomotive()`); en 3D tampoco durante el
+  descarrilamiento (`isDestroying()`).
 
 ## Cómo funcionaba antes de implementar (histórico)
 
@@ -204,7 +207,7 @@ esferas (la activa a color, la otra muy oscura). Limpieza pendiente: en 2D `SEMA
 | 1b | Terreno (campos, agua, montaña, balasto, túnel, pared) | Tokens de terreno en `VisualPalette` y materiales del `Gdx3DResourceContext`/`GroundRenderer` | Hecha |
 | 1c | Elementos, vía y trenes | Tokens de vía/trenes base + atenuación de colores de jugador; avisos intactos | Hecha |
 | 1d | 2D: paleta día/noche del terminal (familia clara) | `TerminalPalette` + wiring del `RenderVisitor` | Hecha |
-| 1e | Emisivos (faros/farolas) y niebla/cielo fino | **Faros de locomotora** (luz real en 3D + haz simulado en 2D) | Parcial: farolas/ventanas y niebla pendientes; coordinar con #480 |
+| 1e | Emisivos (faros/farolas) y niebla/cielo fino | **Faros de locomotora** (charco aditivo en 3D + haz simulado en 2D) | Parcial: farolas/ventanas y niebla pendientes; coordinar con #480 |
 
 Pendiente de 1e: farolas/ventanas, acabado de cielo y niebla fina. El resto de la fase 1 está en
 `develop`.
@@ -243,15 +246,17 @@ Pendiente de 1e: farolas/ventanas, acabado de cielo y niebla fina. El resto de l
   margen) y las teclas de debug recorren niveles contiguos. El laboratorio sí interpola, que es para
   lo que está.
 - Faros (1e parcial): token `EMISSIVE_HEADLIGHT` (constante a cualquier hora). En 3D el
-  `GraphicPresenter` enciende hasta **4 `PointLight`** reales en las locomotoras más cercanas a la
-  cámara (`Headlights.nearestTo`) con intensidad proporcional al ratio, y el `VehicleRenderer` pinta
-  dos lámparas en el frontal que **siempre se ven**: emisivas (`headlightModel`) con el motor en
-  marcha y oscuro (`headlightOffModel`), apagadas de día o con el motor parado (y en 3D tampoco si
-  está descarrilada). La luz usa la
+  `GraphicPresenter` dibuja hasta **4 charcos aditivos** de suelo (`HeadlightGlows`,
+  `headlightGlowModel`) en las locomotoras más cercanas a la cámara (`Headlights.nearestTo`) con
+  opacidad proporcional al ratio, y el `VehicleRenderer` pinta dos lámparas en el frontal que
+  **siempre se ven**: emisivas (`headlightModel`) con el motor en marcha y oscuro
+  (`headlightOffModel`), apagadas de día o con el motor parado (y en 3D tampoco si está
+  descarrilada). Los charcos sustituyen a los `PointLight` originales (#690): la luz por vértice
+  sobre el suelo de un quad por celda dibujaba la rejilla como manchas cuadradas. El charco usa la
   posición **renderizada** (interpolada) que el `VehicleRenderer` publica cada frame
-  (`Gdx3DRenderer.getHeadlightSources()`), así el haz se desliza con el tren en vez de saltar de
-  celda en celda. Luces y haz solo se encienden con el motor en marcha (`Locomotive.isEngineOn()`),
-  en la locomotora de cabeza (`isHeadLocomotive()`) y por encima del umbral compartido. En 2D el
+  (`Gdx3DRenderer.getHeadlightSources()`), así se desliza con el tren en vez de saltar de celda en
+  celda. Luces y haz solo se encienden con el motor en marcha (`Locomotive.isEngineOn()`), en la
+  locomotora de cabeza (`isHeadLocomotive()`) y por encima del umbral compartido. En 2D el
   `RenderVisitor` simula el haz: `Headlight.factor(dx, dy, dir)` da el cono (alcance 3 celdas,
   semiángulo 40°, tope `MAX_LIGHT`), y las celdas que ilumina se pintan mezclando su color nocturno
   con el diurno, **incluido el fondo**, así que el haz "aclara" vía y terreno. El túnel oculto (fuera

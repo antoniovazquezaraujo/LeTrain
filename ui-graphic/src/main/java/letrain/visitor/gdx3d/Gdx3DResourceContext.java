@@ -2,13 +2,19 @@ package letrain.visitor.gdx3d;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.VertexAttributes;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
+import com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
+import com.badlogic.gdx.graphics.g3d.attributes.DepthTestAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.FloatAttribute;
+import com.badlogic.gdx.graphics.g3d.attributes.IntAttribute;
+import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.g3d.decals.Decal;
 import com.badlogic.gdx.graphics.g3d.model.Node;
 import com.badlogic.gdx.graphics.g3d.utils.MeshPartBuilder;
@@ -153,6 +159,10 @@ public class Gdx3DResourceContext implements Disposable {
     public Model headlightModel;
     /** The same lamp unlit: shown by day and with the engine stopped. */
     public Model headlightOffModel;
+    /** Additive radial-gradient quad: the smooth ground pool of a lit headlight (#690). */
+    public Model headlightGlowModel;
+    /** Radial-gradient texture of {@link #headlightGlowModel}; owned here, disposed on exit. */
+    private Texture headlightGlowTexture;
 
     /** Unlit lamp colour: neutral warm grey, readable against most liveries. */
     static final int LAMP_OFF_RGB = 0xB8B2A6;
@@ -337,6 +347,9 @@ public class Gdx3DResourceContext implements Disposable {
                     palette.color(VisualPalette.Token.EMISSIVE_HEADLIGHT, dayNightRatio), true));
             // Same lamp unlit (day, or engine stopped): plain diffuse, always visible
             headlightOffModel = register(createHeadlightModel(LAMP_OFF_RGB, false));
+
+            // Smooth additive ground pool of the headlights (#690)
+            headlightGlowModel = register(createHeadlightGlowModel());
 
             // Consumer Models
             goldConsumerModel = register(createConsumerModel(
@@ -583,6 +596,42 @@ public class Gdx3DResourceContext implements Disposable {
                 (long) (VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
     }
 
+    /**
+     * Horizontal additive quad painted with a radial-gradient texture: the smooth headlight ground
+     * pool (#690). The 1x1 quad is scaled by the presenter, which also tints it every frame with
+     * the headlight colour and the current opacity. Blending is additive, depth is tested but not
+     * written so the pool never hides the decals drawn afterwards, and culling is off so the pool
+     * is visible from any camera angle.
+     */
+    private Model createHeadlightGlowModel() {
+        int size = 128;
+        Pixmap pixmap = new Pixmap(size, size, Pixmap.Format.RGBA8888);
+        pixmap.setBlending(Pixmap.Blending.None);
+        float half = (size - 1) / 2f;
+        for (int y = 0; y < size; y++) {
+            for (int x = 0; x < size; x++) {
+                float nx = (x - half) / half;
+                float ny = (y - half) / half;
+                float r = (float) Math.min(1.0, Math.sqrt(nx * nx + ny * ny));
+                float falloff = (1f - r) * (1f - r);
+                pixmap.setColor(1f, 1f, 1f, falloff);
+                pixmap.drawPixel(x, y);
+            }
+        }
+        headlightGlowTexture = new Texture(pixmap);
+        headlightGlowTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        pixmap.dispose();
+
+        Material material = new Material(TextureAttribute.createDiffuse(headlightGlowTexture),
+                new BlendingAttribute(GL20.GL_SRC_ALPHA, GL20.GL_ONE),
+                ColorAttribute.createDiffuse(Color.WHITE),
+                new DepthTestAttribute(GL20.GL_LEQUAL, false),
+                IntAttribute.createCullFace(GL20.GL_NONE));
+        return modelBuilder.createRect(-0.5f, 0f, -0.5f, 0.5f, 0f, -0.5f, 0.5f, 0f, 0.5f, -0.5f, 0f,
+                0.5f, 0f, 1f, 0f, material, (long) (VertexAttributes.Usage.Position
+                        | VertexAttributes.Usage.TextureCoordinates));
+    }
+
     /** Day/night ratio last applied to the palette (0 = day, 1 = night). */
     public double getDayNightRatio() {
         return dayNightRatio;
@@ -704,5 +753,9 @@ public class Gdx3DResourceContext implements Disposable {
             model.dispose();
         }
         models.clear();
+        if (headlightGlowTexture != null) {
+            headlightGlowTexture.dispose();
+            headlightGlowTexture = null;
+        }
     }
 }

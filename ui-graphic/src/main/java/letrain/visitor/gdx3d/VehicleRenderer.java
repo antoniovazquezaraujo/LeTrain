@@ -24,7 +24,7 @@ public class VehicleRenderer extends BaseSubRenderer {
         this.headlightSources = headlightSources;
     }
 
-    /** Rendered headlight positions collected during the frame, for the real lights. */
+    /** Rendered headlight positions collected during the frame, for the ground pools. */
     private final List<Headlights.Source> headlightSources;
 
     @Override
@@ -154,7 +154,7 @@ public class VehicleRenderer extends BaseSubRenderer {
                 && locomotive.isHeadLocomotive()
                 && VisualPalette.lightsOnFactor(resourceContext.getDayNightRatio()) > 0f;
 
-        // Headlight source at the rendered (interpolated) position, so the real light glides with
+        // Headlight source at the rendered (interpolated) position, so the ground pool glides with
         // the locomotive instead of jumping cell by cell.
         if (headlightsOn) {
             v1.set(renderTangent).nor();
