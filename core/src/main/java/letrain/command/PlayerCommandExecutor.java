@@ -370,20 +370,22 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         if (all || type.TRAIN() != null) {
             sb.append("Trains:\n");
             for (letrain.vehicle.rail.impl.Locomotive l : model.getLocomotives()) {
-                sb.append(" - ").append(l.getId()).append(": ").append(l.getTrain().getName())
-                        .append("\n");
+                sb.append(" - ").append(l.getId()).append(": ")
+                        .append(displayName(l.getTrain().getName())).append("\n");
             }
         }
         if (all || type.STATION() != null) {
             sb.append("Stations:\n");
             for (letrain.track.Station s : model.getStations()) {
-                sb.append(" - ").append(s.getId()).append(": ").append(s.getName()).append("\n");
+                sb.append(" - ").append(s.getId()).append(": ").append(displayName(s.getName()))
+                        .append("\n");
             }
         }
         if (all || type.SENSOR() != null) {
             sb.append("Sensors:\n");
             for (letrain.track.Sensor s : model.getSensors()) {
-                sb.append(" - ").append(s.getId()).append(": ").append(s.getName()).append("\n");
+                sb.append(" - ").append(s.getId()).append(": ").append(displayName(s.getName()))
+                        .append("\n");
             }
         }
         if (all || type.SEMAPHORE() != null) {
@@ -405,6 +407,15 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             }
         }
         return sb.toString();
+    }
+
+    /**
+     * Renders an optional entity name for the console listings: trains, stations and sensors may be
+     * unnamed, and the listing must never print a literal {@code null} (issue #702). Unnamed
+     * entities keep their numeric id on the line, which is what identifies them.
+     */
+    private static String displayName(String name) {
+        return (name == null || name.isBlank()) ? "(unnamed)" : name;
     }
 
     public Object visitInfoCommand(PlayerCommandsParser.InfoCommandContext ctx) {
@@ -456,7 +467,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             }
             if (found != null) {
                 sb.append("Train ID: ").append(found.getId()).append("\n");
-                sb.append("Name: ").append(found.getTrain().getName()).append("\n");
+                sb.append("Name: ").append(displayName(found.getTrain().getName())).append("\n");
                 sb.append("Speed: ").append(found.getSpeed()).append("\n");
                 sb.append(found.getTrain().describeComposition());
                 // ADR-022 phase 2b: only trains with measured timetable deltas show the block.
@@ -477,7 +488,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             }
             if (found != null) {
                 sb.append("Station ID: ").append(found.getId()).append("\n");
-                sb.append("Name: ").append(found.getName()).append("\n");
+                sb.append("Name: ").append(displayName(found.getName())).append("\n");
                 sb.append("Position: ").append(found.getPosition()).append("\n");
             } else
                 return "Station not found";
@@ -491,7 +502,7 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             }
             if (found != null) {
                 sb.append("Sensor ID: ").append(found.getId()).append("\n");
-                sb.append("Name: ").append(found.getName()).append("\n");
+                sb.append("Name: ").append(displayName(found.getName())).append("\n");
                 sb.append("Position: ").append(found.getPosition()).append("\n");
             } else
                 return "Sensor not found";
