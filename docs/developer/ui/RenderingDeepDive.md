@@ -65,7 +65,7 @@ latitud mundial). El detalle de tokens y fases está en
   y pinta cada token; las celdas dentro del cono del faro (`Headlight`) mezclan su color nocturno con
   el diurno, incluido el fondo.
 - **Faros**: `VehicleRenderer` publica las posiciones renderizadas de las locomotoras con luz y el
-  presentador dibuja hasta 4 charcos suaves de dos capas (halo + núcleo) con falloff gaussiano por
+  presentador dibuja hasta 4 charcos suaves con falloff cuadrático por
   fragmento (`HeadlightGlows` + `HeadlightGlowRenderer`) en las más cercanas a la cámara, con
   opacidad `VisualPalette.lightsOnFactor(ratio)`. Sustituyen a los `PointLight` originales, que
   sobre el suelo de un quad por celda dibujaban la rejilla como manchas cuadradas (#690); el plano

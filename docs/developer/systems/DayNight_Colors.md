@@ -42,8 +42,8 @@ Lo que hay en `develop` a día de hoy; el detalle por fase está al final de la 
   **20 niveles** (`BANDS = 19`) con histéresis direccional y suelo de contraste, y mezcla el fondo
   con su color diurno dentro del haz del faro.
 - **Faros**: umbral compartido `VisualPalette.LIGHTS_ON_RATIO = 0,1` y rampa `lightsOnFactor`. En 3D
-  `HeadlightGlows` + `HeadlightGlowRenderer` dibujan hasta 4 charcos suaves (dos capas — halo amplio
-  + núcleo — con falloff gaussiano por fragmento y alpha blending) delante de la locomotora y
+  `HeadlightGlows` + `HeadlightGlowRenderer` dibujan hasta 4 charcos suaves (quad con falloff
+  cuadrático por fragmento y alpha blending) delante de la locomotora y
   alineados con su rumbo en las locomotoras más cercanas a la cámara (posición **renderizada**
   interpolada) y `VehicleRenderer` pinta las dos lámparas (emisivas o apagadas); en 2D el
   `RenderVisitor` simula el cono (`Headlight`). Los charcos sustituyen a los `PointLight` originales,
@@ -249,8 +249,8 @@ Pendiente de 1e: farolas/ventanas, acabado de cielo y niebla fina. El resto de l
   lo que está.
 - Faros (1e parcial): token `EMISSIVE_HEADLIGHT` (constante a cualquier hora). En 3D el
   `GraphicPresenter` dibuja hasta **4 charcos suaves** de suelo (`HeadlightGlows` +
-  `HeadlightGlowRenderer`: dos capas, halo amplio + núcleo, con falloff gaussiano por fragmento,
-  corte antes del borde del quad y alpha blending) en las locomotoras más
+  `HeadlightGlowRenderer`: quad con falloff cuadrático por fragmento y alpha blending) en las
+  locomotoras más
   cercanas a la cámara (`Headlights.nearestTo`) con opacidad proporcional al ratio, y el
   `VehicleRenderer` pinta dos lámparas en el frontal que
   **siempre se ven**: emisivas (`headlightModel`) con el motor en marcha y oscuro

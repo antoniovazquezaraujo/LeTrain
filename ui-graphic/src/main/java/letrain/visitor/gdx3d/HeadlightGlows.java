@@ -1,21 +1,14 @@
 package letrain.visitor.gdx3d;
 
-import java.util.List;
 import letrain.palette.VisualPalette;
 
 /**
  * Placement and strength of the soft ground pools that stand in for the locomotive headlights in 3D
  * (ADR-022 phase 1e, issue #690). The default LibGDX shader lights per vertex and the ground is one
  * 1x1 quad per cell, so the old {@code PointLight}s showed up as square patches that traced the
- * cell grid. Each pool is now a flat quad with an <em>analytic</em> radial falloff computed per
- * fragment ({@link HeadlightGlowRenderer}) and normal alpha blending: smooth at any distance or
- * grazing angle (no texture to minify) and colour-capped, so overlapping pools can never blow out
- * to white.
- *
- * <p>
- * The pool is painted twice per locomotive ({@link #HALO} + {@link #CORE}) to get a diffuse core
- * with a wide, faint wash around it; the falloff reaches zero before the quad edge
- * ({@link #FALLOFF_CUTOFF}) so no silhouette is ever visible.
+ * cell grid. Each pool is now a flat quad with an analytic radial falloff computed per fragment
+ * ({@link HeadlightGlowRenderer}) and normal alpha blending: smooth at any distance or grazing
+ * angle (no texture to minify) and colour-capped, so overlapping pools can never blow out to white.
  *
  * <p>
  * Pure maths on the GDX-free {@link Headlights.Source}, so placement and opacity are unit-testable.
@@ -33,45 +26,29 @@ public final class HeadlightGlows {
      */
     public static final float GROUND_Y = 0.12f;
 
-    /**
-     * The falloff reaches zero at this fraction of the quad half-size, so the outer margin of the
-     * quad is fully transparent and no edge or corner is ever visible.
-     */
-    public static final float FALLOFF_CUTOFF = 0.9f;
+    /** Distance from the rendered locomotive to the pool centre (its brightest point). */
+    public static final float CENTER_AHEAD = 1.8f;
+
+    /** Pool size across the beam and along it; the falloff reaches zero at the quad edge. */
+    public static final float WIDTH = 3.6f;
+    public static final float LENGTH = 6.5f;
 
     /**
-     * Sharpness of the gaussian falloff (higher = tighter core). Around 4.5 gives a fat, diffuse
-     * profile: still 30% of the peak at half the cutoff radius, which is what makes the pool read
-     * as a soft wash instead of a disc.
+     * Peak alpha of the pool at full night. Below 1 so the ground keeps its texture through the
+     * light and several overlapping pools composite instead of painting it flat.
      */
-    public static final float FALLOFF_SHARPNESS = 4.5f;
-
-    /**
-     * One elliptical layer of the pool: quad size, peak alpha at full night and how far ahead of
-     * the rendered locomotive its centre sits.
-     */
-    public record Layer(float width, float length, float opacity, float ahead) {
-    }
-
-    /** Wide, faint wash that diffuses the light far beyond the core. */
-    public static final Layer HALO = new Layer(8.0f, 14.0f, 0.18f, 3.2f);
-
-    /** Brighter core right in front of the locomotive. */
-    public static final Layer CORE = new Layer(3.6f, 7.0f, 0.28f, 1.8f);
-
-    /** Layers painted back to front. */
-    public static final List<Layer> LAYERS = List.of(HALO, CORE);
+    public static final float PEAK_OPACITY = 0.5f;
 
     private HeadlightGlows() {}
 
-    /** World X of the centre of {@code layer}, in front of the locomotive. */
-    public static float centerX(Headlights.Source source, Layer layer) {
-        return source.x() + source.dirX() * layer.ahead();
+    /** World X of the pool centre, in front of the locomotive. */
+    public static float centerX(Headlights.Source source) {
+        return source.x() + source.dirX() * CENTER_AHEAD;
     }
 
-    /** World Z of the centre of {@code layer}, in front of the locomotive. */
-    public static float centerZ(Headlights.Source source, Layer layer) {
-        return source.z() + source.dirZ() * layer.ahead();
+    /** World Z of the pool centre, in front of the locomotive. */
+    public static float centerZ(Headlights.Source source) {
+        return source.z() + source.dirZ() * CENTER_AHEAD;
     }
 
     /**
@@ -82,8 +59,8 @@ public final class HeadlightGlows {
         return (float) Math.toDegrees(Math.atan2(source.dirX(), source.dirZ()));
     }
 
-    /** Peak alpha of a layer at a day/night ratio: 0 in daylight, the layer peak at night. */
-    public static float opacity(Layer layer, double dayNightRatio) {
-        return layer.opacity() * VisualPalette.lightsOnFactor(dayNightRatio);
+    /** Peak alpha of a pool at a day/night ratio: 0 in daylight, {@link #PEAK_OPACITY} at night. */
+    public static float opacity(double dayNightRatio) {
+        return PEAK_OPACITY * VisualPalette.lightsOnFactor(dayNightRatio);
     }
 }
