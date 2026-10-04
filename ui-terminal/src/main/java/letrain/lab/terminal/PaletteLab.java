@@ -40,7 +40,7 @@ public class PaletteLab {
             int semClosed, int signalMax, int signalMin, int deadEnd, int tunnel, int bridge,
             int loco, int wagon, int cargoCoal, int cargoGold, int cargoRuby, int cursorDrawing,
             int cursorMoving, int cursorErasing, int highlight, int label, int board, int fork,
-            int forkSelected, int selectionLink, int crash) {
+            int forkSelected, int selectionLink, int crash, int waterBg, int rockBg) {
     }
 
     /** Mapa de muestra: los colores de cada token salen de la {@link Pal} activa. */
@@ -60,28 +60,28 @@ public class PaletteLab {
     /** [familia][franja]: familia 0 = clara (por defecto), 1 = oscura. */
     static Pal[][] palettes() {
         Pal[] light = {
-                // Día "mapa papel": fondo claro, glifos oscuros.
-                new Pal(rgb(242, 240, 232), rgb(40, 90, 190), rgb(170, 60, 60), rgb(50, 50, 55),
+                // Día "campo verde": campo, mar azul y montaña marrón; glifos oscuros.
+                new Pal(rgb(76, 163, 49), rgb(0, 169, 192), rgb(200, 160, 107), rgb(50, 50, 55),
                         rgb(150, 150, 150), rgb(200, 160, 0), rgb(25, 25, 30), rgb(200, 30, 30),
                         rgb(170, 130, 0), rgb(90, 85, 70), rgb(0, 130, 130), rgb(0, 130, 60),
                         rgb(200, 30, 30), rgb(200, 30, 30), rgb(40, 70, 170), rgb(200, 160, 0),
                         rgb(90, 90, 95), rgb(70, 70, 80), rgb(40, 40, 45), rgb(90, 90, 95),
                         rgb(20, 20, 20), rgb(150, 120, 0), rgb(180, 0, 50), rgb(0, 110, 40),
                         rgb(170, 140, 0), rgb(190, 40, 40), rgb(25, 25, 30), rgb(60, 60, 65),
-                        rgb(242, 240, 232), rgb(25, 25, 30), rgb(200, 30, 30), rgb(150, 20, 120),
-                        rgb(200, 60, 30)),
-                // Crepúsculo claro: papel gris cálido.
-                new Pal(rgb(186, 183, 178), rgb(45, 80, 165), rgb(160, 70, 55), rgb(60, 52, 48),
+                        rgb(76, 163, 49), rgb(25, 25, 30), rgb(200, 30, 30), rgb(150, 20, 120),
+                        rgb(200, 60, 30), rgb(26, 62, 143), rgb(112, 58, 26)),
+                // Crepúsculo: campo, mar y montaña apagados.
+                new Pal(rgb(82, 122, 56), rgb(47, 127, 152), rgb(169, 133, 94), rgb(60, 52, 48),
                         rgb(140, 130, 115), rgb(180, 140, 20), rgb(60, 40, 25), rgb(190, 50, 40),
                         rgb(160, 115, 10), rgb(95, 80, 60), rgb(20, 120, 120), rgb(20, 115, 55),
                         rgb(190, 50, 40), rgb(190, 50, 40), rgb(50, 75, 160), rgb(180, 140, 20),
                         rgb(95, 85, 75), rgb(85, 75, 65), rgb(55, 45, 40), rgb(95, 85, 75),
                         rgb(35, 30, 28), rgb(160, 115, 10), rgb(175, 30, 55), rgb(20, 110, 45),
                         rgb(160, 120, 10), rgb(180, 55, 45), rgb(70, 55, 40), rgb(80, 65, 55),
-                        rgb(186, 183, 178), rgb(60, 40, 25), rgb(190, 50, 40), rgb(150, 40, 120),
-                        rgb(190, 70, 40)),
+                        rgb(82, 122, 56), rgb(60, 40, 25), rgb(190, 50, 40), rgb(150, 40, 120),
+                        rgb(190, 70, 40), rgb(20, 44, 92), rgb(70, 38, 26)),
                 // Noche: vuelve al look oscuro.
-                new Pal(rgb(22, 25, 35), rgb(60, 95, 180), rgb(150, 100, 95), rgb(150, 150, 160),
+                new Pal(rgb(22, 25, 35), rgb(78, 147, 168), rgb(150, 100, 95), rgb(150, 150, 160),
                         rgb(70, 72, 80), rgb(200, 190, 70), rgb(225, 228, 240), rgb(235, 90, 80),
                         rgb(230, 200, 40), rgb(215, 210, 190), rgb(90, 200, 205), rgb(80, 200, 120),
                         rgb(235, 90, 80), rgb(235, 90, 80), rgb(95, 125, 235), rgb(200, 190, 70),
@@ -89,7 +89,7 @@ public class PaletteLab {
                         rgb(190, 192, 205), rgb(45, 45, 55), rgb(230, 200, 40), rgb(235, 40, 90),
                         rgb(70, 190, 90), rgb(230, 200, 40), rgb(235, 90, 80), rgb(225, 228, 240),
                         rgb(160, 165, 180), rgb(22, 25, 35), rgb(225, 228, 240), rgb(235, 90, 80),
-                        rgb(230, 120, 210), rgb(255, 120, 60)),};
+                        rgb(230, 120, 210), rgb(255, 120, 60), rgb(8, 19, 38), rgb(28, 18, 11)),};
         Pal[] dark = {
                 // Día oscuro: la actual con el campo como fondo negro.
                 new Pal(rgb(12, 12, 14), rgb(90, 150, 255), rgb(230, 120, 120), rgb(90, 90, 95),
@@ -100,7 +100,7 @@ public class PaletteLab {
                         rgb(128, 128, 128), rgb(25, 25, 25), rgb(255, 216, 0), rgb(255, 0, 76),
                         rgb(60, 220, 60), rgb(255, 220, 0), rgb(255, 70, 70), rgb(255, 255, 0),
                         rgb(150, 150, 150), rgb(12, 12, 14), rgb(255, 255, 255), rgb(255, 80, 80),
-                        rgb(255, 0, 255), rgb(255, 120, 30)),
+                        rgb(255, 0, 255), rgb(255, 120, 30), rgb(10, 30, 70), rgb(48, 24, 12)),
                 // Crepúsculo oscuro.
                 new Pal(rgb(16, 12, 12), rgb(70, 110, 190), rgb(195, 110, 95), rgb(80, 72, 68),
                         rgb(28, 25, 24), rgb(220, 200, 60), rgb(235, 200, 160), rgb(230, 80, 70),
@@ -110,7 +110,7 @@ public class PaletteLab {
                         rgb(120, 110, 100), rgb(24, 22, 21), rgb(230, 190, 40), rgb(230, 60, 90),
                         rgb(60, 180, 60), rgb(230, 190, 40), rgb(230, 80, 70), rgb(235, 200, 160),
                         rgb(200, 160, 120), rgb(16, 12, 12), rgb(235, 200, 160), rgb(230, 80, 70),
-                        rgb(230, 60, 200), rgb(255, 90, 30)),
+                        rgb(230, 60, 200), rgb(255, 90, 30), rgb(12, 22, 50), rgb(40, 22, 12)),
                 // Noche oscura.
                 new Pal(rgb(4, 6, 12), rgb(35, 55, 110), rgb(110, 80, 80), rgb(45, 45, 55),
                         rgb(16, 16, 20), rgb(180, 170, 60), rgb(140, 145, 165), rgb(200, 70, 70),
@@ -120,11 +120,11 @@ public class PaletteLab {
                         rgb(22, 23, 28), rgb(190, 160, 20), rgb(190, 20, 60), rgb(35, 130, 45),
                         rgb(190, 170, 20), rgb(190, 70, 70), rgb(140, 145, 165), rgb(95, 100, 115),
                         rgb(4, 6, 12), rgb(140, 145, 165), rgb(200, 70, 70), rgb(200, 90, 180),
-                        rgb(255, 140, 60)),};
+                        rgb(255, 140, 60), rgb(6, 9, 20), rgb(26, 14, 8)),};
         return new Pal[][] {light, dark};
     }
 
-    private static final String[] FAMILY_NAMES = {"CLARA (papel)", "OSCURA"};
+    private static final String[] FAMILY_NAMES = {"CLARA (campo)", "OSCURA"};
     private static final TextColor.ANSI[] ANSI_SLOTS = {TextColor.ANSI.BLACK, TextColor.ANSI.RED,
             TextColor.ANSI.GREEN, TextColor.ANSI.YELLOW, TextColor.ANSI.BLUE,
             TextColor.ANSI.MAGENTA, TextColor.ANSI.CYAN, TextColor.ANSI.WHITE,
@@ -275,8 +275,8 @@ public class PaletteLab {
 
     /**
      * Transición gradual con el ratio del reloj. En la familia clara el día y la noche tienen
-     * polaridad inversa (glifos oscuros sobre papel / glifos claros sobre negro), así que la
-     * inversión se funde directamente de un régimen al otro a ritmo constante durante la hora
+     * polaridad inversa (glifos oscuros sobre el campo verde / glifos claros sobre negro), así que
+     * la inversión se funde directamente de un régimen al otro a ritmo constante durante la hora
      * restante, con un suelo de contraste que evita la banda confusa; la familia oscura interpola
      * lineal.
      */
@@ -313,7 +313,7 @@ public class PaletteLab {
     }
 
     /**
-     * El papel claro alcanza su tono de crepúsculo en este ratio (0.5 = 20:00) y a partir de ahí
+     * El campo claro alcanza su tono de crepúsculo en este ratio (0.5 = 20:00) y a partir de ahí
      * empieza el fundido a oscuro, repartido por la hora restante para que no haya un salto.
      */
     static final double LIGHT_NIGHTFALL = 0.5;
@@ -351,7 +351,8 @@ public class PaletteLab {
                 mixColor(a.board(), b.board(), t), mixColor(a.fork(), b.fork(), t),
                 mixColor(a.forkSelected(), b.forkSelected(), t),
                 mixColor(a.selectionLink(), b.selectionLink(), t),
-                mixColor(a.crash(), b.crash(), t));
+                mixColor(a.crash(), b.crash(), t), mixColor(a.waterBg(), b.waterBg(), t),
+                mixColor(a.rockBg(), b.rockBg(), t));
     }
 
     static int mixColor(int a, int b, float t) {
@@ -375,23 +376,27 @@ public class PaletteLab {
         return (int) Math.round(Math.max(0.0, Math.min(1.0, v)) * 255);
     }
 
-    /** Fuerza que cada token mantenga {@link #MIN_CONTRAST} de luminosidad frente al fondo. */
+    /** Fuerza que cada token mantenga {@link #MIN_CONTRAST} de luminosidad frente a su fondo. */
     static Pal ensureContrast(Pal p) {
-        double bg = luminance(p.ground());
-        return new Pal(p.ground(), contrast(p.water(), bg), contrast(p.rock(), bg),
-                contrast(p.rail(), bg), contrast(p.railInactive(), bg),
-                contrast(p.railInvalid(), bg), contrast(p.station(), bg),
-                contrast(p.stationSelected(), bg), contrast(p.producer(), bg),
-                contrast(p.consumer(), bg), contrast(p.sensor(), bg), contrast(p.semOpen(), bg),
-                contrast(p.semClosed(), bg), contrast(p.signalMax(), bg),
-                contrast(p.signalMin(), bg), contrast(p.deadEnd(), bg), contrast(p.tunnel(), bg),
-                contrast(p.bridge(), bg), contrast(p.loco(), bg), contrast(p.wagon(), bg),
-                contrast(p.cargoCoal(), bg), contrast(p.cargoGold(), bg),
-                contrast(p.cargoRuby(), bg), contrast(p.cursorDrawing(), bg),
-                contrast(p.cursorMoving(), bg), contrast(p.cursorErasing(), bg),
-                contrast(p.highlight(), bg), contrast(p.label(), bg), contrast(p.board(), bg),
-                contrast(p.fork(), bg), contrast(p.forkSelected(), bg),
-                contrast(p.selectionLink(), bg), contrast(p.crash(), bg));
+        double field = luminance(p.ground());
+        double sea = luminance(p.waterBg());
+        double mountain = luminance(p.rockBg());
+        return new Pal(p.ground(), contrast(p.water(), sea), contrast(p.rock(), mountain),
+                contrast(p.rail(), field), contrast(p.railInactive(), field),
+                contrast(p.railInvalid(), field), contrast(p.station(), field),
+                contrast(p.stationSelected(), field), contrast(p.producer(), field),
+                contrast(p.consumer(), field), contrast(p.sensor(), field),
+                contrast(p.semOpen(), field), contrast(p.semClosed(), field),
+                contrast(p.signalMax(), field), contrast(p.signalMin(), field),
+                contrast(p.deadEnd(), field), contrast(p.tunnel(), field),
+                contrast(p.bridge(), field), contrast(p.loco(), field), contrast(p.wagon(), field),
+                contrast(p.cargoCoal(), field), contrast(p.cargoGold(), field),
+                contrast(p.cargoRuby(), field), contrast(p.cursorDrawing(), field),
+                contrast(p.cursorMoving(), field), contrast(p.cursorErasing(), field),
+                contrast(p.highlight(), field), contrast(p.label(), field),
+                contrast(p.board(), field), contrast(p.fork(), field),
+                contrast(p.forkSelected(), field), contrast(p.selectionLink(), field),
+                contrast(p.crash(), field), p.waterBg(), p.rockBg());
     }
 
     private static int contrast(int rgb, double bgLuminance) {
@@ -453,7 +458,8 @@ public class PaletteLab {
             String line = MAP[y];
             for (int x = 0; x < line.length() && x + 2 < cols; x++) {
                 char ch = line.charAt(x);
-                put(tg, 2 + x, mapY + y, ch, color(tokenColor(pal, ch)), color(pal.ground()));
+                put(tg, 2 + x, mapY + y, ch, color(tokenColor(pal, ch)),
+                        color(cellBackground(pal, ch)));
             }
         }
 
@@ -478,7 +484,7 @@ public class PaletteLab {
             }
         }
         put(tg, 1, rows - 1,
-                "el campo no tiene glifo: es el fondo · familia clara = papel de día / oscuro de noche",
+                "el campo no tiene glifo: es el fondo · familia clara = campo verde de día / oscuro de noche",
                 ansi(0x777777), chromeBg);
     }
 
@@ -520,7 +526,8 @@ public class PaletteLab {
     }
 
     private static Object[][] tokenEntries(Pal p) {
-        return new Object[][] {{"campo", p.ground()}, {"agua", p.water()}, {"roca", p.rock()},
+        return new Object[][] {{"campo", p.ground()}, {"mar.fondo", p.waterBg()},
+                {"montana.fondo", p.rockBg()}, {"olas", p.water()}, {"roca", p.rock()},
                 {"via", p.rail()}, {"via.inact", p.railInactive()},
                 {"via.invalida", p.railInvalid()}, {"estacion", p.station()},
                 {"estacion.sel", p.stationSelected()}, {"productor", p.producer()},
@@ -533,6 +540,15 @@ public class PaletteLab {
                 {"cursor", p.cursorDrawing()}, {"resalte", p.highlight()}, {"etiqueta", p.label()},
                 {"fondo", p.board()}, {"desvio", p.fork()}, {"desvio.sel", p.forkSelected()},
                 {"enlace", p.selectionLink()}, {"accidente", p.crash()},};
+    }
+
+    /** Fondo de la celda del mapa de muestra: el de su terreno. */
+    private static int cellBackground(Pal p, char ch) {
+        return switch (ch) {
+            case '~' -> p.waterBg();
+            case '*' -> p.rockBg();
+            default -> p.ground();
+        };
     }
 
     private static int tokenColor(Pal p, char ch) {
