@@ -913,6 +913,10 @@ public class RenderVisitor implements Visitor {
         if (model == null || track == null) {
             return null;
         }
+        EconomyManager economyManager = model.getEconomyManager();
+        if (economyManager != null && !economyManager.isHighlightBlockedTracks()) {
+            return null;
+        }
         Train ownerTrain = null;
         RailwayGraph graph = model.getRailwayGraph();
         BlockManager blockManager = model.getBlockManager();

@@ -163,4 +163,14 @@ public interface EconomyManager {
      */
     int getDerailMinSpeed();
 
+    /**
+     * Whether reserved/blocked tracks are tinted with the livery of the owning train
+     * ({@code ui.highlightBlockedTracks}, default true). When false, both clients keep the normal
+     * rail colour (issue #694).
+     */
+    boolean isHighlightBlockedTracks();
+
+    /** Enables/disables the train-livery tint of reserved/blocked tracks (issue #694). */
+    void setHighlightBlockedTracks(boolean highlight);
+
 }

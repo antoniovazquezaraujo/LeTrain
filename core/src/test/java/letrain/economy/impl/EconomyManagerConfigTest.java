@@ -1,7 +1,9 @@
 package letrain.economy.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -30,6 +32,20 @@ class EconomyManagerConfigTest {
         assertEquals(source.getGoldThreshold(), target.getGoldThreshold(), 0.001f);
         assertEquals(config.keySet(), target.effectiveConfig().keySet(),
                 "the snapshot must expose the same keys");
+    }
+
+    @Test
+    @DisplayName("ui.highlightBlockedTracks defaults to true and follows applyConfig")
+    void highlightBlockedTracks_defaultAndOverrides() {
+        EconomyManager manager = new EconomyManager(new EventLogManager());
+
+        assertTrue(manager.isHighlightBlockedTracks(), "default must keep the current behaviour");
+
+        manager.applyConfig(Map.of("ui.highlightBlockedTracks", "false"));
+        assertFalse(manager.isHighlightBlockedTracks());
+
+        manager.applyConfig(Map.of("ui.highlightBlockedTracks", "true"));
+        assertTrue(manager.isHighlightBlockedTracks());
     }
 
     @Test
