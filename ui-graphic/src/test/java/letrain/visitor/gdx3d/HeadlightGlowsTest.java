@@ -47,4 +47,13 @@ class HeadlightGlowsTest {
         assertEquals(HeadlightGlows.PEAK_OPACITY, HeadlightGlows.opacity(2.0), EPSILON);
         assertEquals(0f, HeadlightGlows.opacity(-1.0), EPSILON);
     }
+
+    @Test
+    @DisplayName("the pool is elongated along the heading and never fully opaque")
+    void should_StaySoftAndElongated() {
+        assertTrue(HeadlightGlows.LENGTH > HeadlightGlows.WIDTH,
+                "the pool must read as a beam, not as a round blob");
+        assertTrue(HeadlightGlows.opacity(1.0) < 1f,
+                "alpha must stay below 1 so overlapping pools never blow out to white");
+    }
 }

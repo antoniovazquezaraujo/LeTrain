@@ -65,12 +65,13 @@ latitud mundial). El detalle de tokens y fases está en
   y pinta cada token; las celdas dentro del cono del faro (`Headlight`) mezclan su color nocturno con
   el diurno, incluido el fondo.
 - **Faros**: `VehicleRenderer` publica las posiciones renderizadas de las locomotoras con luz y el
-  presentador dibuja hasta 4 charcos aditivos de gradiente radial (`HeadlightGlows`) en las más
-  cercanas a la cámara, con opacidad `VisualPalette.lightsOnFactor(ratio)`. Sustituyen a los
-  `PointLight` originales, que sobre el suelo de un quad por celda dibujaban la rejilla como manchas
-  cuadradas (#690). Luces y haz solo se encienden por encima de
-  `VisualPalette.LIGHTS_ON_RATIO` (0,1) y con el motor en marcha y la locomotora de cabeza
-  (`isEngineOn() && isHeadLocomotive()`); en 2D el túnel oculto también apaga el haz.
+  presentador dibuja hasta 4 charcos suaves de falloff radial por fragmento (`HeadlightGlows` +
+  `HeadlightGlowRenderer`) en las más cercanas a la cámara, con opacidad
+  `VisualPalette.lightsOnFactor(ratio)`. Sustituyen a los `PointLight` originales, que sobre el
+  suelo de un quad por celda dibujaban la rejilla como manchas cuadradas (#690). Luces y haz solo se
+  encienden por encima de `VisualPalette.LIGHTS_ON_RATIO` (0,1) y con el motor en marcha y la
+  locomotora de cabeza (`isEngineOn() && isHeadLocomotive()`); en 2D el túnel oculto también apaga
+  el haz.
 
 ## Invariantes de la Vista
 - Ninguna clase de renderizado debe modificar el estado del `Model`.

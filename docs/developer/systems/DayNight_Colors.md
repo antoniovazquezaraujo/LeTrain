@@ -42,14 +42,14 @@ Lo que hay en `develop` a día de hoy; el detalle por fase está al final de la 
   **20 niveles** (`BANDS = 19`) con histéresis direccional y suelo de contraste, y mezcla el fondo
   con su color diurno dentro del haz del faro.
 - **Faros**: umbral compartido `VisualPalette.LIGHTS_ON_RATIO = 0,1` y rampa `lightsOnFactor`. En 3D
-  `HeadlightGlows` coloca hasta 4 charcos aditivos (quad con textura de gradiente radial, delante de
-  la locomotora y alineado con su rumbo) en las locomotoras más cercanas a la cámara (posición
-  **renderizada** interpolada) y `VehicleRenderer` pinta las dos lámparas (emisivas o apagadas); en
-  2D el `RenderVisitor` simula el cono (`Headlight`). Los charcos sustituyen a los `PointLight`
-  originales, que sobre el suelo de un quad por celda se veían como manchas **cuadradas** siguiendo
-  la rejilla (#690). En ambos clientes las luces y el haz solo se encienden con el motor en marcha
-  (`isEngineOn()`) y en la locomotora de cabeza (`isHeadLocomotive()`); en 3D tampoco durante el
-  descarrilamiento (`isDestroying()`).
+  `HeadlightGlows` + `HeadlightGlowRenderer` dibujan hasta 4 charcos suaves (quad con falloff radial
+  por fragmento y alpha blending, delante de la locomotora y alineado con su rumbo) en las
+  locomotoras más cercanas a la cámara (posición **renderizada** interpolada) y `VehicleRenderer`
+  pinta las dos lámparas (emisivas o apagadas); en 2D el `RenderVisitor` simula el cono
+  (`Headlight`). Los charcos sustituyen a los `PointLight` originales, que sobre el suelo de un quad
+  por celda se veían como manchas **cuadradas** siguiendo la rejilla (#690). En ambos clientes las
+  luces y el haz solo se encienden con el motor en marcha (`isEngineOn()`) y en la locomotora de
+  cabeza (`isHeadLocomotive()`); en 3D tampoco durante el descarrilamiento (`isDestroying()`).
 
 ## Cómo funcionaba antes de implementar (histórico)
 
@@ -246,9 +246,10 @@ Pendiente de 1e: farolas/ventanas, acabado de cielo y niebla fina. El resto de l
   margen) y las teclas de debug recorren niveles contiguos. El laboratorio sí interpola, que es para
   lo que está.
 - Faros (1e parcial): token `EMISSIVE_HEADLIGHT` (constante a cualquier hora). En 3D el
-  `GraphicPresenter` dibuja hasta **4 charcos aditivos** de suelo (`HeadlightGlows`,
-  `headlightGlowModel`) en las locomotoras más cercanas a la cámara (`Headlights.nearestTo`) con
-  opacidad proporcional al ratio, y el `VehicleRenderer` pinta dos lámparas en el frontal que
+  `GraphicPresenter` dibuja hasta **4 charcos suaves** de suelo (`HeadlightGlows` +
+  `HeadlightGlowRenderer`, falloff radial por fragmento y alpha blending) en las locomotoras más
+  cercanas a la cámara (`Headlights.nearestTo`) con opacidad proporcional al ratio, y el
+  `VehicleRenderer` pinta dos lámparas en el frontal que
   **siempre se ven**: emisivas (`headlightModel`) con el motor en marcha y oscuro
   (`headlightOffModel`), apagadas de día o con el motor parado (y en 3D tampoco si está
   descarrilada). Los charcos sustituyen a los `PointLight` originales (#690): la luz por vértice

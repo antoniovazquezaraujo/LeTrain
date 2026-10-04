@@ -32,6 +32,7 @@ import letrain.vehicle.rail.CoreTrainEventListener;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
 import letrain.visitor.gdx3d.Gdx3DRenderer;
+import letrain.visitor.gdx3d.HeadlightGlowRenderer;
 import letrain.visitor.gdx3d.HeadlightGlows;
 import letrain.visitor.gdx3d.Headlights;
 import org.slf4j.Logger;
@@ -90,11 +91,11 @@ public class GraphicPresenter extends ApplicationAdapter
     private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute ambientAttribute;
     private com.badlogic.gdx.graphics.g3d.environment.DirectionalLight sunLight;
     /**
-     * Soft additive ground pools for the nearest locomotive headlights (ADR-022 phase 1e, #690).
-     * Replaces the 4 raw {@code PointLight}s, whose per-vertex lighting over the 1x1 ground cells
+     * Draws the soft ground pools of the nearest locomotive headlights (ADR-022 phase 1e, #690).
+     * Replaces the raw {@code PointLight}s, whose per-vertex lighting over the 1x1 ground cells
      * showed up as square patches that traced the cell grid.
      */
-    private final List<ModelInstance> headlightGlows = new java.util.ArrayList<>();
+    private HeadlightGlowRenderer headlightGlowRenderer;
     private final Color headlightColor = new Color();
     private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute tableDiffuse;
     private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute gridDiffuse;
@@ -226,6 +227,8 @@ public class GraphicPresenter extends ApplicationAdapter
     public void create() {
         resourceContext.init();
         renderer.init();
+        headlightGlowRenderer = new HeadlightGlowRenderer();
+        headlightGlowRenderer.init();
         modelBatch = new ModelBatch();
         environment = new Environment();
         ambientAttribute = new ColorAttribute(ColorAttribute.AmbientLight, 0.5f, 0.5f, 0.5f, 1f);
@@ -376,7 +379,6 @@ public class GraphicPresenter extends ApplicationAdapter
         // Actualizar instancias desde el modelo
         renderer.clear();
         renderer.visitModel(model, cam);
-        updateHeadlightGlows(dayNightRatio());
         modelBatch.begin(cam);
         modelBatch.render(renderer.getInstances(), environment);
         // Render the background table slightly below ground level
@@ -387,8 +389,8 @@ public class GraphicPresenter extends ApplicationAdapter
         modelBatch.render(tableInstance, environment);
         modelBatch.end();
 
-        // Ground pools of the headlights: additive and unlit, after the lit scene.
-        renderHeadlightGlows();
+        // Ground pools of the headlights: alpha-blended and unlit, after the lit scene.
+        renderHeadlightGlows(dayNightRatio());
 
         // Renderizado de Etiquetas 3D (Decals)
         if (!renderer.getLabels().isEmpty()) {
@@ -1316,6 +1318,9 @@ public class GraphicPresenter extends ApplicationAdapter
         if (audioController != null) {
             audioController.stop();
         }
+        if (headlightGlowRenderer != null) {
+            headlightGlowRenderer.dispose();
+        }
         if (resourceContext != null) {
             resourceContext.dispose();
         }
@@ -1445,48 +1450,24 @@ public class GraphicPresenter extends ApplicationAdapter
     }
 
     /**
-     * Places one additive ground pool for each of the nearest locomotive headlights; off while the
-     * sun is up (phase 1e). Positions come from the rendered sources collected by the vehicle
-     * renderer this frame, so the pool glides with the train instead of jumping cell by cell. The
-     * pools are smooth quads (#690): raw point lights lit the per-cell ground per vertex and showed
-     * the cell grid as square patches.
+     * Draws one soft ground pool for each of the nearest locomotive headlights; off while the sun
+     * is up (phase 1e). Positions come from the rendered sources collected by the vehicle renderer
+     * this frame, so the pool glides with the train instead of jumping cell by cell. The falloff is
+     * computed per fragment (#690): raw point lights traced the cell grid, and a first
+     * texture-based quad still aliased at grazing angles.
      */
-    private void updateHeadlightGlows(double ratio) {
-        headlightGlows.clear();
+    private void renderHeadlightGlows(double ratio) {
+        if (headlightGlowRenderer == null || cam == null) {
+            return;
+        }
         float opacity = HeadlightGlows.opacity(ratio);
-        if (cam == null || opacity <= 0f || resourceContext.headlightGlowModel == null) {
+        if (opacity <= 0f) {
             return;
         }
         setColor(headlightColor, palette.color(VisualPalette.Token.EMISSIVE_HEADLIGHT, ratio));
         List<Headlights.Source> nearest = Headlights.nearestTo(renderer.getHeadlightSources(),
                 cam.position, HeadlightGlows.MAX_SOURCES);
-        for (Headlights.Source source : nearest) {
-            ModelInstance glow =
-                    resourceContext.getModelInstance(resourceContext.headlightGlowModel);
-            com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute diffuse =
-                    (com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute) glow.materials.get(0)
-                            .get(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.Diffuse);
-            diffuse.color.set(headlightColor.r, headlightColor.g, headlightColor.b, opacity);
-            glow.transform.setToTranslation(HeadlightGlows.centerX(source), HeadlightGlows.GROUND_Y,
-                    HeadlightGlows.centerZ(source));
-            glow.transform.rotate(0f, 1f, 0f, HeadlightGlows.yawDegrees(source));
-            glow.transform.scale(HeadlightGlows.WIDTH, 1f, HeadlightGlows.LENGTH);
-            headlightGlows.add(glow);
-        }
-    }
-
-    /**
-     * Draws the headlight ground pools with no environment: the default shader then skips lighting
-     * and the additive {@code BlendingAttribute} of the material just adds the gradient to the dark
-     * ground.
-     */
-    private void renderHeadlightGlows() {
-        if (headlightGlows.isEmpty()) {
-            return;
-        }
-        modelBatch.begin(cam);
-        modelBatch.render(headlightGlows);
-        modelBatch.end();
+        headlightGlowRenderer.render(cam, nearest, headlightColor, opacity);
     }
 
     /**

@@ -6,8 +6,10 @@ import letrain.palette.VisualPalette;
  * Placement and strength of the soft ground pools that stand in for the locomotive headlights in 3D
  * (ADR-022 phase 1e, issue #690). The default LibGDX shader lights per vertex and the ground is one
  * 1x1 quad per cell, so the old {@code PointLight}s showed up as square patches that traced the
- * cell grid. Each pool is now a flat additive quad with a radial-gradient texture that follows the
- * rendered locomotive: smooth at any distance and no per-cell geometry involved.
+ * cell grid. Each pool is now a flat quad with an <em>analytic</em> radial falloff computed per
+ * fragment ({@link HeadlightGlowRenderer}) and normal alpha blending: smooth at any distance or
+ * grazing angle (no texture to minify) and colour-capped, so overlapping pools can never blow out
+ * to white.
  *
  * <p>
  * Pure maths on the GDX-free {@link Headlights.Source}, so placement and opacity are unit-testable.
@@ -23,14 +25,17 @@ public final class HeadlightGlows {
     public static final float GROUND_Y = 0.02f;
 
     /** Distance from the rendered locomotive to the pool centre (its brightest point). */
-    public static final float CENTER_AHEAD = 1.6f;
+    public static final float CENTER_AHEAD = 1.8f;
 
-    /** Pool size across the beam and along it; the radial gradient reaches zero at the edges. */
-    public static final float WIDTH = 4.0f;
-    public static final float LENGTH = 6.0f;
+    /** Pool size across the beam and along it; the falloff reaches zero at the quad edge. */
+    public static final float WIDTH = 3.6f;
+    public static final float LENGTH = 6.5f;
 
-    /** Pool strength at full night; additive, so it builds up gradually on the dark ground. */
-    public static final float PEAK_OPACITY = 0.6f;
+    /**
+     * Peak alpha of the pool at full night. Kept below 1 so the ground keeps its texture through
+     * the light and several overlapping pools composite instead of painting it flat.
+     */
+    public static final float PEAK_OPACITY = 0.5f;
 
     private HeadlightGlows() {}
 
@@ -46,13 +51,13 @@ public final class HeadlightGlows {
 
     /**
      * Yaw in degrees that aligns the pool's long axis (+Z) with the locomotive heading, so the
-     * stretched gradient points the beam where the locomotive looks.
+     * stretched falloff points the beam where the locomotive looks.
      */
     public static float yawDegrees(Headlights.Source source) {
         return (float) Math.toDegrees(Math.atan2(source.dirX(), source.dirZ()));
     }
 
-    /** Additive strength of a pool at a day/night ratio: 0 in daylight, full at night. */
+    /** Peak alpha of a pool at a day/night ratio: 0 in daylight, {@link #PEAK_OPACITY} at night. */
     public static float opacity(double dayNightRatio) {
         return PEAK_OPACITY * VisualPalette.lightsOnFactor(dayNightRatio);
     }
