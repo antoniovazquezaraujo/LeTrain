@@ -197,7 +197,10 @@ esferas (la activa a color, la otra muy oscura). Limpieza pendiente: en 2D `SEMA
    clara: glifos oscuros sobre campo verde de día y claros sobre oscuro de noche); mejor cambiar de
    tono que acercarse al fondo. Las fronteras usan histéresis para no parpadear. Cuando el fondo
    del fundido baja de `MIN_CONTRAST` de luminosidad, el máximo contraste alcanzable es el que
-   permite el extremo (negro o blanco); el test exige ese máximo físico.
+   permite el extremo (negro o blanco); el test exige ese máximo físico. En **16 colores** la
+   cuantización puede colapsar un token en el slot del tablero (p. ej. el semáforo abierto verde
+   sobre el campo verde): `resolve()` recoloca entonces el token al slot más cercano que mantenga
+   `MIN_CONTRAST` de separación con el del fondo.
 3. **Los avisos no se apagan**: vía inválida, bloque ocupado, semáforos, señales, cursor y
    resaltados conservan color y contraste de noche (son información de juego, no decorado).
 4. **Colores de jugador**: solo atenuación global (≤ 45 % de noche); no se re-mapean a variantes.

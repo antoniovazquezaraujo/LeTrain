@@ -212,7 +212,34 @@ public final class TerminalPalette {
         Map<Token, Integer> rgb = rgbFor(ratio);
         Map<Token, TextColor> colors = new EnumMap<>(Token.class);
         rgb.forEach((token, value) -> colors.put(token, colorOf(value)));
+        if (depth == Depth.ANSI_16) {
+            keepTokensOffTheBoard(rgb, colors);
+        }
         return new Resolved(rgb, colors);
+    }
+
+    /**
+     * Con 16 colores la cuantización puede colapsar un token en el slot del tablero y hacerlo
+     * desaparecer (p. ej. el semáforo abierto o el cursor de dibujo verdes sobre el campo verde de
+     * #692). Solo se recoloca el token a otro slot cuando en RGB sí se distinguía del fondo (el
+     * suelo de contraste ya lo garantiza); si el fondo es tan oscuro que el RGB tampoco se separa,
+     * se respeta el fundido y no se toca. El slot elegido conserva además una diferencia de
+     * luminosidad de al menos {@link #MIN_CONTRAST} con el del tablero.
+     */
+    private static void keepTokensOffTheBoard(Map<Token, Integer> rgb,
+            Map<Token, TextColor> colors) {
+        int boardRgb = rgb.get(Token.BOARD);
+        TextColor board = colors.get(Token.BOARD);
+        double boardLuminance = luminance(boardRgb);
+        for (Token token : Token.values()) {
+            if (token == Token.BOARD || !board.equals(colors.get(token))) {
+                continue;
+            }
+            if (Math.abs(luminance(rgb.get(token)) - boardLuminance) < MIN_CONTRAST) {
+                continue;
+            }
+            colors.put(token, nearestAnsi(rgb.get(token), boardLuminance));
+        }
     }
 
     /** RGB por token para un ratio; puro y determinista. */
@@ -363,6 +390,16 @@ public final class TerminalPalette {
 
     /** El slot ANSI de 16 colores más cercano al RGB pedido. */
     static TextColor nearestAnsi(int rgb) {
+        return nearestAnsi(rgb, Double.NaN);
+    }
+
+    /**
+     * El slot ANSI de 16 colores más cercano al RGB pedido que además se separe al menos
+     * {@link #MIN_CONTRAST} de luminosidad de {@code awayLuminance} (la del tablero). Evita que un
+     * token y el fondo acaben en el mismo slot tras cuantizar. Con {@link Double#NaN} no se
+     * descarta ningún slot.
+     */
+    static TextColor nearestAnsi(int rgb, double awayLuminance) {
         int[][] table = {{0x000000}, {0xCD0000}, {0x00CD00}, {0xCDCD00}, {0x0000EE}, {0xCD00CD},
                 {0x00CDCD}, {0xE5E5E5}, {0x7F7F7F}, {0xFF0000}, {0x00FF00}, {0xFFFF00}, {0x5C5CFF},
                 {0xFF00FF}, {0x00FFFF}, {0xFFFFFF},};
@@ -379,6 +416,9 @@ public final class TerminalPalette {
         int best = 0;
         long bestDistance = Long.MAX_VALUE;
         for (int i = 0; i < table.length; i++) {
+            if (Math.abs(luminance(table[i][0]) - awayLuminance) < MIN_CONTRAST) {
+                continue;
+            }
             int cr = (table[i][0] >> 16) & 0xFF;
             int cg = (table[i][0] >> 8) & 0xFF;
             int cb = table[i][0] & 0xFF;

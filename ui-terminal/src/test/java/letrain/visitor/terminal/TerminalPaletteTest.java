@@ -1,6 +1,7 @@
 package letrain.visitor.terminal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.googlecode.lanterna.TextColor;
@@ -97,6 +98,22 @@ class TerminalPaletteTest {
         TerminalPalette palette = new TerminalPalette(Depth.TRUECOLOR);
 
         assertTrue(palette.resolve(0f).color(Token.WATER) instanceof TextColor.RGB);
+    }
+
+    @Test
+    @DisplayName("16-colour fallback keeps green tokens out of the green board slot")
+    void should_KeepTokensOffTheBoard_When_Ansi16() {
+        TerminalPalette palette = new TerminalPalette(Depth.ANSI_16);
+        TerminalPalette.Resolved resolved = palette.resolve(0f);
+        TextColor board = resolved.color(Token.BOARD);
+
+        assertEquals(TextColor.ANSI.GREEN, board);
+        assertNotEquals(board, resolved.color(Token.SEMAPHORE_OPEN),
+                "the open semaphore must not vanish into the field");
+        assertNotEquals(board, resolved.color(Token.CURSOR_DRAWING),
+                "the drawing cursor must not vanish into the field");
+        // El resto de la paleta no se toca: el agua sigue en su azul.
+        assertEquals(TextColor.ANSI.BLUE_BRIGHT, resolved.color(Token.WATER));
     }
 
     @Test
