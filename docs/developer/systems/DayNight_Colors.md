@@ -185,6 +185,7 @@ esferas (la activa a color, la otra muy oscura). Limpieza pendiente: en 2D `SEMA
 | `cursor.drawing` | `GREEN_BRIGHT` (:40) + braille `YELLOW` (:517) | — | actual | actual | actual |
 | `cursor.moving` | `YELLOW_BRIGHT` (:41) | — | actual | actual | actual |
 | `cursor.erasing` | `RED_BRIGHT` (:42) | — | actual | actual | actual |
+| `cursor.ping` | `CURSOR_PING` `0xFFB020` (#696), ajustado al fondo real de cada celda del anillo | disco emisivo ámbar `0xFFB020` (#696) | actual | actual | actual (emisivo, no se atenúa) |
 
 ### Ambiente 3D
 

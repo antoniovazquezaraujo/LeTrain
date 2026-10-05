@@ -105,6 +105,8 @@ public class Gdx3DResourceContext implements Disposable {
     public Model inactiveRailModel;
     public Model invalidRailModel;
     public Model cursorModel;
+    /** Flat emissive disc of the one-shot locate ping (#696); the renderer scales and fades it. */
+    public Model cursorPingModel;
     public Model locomotiveModel;
     public Model wagonModel;
     public Model highlightModel;
@@ -157,6 +159,9 @@ public class Gdx3DResourceContext implements Disposable {
     /** Unlit lamp colour: neutral warm grey, readable against most liveries. */
     static final int LAMP_OFF_RGB = 0xB8B2A6;
 
+    /** Amber of the locate ping (#696): emissive, so it reads over any terrain and at night. */
+    static final int CURSOR_PING_RGB = 0xFFB020;
+
     public final com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute blackDiffuseAttribute =
             com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
                     .createDiffuse(com.badlogic.gdx.graphics.Color.BLACK);
@@ -184,6 +189,9 @@ public class Gdx3DResourceContext implements Disposable {
             cursorModel = register(modelBuilder.createCylinder(0.8f, 0.02f, 0.8f, 3,
                     new Material(ColorAttribute.createDiffuse(Color.YELLOW)),
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
+
+            // Locate ping (#696): flat emissive disc the renderer expands and fades once.
+            cursorPingModel = register(createCursorPingModel());
 
             // Locomotora simple
             locomotiveModel = register(modelBuilder.createBox(0.8f, 0.8f, 0.8f,
@@ -564,6 +572,17 @@ public class Gdx3DResourceContext implements Disposable {
         ModelBuilder mb = new ModelBuilder();
         return mb.createSphere(size, size, size, 12, 12,
                 new Material(ColorAttribute.createDiffuse(color)),
+                (long) (VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
+    }
+
+    /** Flat emissive disc of the locate ping (#696): amber, so no light can dim it. */
+    private Model createCursorPingModel() {
+        Color color = new Color();
+        setIfChanged(color, CURSOR_PING_RGB);
+        ModelBuilder mb = new ModelBuilder();
+        return mb.createCylinder(0.5f, 0.02f, 0.5f, 24,
+                new Material(ColorAttribute.createDiffuse(color),
+                        ColorAttribute.createEmissive(color)),
                 (long) (VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
     }
 

@@ -44,6 +44,8 @@ public class RenderVisitor implements Visitor {
     private float paletteBand = -1f;
     /** Celdas iluminadas por los faros de las locomotoras y con qué fuerza (0..1). */
     private final Map<Long, Float> litCells = new HashMap<>();
+    /** Reloj del ping de localización (#696); los tests inyectan uno fijo. */
+    private java.util.function.LongSupplier clock = System::currentTimeMillis;
 
     public static final char[] CRASH_ASPECTS =
             {'⁖', '⁘', '⁙', '⁚', '⁛', '⁝', '⁞', '․', '‥', '…', '⋯', '⋰', '⋱'};
@@ -81,6 +83,10 @@ public class RenderVisitor implements Visitor {
     public static String CONSUMER_ASPECT = "◌";
     /** U+25A0 BLACK SQUARE: stays 1:1 in every tested monospaced face, unlike the old half-line. */
     public static String DEAD_END_ASPECT = "■";
+    /** Glyph of the locate ping ring (#696): same tested 1:1 square, on its own ping colour. */
+    public static String CURSOR_PING_ASPECT = "■";
+    /** Ping rings: the radius sweeps from 1 to this value once and then disappears. */
+    static final int CURSOR_PING_RINGS = 3;
 
     Locomotive selectedLocomotive;
     ForkRailTrack selectedFork;
@@ -102,6 +108,11 @@ public class RenderVisitor implements Visitor {
         this.paletteColors = palette.resolve(0f);
         this.dayColors = this.paletteColors;
         resetColors();
+    }
+
+    /** Seam de test: fija el reloj del ping para que la animación sea determinista. */
+    void setClock(java.util.function.LongSupplier clock) {
+        this.clock = clock;
     }
 
     private TextColor color(TerminalPalette.Token token) {
@@ -184,13 +195,18 @@ public class RenderVisitor implements Visitor {
      * mezclado hacia su color diurno cuando el haz del faro ilumina la celda.
      */
     private void applyBackground(int x, int y, TerminalPalette.Token background) {
+        view.setBgColor(palette.colorOf(backgroundValue(x, y, background)));
+    }
+
+    /** Valor RGB efectivo del fondo de una celda, con el haz del faro ya mezclado. */
+    private int backgroundValue(int x, int y, TerminalPalette.Token background) {
         int value = rgb(background);
         Float lit = litFactor(x, y);
         if (lit != null && lit > 0f) {
             value = TerminalPalette.mix(value, dayColors.rgb(background),
                     lit * Headlight.MAX_LIGHT);
         }
-        view.setBgColor(palette.colorOf(value));
+        return value;
     }
 
     /** Token de fondo del terreno bajo la celda: mar, montaña o campo si no hay dato. */
@@ -710,6 +726,38 @@ public class RenderVisitor implements Visitor {
         applyBackground(cursor.getPosition().getX(), cursor.getPosition().getY(),
                 backgroundTokenAt(cursor.getPosition().getX(), cursor.getPosition().getY()));
         view.set(cursor.getPosition().getX(), cursor.getPosition().getY(), aspect);
+        resetColors();
+        paintCursorPing(cursor);
+    }
+
+    /**
+     * Anillo expansivo del ping de localización (#696): tras pulsar 'o' el radio crece una sola vez
+     * de 1 a {@link #CURSOR_PING_RINGS} celdas y se apaga. Sin parpadeo (accesibilidad) y sin coste
+     * alguno mientras no hay ping activo; cada celda se separa {@code MIN_CONTRAST} del fondo real
+     * que pisa (mar, montaña o campo, también bajo el haz de un faro).
+     */
+    private void paintCursorPing(Cursor cursor) {
+        float progress = cursor.pingProgress(clock.getAsLong());
+        if (progress < 0f) {
+            return;
+        }
+        int radius = 1 + Math.min(CURSOR_PING_RINGS - 1, (int) (progress * CURSOR_PING_RINGS));
+        int cx = cursor.getPosition().getX();
+        int cy = cursor.getPosition().getY();
+        for (int dx = -radius; dx <= radius; dx++) {
+            for (int dy = -radius; dy <= radius; dy++) {
+                if (Math.max(Math.abs(dx), Math.abs(dy)) != radius) {
+                    continue;
+                }
+                int x = cx + dx;
+                int y = cy + dy;
+                TerminalPalette.Token backdrop = backgroundTokenAt(x, y);
+                view.setFgColor(palette.contrastColorOn(rgb(TerminalPalette.Token.CURSOR_PING),
+                        backgroundValue(x, y, backdrop)));
+                applyBackground(x, y, backdrop);
+                view.set(x, y, CURSOR_PING_ASPECT);
+            }
+        }
         resetColors();
     }
 

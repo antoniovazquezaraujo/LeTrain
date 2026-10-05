@@ -1630,6 +1630,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         if (targetPos != null) {
             model.getCursor().setPosition(targetPos);
         }
+        // Locate ping (#696): 'o' always marks the cursor, after the jump or in place when nothing
+        // is selected (Rails mode), so the player can spot it in under a second.
+        model.getCursor().ping(System.currentTimeMillis());
     }
 
     private void deleteVehicle() {

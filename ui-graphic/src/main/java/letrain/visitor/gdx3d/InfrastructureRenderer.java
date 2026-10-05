@@ -20,11 +20,19 @@ import letrain.vehicle.rail.impl.Train;
 public class InfrastructureRenderer extends BaseSubRenderer {
     private final TrackRenderer trackRenderer;
 
+    /** Clock of the locate ping (#696); tests inject a fixed one. */
+    private java.util.function.LongSupplier clock = System::currentTimeMillis;
+
     public InfrastructureRenderer(Gdx3DResourceContext resourceContext,
             List<ModelInstance> instances, List<ModelInstance> transparentInstances,
             List<Gdx3DRenderer.VehicleLabel> labels, TrackRenderer trackRenderer) {
         super(resourceContext, instances, transparentInstances, labels);
         this.trackRenderer = trackRenderer;
+    }
+
+    /** Seam de test: fija el reloj del ping para que la animación sea determinista. */
+    void setClock(java.util.function.LongSupplier clock) {
+        this.clock = clock;
     }
 
     @Override
@@ -538,6 +546,23 @@ public class InfrastructureRenderer extends BaseSubRenderer {
                 com.badlogic.gdx.graphics.GL20.GL_GREATER, false));
         ghost.transform.set(instance.transform);
         instances.add(ghost);
+
+        // Locate ping (#696): one flat emissive disc that expands and fades under the cursor. It is
+        // only built while the one-shot ping is active, so idle frames pay nothing.
+        long now = clock.getAsLong();
+        if (cursor.isPinging(now)) {
+            float pingProgress = cursor.pingProgress(now);
+            ModelInstance ping = resourceContext.getModelInstance(resourceContext.cursorPingModel);
+            ping.materials.get(0)
+                    .set(new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(
+                            com.badlogic.gdx.graphics.GL20.GL_SRC_ALPHA,
+                            com.badlogic.gdx.graphics.GL20.GL_ONE_MINUS_SRC_ALPHA,
+                            (1f - pingProgress) * 0.9f));
+            float pingScale = 1f + 2.5f * pingProgress;
+            ping.transform.setToTranslation(pos.getX() + 0.5f, cursorY - 0.02f, pos.getY() + 0.5f);
+            ping.transform.scale(pingScale, 1f, pingScale);
+            instances.add(ping);
+        }
     }
 
     private letrain.vehicle.rail.impl.Train getTrackOwner(letrain.track.rail.RailTrack track) {

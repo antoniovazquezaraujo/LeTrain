@@ -21,7 +21,7 @@ The game can be controlled via the keyboard in both its 2D and 3D versions. Belo
   - **e**: Build Sensor
   - **s**: Build Semaphore
   - **g**: Build Speed Signal
-- **Key 'o'**: Instantly relocate the cursor to the currently selected train, station, fork, sensor, or speed signal.
+- **Key 'o'**: Instantly relocate the cursor to the currently selected train, station, fork, sensor, or speed signal. It always fires a short **locate ping** (an expanding ring) at the cursor, so if nothing is selected — for example in Rails mode — pressing **o** still marks where the cursor is and makes it easy to spot.
 - **Key 'z'**: In 3D: Toggle between the three cameras (Perspective, Top-down, and Cab view). In 2D: Cycle the camera deadzone box.
 - **Esc**: In 3D: Exit the game menu.
 - **Key 'Z' (Shift+z)**: In 2D: Toggle camera pagination mode.

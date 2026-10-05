@@ -74,6 +74,44 @@ latitud mundial). El detalle de tokens y fases está en
   `VisualPalette.LIGHTS_ON_RATIO` (0,1) y con el motor en marcha y la locomotora de cabeza
   (`isEngineOn() && isHeadLocomotive()`); en 2D el túnel oculto también apaga el haz.
 
+## Ping de localización del cursor (#696)
+
+El cursor a veces se pierde sobre terreno cargado (mar, montaña, estaciones) o de noche. Pulsar
+`o` (la tecla **Locate** que ya existía) lanza un **ping de un solo disparo** en la posición del
+cursor: si había un elemento seleccionado el cursor salta a él, y si no lo había (modo Rails) el
+ping marca el cursor donde está. El estado vive en `letrain.vehicle.Cursor`
+(`ping(now)` / `isPinging(now)` / `pingProgress(now)`, duración `PING_DURATION_MS`); ambos
+presentadores lo disparan tras resolver el salto y ambos renderers lo pintan con un reloj
+inyectable (los tests fijan la hora).
+
+- **2D** (`RenderVisitor.paintCursorPing`): un anillo cuadrado de `■` crece una sola vez de radio 1
+  a 3 durante 900 ms y se apaga. Cada celda del anillo usa el token `CURSOR_PING` ajustado con
+  `TerminalPalette.contrastColorOn` contra el fondo **real** de su celda (mar, montaña, campo,
+  también bajo el haz de un faro) y, en ANSI-16, contra su slot, así que nunca se funde con el
+  terreno.
+- **3D** (`InfrastructureRenderer.visitCursor`): un disco plano emisivo ámbar
+  (`cursorPingModel`, constante para que ninguna luz lo apague) se expande bajo el cursor de 1× a
+  3.5× y se desvanece con `BlendingAttribute` durante el mismo barrido.
+
+Accesibilidad y coste: es una única pasada suave, sin parpadeo repetido (ni SGR blink, que además
+no es fiable en todos los terminales); mientras no hay ping activo no se calcula ni se añade
+geometría alguna. El criterio de aceptación es localizarlo en menos de un segundo desde cualquier
+zoom y fondo.
+
+Alternativas descartadas:
+
+1. **Parpadeo constante suave** del cursor (dos niveles de brillo): animación permanente, molesta
+   y con coste en cada frame.
+2. **Ping periódico automático** cada N segundos: mismo problema y difícil de justificar al
+   jugador; el criterio pide poder localizarlo *a demanda*.
+3. **`SGR.BLINK` de Lanterna**: el emulador Swing lo ignora (ya documentado en el código para la
+   carga de vagones) y no permite controlar contraste ni frecuencia.
+4. **Invertir solo la celda del cursor**: estático y se confunde con los resaltados de selección;
+   el anillo en movimiento destaca mucho más sin parpadear.
+5. **Faro/`PointLight` en 3D**: los `PointLight` se retiraron por los artefactos de rejilla del
+   suelo (#690); el patrón vigente para luces es geometría emisiva.
+6. **Strobe/flash rápido**: descartado por accesibilidad (WCAG 2.3.1).
+
 ## Invariantes de la Vista
 - Ninguna clase de renderizado debe modificar el estado del `Model`.
 - El acceso a los datos de la entidad durante el renderizado debe ser solo de lectura.

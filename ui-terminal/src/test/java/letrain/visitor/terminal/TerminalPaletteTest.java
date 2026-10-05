@@ -293,4 +293,36 @@ class TerminalPaletteTest {
         // bruscos, que es lo que este test protege.
         assertTrue(distinct >= 8, "the 256 palette should still show most levels, saw " + distinct);
     }
+
+    @Test
+    @DisplayName("contrastColorOn separates the locate ping from any cell backdrop")
+    void should_SeparatePing_FromAnyBackdrop() {
+        for (float ratio : new float[] {0f, 0.5f, 1f}) {
+            Map<Token, Integer> rgb = TerminalPalette.rgbFor(ratio);
+            int ping = rgb.get(Token.CURSOR_PING);
+            for (Token backdropToken : new Token[] {Token.BOARD, Token.WATER_BG, Token.ROCK_BG}) {
+                int backdrop = rgb.get(backdropToken);
+                int adjusted = TerminalPalette.contrast(ping, TerminalPalette.luminance(backdrop));
+                double distance = Math.abs(
+                        TerminalPalette.luminance(adjusted) - TerminalPalette.luminance(backdrop));
+                assertTrue(distance >= TerminalPalette.MIN_CONTRAST - 1, "ping over "
+                        + backdropToken + " at ratio " + ratio + " has contrast " + distance);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("the locate ping never collapses into a terrain slot in 16 colours")
+    void should_KeepPingOffTheBackdrop_When_Ansi16() {
+        TerminalPalette palette = new TerminalPalette(Depth.ANSI_16);
+        for (float ratio : new float[] {0f, 0.5f, 1f}) {
+            Map<Token, Integer> rgb = TerminalPalette.rgbFor(ratio);
+            for (Token backdropToken : new Token[] {Token.BOARD, Token.WATER_BG, Token.ROCK_BG}) {
+                int backdrop = rgb.get(backdropToken);
+                TextColor ping = palette.contrastColorOn(rgb.get(Token.CURSOR_PING), backdrop);
+                assertNotEquals(palette.colorOf(backdrop), ping,
+                        "ping must not vanish into " + backdropToken + " at ratio " + ratio);
+            }
+        }
+    }
 }

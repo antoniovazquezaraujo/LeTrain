@@ -17,6 +17,7 @@ import letrain.segments.BlockManager;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
 import letrain.track.rail.RailTrack;
+import letrain.vehicle.Cursor;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
 import org.junit.jupiter.api.DisplayName;
@@ -778,5 +779,85 @@ class RenderVisitorTest {
         int livery = TextColor.ANSI.BLUE.toColor().getRGB() & 0xFFFFFF;
         verify(view, atLeastOnce())
                 .setFgColor(palette.colorOf(TerminalPalette.contrastOn(livery, seaBg)));
+    }
+
+    @Test
+    @DisplayName("locate ping: idle cursor paints no ring")
+    void visitCursor_shouldNotPaintPing_whenIdle() {
+        TerminalView view = mock(TerminalView.class);
+        RenderVisitor visitor =
+                new RenderVisitor(view, new TerminalPalette(TerminalPalette.Depth.TRUECOLOR));
+        visitor.setClock(() -> 5_000L);
+
+        Model model = mock(Model.class);
+        Cursor cursor = new Cursor();
+        cursor.setPosition(new Point(5, 5));
+        cursor.setDir(Dir.E);
+        when(model.getCursor()).thenReturn(cursor);
+
+        visitor.visitModel(model);
+
+        verify(view, never()).set(anyInt(), anyInt(), eq(RenderVisitor.CURSOR_PING_ASPECT));
+    }
+
+    @Test
+    @DisplayName("locate ping: a fresh ping paints the first ring one cell out")
+    void visitCursor_shouldPaintFirstRing_whenPingStarts() {
+        TerminalView view = mock(TerminalView.class);
+        RenderVisitor visitor =
+                new RenderVisitor(view, new TerminalPalette(TerminalPalette.Depth.TRUECOLOR));
+        visitor.setClock(() -> 1_000L);
+
+        Model model = mock(Model.class);
+        Cursor cursor = new Cursor();
+        cursor.setPosition(new Point(5, 5));
+        cursor.setDir(Dir.E);
+        cursor.ping(1_000L);
+        when(model.getCursor()).thenReturn(cursor);
+
+        visitor.visitModel(model);
+
+        // The eight neighbours of the cursor are marked, the cursor cell keeps its own aspect.
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dy = -1; dy <= 1; dy++) {
+                if (dx == 0 && dy == 0) {
+                    continue;
+                }
+                verify(view).set(eq(5 + dx), eq(5 + dy), eq(RenderVisitor.CURSOR_PING_ASPECT));
+            }
+        }
+        verify(view, never()).set(eq(5), eq(5), eq(RenderVisitor.CURSOR_PING_ASPECT));
+        verify(view, never()).set(eq(7), eq(5), eq(RenderVisitor.CURSOR_PING_ASPECT));
+        verify(view).set(eq(5), eq(5), eq(RenderVisitor.CURSOR_ASPECT_E));
+    }
+
+    @Test
+    @DisplayName("locate ping: the ring grows with the sweep and disappears after it")
+    void visitCursor_shouldGrowRing_thenStop() {
+        TerminalView view = mock(TerminalView.class);
+        RenderVisitor visitor =
+                new RenderVisitor(view, new TerminalPalette(TerminalPalette.Depth.TRUECOLOR));
+        long[] now = {2_000L};
+        visitor.setClock(() -> now[0]);
+
+        Model model = mock(Model.class);
+        Cursor cursor = new Cursor();
+        cursor.setPosition(new Point(5, 5));
+        cursor.setDir(Dir.E);
+        cursor.ping(2_000L);
+        when(model.getCursor()).thenReturn(cursor);
+
+        // Late in the sweep (last third) the ring reaches radius 3.
+        now[0] = 2_000L + (Cursor.PING_DURATION_MS * 3) / 4;
+        visitor.visitModel(model);
+        verify(view).set(eq(8), eq(5), eq(RenderVisitor.CURSOR_PING_ASPECT));
+        verify(view).set(eq(5), eq(2), eq(RenderVisitor.CURSOR_PING_ASPECT));
+
+        // Once the ping expires the ring is gone and the cursor still paints normally.
+        clearInvocations(view);
+        now[0] = 2_000L + Cursor.PING_DURATION_MS;
+        visitor.visitModel(model);
+        verify(view, never()).set(anyInt(), anyInt(), eq(RenderVisitor.CURSOR_PING_ASPECT));
+        verify(view).set(eq(5), eq(5), eq(RenderVisitor.CURSOR_ASPECT_E));
     }
 }
