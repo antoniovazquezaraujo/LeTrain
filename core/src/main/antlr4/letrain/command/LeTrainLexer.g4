@@ -84,6 +84,7 @@ GP: 'gp';
 RAIL: 'rail' | 'rl';
 END: 'end';
 TIME_KW: 'time';
+VERSION: 'version';
 
 // Directions
 DIR_E: 'e';

@@ -165,6 +165,7 @@ Puedes teclear estos comandos directamente en el CLI para gestionar el estado de
 
 **Información y Ayuda:**
 - `help;` - Muestra todos los grupos de comandos (`CONSOLE`, `BUILD`, `PROGRAM`, `CONFIG`). Fíltralo con `help console;`, `help build;`, `help program;`, `help config;`, o un tema suelto como `help ls;`.
+- `version;` - Consulta la versión del **build en ejecución** (p. ej. `LeTrain v1.0.0`), la misma que aparece en el título de la ventana. Es salida de datos: abre el panel de mensajes y **no** se graba en el diario. Úsalo para comprobar que no estás probando una copia obsoleta del juego.
 - `ls;` - Lista todas las entidades. `ls [tipoEntidad];` lista un tipo (ej., `ls station;`).
 - `info;` - Muestra una vista general de todo el mundo. `info [tipoEntidad];` lista ese tipo; `info [tipoEntidad] [ID|nombre];` detalla una entidad concreta. `info [ID];` sin tipo avisa de que el número se ignora (indica el tipo: `info train 5;`).
 

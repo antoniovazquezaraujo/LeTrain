@@ -24,12 +24,15 @@ playerStatement : statement
                 | undoCommand SEMI
                 | redoCommand SEMI
                 | timeCommand SEMI
+                | versionCommand SEMI
                 | quitCommand SEMI
                 ;
 
 journalCommand : JOURNAL ;
 
 timeCommand : TIME_KW (SET (TIME | NUMBER COLON NUMBER | NUMBER))? ;
+
+versionCommand : VERSION ;
 
 undoCommand : UNDO (NUMBER)? ;
 

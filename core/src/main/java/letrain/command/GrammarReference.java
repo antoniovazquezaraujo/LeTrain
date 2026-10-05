@@ -114,6 +114,7 @@ public class GrammarReference {
 
         root.add(new Node("journal", "journal;"));
         root.add(new Node("undo / redo", "undo; redo;"));
+        root.add(new Node("version", "version;"));
 
         Node time = new Node("time");
         time.add(new Node("show", "time;"));

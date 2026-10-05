@@ -169,3 +169,11 @@ Once named, **you can use the name enclosed in quotes** (or without quotes if it
 | `time set <HH:MM>;` | Set hour and minute (`00:00`–`23:59`); single-digit hours are accepted. | `time set 18:45;` |
 
 > A valid change is silent: watch the HUD clock. Out-of-range values (`time set 25;`, `time set 25:99;`) warn `Invalid time …` and leave the clock untouched.
+
+---
+
+## 11. App Info
+
+| Command | Description | Example |
+| :--- | :--- | :--- |
+| `version;` | Report the version of the running build (the same one as the window title). | `version;` |
