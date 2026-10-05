@@ -47,7 +47,7 @@ public class PaletteLab {
     private static final String[] MAP = {"                                        ",
             "   ~~~~~~        *****                  ", "   ~~~┬~~~       *****     ◆1 ●         ",
             "   ~~~~~~        *****                  ", "     │                                  ",
-            "─────┼───────────╺        ₪      !      ", "     │                                  ",
+            "─────┼───────────■        ₪      !      ", "     │                                  ",
             "     │      ◇2◌         :               ", "     │                                  ",
             "     >        █▭▪▲      5               ", "              ─┼─·x     3               ",
             "               │                        ", "      ⋂....⋂           ╳                ",
@@ -558,7 +558,7 @@ public class PaletteLab {
             case '─', '│', '┼', '╳' -> p.rail();
             case '·' -> p.railInactive();
             case 'x' -> p.railInvalid();
-            case '╺' -> p.deadEnd();
+            case '■' -> p.deadEnd();
             case '.' -> p.tunnel();
             case '⋂' -> p.tunnel();
             case '┬' -> p.bridge();

@@ -79,7 +79,8 @@ public class RenderVisitor implements Visitor {
     public static String ANTI_DIAGONAL_DIR = "╲";
     public static String PRODUCER_ASPECT = "●";
     public static String CONSUMER_ASPECT = "◌";
-    public static String DEAD_END_ASPECT = "╺";
+    /** U+25A0 BLACK SQUARE: stays 1:1 in every tested monospaced face, unlike the old half-line. */
+    public static String DEAD_END_ASPECT = "■";
 
     Locomotive selectedLocomotive;
     ForkRailTrack selectedFork;

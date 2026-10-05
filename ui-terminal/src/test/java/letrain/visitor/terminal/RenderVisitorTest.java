@@ -152,6 +152,31 @@ class RenderVisitorTest {
     }
 
     @Test
+    @DisplayName("dead ends paint the square glyph on horizontal and vertical stubs")
+    void visitRailTrack_shouldPaintSquareDeadEnd_whenTrackIsDisconnected() {
+        assertSquareDeadEnd(Dir.E, Dir.W);
+        assertSquareDeadEnd(Dir.N, Dir.S);
+    }
+
+    private void assertSquareDeadEnd(Dir first, Dir second) {
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        RenderVisitor visitor = new RenderVisitor(view, palette);
+
+        RailTrack stub = new RailTrack();
+        stub.setPosition(new Point(5, 5));
+        stub.addRoute(first, second);
+
+        visitor.visitRailTrack(stub);
+
+        verify(view).set(5, 5, "■");
+        // dead-end token of the light (day) family
+        TextColor expected =
+                palette.colorOf(TerminalPalette.rgbFor(0f).get(TerminalPalette.Token.DEAD_END));
+        verify(view, atLeastOnce()).setFgColor(expected);
+    }
+
+    @Test
     @DisplayName("visitLocomotive should paint locomotive with its assigned color")
     void visitLocomotive_shouldPaintLocomotiveWithAssignedColor() {
         TerminalView view = mock(TerminalView.class);
