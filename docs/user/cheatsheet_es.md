@@ -174,3 +174,11 @@ Una vez nombrada, **puedes usar el nombre entre comillas** (o sin ellas si no ti
 | `time set <HH:MM>;` | Fija hora y minuto (`00:00`–`23:59`); se aceptan horas de un dígito. | `time set 18:45;` |
 
 > Un cambio correcto es silencioso: mira el reloj del HUD. Un valor fuera de rango (`time set 25;`, `time set 25:99;`) avisa `Invalid time …` y deja el reloj intacto.
+
+---
+
+## 11. Información de la App
+
+| Comando | Descripción | Ejemplo |
+| :--- | :--- | :--- |
+| `version;` | Muestra la versión del build en ejecución (la misma que el título de la ventana). | `version;` |

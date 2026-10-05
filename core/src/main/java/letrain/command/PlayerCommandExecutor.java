@@ -328,6 +328,22 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         return null;
     }
 
+    /**
+     * {@code version;} reports the running build (issue #714), the same {@link letrain.BuildInfo}
+     * the window titles use, so a stale binary is spotted immediately. It is data output like
+     * {@code time;}: the console funnels keep it out of the journal/undo history through
+     * {@link EditCommandFilter}.
+     */
+    @Override
+    public Object visitVersionCommand(PlayerCommandsParser.VersionCommandContext ctx) {
+        String text = "LeTrain " + letrain.BuildInfo.versionTag();
+        if (onMessage == null) {
+            return text;
+        }
+        onMessage.accept("Version", text);
+        return null;
+    }
+
     @Override
     public Object visitJournalCommand(PlayerCommandsParser.JournalCommandContext ctx) {
         letrain.command.CommandJournal journal = model.getCommandJournal();

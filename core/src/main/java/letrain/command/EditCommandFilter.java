@@ -48,7 +48,8 @@ public final class EditCommandFilter {
                 || statement.startsWith("save") || statement.startsWith("load")
                 || statement.startsWith("quit") || statement.equals("q")
                 || statement.startsWith("q!") || statement.startsWith("wq")
-                || statement.startsWith("help") || statement.equals("time");
+                || statement.startsWith("help") || statement.equals("time")
+                || statement.equals("version");
     }
 
     private static boolean isNavigation(String statement) {

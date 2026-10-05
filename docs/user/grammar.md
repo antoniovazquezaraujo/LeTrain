@@ -166,6 +166,7 @@ You can type these commands directly into the CLI to manage the game state, curs
 
 **Information & Help:**
 - `help;` - Show every command group (`CONSOLE`, `BUILD`, `PROGRAM`, `CONFIG`). Filter it with `help console;`, `help build;`, `help program;`, `help config;`, or a single topic such as `help ls;`.
+- `version;` - Report the version of the **running build** (e.g. `LeTrain v1.0.0`), the same one shown in the window title. It is data output: it opens the message panel and is **not** recorded in the journal. Use it to check you are not testing a stale copy of the game.
 - `ls;` - List every entity. `ls [entityType];` lists one type (e.g. `ls station;`).
 - `info;` - Show an overview of the whole world. `info [entityType];` lists that type; `info [entityType] [ID|name];` details a single entity. `info [ID];` without a type warns that the number is ignored (name the type: `info train 5;`).
 
