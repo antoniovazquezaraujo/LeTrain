@@ -61,7 +61,7 @@ The element follows the rail and crosses forks (using their active branch), skip
 
 ### Trains and Driving (Drive / Trains Mode)
 - **Trains Mode**: Lowercase letters create wagons (keys 1, 2, 3 for cargo type). Uppercase letters create locomotives (keys 0-9 for color). Press **Enter** to finish.
-- **Drive Mode**: Left/Right arrows select a train. Up/Down arrows accelerate/brake. **Spacebar** reverses direction (only when stopped).
+- **Drive Mode**: Left/Right arrows select a train; if none was selected when you entered, the first available train is selected for you. Up/Down arrows accelerate/brake. **Spacebar** reverses direction (only when stopped).
 - **Link / Unlink Mode**: Up/Down selects the end of the train. Left/Right selects the amount of wagons. **Spacebar** executes coupling/uncoupling.
 
 

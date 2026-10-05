@@ -296,6 +296,13 @@ public interface Model {
 
     boolean selectPrevLocomotive();
 
+    /**
+     * Selects the first drivable locomotive in list order (index 0 first), regardless of any stale
+     * selection index. Used when entering DRIVE with nothing selected (issue #700). Returns false
+     * when there is no director linker to drive.
+     */
+    boolean selectFirstLocomotive();
+
     enum GameMode {
         MENU("Menu mode"), RAILS("Navigate map, create and delete tracks"), ADD(
                 "Add entities"), DRIVE("Manage locomotives"), FORKS("Manage forks"), SEMAPHORES(

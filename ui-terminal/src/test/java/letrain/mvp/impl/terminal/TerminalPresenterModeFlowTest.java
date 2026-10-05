@@ -8,6 +8,8 @@ import letrain.audio.AudioController;
 import letrain.mvp.impl.Model;
 import letrain.mvp.input.InputEvent;
 import letrain.mvp.input.KeyType;
+import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Train;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -126,5 +128,46 @@ class TerminalPresenterModeFlowTest {
         presenter.onChar(new InputEvent(KeyType.Escape));
 
         assertEquals(Model.GameMode.RAILS, model.getMode());
+    }
+
+    @Test
+    @DisplayName("pressing 'd' with nothing selected lands on the first locomotive")
+    void driveHotkey_selectsFirstLocomotive() {
+        Model model = new Model(1);
+        TerminalPresenter presenter = presenterWith(model, mock(TerminalView.class));
+        Locomotive first = addDrivableLocomotive(model, 1, 'A');
+        addDrivableLocomotive(model, 2, 'B');
+
+        presenter.onChar(charKey('d'));
+
+        assertEquals(Model.GameMode.DRIVE, model.getMode());
+        assertEquals(first, model.getSelectedLocomotive(),
+                "Drive must land on the first locomotive of the list");
+        assertEquals(0, model.getSelectedLocomotiveIndex());
+    }
+
+    @Test
+    @DisplayName("pressing 'd' keeps the locomotive the player already had selected")
+    void driveHotkey_keepsExistingSelection() {
+        Model model = new Model(1);
+        TerminalPresenter presenter = presenterWith(model, mock(TerminalView.class));
+        addDrivableLocomotive(model, 1, 'A');
+        Locomotive second = addDrivableLocomotive(model, 2, 'B');
+        model.selectLocomotive(2);
+
+        presenter.onChar(charKey('d'));
+
+        assertEquals(Model.GameMode.DRIVE, model.getMode());
+        assertEquals(second, model.getSelectedLocomotive());
+    }
+
+    private static Locomotive addDrivableLocomotive(Model model, int id, char aspect) {
+        Train train = new Train(model.nextTrainId());
+        Locomotive locomotive = new Locomotive(id, aspect);
+        train.pushBack(locomotive);
+        train.setDirectorLinker(locomotive);
+        train.rebind();
+        model.addLocomotive(locomotive);
+        return locomotive;
     }
 }
