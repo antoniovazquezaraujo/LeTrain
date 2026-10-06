@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import letrain.map.Page;
 import letrain.map.Point;
 import letrain.mvp.GameViewListener;
+import letrain.mvp.MenuText;
 import letrain.mvp.Model.GameModeMenuOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -458,43 +459,49 @@ public class TerminalView implements letrain.mvp.View {
         }
         int length = 1;
         for (GameModeMenuOption option : options) {
-            String[] parts = option.gameModeName().split("&");
-            String firstPart = parts[0];
-            String shortcutPart = parts[1].substring(0, 1);
-            String thirdPart = parts[1].substring(1);
-
-            menuBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
-            if (!option.enabledIf().get()) {
-                menuBox.setForegroundColor(DISABLED_FG_COLOR);
-            }
-
+            length = drawMenuOption(menuBox, menuBoxPosition.withRelative(0, 1), option, length);
             if (option.selectedIf().get()) {
-                menuBox.setBackgroundColor(SELECTED_BG_COLOR);
-            } else {
-                menuBox.setBackgroundColor(NORMAL_MENU_BG_COLOR);
-            }
-            menuBox.putString(menuBoxPosition.withRelative(length, 1), firstPart);
-            length += firstPart.length();
-
-            if (!option.enabledIf().get()) {
-                menuBox.setForegroundColor(DISABLED_FG_COLOR);
-            } else {
-                menuBox.setForegroundColor(SHORTCUT_COLOR);
-            }
-            menuBox.putString(menuBoxPosition.withRelative(length, 1), shortcutPart);
-            length += shortcutPart.length();
-
-            menuBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
-            if (!option.enabledIf().get()) {
-                menuBox.setForegroundColor(DISABLED_FG_COLOR);
-            }
-            menuBox.putString(menuBoxPosition.withRelative(length, 1), thirdPart);
-            menuBox.setBackgroundColor(NORMAL_MENU_BG_COLOR);
-            length += thirdPart.length() + 1;
-            if (option.selectedIf().get()) {
-                setHelpBarText(option.gameModeDescription());
+                setHelpBarText(MenuText.selectedHint(option.gameModeDescription(),
+                        gameViewListener.isRecordingCommands()));
             }
         }
+    }
+
+    /**
+     * Paints one menu option at {@code offset} columns from {@code origin}: label and suffix in
+     * white (grey when disabled), the shortcut in green (grey when disabled) and the candidate
+     * mode's background in blue when selected. The label is split with the shared {@link MenuText}
+     * parser, the same one the 3D HUD uses, so wording and shortcuts cannot drift between clients.
+     * Package-visible and static so a test can check the layout without a real terminal.
+     *
+     * @return the offset for the next option (plain text plus the separating space)
+     */
+    static int drawMenuOption(TextGraphics menuBox, TerminalPosition origin,
+            GameModeMenuOption option, int offset) {
+        MenuText.Label label = MenuText.parse(option.gameModeName());
+        boolean enabled = option.enabledIf().get();
+        TextColor labelColor = enabled ? NORMAL_MENU_FG_COLOR : DISABLED_FG_COLOR;
+        TextColor hotkeyColor = enabled ? SHORTCUT_COLOR : DISABLED_FG_COLOR;
+
+        menuBox.setBackgroundColor(
+                option.selectedIf().get() ? SELECTED_BG_COLOR : NORMAL_MENU_BG_COLOR);
+        if (!label.prefix().isEmpty()) {
+            menuBox.setForegroundColor(labelColor);
+            menuBox.putString(origin.withRelative(offset, 0), label.prefix());
+            offset += label.prefix().length();
+        }
+        if (label.hasHotkey()) {
+            menuBox.setForegroundColor(hotkeyColor);
+            menuBox.putString(origin.withRelative(offset, 0), label.hotkey());
+            offset += label.hotkey().length();
+        }
+        if (!label.suffix().isEmpty()) {
+            menuBox.setForegroundColor(labelColor);
+            menuBox.putString(origin.withRelative(offset, 0), label.suffix());
+            offset += label.suffix().length();
+        }
+        menuBox.setBackgroundColor(NORMAL_MENU_BG_COLOR);
+        return offset + 1;
     }
 
     @Override
@@ -503,8 +510,7 @@ public class TerminalView implements letrain.mvp.View {
             return;
         }
         menuBox.setForegroundColor(DISABLED_FG_COLOR);
-        menuBox.putString(menuBoxPosition.withRelative(1, 4), text + " | [R]: Record "
-                + (gameViewListener.isRecordingCommands() ? "ON" : "OFF") + " | [X]: Experiment");
+        menuBox.putString(menuBoxPosition.withRelative(1, 4), text);
         menuBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
     }
 

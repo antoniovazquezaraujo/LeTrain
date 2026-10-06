@@ -274,6 +274,10 @@ public class GraphicPresenter extends ApplicationAdapter
         font.getData().markupEnabled = true;
 
         hud = new Gdx3DHud(model, this);
+        // 2D parity: start with the full menu/help panel visible (Tab cycles it). The level is
+        // kept in the model so both clients share one source of truth.
+        model.setHelpLevel(HudHelp.FULL);
+        hud.setHelpLevel(model.getHelpLevel());
         createCompassModel();
         updateDayNight();
 
@@ -579,12 +583,16 @@ public class GraphicPresenter extends ApplicationAdapter
 
     /**
      * Tab parity with the 2D terminal: cycles the HUD bottom panel between full, compact and
-     * hidden, so the map can be seen without the panel.
+     * hidden, so the map can be seen without the panel. The level lives in the model (as in the 2D
+     * presenter) so both clients share one source of truth.
      */
     public void cycleHelpLevel() {
-        if (hud != null) {
-            hud.cycleHelpLevel();
+        if (hud == null) {
+            return;
         }
+        int next = HudHelp.cycle(model.getHelpLevel());
+        model.setHelpLevel(next);
+        hud.setHelpLevel(next);
     }
 
     /**
@@ -619,6 +627,7 @@ public class GraphicPresenter extends ApplicationAdapter
         if (newModel == null) {
             return;
         }
+        int helpLevel = model.getHelpLevel();
         boolean wasPaused = model.isPauseEditing();
         this.model = newModel;
         // The sink is wired after the new HUD exists (see applyLoadedModel): wiring flushes the
@@ -642,6 +651,9 @@ public class GraphicPresenter extends ApplicationAdapter
             hud.dispose();
         }
         this.hud = new Gdx3DHud(newModel, this);
+        // The panel visibility survives the model swap, like the 2D view keeps its help level.
+        newModel.setHelpLevel(helpLevel);
+        hud.setHelpLevel(helpLevel);
         wireUserMessageSink();
         com.badlogic.gdx.InputMultiplexer multiplexer =
                 Gdx.input.getInputProcessor() instanceof com.badlogic.gdx.InputMultiplexer
@@ -1010,6 +1022,7 @@ public class GraphicPresenter extends ApplicationAdapter
     }
 
     private void applyLoadedModel(letrain.mvp.impl.Model loadedModel, File file) {
+        int helpLevel = this.model != null ? this.model.getHelpLevel() : HudHelp.FULL;
         this.model = ValidationUtils.requireNonNull(loadedModel, "loadedModel");
         // The message sink is wired only after the new HUD exists: setUserMessageSink flushes the
         // notices queued while the savegame was replayed (D1/O3), and they must reach the visible
@@ -1046,6 +1059,9 @@ public class GraphicPresenter extends ApplicationAdapter
 
         // Re-initialize HUD with new model
         this.hud = new Gdx3DHud(model, this);
+        // The panel visibility survives the load, like the 2D view keeps its help level.
+        model.setHelpLevel(helpLevel);
+        hud.setHelpLevel(helpLevel);
         wireUserMessageSink();
         InputMultiplexer multiplexer = (InputMultiplexer) Gdx.input.getInputProcessor();
         multiplexer.getProcessors().clear();

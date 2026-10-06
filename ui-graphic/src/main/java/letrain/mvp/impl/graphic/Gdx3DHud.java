@@ -25,6 +25,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import java.util.ArrayList;
 import java.util.function.Consumer;
+import letrain.mvp.MenuText;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameModeMenuOption;
 import letrain.utils.FontManager;
@@ -32,6 +33,17 @@ import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
 
 public class Gdx3DHud {
+
+    /**
+     * Menu palette, mirroring the 2D terminal's {@code TerminalView} constants (issue #710): white
+     * labels, grey disabled entries, green shortcuts and the ANSI-blue selected background. Markup
+     * colours are the libGDX counterparts of the terminal's {@code TextColor}s.
+     */
+    static final Color SELECTED_BG = new Color(0f, 0f, 0.67f, 1f);
+    private static final String ENABLED_MARKUP = "[WHITE]";
+    private static final String DISABLED_MARKUP = "[GRAY]";
+    private static final String HOTKEY_MARKUP = "[GREEN]";
+    private static final String MARKUP_RESET = "[]";
 
 
     private final Model model;
@@ -133,7 +145,7 @@ public class Gdx3DHud {
         TextButton.TextButtonStyle textButtonStyle = new TextButton.TextButtonStyle();
         textButtonStyle.up = skin.newDrawable("white", new Color(0.2f, 0.2f, 0.2f, 1f));
         textButtonStyle.down = skin.newDrawable("white", Color.CYAN);
-        textButtonStyle.checked = skin.newDrawable("white", new Color(0.3f, 0.4f, 0.6f, 1f));
+        textButtonStyle.checked = skin.newDrawable("white", SELECTED_BG);
         textButtonStyle.over = skin.newDrawable("white", new Color(0.15f, 0.15f, 0.15f, 1f));
         textButtonStyle.font = skin.getFont("default");
         textButtonStyle.fontColor = Color.WHITE;
@@ -344,7 +356,7 @@ public class Gdx3DHud {
         descLabel.setWrap(true);
         descLabel.setAlignment(com.badlogic.gdx.utils.Align.center);
         globalHelpLabel = new Label(
-                "[LIGHT_GRAY][ALT+⏶⏷/kj / MOUSE WHEEL]: ZOOM | [ALT+⏴⏵/hl]: ROTATE CAMERA | [Z]: CHANGE CAMERA VIEW | [R]: RECORD | [X]: EXPERIMENT | [TAB]: HIDE/SHOW PANEL[]",
+                "[LIGHT_GRAY][ALT+⏶⏷/kj / MOUSE WHEEL]: ZOOM | [ALT+⏴⏵/hl]: ROTATE CAMERA | [Z]: CHANGE CAMERA VIEW | [TAB]: HIDE/SHOW PANEL[]",
                 skin, "tiny");
         globalHelpLabel.setWrap(true);
         globalHelpLabel.setAlignment(com.badlogic.gdx.utils.Align.center);
@@ -398,14 +410,7 @@ public class Gdx3DHud {
         applyHelpLevel();
     }
 
-    /**
-     * Tab parity with the 2D terminal: cycles the bottom panel between full, compact and hidden.
-     */
-    public void cycleHelpLevel() {
-        setHelpLevel(HudHelp.cycle(helpLevel));
-    }
-
-    /** Applies a help level (2 full, 1 compact, 0 hidden). */
+    /** Applies a help level (2 full, 1 compact, 0 hidden); the presenter cycles it via Tab. */
     public void setHelpLevel(int level) {
         this.helpLevel = Math.max(HudHelp.HIDDEN, Math.min(HudHelp.FULL, level));
         applyHelpLevel();
@@ -416,32 +421,32 @@ public class Gdx3DHud {
         globalHelpLabel.setVisible(HudHelp.showKeyHelp(helpLevel));
     }
 
-    private String getMenuButtonText(String rawName, boolean isEnabled) {
-        String cleanName = rawName.replace("&", "");
-        if (cleanName.isEmpty()) {
+    /**
+     * Label for a menu button with libGDX markup: white text, the shortcut in green and grey for
+     * disabled modes. The label is split with the shared {@link MenuText} parser, the same one the
+     * 2D terminal uses, so wording and shortcuts cannot drift between clients. Static and
+     * package-visible so a test can check it without a GL context.
+     */
+    static String getMenuButtonText(String rawName, boolean isEnabled) {
+        MenuText.Label label = MenuText.parse(rawName);
+        String plainText = label.plainText();
+        if (plainText.isEmpty()) {
             return "";
         }
-
-        // Always capitalize first letter
-        String capitalized = cleanName.substring(0, 1).toUpperCase() + cleanName.substring(1);
-
-        if (!rawName.contains("&")) {
-            return isEnabled ? "[WHITE]" + capitalized + "[]" : "[LIGHT_GRAY]" + capitalized + "[]";
+        if (!isEnabled) {
+            return DISABLED_MARKUP + plainText + MARKUP_RESET;
         }
-
-        int hotkeyIndex = rawName.indexOf("&");
-        String prefix = capitalized.substring(0, hotkeyIndex);
-        char hotkeyChar = capitalized.charAt(hotkeyIndex);
-        String suffix = capitalized.substring(hotkeyIndex + 1);
-
-        if (isEnabled) {
-            // Enabled: White text with Cyan hotkey
-            return "[WHITE]" + prefix + "[]" + "[CYAN]" + hotkeyChar + "[]" + "[WHITE]" + suffix
-                    + "[]";
-        } else {
-            // When disabled, everything is gray, no blue hotkey
-            return "[LIGHT_GRAY]" + capitalized + "[]";
+        StringBuilder text = new StringBuilder();
+        if (!label.prefix().isEmpty()) {
+            text.append(ENABLED_MARKUP).append(label.prefix()).append(MARKUP_RESET);
         }
+        if (label.hasHotkey()) {
+            text.append(HOTKEY_MARKUP).append(label.hotkey()).append(MARKUP_RESET);
+        }
+        if (!label.suffix().isEmpty()) {
+            text.append(ENABLED_MARKUP).append(label.suffix()).append(MARKUP_RESET);
+        }
+        return text.toString();
     }
 
     public void updateMenuButtons() {
@@ -451,7 +456,7 @@ public class Gdx3DHud {
             String formattedName = getMenuButtonText(option.gameModeName(), isEnabled);
 
             TextButton button = new TextButton(formattedName, skin, "default");
-            button.setName(option.gameModeName().replace("&", "").toLowerCase());
+            button.setName(menuButtonName(option.gameModeName()));
             button.setDisabled(!isEnabled);
 
             button.addListener(new ClickListener() {
@@ -537,31 +542,26 @@ public class Gdx3DHud {
 
         // Marcamos el botón seleccionado según el modo y actualizamos textos
         // dinámicamente
+        descLabel.setVisible(showMenuDescription(helpLevel, model.getMode()));
         for (Actor actor : menuTable.getChildren()) {
             if (actor instanceof TextButton) {
                 TextButton btn = (TextButton) actor;
                 String btnName = btn.getName();
                 for (GameModeMenuOption option : model.getMenuModel()) {
-                    String optionName = option.gameModeName().replace("&", "").toLowerCase();
+                    String optionName = menuButtonName(option.gameModeName());
                     if (optionName.equals(btnName)) {
                         boolean isSelected = option.selectedIf().get();
                         boolean isEnabled = option.enabledIf().get();
 
                         btn.setChecked(isSelected);
                         btn.setDisabled(!isEnabled);
-                        // Update text dynamically to reflect enabled/disabled state (Gray vs
-                        // White/Blue)
+                        // Update text dynamically to reflect enabled/disabled state (gray vs
+                        // white/green)
                         btn.setText(getMenuButtonText(option.gameModeName(), isEnabled));
 
                         if (isSelected) {
-                            String desc = option.gameModeDescription();
-                            if (model.getMode() == letrain.mvp.Model.GameMode.TRAINS) {
-                                String colorName = model.getSelectedWagonType().name();
-                                String colorMarkup =
-                                        "[#" + model.getSelectedWagonType().getColor() + "]";
-                                desc = "Selected: " + colorMarkup + colorName + "[] | " + desc;
-                            }
-                            descLabel.setText(desc);
+                            descLabel.setText(MenuText.selectedHint(option.gameModeDescription(),
+                                    commandJournalRecording()));
                         }
                     }
                 }
@@ -571,6 +571,26 @@ public class Gdx3DHud {
         if (model.getMode() == letrain.mvp.Model.GameMode.COMMAND) {
             descLabel.setText(commandLineText(model));
         }
+    }
+
+    /** Stable name used to match a rendered button with its model option. */
+    private static String menuButtonName(String rawName) {
+        return MenuText.parse(rawName).plainText().toLowerCase();
+    }
+
+    /** Command-journal recording state, read exactly as the 2D help bar does. */
+    private boolean commandJournalRecording() {
+        return model.getCommandJournal() != null && model.getCommandJournal().isRecording()
+                && model.isSimulationPaused();
+    }
+
+    /**
+     * Whether the selected-mode description is visible: at the full help level, like the 2D help
+     * bar, and whenever the console is active because the command line is rendered there.
+     * Package-visible so a test can check the 2D parity of the visibility rule.
+     */
+    static boolean showMenuDescription(int helpLevel, Model.GameMode mode) {
+        return HudHelp.showSelectedHint(helpLevel) || mode == Model.GameMode.COMMAND;
     }
 
     /**

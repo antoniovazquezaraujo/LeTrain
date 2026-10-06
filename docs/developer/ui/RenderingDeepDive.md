@@ -74,6 +74,38 @@ latitud mundial). El detalle de tokens y fases está en
   `VisualPalette.LIGHTS_ON_RATIO` (0,1) y con el motor en marcha y la locomotora de cabeza
   (`isEngineOn() && isHeadLocomotive()`); en 2D el túnel oculto también apaga el haz.
 
+## Menú de modos: paridad 2D/3D (#710)
+
+El panel de menú (modos de juego) se construye en ambos clientes a partir de la **misma fuente**:
+`ModelReportService.createMenuModel`, expuesta por `model.getMenuModel()`. Entradas, orden,
+`enabledIf`, `selectedIf` y `doWhenSelected` son compartidos; cada cliente solo decide cómo
+pintarlos.
+
+- **Parser compartido**: `letrain.mvp.MenuText` (core). El primer `&` de `gameModeName` marca el
+  siguiente carácter como atajo (`&Rails` → `("", "R", "ails")`, `S&ensors` → `("S", "e", "nsors")`).
+  Ambos clientes usan `MenuText.parse` y ninguno implementa su propio parseo del `&`.
+- **Texto de ayuda**: `MenuText.selectedHint(description, recording)` compone la línea del modo
+  seleccionado (`... | [R]: Record ON/OFF | [X]: Experiment`), idéntica en 2D y 3D. El flag de
+  grabación sale del journal de comandos (`isRecording() && isSimulationPaused()`).
+- **Colores**: 2D `TerminalView` (blanco normal, `GREEN_BRIGHT` para el atajo, `BLACK_BRIGHT` para
+  deshabilitado, fondo `BLUE` para seleccionado) y 3D `Gdx3DHud` (marcas `[WHITE]`, `[GREEN]`,
+  `[GRAY]`, fondo `checked` azul ANSI). Los nombres concretos de color son la adaptación de cada
+  tecnología, pero el criterio es el mismo.
+- **Niveles de ayuda** (`helpLevel`): 2 = completo, 1 = compacto, 0 = oculto. Tab cicla 2→1→0→2 en
+  ambos presentadores y el nivel vive en el `Model`, no en la vista. La descripción del modo
+  seleccionado solo se muestra en nivel completo (`HudHelp.showSelectedHint`), como la barra de
+  ayuda 2D; en 3D la excepción es el modo `COMMAND`, cuya línea de consola se pinta en esa misma
+  etiqueta.
+
+Diferencias intencionales (tecnología, no información):
+
+- 2D pinta el menú como una fila de texto en el `menuBox`; 3D usa botones Scene2D con padding.
+- La línea de teclas globales es específica de cada cliente (cámara/paginación en 2D, zoom/rotación
+  con Alt y rueda en 3D) y cada una vive en su zona del HUD.
+- El 3D ya no antepone `Selected: <carga>` a la descripción de `TRAINS`: era información exclusiva
+  del HUD 3D y rompía la paridad del texto. Si se quiere recuperar, debe añadirse al modelo
+  compartido.
+
 ## Invariantes de la Vista
 - Ninguna clase de renderizado debe modificar el estado del `Model`.
 - El acceso a los datos de la entidad durante el renderizado debe ser solo de lectura.
