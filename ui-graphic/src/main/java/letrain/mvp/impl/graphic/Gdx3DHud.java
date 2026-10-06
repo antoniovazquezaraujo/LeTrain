@@ -36,13 +36,13 @@ public class Gdx3DHud {
 
     /**
      * Menu palette, mirroring the 2D terminal's {@code TerminalView} constants (issue #710): white
-     * labels and shortcuts in green. A disabled entry stays white and only loses the green shortcut
-     * (owner feedback: grey was unreadable). Markup colours are the libGDX counterparts of the
-     * terminal's {@code TextColor}s.
+     * labels and shortcuts in green. A disabled entry is painted grey ({@code Color.GRAY}, libGDX's
+     * {@code #808080}) and loses the green shortcut. Markup colours are the libGDX counterparts of
+     * the terminal's {@code TextColor}s.
      */
     static final Color SELECTED_BG = new Color(0f, 0f, 0.67f, 1f);
     private static final String ENABLED_MARKUP = "[WHITE]";
-    private static final String DISABLED_MARKUP = "[WHITE]";
+    private static final String DISABLED_MARKUP = "[GRAY]";
     private static final String HOTKEY_MARKUP = "[GREEN]";
     private static final String MARKUP_RESET = "[]";
 
@@ -424,7 +424,7 @@ public class Gdx3DHud {
 
     /**
      * Label for a menu button with libGDX markup: white text, the shortcut in green; a disabled
-     * mode stays white and only loses the shortcut colour. The label is split with the shared
+     * mode is painted grey and loses the shortcut colour. The label is split with the shared
      * {@link MenuText} parser, the same one the 2D terminal uses, so wording and shortcuts cannot
      * drift between clients. Static and package-visible so a test can check it without a GL
      * context.

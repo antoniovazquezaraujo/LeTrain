@@ -34,11 +34,11 @@ class Gdx3DHudMenuTest {
     }
 
     @Test
-    @DisplayName("a disabled option stays white and only loses the green shortcut")
-    void should_PaintDisabledOptionInWhite() {
+    @DisplayName("a disabled option is grey #808080 and loses the green shortcut")
+    void should_PaintDisabledOptionInGrey() {
         String text = Gdx3DHud.getMenuButtonText("S&ensors", false);
 
-        assertEquals("[WHITE]Sensors[]", text);
+        assertEquals("[GRAY]Sensors[]", text);
         assertFalse(text.contains("[GREEN]"), text);
     }
 

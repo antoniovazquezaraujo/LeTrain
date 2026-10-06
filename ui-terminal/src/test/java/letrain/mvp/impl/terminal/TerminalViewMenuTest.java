@@ -10,6 +10,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.googlecode.lanterna.TerminalPosition;
+import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.graphics.TextGraphics;
 import java.util.List;
 import letrain.mvp.MenuText;
@@ -50,21 +51,22 @@ class TerminalViewMenuTest {
     }
 
     @Test
-    @DisplayName("a disabled option stays white and only loses the green shortcut")
-    void should_PaintDisabledOptionInWhiteWithoutShortcutColor() {
+    @DisplayName("a disabled option is grey #808080 on label and shortcut, never the green shortcut")
+    void should_PaintDisabledOptionInExactGrey() {
         TextGraphics graphics = mock(TextGraphics.class);
         GameModeMenuOption sensors = option("S&ensors", false, false);
 
         TerminalView.drawMenuOption(graphics, new TerminalPosition(0, 0), sensors, 0);
 
-        assertEquals(TerminalView.NORMAL_MENU_FG_COLOR, TerminalView.MENU_DISABLED_FG_COLOR,
-                "disabled text is as white as normal text (owner feedback)");
+        TextColor.RGB grey = new TextColor.RGB(128, 128, 128);
+        assertEquals(grey, TerminalView.MENU_DISABLED_FG_COLOR,
+                "exact grey #808080, independent of the terminal theme (owner feedback)");
         InOrder order = inOrder(graphics);
-        order.verify(graphics).setForegroundColor(TerminalView.MENU_DISABLED_FG_COLOR);
+        order.verify(graphics).setForegroundColor(grey);
         order.verify(graphics).putString(eq(new TerminalPosition(0, 0)), eq("S"));
-        order.verify(graphics).setForegroundColor(TerminalView.MENU_DISABLED_FG_COLOR);
+        order.verify(graphics).setForegroundColor(grey);
         order.verify(graphics).putString(eq(new TerminalPosition(1, 0)), eq("e"));
-        order.verify(graphics).setForegroundColor(TerminalView.MENU_DISABLED_FG_COLOR);
+        order.verify(graphics).setForegroundColor(grey);
         order.verify(graphics).putString(eq(new TerminalPosition(2, 0)), eq("nsors"));
         verify(graphics, never()).setForegroundColor(TerminalView.SHORTCUT_COLOR);
         verify(graphics, atLeastOnce()).setBackgroundColor(TerminalView.NORMAL_MENU_BG_COLOR);

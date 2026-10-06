@@ -87,12 +87,12 @@ pintarlos.
 - **Texto de ayuda**: `MenuText.selectedHint(description, recording)` compone la línea del modo
   seleccionado (`... | [R]: Record ON/OFF | [X]: Experiment`), idéntica en 2D y 3D. El flag de
   grabación sale del journal de comandos (`isRecording() && isSimulationPaused()`).
-- **Colores**: 2D `TerminalView` (blanco normal, `GREEN_BRIGHT` para el atajo,
-  `MENU_DISABLED_FG_COLOR` blanco para deshabilitado —pierde solo el verde, feedback del dueño—,
-  fondo `BLUE` para seleccionado; las líneas de info/ayuda mantienen `DISABLED_FG_COLOR`) y 3D
-  `Gdx3DHud` (marcas `[WHITE]` y `[GREEN]`; el deshabilitado se queda en `[WHITE]` sin atajo verde,
-  fondo `checked` azul ANSI). Los nombres concretos de color son la adaptación de cada tecnología,
-  pero el criterio es el mismo.
+- **Colores**: 2D `TerminalView` (blanco normal, `GREEN_BRIGHT` para el atajo, gris exacto
+  `#808080` —`MENU_DISABLED_FG_COLOR`, un `TextColor.RGB` independiente del tema— para
+  deshabilitado sin atajo verde, fondo `BLUE` para seleccionado; las líneas de info/ayuda mantienen
+  `DISABLED_FG_COLOR`) y 3D `Gdx3DHud` (marcas `[WHITE]` y `[GREEN]`; el deshabilitado se pinta
+  `[GRAY]`, el `Color.GRAY` de libGDX = `#808080`, sin atajo verde; fondo `checked` azul ANSI). Los
+  nombres concretos de color son la adaptación de cada tecnología, pero el criterio es el mismo.
 - **Niveles de ayuda** (`helpLevel`): 2 = completo, 1 = compacto, 0 = oculto. Tab cicla 2→1→0→2 en
   ambos presentadores y el nivel vive en el `Model`, no en la vista. La descripción del modo
   seleccionado solo se muestra en nivel completo (`HudHelp.showSelectedHint`), como la barra de
