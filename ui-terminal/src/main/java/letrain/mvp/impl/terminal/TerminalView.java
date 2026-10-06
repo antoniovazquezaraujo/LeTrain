@@ -99,6 +99,11 @@ public class TerminalView implements letrain.mvp.View {
     static final TextColor NORMAL_MENU_FG_COLOR = ANSI.WHITE;
     static final TextColor NORMAL_MENU_BG_COLOR = ANSI.BLACK;
     static final TextColor DISABLED_FG_COLOR = ANSI.BLACK_BRIGHT;
+    /**
+     * Disabled menu entries stay white: they only stand out by losing the green shortcut, so they
+     * remain readable (owner feedback). The info/help lines keep {@link #DISABLED_FG_COLOR}.
+     */
+    static final TextColor MENU_DISABLED_FG_COLOR = ANSI.WHITE;
     static final TextColor SELECTED_BG_COLOR = ANSI.BLUE;
     static final TextColor SHORTCUT_COLOR = ANSI.GREEN_BRIGHT;
 
@@ -469,10 +474,11 @@ public class TerminalView implements letrain.mvp.View {
 
     /**
      * Paints one menu option at {@code offset} columns from {@code origin}: label and suffix in
-     * white (grey when disabled), the shortcut in green (grey when disabled) and the candidate
-     * mode's background in blue when selected. The label is split with the shared {@link MenuText}
-     * parser, the same one the 3D HUD uses, so wording and shortcuts cannot drift between clients.
-     * Package-visible and static so a test can check the layout without a real terminal.
+     * white, the shortcut in green and the candidate mode's background in blue when selected. A
+     * disabled option stays white but loses the green shortcut. The label is split with the shared
+     * {@link MenuText} parser, the same one the 3D HUD uses, so wording and shortcuts cannot drift
+     * between clients. Package-visible and static so a test can check the layout without a real
+     * terminal.
      *
      * @return the offset for the next option (plain text plus the separating space)
      */
@@ -480,8 +486,8 @@ public class TerminalView implements letrain.mvp.View {
             GameModeMenuOption option, int offset) {
         MenuText.Label label = MenuText.parse(option.gameModeName());
         boolean enabled = option.enabledIf().get();
-        TextColor labelColor = enabled ? NORMAL_MENU_FG_COLOR : DISABLED_FG_COLOR;
-        TextColor hotkeyColor = enabled ? SHORTCUT_COLOR : DISABLED_FG_COLOR;
+        TextColor labelColor = enabled ? NORMAL_MENU_FG_COLOR : MENU_DISABLED_FG_COLOR;
+        TextColor hotkeyColor = enabled ? SHORTCUT_COLOR : MENU_DISABLED_FG_COLOR;
 
         menuBox.setBackgroundColor(
                 option.selectedIf().get() ? SELECTED_BG_COLOR : NORMAL_MENU_BG_COLOR);

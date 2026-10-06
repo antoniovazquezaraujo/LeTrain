@@ -36,12 +36,13 @@ public class Gdx3DHud {
 
     /**
      * Menu palette, mirroring the 2D terminal's {@code TerminalView} constants (issue #710): white
-     * labels, grey disabled entries, green shortcuts and the ANSI-blue selected background. Markup
-     * colours are the libGDX counterparts of the terminal's {@code TextColor}s.
+     * labels and shortcuts in green. A disabled entry stays white and only loses the green shortcut
+     * (owner feedback: grey was unreadable). Markup colours are the libGDX counterparts of the
+     * terminal's {@code TextColor}s.
      */
     static final Color SELECTED_BG = new Color(0f, 0f, 0.67f, 1f);
     private static final String ENABLED_MARKUP = "[WHITE]";
-    private static final String DISABLED_MARKUP = "[GRAY]";
+    private static final String DISABLED_MARKUP = "[WHITE]";
     private static final String HOTKEY_MARKUP = "[GREEN]";
     private static final String MARKUP_RESET = "[]";
 
@@ -422,10 +423,11 @@ public class Gdx3DHud {
     }
 
     /**
-     * Label for a menu button with libGDX markup: white text, the shortcut in green and grey for
-     * disabled modes. The label is split with the shared {@link MenuText} parser, the same one the
-     * 2D terminal uses, so wording and shortcuts cannot drift between clients. Static and
-     * package-visible so a test can check it without a GL context.
+     * Label for a menu button with libGDX markup: white text, the shortcut in green; a disabled
+     * mode stays white and only loses the shortcut colour. The label is split with the shared
+     * {@link MenuText} parser, the same one the 2D terminal uses, so wording and shortcuts cannot
+     * drift between clients. Static and package-visible so a test can check it without a GL
+     * context.
      */
     static String getMenuButtonText(String rawName, boolean isEnabled) {
         MenuText.Label label = MenuText.parse(rawName);
