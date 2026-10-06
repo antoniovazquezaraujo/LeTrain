@@ -32,6 +32,9 @@ LeTrain utiliza una rejilla octogonal para las direcciones (`Dir`), permitiendo 
 - Una vía solo puede conectarse a otra si sus conectores son compatibles espacialmente.
 - Los `ForkRailTrack` deben tener siempre un `ForkEventListener` asociado si forman parte de un itinerario automático.
 
+## Ancla de reanudación del constructor de vías (issue #708)
+`RailTrackMaker` encadena cada pieza nueva a la anterior mediante `oldTrack`/`oldDir`. Esa ancla solo es válida cuando la pieza sigue colocada en el `RailMap`, el cursor está a ≤ 1.5 celdas y el ángulo de entrada cumple la Regla de los 45 Grados (`Math.abs(oldDir.inverse().angularDistance(dir)) <= 1`, la misma comprobación que aplica `makeTrack`). `reset()` descarta el ancla que no cumpla estas condiciones (`clearResumeState()`) y `removeTrack()` la limpia en cuanto se borra la pieza ancla. Un ancla borrada (fantasma) o situada delante del cursor hacía que cada intento de colocación fuese rechazado por curvatura mientras el cursor seguía adyacente: el "cursor bloqueado" de #708, que solo se desbloqueaba alejándose más de 1.5 celdas para que `reset()` limpiase el ancla. Las piezas encadenadas normales (rectas, curvas de 45° y reanudación tras undo vía `resumeChainFrom`) conservan el ancla.
+
 ## Movimiento de Elementos de Vía (issue #468)
 `Model.moveSensor(Sensor, Dir)`, `moveSensorForward(Sensor)` y `moveSensorBackward(Sensor)` desplazan un elemento (sensor, estación, señal de velocidad o semáforo) una celda de reposo a lo largo de la vía (operación de edición del usuario; nunca se ejecuta dentro de loops de tick ni reservas de bloque). Semántica del escaneo (`Model.findMoveDestination`, equivalente a `RailIterator.advance`):
 - Desde la celda origen se avanza con `getConnected(heading)`; el puerto de entrada a la celda candidata es `heading.inverse()` y la salida se obtiene con `getDir(port)`.
