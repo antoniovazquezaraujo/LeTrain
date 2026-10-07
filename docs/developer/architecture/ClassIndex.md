@@ -107,6 +107,7 @@
 
 ## letrain.mvp
 - [[letrain.mvp.GameViewListener|GameViewListener]] (core)
+- [[letrain.mvp.MenuText|MenuText]] (core)
 - [[letrain.mvp.Model|Model]] (core)
 - [[letrain.mvp.Presenter|Presenter]] (core)
 - [[letrain.mvp.View|View]] (core)
