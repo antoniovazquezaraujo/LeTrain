@@ -62,6 +62,6 @@ public final class MenuText {
      * (the recording flag comes from the command journal in both clients).
      */
     public static String selectedHint(String description, boolean recording) {
-        return description + " | [R]: Record " + (recording ? "ON" : "OFF") + " | [X]: Experiment";
+        return description + " | [R]:Record " + (recording ? "ON" : "OFF") + " | [X]:Experiment";
     }
 }

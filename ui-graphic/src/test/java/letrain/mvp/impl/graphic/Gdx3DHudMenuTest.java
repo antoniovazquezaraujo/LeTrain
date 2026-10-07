@@ -88,10 +88,9 @@ class Gdx3DHudMenuTest {
     void should_ListReal3dKeys() {
         String keys = Gdx3DHud.keysText();
 
-        assertEquals(
-                "[Alt+▲▼ / Mouse Wheel]: Zoom | [Alt+◀▶]: Rotate | [z/Z]: Camera"
-                        + " | [a/r/d/f/s/t/c/u/p/n]: Modes | [Tab]: Toggle Panel | [Esc]: Exit",
-                keys);
+        assertEquals("[Alt+▲▼ / Mouse Wheel]:Zoom | [Alt+◀▶]:Rotate"
+                + " | [z/Z]:Camera | [a/r/d/f/s/t/c/u/p/n]:Modes | [Tab]:Toggle Panel"
+                + " | [Esc]:Exit", keys);
         assertFalse(keys.contains("[PgUp"), "3D has no page-scroll binding");
         assertFalse(keys.contains("ZOOM") || keys.contains("ROTATE"),
                 "actions are sentence case, not all caps: " + keys);
