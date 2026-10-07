@@ -79,9 +79,8 @@ public class Gdx3DHud {
     private Cell<Label> keysCell;
     private Label recDot;
     private Label clockLabel;
-    private Label balanceLabel;
-    private Label incomeLabel;
-    private Label expensesLabel;
+    private Label systemLabel;
+    private Label financeLabel;
 
     /** 2D parity: 2 full, 1 compact, 0 hidden (see {@link HudHelp}). */
     private int helpLevel = HudHelp.FULL;
@@ -393,9 +392,9 @@ public class Gdx3DHud {
         mainTopTable.add(clockLabel).pad(6);
         stage.addActor(mainTopTable);
 
-        // Bottom UI Container: the notch lever and the finances keep their places, and the menu
-        // block (menu strip, train status, mode hint, key help) lives in the original label area
-        // to their right, ordered like the 2D menu box (issue #710 phase 2).
+        // Bottom UI Container: the notch row carries the 2D system info (position and step, no
+        // pages) right-aligned next to the lever, the compact 2D finances go on the line below,
+        // and the menu block keeps its label area to their right (issue #710 phases 2-3).
         Table mainBottomTable = new Table();
         mainBottomTable.setFillParent(true);
         mainBottomTable.bottom();
@@ -415,36 +414,22 @@ public class Gdx3DHud {
         bottomContainer.setBackground(skin.newDrawable("white", new Color(0, 0, 0, 0.6f)));
         bottomContainer.pad(10);
 
-        // Notch Lever (horizontal, like the 2D throttle read-out)
+        // Notch Lever (horizontal, like the 2D throttle read-out) with the status lines on its
+        // row: `|Pos:x,y|Step:a/b|` (no Page, the 3D HUD has no pagination) and, below it, the
+        // compact `|In:...|Out:...|$:...|` finances, both right-aligned in the 2D wording.
         notchLever = new NotchLever();
-        bottomContainer.add(notchLever).size(260, 46).padLeft(10).padRight(10);
+        systemLabel = new Label("", skin, "hud-info");
+        systemLabel.setAlignment(com.badlogic.gdx.utils.Align.right);
+        financeLabel = new Label("", skin, "hud-info");
+        financeLabel.setAlignment(com.badlogic.gdx.utils.Align.right);
 
-        // Finances Area (between the notch lever and the menu block, as before)
-        Table financeArea = new Table();
-
-        // Create separate styles to avoid sharing and overwriting skin styles
-        Label.LabelStyle incomeStyle =
-                new Label.LabelStyle(skin.get("small", Label.LabelStyle.class));
-        incomeStyle.fontColor = com.badlogic.gdx.graphics.Color.GREEN;
-        incomeLabel = new Label("+ $0", incomeStyle);
-
-        Label.LabelStyle expensesStyle =
-                new Label.LabelStyle(skin.get("small", Label.LabelStyle.class));
-        expensesStyle.fontColor = com.badlogic.gdx.graphics.Color.RED;
-        expensesLabel = new Label("- $0", expensesStyle);
-
-        Label.LabelStyle balanceStyle =
-                new Label.LabelStyle(skin.get("medium", Label.LabelStyle.class));
-        balanceLabel = new Label("$ 0", balanceStyle);
-
-        Table subFinance = new Table();
-        subFinance.add(incomeLabel).padRight(15);
-        subFinance.add(expensesLabel);
-
-        financeArea.add(subFinance).right().row();
-        financeArea.add(balanceLabel).right().padTop(5);
-
-        bottomContainer.add(financeArea).width(200).left().bottom().padLeft(20).padRight(20);
+        Table leverArea = new Table();
+        leverArea.add(notchLever).size(260, 46).padLeft(10).padRight(20);
+        leverArea.add(systemLabel).right();
+        leverArea.row();
+        leverArea.add();
+        leverArea.add(financeLabel).right().padTop(2);
+        bottomContainer.add(leverArea).left().bottom();
 
         Table labelArea = new Table();
         addMenuBlockRows(labelArea);
@@ -603,20 +588,9 @@ public class Gdx3DHud {
             recDot.setVisible(recording && (System.currentTimeMillis() / 500) % 2 == 0);
         }
         updateClock();
-        // Update HUD (Finances)
-        if (model.getEconomyManager() != null) {
-            long balance = (long) model.getEconomyManager().getBalance();
-            long income = (long) model.getEconomyManager().getTotalIncome();
-            long expenses = (long) model.getEconomyManager().getTotalExpenses();
-
-            // Income and Expenses use their LabelStyle colors (Green and Red)
-            incomeLabel.setText(String.format("+ $ %,d", income));
-            expensesLabel.setText(String.format("- $ %,d", expenses));
-
-            // Balance uses markup to switch between Green and Red
-            String balanceColorMark = balance >= 0 ? "[#00FF00]" : "[#FF0000]";
-            balanceLabel.setText(String.format("%s$ %,d[]", balanceColorMark, balance));
-        }
+        // Notch-row status (2D format, no Page) and compact 2D finances on the line below.
+        systemLabel.setText(systemInfoText(model));
+        financeLabel.setText(financeText(model));
 
         Locomotive loco = model.getSelectedLocomotive();
         if (loco != null) {
@@ -694,6 +668,40 @@ public class Gdx3DHud {
      */
     static String keysText() {
         return KEYS_TEXT;
+    }
+
+    /**
+     * System info line of the notch row, replicating the 2D {@code InfoVisitor} wording except the
+     * page part: position, quantifier step and, when the game was saved, the last save time
+     * ({@code |Pos:x,y|Step:a/b|Saved:HH:MM|}). The 3D HUD has no pagination. Static and
+     * package-visible so a test can check it without a GL context.
+     */
+    static String systemInfoText(Model model) {
+        String pos = model.getCursor().getPosition().getX() + ","
+                + model.getCursor().getPosition().getY();
+        StringBuilder info = new StringBuilder();
+        info.append("|Pos:").append(pos).append("|Step:").append(model.getQuantifierSteps())
+                .append("/").append(model.getQuantifier()).append("|");
+        if (model.getLastSaveTime() != null) {
+            info.append("Saved:").append(model.getLastSaveTime().toString().substring(11, 16))
+                    .append("|");
+        }
+        return info.toString();
+    }
+
+    /**
+     * Compact finances line under the notch row, same text and format as the 2D info bar:
+     * {@code |In:...|Out:...|$:...|}. Static and package-visible so a test can check it without a
+     * GL context.
+     */
+    static String financeText(Model model) {
+        if (model.getEconomyManager() == null) {
+            return "";
+        }
+        return String.format(java.util.Locale.US, "|In:%,.2f|Out:%,.2f|$:%,.2f|",
+                model.getEconomyManager().getTotalIncome(),
+                model.getEconomyManager().getTotalExpenses(),
+                model.getEconomyManager().getBalance());
     }
 
     /**

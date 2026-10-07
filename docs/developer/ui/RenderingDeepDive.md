@@ -99,11 +99,11 @@ pintarlos.
   ayuda 2D; en 3D la excepción es el modo `COMMAND`, cuya línea de consola se pinta en esa misma
   etiqueta.
 
-### Bloque de menú 3D (fase 2)
+### Bloque de menú 3D (fases 2-3)
 
 Para que las capturas 3D y 2D coincidan, el bloque de menú del HUD 3D se queda **donde estaba
-siempre** (la zona de etiquetas del `bottomContainer`, a la derecha de la palanca de notch y las
-finanzas) y pasa a tener **cuatro filas** en el mismo orden que el `menuBox` 2D
+siempre** (la zona de etiquetas del `bottomContainer`, a la derecha de la palanca de notch y de las
+dos líneas de info compacta) y pasa a tener **cuatro filas** en el mismo orden que el `menuBox` 2D
 (`Gdx3DHud.MENU_BLOCK_ROWS`):
 
 1. **Menú**: los 12 modos en una sola línea, alineados a la izquierda. Son `TextButton` del estilo
@@ -120,6 +120,15 @@ finanzas) y pasa a tener **cuatro filas** en el mismo orden que el `menuBox` 2D
    (rotar), `z/Z` (cámara, salvo en TRAINS), letras de modo, `Tab` (panel) y `Esc` (salir). No hay
    binding 3D para `PgUp/PgDn`, así que esa tecla 2D se omite. Conserva el tamaño `tiny` original
    de la línea de teclas 3D para que la fila completa quepa junto a la palanca y las finanzas.
+
+En la **línea de la palanca de notch**:
+
+- **Posición y step** (`Gdx3DHud.systemInfoText`), alineado a la derecha: `|Pos:x,y|Step:a/b|`
+  (más `Saved:HH:MM|` cuando hay guardado), replicando el `InfoVisitor` 2D **sin** la parte
+  `Page:` porque el 3D no tiene paginación.
+- **Finanzas compactas** (`Gdx3DHud.financeText`) en la línea de debajo, alineadas a la derecha:
+  `|In:...|Out:...|$:...|`, mismo texto y formato (`Locale.US`, dos decimales) que la barra de
+  info 2D. El bloque grande de balance/ingresos/gastos del HUD 3D se elimina.
 
 Las filas 3 y 4 se liberan de su celda al ocultarse (`setRowVisible`): en Scene2D un actor
 invisible sigue reservando su altura (#652). El texto de los hints del modelo se normaliza en
