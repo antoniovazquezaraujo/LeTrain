@@ -46,11 +46,8 @@ LeTrain is deeply modal. Pressing the following keys will switch your current in
 
 ### Construction (Rails Mode)
 - **Shift + Arrows (or H, J, K, L)**: Build new tracks.
-- **Ctrl + Arrows (or Ctrl + h, j, k, l)**: Delete existing tracks.
-- **Home**: Create a semaphore on the track.
-- **Insert**: Create a sensor on the track.
-- **End**: Create a station.
-- **Del**: Create a speed limit signal on the track.
+- **`a`**: Enter **Add Mode** to place infrastructure: `n` **Station**, `e` **Sensor**, `s` **Semaphore**, `g` **Speed Signal**.
+- **Numbers (0-9)**: Set a step multiplier for cursor movement; press **Spacebar** to reset it to 1.
 
 ### Moving Track Elements
 In the **Stations** (`n`), **Sensors** (`e`), **Semaphores** (`s`) and **Speed Signals** (`g`) modes you can slide the selected element along the rail, in the direction the element itself is facing:
