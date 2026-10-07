@@ -1,0 +1,28 @@
+# LeTrain 2D cursor palette — before
+# resolved with TerminalPalette.resolve(ratio); delta = |L(cursor) - L(field)|
+
+ratio=0,00  field=#4CA331 (L=136,3)  field ANSI=GREEN
+  CURSOR_DRAWING  #006D28  L=  80,8  delta= 55,4  ANSI=BLACK          
+  CURSOR_MOVING   #665300  L=  81,0  delta= 55,2  ANSI=BLACK          
+  CURSOR_ERASING  #BE2828  L=  71,9  delta= 64,4  ANSI=RED            
+
+ratio=0,25  field=#4F9035 (L=123,6)  field ANSI=BLACK_BRIGHT
+  CURSOR_DRAWING  #075A22  L=  68,3  delta= 55,3  ANSI=BLACK          
+  CURSOR_MOVING   #C4B191  L= 178,7  delta= 55,1  ANSI=WHITE          
+  CURSOR_ERASING  #A72A26  L=  68,3  delta= 55,3  ANSI=RED            
+
+ratio=0,50  field=#527A38 (L=108,7)  field ANSI=BLACK_BRIGHT
+  CURSOR_DRAWING  #094519  L=  53,1  delta= 55,7  ANSI=BLACK          
+  CURSOR_MOVING   #BBA382  L= 165,7  delta= 57,0  ANSI=WHITE          
+  CURSOR_ERASING  #7D231C  L=  53,6  delta= 55,1  ANSI=RED            
+
+ratio=0,75  field=#3D5A2F (L=80,7)  field ANSI=BLACK_BRIGHT
+  CURSOR_DRAWING  #47A156  L= 136,5  delta= 55,7  ANSI=GREEN          
+  CURSOR_MOVING   #C7A61D  L= 163,1  delta= 82,4  ANSI=YELLOW         
+  CURSOR_ERASING  #D8736E  L= 136,1  delta= 55,4  ANSI=YELLOW         
+
+ratio=1,00  field=#161923 (L=25,1)  field ANSI=BLACK
+  CURSOR_DRAWING  #46BE5A  L= 157,3  delta=132,2  ANSI=BLACK_BRIGHT   
+  CURSOR_MOVING   #E6C828  L= 194,8  delta=169,7  ANSI=YELLOW         
+  CURSOR_ERASING  #EB5A50  L= 120,1  delta= 95,0  ANSI=RED_BRIGHT     
+

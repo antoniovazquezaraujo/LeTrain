@@ -44,7 +44,9 @@ Lo que hay en `develop` a día de hoy; el detalle por fase está al final de la 
   verde (`BOARD`/`GROUND`), **mar azul** (`WATER_BG`) y **montaña marrón** (`ROCK_BG`), con las
   olas en cyan sobre el mar y la roca clara sobre la montaña; el suelo de día y crepúsculo es
   verde de campo (`0x4CA331` / `0x527A38`, ajuste del `VisualPalette.TERRAIN_FIELDS` de 3D), no
-  papel: el **blanco queda reservado para la nieve futura** (#692).
+  papel: el **blanco queda reservado para la nieve futura** (#692). Las claves de **día** del
+  cursor se oscurecen para separarse del campo verde claro (#721): dibujo `0x005A1E`, movimiento
+  `0x5F4600` y borrado `0xAA1E1E`; crepúsculo y noche quedan intactos.
 - **Faros**: umbral compartido `VisualPalette.LIGHTS_ON_RATIO = 0,1` y rampa `lightsOnFactor`. En 3D
   `HeadlightGlows` + `HeadlightGlowRenderer` dibujan hasta 4 charcos suaves (quad con falloff
   cuadrático por fragmento y alpha blending) delante de la locomotora y
@@ -111,6 +113,11 @@ futura. En 3D `TERRAIN_FIELDS` no cambia.
 Actualización (beta.6, #692 v2): en 2D `terrain.water` y `terrain.mountain` tienen además fondo de
 celda propio (mar azul `WATER_BG`, montaña marrón `ROCK_BG`) y sus glifos (olas cyan, roca clara)
 se contrastan contra él; en 3D no hay cambio.
+
+Actualización (beta.6, #721): en 2D las claves de **día** del cursor (`cursor.drawing`,
+`cursor.moving`, `cursor.erasing`) se oscurecen para separarse del campo verde claro: `0x005A1E`,
+`0x5F4600` y `0xAA1E1E` (antes `0x006E28`, `0xAA8C00` y `0xBE2828`). Crepúsculo y noche no
+cambian; la tabla de arriba es el inventario previo a la implementación.
 
 ### Terreno y estructura
 

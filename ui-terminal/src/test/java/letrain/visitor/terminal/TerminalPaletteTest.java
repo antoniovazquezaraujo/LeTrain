@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.googlecode.lanterna.TextColor;
+import java.util.List;
 import java.util.Map;
 import letrain.palette.VisualPalette;
 import letrain.visitor.terminal.TerminalPalette.Depth;
@@ -151,6 +152,72 @@ class TerminalPaletteTest {
         assertEquals(TerminalPalette.rgbFor(0.3f), TerminalPalette.rgbFor(0.3f));
         assertEquals(0x4CA331, TerminalPalette.rgbFor(-1f).get(Token.BOARD));
         assertEquals(0x161923, TerminalPalette.rgbFor(2f).get(Token.BOARD));
+    }
+
+    @Test
+    @DisplayName("day cursor keys are darker so they stand out on the light green field")
+    void should_KeepDayCursorDark() {
+        Map<Token, Integer> day = TerminalPalette.rgbFor(0f);
+
+        assertEquals(0x005A1E, day.get(Token.CURSOR_DRAWING), "drawing cursor stays dark green");
+        assertEquals(0x5F4600, day.get(Token.CURSOR_MOVING), "moving cursor stays dark olive");
+        assertEquals(0xAA1E1E, day.get(Token.CURSOR_ERASING), "erasing cursor stays dark red");
+
+        double field = TerminalPalette.luminance(day.get(Token.BOARD));
+        for (Token cursor : List.of(Token.CURSOR_DRAWING, Token.CURSOR_MOVING,
+                Token.CURSOR_ERASING)) {
+            double contrast = field - TerminalPalette.luminance(day.get(cursor));
+            assertTrue(contrast >= TerminalPalette.MIN_CONTRAST + 10,
+                    cursor + " must stay clearly darker than the field, contrast was " + contrast);
+        }
+    }
+
+    @Test
+    @DisplayName("day cursor keeps its hue identity after darkening")
+    void should_KeepDayCursorHue() {
+        Map<Token, Integer> day = TerminalPalette.rgbFor(0f);
+        int drawing = day.get(Token.CURSOR_DRAWING);
+        int moving = day.get(Token.CURSOR_MOVING);
+        int erasing = day.get(Token.CURSOR_ERASING);
+
+        assertTrue(((drawing >> 8) & 0xFF) > ((drawing >> 16) & 0xFF)
+                && ((drawing >> 8) & 0xFF) > (drawing & 0xFF), "drawing must read green");
+        assertTrue(
+                ((moving >> 16) & 0xFF) > ((moving >> 8) & 0xFF)
+                        && ((moving >> 8) & 0xFF) > (moving & 0xFF),
+                "moving must read olive/yellow");
+        assertEquals(0, moving & 0xFF, "olive keeps no blue");
+        assertTrue(((erasing >> 16) & 0xFF) > ((erasing >> 8) & 0xFF)
+                && ((erasing >> 16) & 0xFF) > (erasing & 0xFF), "erasing must read red");
+        assertEquals((erasing >> 8) & 0xFF, erasing & 0xFF, "erasing red keeps green == blue");
+    }
+
+    @Test
+    @DisplayName("the day cursor never falls into the field slot in 16 colours")
+    void should_KeepDayCursorOffTheFieldSlot_When_Ansi16() {
+        TerminalPalette palette = new TerminalPalette(Depth.ANSI_16);
+        TerminalPalette.Resolved day = palette.resolve(0f);
+
+        assertEquals(TextColor.ANSI.GREEN, day.color(Token.BOARD));
+        for (Token cursor : List.of(Token.CURSOR_DRAWING, Token.CURSOR_MOVING,
+                Token.CURSOR_ERASING)) {
+            assertNotEquals(day.color(Token.BOARD), day.color(cursor),
+                    cursor + " must not vanish into the field");
+        }
+    }
+
+    @Test
+    @DisplayName("dusk and night cursor colours are untouched by the day darkening")
+    void should_LeaveDuskAndNightCursorUntouched() {
+        Map<Token, Integer> dusk = TerminalPalette.rgbFor(0.5f);
+        Map<Token, Integer> night = TerminalPalette.rgbFor(1f);
+
+        assertEquals(0x094519, dusk.get(Token.CURSOR_DRAWING));
+        assertEquals(0xBBA382, dusk.get(Token.CURSOR_MOVING));
+        assertEquals(0x7D231C, dusk.get(Token.CURSOR_ERASING));
+        assertEquals(0x46BE5A, night.get(Token.CURSOR_DRAWING));
+        assertEquals(0xE6C828, night.get(Token.CURSOR_MOVING));
+        assertEquals(0xEB5A50, night.get(Token.CURSOR_ERASING));
     }
 
     @Test
