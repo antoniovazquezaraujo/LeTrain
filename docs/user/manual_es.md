@@ -48,11 +48,8 @@ LeTrain está fuertemente basado en modos. Al pulsar las siguientes teclas cambi
 
 ### Construcción (Modo Rails)
 - **Mayús + Flechas (o H, J, K, L)**: Construir vías nuevas.
-- **Ctrl + Flechas (o Ctrl + h, j, k, l)**: Borrar vías existentes.
-- **Inicio (Home)**: Crear un semáforo sobre la vía.
-- **Insert**: Crear un sensor sobre la vía.
-- **Fin (End)**: Crear una estación.
-- **Supr (Del)**: Crear una señal de límite de velocidad en la vía.
+- **`a`**: Entrar en el **Modo Add** para colocar infraestructura: `n` **Estación**, `e` **Sensor**, `s` **Semáforo**, `g` **Señal de Velocidad**.
+- **Números (0-9)**: Fijar un multiplicador de pasos para mover el cursor; pulsa **Espacio** para volver a 1.
 
 ### Mover Elementos de Vía
 En los modos **Stations** (`n`), **Sensors** (`e`), **Semaphores** (`s`) y **Speed Signals** (`g`) puedes deslizar el elemento seleccionado a lo largo de la vía, en la dirección hacia la que mira el propio elemento:

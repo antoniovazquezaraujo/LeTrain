@@ -106,7 +106,7 @@ You can run either the modern 3D version or the classic 2D version:
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/iVHsKuj0Xm8" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/mYqpJxpBA3k" frameborder="0" allowfullscreen></iframe></div>
 </div>
-- **Remove Rails:** To remove rails, use the `Ctrl` key with the arrow keys (or `Ctrl + h, j, k, l`), both forward and backward. The cursor will automatically follow the track as you delete it.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Remove Rails:** To remove rails, open the console (`:`) and use the `del` command (e.g. `del 1;` removes the track under the cursor and advances). The cursor automatically follows the track as it deletes.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/TDF-26e1wqI" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/L_FrO48OlZY" frameborder="0" allowfullscreen></iframe></div>
 </div>
@@ -158,11 +158,11 @@ You can run either the modern 3D version or the classic 2D version:
 </div>
 
 ### Safety & Automation
-- **Create Semaphores:** Semaphores are created when the cursor is over the track using the `Home` key. In `semaphores` mode, they are selected with the horizontal arrows, their state is toggled using the 'm' key, and their direction is inverted using the spacebar.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Create Semaphores:** Semaphores are created in **Add Mode** (`a`) with the cursor over the track (press `s`). In `semaphores` mode, they are selected with the horizontal arrows, their state is toggled using the 'm' key, and their direction is inverted using the spacebar.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/VMJCvCAxExM" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/UiT4tzuuw9A" frameborder="0" allowfullscreen></iframe></div>
 </div>
-- **Create Sensors:** Sensors allow you to automate tasks, such as stopping a train when it passes over it, changing a fork's direction, or toggling a semaphore. They are created when the cursor is over the track using the `Insert` key.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Create Sensors:** Sensors allow you to automate tasks, such as stopping a train when it passes over it, changing a fork's direction, or toggling a semaphore. They are created in **Add Mode** (`a`) with the cursor over the track (press `e`).<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/twaJryI_fKs" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/0R8XAXsHmt8" frameborder="0" allowfullscreen></iframe></div>
 </div>
