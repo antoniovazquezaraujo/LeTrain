@@ -77,4 +77,24 @@ class Gdx3DHudStatusInfoTest {
                     "the big finance block field must stay removed: " + field);
         }
     }
+
+    @Test
+    @DisplayName("the graphical notch lever is gone; the Train row carries the 2D speed bar")
+    void should_NotKeepTheGraphicalNotchLever() {
+        assertThrows(NoSuchFieldException.class,
+                () -> Gdx3DHud.class.getDeclaredField("notchLever"),
+                "the graphical lever field must stay removed");
+        assertThrows(ClassNotFoundException.class,
+                () -> Class.forName("letrain.mvp.impl.graphic.Gdx3DHud$NotchLever"),
+                "the graphical lever class must stay removed");
+    }
+
+    @Test
+    @DisplayName("the bottom strip keeps the menu block left and the status lines right-aligned")
+    void should_OrderStripColumns() {
+        assertEquals(List.of(Gdx3DHud.StripColumn.MENU_BLOCK, Gdx3DHud.StripColumn.STATUS_LINES),
+                Gdx3DHud.STRIP_COLUMNS);
+        assertEquals(com.badlogic.gdx.utils.Align.right, Gdx3DHud.STATUS_LINE_ALIGN,
+                "both status lines are right-aligned at the screen edge");
+    }
 }

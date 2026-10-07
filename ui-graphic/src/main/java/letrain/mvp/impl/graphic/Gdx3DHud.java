@@ -6,7 +6,6 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
@@ -61,6 +60,21 @@ public class Gdx3DHud {
     static final List<MenuRow> MENU_BLOCK_ROWS =
             List.of(MenuRow.MENU, MenuRow.TRAIN, MenuRow.HINT, MenuRow.KEYS);
 
+    /**
+     * Columns of the bottom strip (issue #710 phases 2-3): the menu block on the left and the
+     * status lines (Pos/Step over finances) right-aligned at the screen edge. Kept as data so the
+     * deterministic order is testable without a GL context.
+     */
+    enum StripColumn {
+        MENU_BLOCK, STATUS_LINES
+    }
+
+    static final List<StripColumn> STRIP_COLUMNS =
+            List.of(StripColumn.MENU_BLOCK, StripColumn.STATUS_LINES);
+
+    /** Both status lines are right-aligned at the screen edge (owner feedback on #719). */
+    static final int STATUS_LINE_ALIGN = com.badlogic.gdx.utils.Align.right;
+
     private static final String KEYS_TEXT = "[Alt+▲▼ / Mouse Wheel]: Zoom | [Alt+◀▶]: Rotate"
             + " | [z/Z]: Camera | [a/r/d/f/s/t/c/u/p/n]: Modes | [Tab]: Toggle Panel"
             + " | [Esc]: Exit";
@@ -85,8 +99,6 @@ public class Gdx3DHud {
     /** 2D parity: 2 full, 1 compact, 0 hidden (see {@link HudHelp}). */
     private int helpLevel = HudHelp.FULL;
 
-    private NotchLever notchLever;
-    private ShapeRenderer shapeRenderer;
     private Window ideWindow;
     private boolean exitDialogOpen;
 
@@ -98,7 +110,6 @@ public class Gdx3DHud {
         this.model = model;
         this.view = view;
         this.stage = new Stage(new ScreenViewport());
-        this.shapeRenderer = new ShapeRenderer();
         initUI();
     }
 
@@ -392,9 +403,11 @@ public class Gdx3DHud {
         mainTopTable.add(clockLabel).pad(6);
         stage.addActor(mainTopTable);
 
-        // Bottom UI Container: the notch row carries the 2D system info (position and step, no
-        // pages) right-aligned next to the lever, the compact 2D finances go on the line below,
-        // and the menu block keeps its label area to their right (issue #710 phases 2-3).
+        // Bottom UI Container (issue #710 phases 2-3): the menu block on the left and the two
+        // status lines right-aligned at the screen edge -- `|Pos:x,y|Step:a/b|` on top (no Page,
+        // the 3D HUD has no pagination) and the compact `|In:...|Out:...|$:...|` finances just
+        // below. The old graphical notch lever is gone: the 2D-style speed bar lives in the menu
+        // block's Train row.
         Table mainBottomTable = new Table();
         mainBottomTable.setFillParent(true);
         mainBottomTable.bottom();
@@ -407,38 +420,42 @@ public class Gdx3DHud {
         trainLabel.setAlignment(com.badlogic.gdx.utils.Align.left);
         descLabel = new Label("", skin, "small");
         descLabel.setAlignment(com.badlogic.gdx.utils.Align.left);
+        // Long hints truncate with an ellipsis instead of drawing over the status column.
+        descLabel.setEllipsis(true);
         keysLabel = new Label(KEYS_TEXT, skin, "hud-keys");
         keysLabel.setAlignment(com.badlogic.gdx.utils.Align.left);
+
+        systemLabel = new Label("", skin, "hud-info");
+        systemLabel.setAlignment(STATUS_LINE_ALIGN);
+        financeLabel = new Label("", skin, "hud-info");
+        financeLabel.setAlignment(STATUS_LINE_ALIGN);
+
+        Table statusArea = new Table();
+        statusArea.add(systemLabel).right().row();
+        statusArea.add(financeLabel).right().padTop(2);
+
+        Table labelArea = new Table();
+        addMenuBlockRows(labelArea);
 
         bottomContainer = new Table();
         bottomContainer.setBackground(skin.newDrawable("white", new Color(0, 0, 0, 0.6f)));
         bottomContainer.pad(10);
-
-        // Notch Lever (horizontal, like the 2D throttle read-out) with the status lines on its
-        // row: `|Pos:x,y|Step:a/b|` (no Page, the 3D HUD has no pagination) and, below it, the
-        // compact `|In:...|Out:...|$:...|` finances, both right-aligned in the 2D wording.
-        notchLever = new NotchLever();
-        systemLabel = new Label("", skin, "hud-info");
-        systemLabel.setAlignment(com.badlogic.gdx.utils.Align.right);
-        financeLabel = new Label("", skin, "hud-info");
-        financeLabel.setAlignment(com.badlogic.gdx.utils.Align.right);
-
-        Table leverArea = new Table();
-        leverArea.add(notchLever).size(260, 46).padLeft(10).padRight(20);
-        leverArea.add(systemLabel).right();
-        leverArea.row();
-        leverArea.add();
-        leverArea.add(financeLabel).right().padTop(2);
-        bottomContainer.add(leverArea).left().bottom();
-
-        Table labelArea = new Table();
-        addMenuBlockRows(labelArea);
-        bottomContainer.add(labelArea).expand().fill().padLeft(20).padRight(10);
+        addStripColumns(bottomContainer, labelArea, statusArea);
 
         mainBottomTable.add(bottomContainer).expandX().fillX();
 
         updateMenuButtons();
         applyHelpLevel();
+    }
+
+    /** Adds the bottom strip columns in {@link #STRIP_COLUMNS} order. */
+    private static void addStripColumns(Table strip, Table labelArea, Table statusArea) {
+        for (StripColumn column : STRIP_COLUMNS) {
+            switch (column) {
+                case MENU_BLOCK -> strip.add(labelArea).expand().fill().padRight(20);
+                case STATUS_LINES -> strip.add(statusArea).right().top().padRight(10);
+            }
+        }
     }
 
     /**
@@ -458,7 +475,9 @@ public class Gdx3DHud {
                     panel.row();
                 }
                 case HINT -> {
-                    descCell = panel.add(descLabel).left().padTop(2);
+                    // minWidth 0 so the column can shrink under a long hint and the label
+                    // ellipsizes instead of drawing over the right-aligned status column.
+                    descCell = panel.add(descLabel).left().padTop(2).minWidth(0);
                     panel.row();
                 }
                 case KEYS -> {
@@ -592,17 +611,10 @@ public class Gdx3DHud {
         systemLabel.setText(systemInfoText(model));
         financeLabel.setText(financeText(model));
 
+        // The 2D-style speed bar in the Train row is the only notch indicator now (the graphical
+        // lever was removed); trainStatusText(null) leaves the row empty.
         Locomotive loco = model.getSelectedLocomotive();
-        if (loco != null) {
-            // Update Notch Lever
-            notchLever.setVisible(true);
-            notchLever.setNotch(loco.getSpeed());
-            notchLever.setTargetNotch(loco.getTargetSpeed());
-            trainLabel.setText(trainStatusText(loco));
-        } else {
-            notchLever.setVisible(false);
-            trainLabel.setText("");
-        }
+        trainLabel.setText(trainStatusText(loco));
 
         // Marcamos el botón seleccionado según el modo y actualizamos textos
         // dinámicamente
@@ -1822,9 +1834,6 @@ public class Gdx3DHud {
         if (skin != null) {
             skin.dispose();
         }
-        if (shapeRenderer != null) {
-            shapeRenderer.dispose();
-        }
     }
 
     /**
@@ -1846,89 +1855,4 @@ public class Gdx3DHud {
         }
     }
 
-    private class NotchLever extends Actor {
-        private int notch = 0;
-        private int targetNotch = 0;
-        private float visualNotch = 0;
-
-        public void setNotch(int notch) {
-            this.notch = notch;
-        }
-
-        public void setTargetNotch(int targetNotch) {
-            this.targetNotch = targetNotch;
-        }
-
-        @Override
-        public void draw(com.badlogic.gdx.graphics.g2d.Batch batch, float parentAlpha) {
-            batch.end();
-
-            // Smooth handle movement
-            visualNotch = com.badlogic.gdx.math.MathUtils.lerp(visualNotch, (float) notch, 0.1f);
-
-            shapeRenderer.setProjectionMatrix(batch.getProjectionMatrix());
-            shapeRenderer.setTransformMatrix(batch.getTransformMatrix());
-
-            com.badlogic.gdx.graphics.GL20 gl = Gdx.gl;
-            gl.glEnable(com.badlogic.gdx.graphics.GL20.GL_BLEND);
-            gl.glBlendFunc(com.badlogic.gdx.graphics.GL20.GL_SRC_ALPHA,
-                    com.badlogic.gdx.graphics.GL20.GL_ONE_MINUS_SRC_ALPHA);
-
-            shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Filled);
-
-            float x = getX();
-            float y = getY();
-            float w = getWidth();
-            float h = getHeight();
-            float barY = y + h - 16f; // Horizontal slot centre line
-
-            // Background slot (horizontal, like the 2D throttle read-out)
-            shapeRenderer.setColor(0.2f, 0.2f, 0.2f, 0.4f * parentAlpha); // Translucent gray
-            shapeRenderer.rect(x - 8, barY - 12, w + 16, 24);
-
-            // Tick marks
-            shapeRenderer.end();
-            shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Line);
-            shapeRenderer.setColor(Color.WHITE);
-            for (int i = 0; i <= 10; i++) {
-                float tx = x + (i / 10f) * w;
-                shapeRenderer.line(tx, barY - 8, tx, barY + 8);
-            }
-            shapeRenderer.end();
-
-            // Labels
-            batch.begin();
-            // We need a font for labels. Gdx3DHud could have a reference to a font or use the skin.
-            BitmapFont font = skin.getFont("default");
-            float oldScaleX = font.getScaleX();
-            float oldScaleY = font.getScaleY();
-            font.getData().setScale(0.5f);
-
-            for (int i = 0; i <= 10; i++) {
-                float tx = x + (i / 10f) * w;
-                String txt = String.valueOf(i);
-                com.badlogic.gdx.graphics.g2d.GlyphLayout layout =
-                        new com.badlogic.gdx.graphics.g2d.GlyphLayout(font, txt);
-                font.draw(batch, txt, tx - layout.width / 2, y + 10);
-            }
-            font.getData().setScale(oldScaleX, oldScaleY);
-            batch.end();
-
-            // Target Notch Indicator (transparent vertical bar)
-            shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Filled);
-            shapeRenderer.setColor(1, 1, 1, 0.4f * parentAlpha); // Semi-transparent white
-            float targetX = x + (targetNotch / 10f) * w;
-            shapeRenderer.rect(targetX - 4, barY - 13, 8, 26);
-
-            // Handle (Actual Speed): vertical red bar over the horizontal slot
-            shapeRenderer.setColor(Color.RED);
-            float handleX = x + (visualNotch / 10f) * w;
-            shapeRenderer.rect(handleX - 3, barY - 15, 6, 30);
-            shapeRenderer.end();
-
-            Gdx.gl.glDisable(com.badlogic.gdx.graphics.GL20.GL_BLEND);
-
-            batch.begin();
-        }
-    }
 }
