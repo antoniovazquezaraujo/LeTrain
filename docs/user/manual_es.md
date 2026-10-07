@@ -23,7 +23,7 @@ El juego se puede controlar tanto en su versión 2D como en la 3D mediante el te
   - **e**: Construir Sensor
   - **s**: Construir Semáforo
   - **g**: Construir Señal de Velocidad
-- **Tecla 'o'**: Reubicar el cursor instantáneamente sobre el tren, estación, desvío, sensor o señal de velocidad seleccionado actualmente.
+- **Tecla 'o'**: Reubicar el cursor instantáneamente sobre el tren, estación, desvío, sensor o señal de velocidad seleccionado actualmente; una breve cruz blanca destella alrededor del cursor para localizarlo.
 - **Tecla 'z'**: En 3D: Alternar entre las tres cámaras (Perspectiva, Cenital y Cabina). En 2D: Cambiar el tamaño de la zona muerta de la cámara.
 - **Esc**: En 3D: Salir del menú del juego.
 - **Tecla 'Z' (Mayús+z)**: En 2D: Activar o desactivar la paginación de cámara.
