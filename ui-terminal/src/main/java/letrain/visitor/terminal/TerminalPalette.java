@@ -67,15 +67,15 @@ public final class TerminalPalette {
     // 0x66994C puro caía en el gris brillante (slot 8). El blanco no se usa: queda para la nieve.
     // WATER_BG/ROCK_BG son fondos de celda (mar y montaña) y no se fuerzan contra BOARD: el glifo
     // de cada terreno (olas cyan, roca clara) contrasta con SU fondo, no con el campo.
-    // El cursor de día (#721) va deliberadamente oscuro para separarse del campo verde claro:
-    // dibujo 0x005A1E, movimiento 0x5F4600 y borrado 0xAA1E1E, los tres muy por debajo del suelo
-    // de contraste. Crepúsculo y noche no cambian.
+    // El cursor de día (#721) va en negro puro (0x000000): es el máximo contraste posible sobre el
+    // campo verde claro y el dueño lo eligió tras probar los tonos oscurecidos. Crepúsculo y noche
+    // no cambian; en ANSI-16 el negro cae en el slot BLACK, nunca en el GREEN del campo.
     private static final int[] DAY = {rgb(76, 163, 49), rgb(0, 169, 192), rgb(200, 160, 107),
             rgb(50, 50, 55), rgb(150, 150, 150), rgb(200, 160, 0), rgb(25, 25, 30),
             rgb(200, 30, 30), rgb(170, 130, 0), rgb(90, 85, 70), rgb(0, 130, 130), rgb(0, 130, 60),
             rgb(200, 30, 30), rgb(200, 30, 30), rgb(40, 70, 170), rgb(200, 160, 0), rgb(90, 90, 95),
             rgb(70, 70, 80), rgb(40, 40, 45), rgb(90, 90, 95), rgb(20, 20, 20), rgb(150, 120, 0),
-            rgb(180, 0, 50), rgb(0, 90, 30), rgb(95, 70, 0), rgb(170, 30, 30), rgb(25, 25, 30),
+            rgb(180, 0, 50), rgb(0, 0, 0), rgb(0, 0, 0), rgb(0, 0, 0), rgb(25, 25, 30),
             rgb(60, 60, 65), rgb(76, 163, 49), rgb(25, 25, 30), rgb(200, 30, 30), rgb(150, 20, 120),
             rgb(200, 60, 30), rgb(26, 62, 143), rgb(112, 58, 26)};
     private static final int[] DUSK = {rgb(82, 122, 56), rgb(47, 127, 152), rgb(169, 133, 94),

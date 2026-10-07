@@ -2,14 +2,14 @@
 # resolved with TerminalPalette.resolve(ratio); delta = |L(cursor) - L(field)|
 
 ratio=0.00  field=#4CA331 (L=136.3)  field ANSI=GREEN
-  CURSOR_DRAWING  #005A1E  L=  66.5  delta= 69.7  ANSI=BLACK          
-  CURSOR_MOVING   #5F4600  L=  70.3  delta= 66.0  ANSI=BLACK          
-  CURSOR_ERASING  #AA1E1E  L=  59.8  delta= 76.5  ANSI=RED            
+  CURSOR_DRAWING  #000000  L=   0.0  delta=136.3  ANSI=BLACK          
+  CURSOR_MOVING   #000000  L=   0.0  delta=136.3  ANSI=BLACK          
+  CURSOR_ERASING  #000000  L=   0.0  delta=136.3  ANSI=BLACK          
 
 ratio=0.25  field=#4F9035 (L=123.6)  field ANSI=BLACK_BRIGHT
-  CURSOR_DRAWING  #085921  L=  67.7  delta= 55.9  ANSI=BLACK          
-  CURSOR_MOVING   #5D4402  L=  68.5  delta= 55.1  ANSI=BLACK          
-  CURSOR_ERASING  #A92A24  L=  68.6  delta= 55.0  ANSI=RED            
+  CURSOR_DRAWING  #0B4F1E  L=  61.0  delta= 62.6  ANSI=BLACK          
+  CURSOR_MOVING   #5C4303  L=  67.7  delta= 55.9  ANSI=BLACK          
+  CURSOR_ERASING  #83261E  L=  57.2  delta= 66.4  ANSI=RED            
 
 ratio=0.50  field=#527A38 (L=108.7)  field ANSI=BLACK_BRIGHT
   CURSOR_DRAWING  #094519  L=  53.1  delta= 55.7  ANSI=BLACK          

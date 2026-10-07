@@ -155,41 +155,20 @@ class TerminalPaletteTest {
     }
 
     @Test
-    @DisplayName("day cursor keys are darker so they stand out on the light green field")
-    void should_KeepDayCursorDark() {
+    @DisplayName("day cursor keys are pure black for maximum contrast on the light green field")
+    void should_KeepDayCursorBlack() {
         Map<Token, Integer> day = TerminalPalette.rgbFor(0f);
-
-        assertEquals(0x005A1E, day.get(Token.CURSOR_DRAWING), "drawing cursor stays dark green");
-        assertEquals(0x5F4600, day.get(Token.CURSOR_MOVING), "moving cursor stays dark olive");
-        assertEquals(0xAA1E1E, day.get(Token.CURSOR_ERASING), "erasing cursor stays dark red");
-
         double field = TerminalPalette.luminance(day.get(Token.BOARD));
+
         for (Token cursor : List.of(Token.CURSOR_DRAWING, Token.CURSOR_MOVING,
                 Token.CURSOR_ERASING)) {
+            assertEquals(0x000000, day.get(cursor), cursor + " must be pure black during the day");
             double contrast = field - TerminalPalette.luminance(day.get(cursor));
-            assertTrue(contrast >= TerminalPalette.MIN_CONTRAST + 10,
-                    cursor + " must stay clearly darker than the field, contrast was " + contrast);
+            assertEquals(field, contrast, 1e-9,
+                    "black must reach the maximum possible contrast against the field");
+            assertTrue(contrast >= TerminalPalette.MIN_CONTRAST,
+                    cursor + " must keep the contrast floor");
         }
-    }
-
-    @Test
-    @DisplayName("day cursor keeps its hue identity after darkening")
-    void should_KeepDayCursorHue() {
-        Map<Token, Integer> day = TerminalPalette.rgbFor(0f);
-        int drawing = day.get(Token.CURSOR_DRAWING);
-        int moving = day.get(Token.CURSOR_MOVING);
-        int erasing = day.get(Token.CURSOR_ERASING);
-
-        assertTrue(((drawing >> 8) & 0xFF) > ((drawing >> 16) & 0xFF)
-                && ((drawing >> 8) & 0xFF) > (drawing & 0xFF), "drawing must read green");
-        assertTrue(
-                ((moving >> 16) & 0xFF) > ((moving >> 8) & 0xFF)
-                        && ((moving >> 8) & 0xFF) > (moving & 0xFF),
-                "moving must read olive/yellow");
-        assertEquals(0, moving & 0xFF, "olive keeps no blue");
-        assertTrue(((erasing >> 16) & 0xFF) > ((erasing >> 8) & 0xFF)
-                && ((erasing >> 16) & 0xFF) > (erasing & 0xFF), "erasing must read red");
-        assertEquals((erasing >> 8) & 0xFF, erasing & 0xFF, "erasing red keeps green == blue");
     }
 
     @Test
@@ -201,8 +180,8 @@ class TerminalPaletteTest {
         assertEquals(TextColor.ANSI.GREEN, day.color(Token.BOARD));
         for (Token cursor : List.of(Token.CURSOR_DRAWING, Token.CURSOR_MOVING,
                 Token.CURSOR_ERASING)) {
-            assertNotEquals(day.color(Token.BOARD), day.color(cursor),
-                    cursor + " must not vanish into the field");
+            assertEquals(TextColor.ANSI.BLACK, day.color(cursor),
+                    cursor + " must fall back to the black slot");
         }
     }
 

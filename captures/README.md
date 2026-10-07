@@ -5,10 +5,13 @@ Before/after of the 2D cursor colours on the light green field, generated with t
 (dusk) and 1 (night). The `*.txt` files are the numeric dumps (luminance `L` and contrast `Δ`
 against the field), `*.html` the preview and `*.png` its rendered snapshot.
 
-| State (day) | Before | After |
+| State (day) | Before (`develop`) | After (final) |
 |---|---|---|
-| drawing | `#006D28` (L 80.8, Δ 55.4) | `#005A1E` (L 66.5, Δ 69.7) |
-| moving | `#665300` (L 81.0, Δ 55.2) | `#5F4600` (L 70.3, Δ 66.0) |
-| erasing | `#BE2828` (L 71.9, Δ 64.4) | `#AA1E1E` (L 59.8, Δ 76.5) |
+| `CURSOR_DRAWING` | `#006D28` (L 80.8, Δ 55.4) | **`#000000`** (L 0, Δ 136.3) |
+| `CURSOR_MOVING` | `#665300` (L 81.0, Δ 55.2) | **`#000000`** (L 0, Δ 136.3) |
+| `CURSOR_ERASING` | `#BE2828` (L 71.9, Δ 64.4) | **`#000000`** (L 0, Δ 136.3) |
 
-Dusk and night are unchanged.
+After the owner's playtest, the day keys are pure black: maximum contrast against the field
+(`MIN_CONTRAST = 55`), ANSI-16 fallback `BLACK` (never the field's `GREEN`), and the day→night
+fade keeps `Δ ≥ 55` at every 0.05 step with the palette's usual polarity inversion. Dusk and
+night are unchanged.
