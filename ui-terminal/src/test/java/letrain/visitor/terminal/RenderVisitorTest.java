@@ -17,6 +17,7 @@ import letrain.segments.BlockManager;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
 import letrain.track.rail.RailTrack;
+import letrain.vehicle.Cursor;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
 import org.junit.jupiter.api.DisplayName;
@@ -778,5 +779,57 @@ class RenderVisitorTest {
         int livery = TextColor.ANSI.BLUE.toColor().getRGB() & 0xFFFFFF;
         verify(view, atLeastOnce())
                 .setFgColor(palette.colorOf(TerminalPalette.contrastOn(livery, seaBg)));
+    }
+
+    @Test
+    @DisplayName("an active locate ping paints a bright-white cross on the four cells around the cursor")
+    void visitCursor_shouldPaintLocateCross_whenPinging() {
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        long[] now = {1_000L};
+        RenderVisitor visitor = new RenderVisitor(view, palette, () -> now[0]);
+
+        Cursor cursor = new Cursor();
+        cursor.setPosition(new Point(5, 5));
+        cursor.setDir(Dir.E);
+        cursor.ping(now[0]);
+
+        visitor.visitCursor(cursor);
+
+        org.mockito.InOrder ordered = inOrder(view);
+        ordered.verify(view).setFgColor(TextColor.ANSI.WHITE_BRIGHT);
+        ordered.verify(view).set(4, 5, "─");
+        ordered.verify(view).set(6, 5, "─");
+        ordered.verify(view).set(5, 4, "│");
+        ordered.verify(view).set(5, 6, "│");
+
+        // The cursor cell keeps its own aspect; the flash never draws a line over it.
+        verify(view).set(5, 5, ">");
+        verify(view, never()).set(5, 5, "─");
+        verify(view, never()).set(5, 5, "│");
+    }
+
+    @Test
+    @DisplayName("an expired locate ping paints no cross at all")
+    void visitCursor_shouldNotPaintLocateCross_whenPingExpired() {
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        long[] now = {1_000L};
+        RenderVisitor visitor = new RenderVisitor(view, palette, () -> now[0]);
+
+        Cursor cursor = new Cursor();
+        cursor.setPosition(new Point(5, 5));
+        cursor.setDir(Dir.E);
+        cursor.ping(now[0]);
+        now[0] += Cursor.PING_DURATION_MS;
+
+        visitor.visitCursor(cursor);
+
+        verify(view, never()).setFgColor(TextColor.ANSI.WHITE_BRIGHT);
+        verify(view, never()).set(4, 5, "─");
+        verify(view, never()).set(6, 5, "─");
+        verify(view, never()).set(5, 4, "│");
+        verify(view, never()).set(5, 6, "│");
+        verify(view).set(5, 5, ">");
     }
 }

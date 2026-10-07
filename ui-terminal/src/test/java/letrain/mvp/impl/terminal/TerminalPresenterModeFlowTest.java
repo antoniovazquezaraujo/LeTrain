@@ -1,10 +1,12 @@
 package letrain.mvp.impl.terminal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import letrain.audio.AudioController;
+import letrain.map.Point;
 import letrain.mvp.impl.Model;
 import letrain.mvp.input.InputEvent;
 import letrain.mvp.input.KeyType;
@@ -159,6 +161,39 @@ class TerminalPresenterModeFlowTest {
 
         assertEquals(Model.GameMode.DRIVE, model.getMode());
         assertEquals(second, model.getSelectedLocomotive());
+    }
+
+    @Test
+    @DisplayName("pressing 'o' with nothing selected keeps the cursor and starts the locate flash")
+    void locateHotkey_withoutSelection_staysAndPings() {
+        Model model = new Model(1);
+        TerminalPresenter presenter = presenterWith(model, mock(TerminalView.class));
+        model.getCursor().setPosition(new Point(3, 4));
+
+        presenter.onChar(charKey('o'));
+
+        assertEquals(new Point(3, 4), model.getCursor().getPosition(),
+                "'o' without a selection must leave the cursor where it was");
+        assertTrue(model.getCursor().isPinging(System.currentTimeMillis()),
+                "'o' must trigger the locate flash");
+    }
+
+    @Test
+    @DisplayName("pressing 'o' with a selected locomotive jumps to it and starts the locate flash")
+    void locateHotkey_withSelection_jumpsAndPings() {
+        Model model = new Model(1);
+        TerminalPresenter presenter = presenterWith(model, mock(TerminalView.class));
+        Locomotive loco = addDrivableLocomotive(model, 1, 'A');
+        loco.setPosition(new Point(7, 8));
+        model.setMode(Model.GameMode.DRIVE);
+        model.selectLocomotive(1);
+
+        presenter.onChar(charKey('o'));
+
+        assertEquals(new Point(7, 8), model.getCursor().getPosition(),
+                "'o' must snap the cursor to the selected locomotive");
+        assertTrue(model.getCursor().isPinging(System.currentTimeMillis()),
+                "'o' must trigger the locate flash at the new position");
     }
 
     private static Locomotive addDrivableLocomotive(Model model, int id, char aspect) {

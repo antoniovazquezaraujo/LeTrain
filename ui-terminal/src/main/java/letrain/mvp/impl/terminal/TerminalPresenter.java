@@ -1630,6 +1630,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         if (targetPos != null) {
             model.getCursor().setPosition(targetPos);
         }
+        // Flash a white cross around the cursor so it is easy to spot (issue #696), whether it
+        // jumped to the selection or stayed where it was.
+        model.getCursor().ping(System.currentTimeMillis());
     }
 
     private void deleteVehicle() {

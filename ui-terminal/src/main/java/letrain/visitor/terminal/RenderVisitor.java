@@ -4,6 +4,7 @@ import com.googlecode.lanterna.TextColor;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.LongSupplier;
 import letrain.economy.EconomyManager;
 import letrain.ground.Ground;
 import letrain.ground.GroundMap;
@@ -88,17 +89,24 @@ public class RenderVisitor implements Visitor {
     RailSemaphore selectedSemaphore;
     letrain.track.SpeedSignal selectedSpeedSignal;
     private final TerminalView view;
+    private final LongSupplier clock;
     private GameMode mode;
     boolean showId = false;
 
     public RenderVisitor(TerminalView view) {
-        this(view, TerminalPalette.detect());
+        this(view, TerminalPalette.detect(), System::currentTimeMillis);
     }
 
     /** Constructor de test: permite fijar el modo de color de la paleta. */
     RenderVisitor(TerminalView view, TerminalPalette palette) {
+        this(view, palette, System::currentTimeMillis);
+    }
+
+    /** Constructor de test: permite fijar además el reloj del flash de localización. */
+    RenderVisitor(TerminalView view, TerminalPalette palette, LongSupplier clock) {
         this.view = view;
         this.palette = palette;
+        this.clock = clock;
         this.paletteColors = palette.resolve(0f);
         this.dayColors = this.paletteColors;
         resetColors();
@@ -710,7 +718,29 @@ public class RenderVisitor implements Visitor {
         applyBackground(cursor.getPosition().getX(), cursor.getPosition().getY(),
                 backgroundTokenAt(cursor.getPosition().getX(), cursor.getPosition().getY()));
         view.set(cursor.getPosition().getX(), cursor.getPosition().getY(), aspect);
+        if (cursor.isPinging(clock.getAsLong())) {
+            paintLocateFlash(cursor.getPosition());
+        }
         resetColors();
+    }
+
+    /**
+     * Locate flash (issue #696): once the player presses 'o', one horizontal line is drawn on each
+     * side of the cursor and one vertical line above and below it, in bright white, for a brief
+     * moment. The normal repaint of the following frames restores the four neighbour cells as soon
+     * as {@link Cursor#isPinging(long)} goes false.
+     */
+    private void paintLocateFlash(Point pos) {
+        view.setFgColor(TextColor.ANSI.WHITE_BRIGHT);
+        paintLocateFlashCell(pos.getX() - 1, pos.getY(), HORIZONTAL_DIR);
+        paintLocateFlashCell(pos.getX() + 1, pos.getY(), HORIZONTAL_DIR);
+        paintLocateFlashCell(pos.getX(), pos.getY() - 1, VERTICAL_DIR);
+        paintLocateFlashCell(pos.getX(), pos.getY() + 1, VERTICAL_DIR);
+    }
+
+    private void paintLocateFlashCell(int x, int y, String aspect) {
+        applyBackground(x, y, backgroundTokenAt(x, y));
+        view.set(x, y, aspect);
     }
 
     ////////////////////////////////////////////////////////////////////////////////
