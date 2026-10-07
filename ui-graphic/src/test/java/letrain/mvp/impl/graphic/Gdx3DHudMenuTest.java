@@ -8,6 +8,8 @@ import java.util.List;
 import letrain.mvp.MenuText;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameModeMenuOption;
+import letrain.vehicle.rail.impl.Locomotive;
+import letrain.vehicle.rail.impl.Train;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -72,5 +74,55 @@ class Gdx3DHudMenuTest {
         assertFalse(Gdx3DHud.showMenuDescription(HudHelp.HIDDEN, Model.GameMode.RAILS));
         assertTrue(Gdx3DHud.showMenuDescription(HudHelp.HIDDEN, Model.GameMode.COMMAND),
                 "the command line is rendered in the description label");
+    }
+
+    @Test
+    @DisplayName("the top-left block rows follow the 2D menu-box order")
+    void should_OrderTopPanelRowsLikeThe2dMenuBox() {
+        assertEquals(List.of(Gdx3DHud.TopRow.MENU, Gdx3DHud.TopRow.TRAIN, Gdx3DHud.TopRow.HINT,
+                Gdx3DHud.TopRow.KEYS), Gdx3DHud.TOP_PANEL_ROWS);
+    }
+
+    @Test
+    @DisplayName("the key row lists real 3D bindings in the 2D wording (sentence case, no fakes)")
+    void should_ListReal3dKeys() {
+        String keys = Gdx3DHud.keysText();
+
+        assertEquals(
+                "[Alt+▲▼ / Mouse Wheel]: Zoom | [Alt+◀▶]: Rotate | [z/Z]: Camera"
+                        + " | [a/r/d/f/s/t/c/u/p/n]: Modes | [Tab]: Toggle Panel | [Esc]: Exit",
+                keys);
+        assertFalse(keys.contains("[PgUp"), "3D has no page-scroll binding");
+        assertFalse(keys.contains("ZOOM") || keys.contains("ROTATE"),
+                "actions are sentence case, not all caps: " + keys);
+    }
+
+    @Test
+    @DisplayName("the status row keeps the 2D format: Train, notch bar, speed and wagons")
+    void should_FormatTrainStatusLikeThe2dClient() {
+        Locomotive loco = new Locomotive(7, "A");
+        loco.setCurrentSpeed(3);
+        loco.setTargetSpeed(5);
+        Train train = new Train(1);
+        train.pushBack(loco);
+
+        String status = Gdx3DHud.trainStatusText(loco);
+
+        assertEquals(
+                "Train: 1 | Speed: [GREEN]■[][GREEN]■[][GREEN]■[]□[RED]■[]□□□□□ 3->5 | Wagons: 0",
+                status);
+    }
+
+    @Test
+    @DisplayName("no selected train means no status row")
+    void should_FormatEmptyStatusWithoutSelection() {
+        assertEquals("", Gdx3DHud.trainStatusText(null));
+    }
+
+    @Test
+    @DisplayName("the notch bar marks current speed green, target red and empties grey")
+    void should_MarkNotchBar() {
+        assertEquals("[GREEN]■[][GREEN]■[]□□□□□□□□", Gdx3DHud.notchBar(2, 2, 10));
+        assertEquals("[GREEN]■[]□[RED]■[]□□□□□□□", Gdx3DHud.notchBar(1, 3, 10));
     }
 }

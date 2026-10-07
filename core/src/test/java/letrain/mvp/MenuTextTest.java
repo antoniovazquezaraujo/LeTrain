@@ -92,4 +92,27 @@ class MenuTextTest {
         assertEquals("desc | [R]: Record OFF | [X]: Experiment",
                 MenuText.selectedHint("desc", false));
     }
+
+    @Test
+    @DisplayName("every mode hint keeps a space after its key brackets and sentence-case words")
+    void should_ShareTheHintStyleAcrossTheMenuModel() {
+        for (GameModeMenuOption option : new Model(1).getMenuModel()) {
+            String description = option.gameModeDescription();
+            assertFalse(description.matches(".*\\]:\\S.*"),
+                    "missing space after a key bracket: " + description);
+            String outsideKeys = description.replaceAll("\\[[^]]*\\]", "");
+            assertFalse(outsideKeys.matches(".*\\b[A-Z]{3,}\\b.*"),
+                    "all-caps word outside a key: " + description);
+        }
+    }
+
+    @Test
+    @DisplayName("the TRAINS hint uses the agreed wording: [A-Z]: Locomotive | [a-z]: Wagon | [Enter]: Finish")
+    void should_WordTheTrainsHint() {
+        String trainsHint = new Model(1).getMenuModel().stream()
+                .filter(option -> option.gameModeName().equals("&Trains")).findFirst().orElseThrow()
+                .gameModeDescription();
+
+        assertEquals("[A-Z]: Locomotive | [a-z]: Wagon | [Enter]: Finish", trainsHint);
+    }
 }

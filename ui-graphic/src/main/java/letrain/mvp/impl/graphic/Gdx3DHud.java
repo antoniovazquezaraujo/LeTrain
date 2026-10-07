@@ -11,6 +11,7 @@ import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Cell;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
@@ -24,6 +25,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 import letrain.mvp.MenuText;
 import letrain.mvp.Model;
@@ -44,7 +46,24 @@ public class Gdx3DHud {
     private static final String ENABLED_MARKUP = "[WHITE]";
     private static final String DISABLED_MARKUP = "[GRAY]";
     private static final String HOTKEY_MARKUP = "[GREEN]";
+    private static final String INFO_MARKUP = "[GRAY]";
     private static final String MARKUP_RESET = "[]";
+
+    /**
+     * Rows of the top-left HUD block, in the same order as the 2D menu box (issue #710 phase 2):
+     * the menu strip, the selected-train status, the selected-mode hint and the key help. Kept as
+     * data so the deterministic order is testable without a GL context.
+     */
+    enum TopRow {
+        MENU, TRAIN, HINT, KEYS
+    }
+
+    static final List<TopRow> TOP_PANEL_ROWS =
+            List.of(TopRow.MENU, TopRow.TRAIN, TopRow.HINT, TopRow.KEYS);
+
+    private static final String KEYS_TEXT = "[Alt+▲▼ / Mouse Wheel]: Zoom | [Alt+◀▶]: Rotate"
+            + " | [z/Z]: Camera | [a/r/d/f/s/t/c/u/p/n]: Modes | [Tab]: Toggle Panel"
+            + " | [Esc]: Exit";
 
 
     private final Model model;
@@ -52,9 +71,13 @@ public class Gdx3DHud {
     private final Stage stage;
     private Skin skin;
     private Table menuTable;
+    private Table topPanel;
     private Table bottomContainer;
+    private Label trainLabel;
     private Label descLabel;
-    private Label globalHelpLabel;
+    private Label keysLabel;
+    private Cell<Label> descCell;
+    private Cell<Label> keysCell;
     private Label recDot;
     private Label clockLabel;
     private Label balanceLabel;
@@ -178,6 +201,20 @@ public class Gdx3DHud {
         monoButtonStyle.up = skin.newDrawable("white", new Color(0.2f, 0.2f, 0.2f, 1f));
         skin.add("monospace-button", monoButtonStyle);
 
+        // Flat menu strip (issue #710 phase 2): no background or padding so the entries read as
+        // the 2D text row; only the selected mode keeps the blue block. Clickability is kept.
+        TextButton.TextButtonStyle menuButtonStyle = new TextButton.TextButtonStyle();
+        menuButtonStyle.up = null;
+        menuButtonStyle.over = skin.newDrawable("white", new Color(1f, 1f, 1f, 0.12f));
+        menuButtonStyle.down = skin.newDrawable("white", new Color(1f, 1f, 1f, 0.25f));
+        menuButtonStyle.checked = skin.newDrawable("white", SELECTED_BG);
+        menuButtonStyle.font = skin.getFont("default");
+        menuButtonStyle.fontColor = Color.WHITE;
+        menuButtonStyle.overFontColor = Color.WHITE;
+        menuButtonStyle.downFontColor = Color.WHITE;
+        menuButtonStyle.checkedFontColor = Color.WHITE;
+        skin.add("menu-button", menuButtonStyle);
+
         // Label Style
         Label.LabelStyle labelStyle = new Label.LabelStyle();
         labelStyle.font = uiFont;
@@ -208,6 +245,13 @@ public class Gdx3DHud {
         smallLabelStyle.font = skin.getFont("small-font");
         smallLabelStyle.fontColor = Color.WHITE;
         skin.add("small", smallLabelStyle);
+
+        // Info rows of the top-left block (train status, key help): the same grey #808080 the 2D
+        // menu box uses for its help lines (issue #710 phase 2).
+        Label.LabelStyle hudInfoStyle = new Label.LabelStyle();
+        hudInfoStyle.font = skin.getFont("small-font");
+        hudInfoStyle.fontColor = Color.GRAY;
+        skin.add("hud-info", hudInfoStyle);
 
         Label.LabelStyle tinyLabelStyle = new Label.LabelStyle();
         tinyLabelStyle.font = skin.getFont("tiny-font");
@@ -329,7 +373,9 @@ public class Gdx3DHud {
         pixmapTriangleW.fillTriangle(0, 8, 16, 0, 16, 16);
         skin.add("white-triangle", new Texture(pixmapTriangleW));
 
-        // Top-left REC indicator (blinking red dot while the command journal records)
+        // Top-left HUD block (issue #710 phase 2): REC + clock line first, then the menu strip,
+        // the selected-train status, the selected-mode hint and the key help, left-aligned in the
+        // same order as the 2D menu box. The notch lever and finances keep the bottom bar.
         Table mainTopTable = new Table();
         mainTopTable.setFillParent(true);
         mainTopTable.top().left();
@@ -342,25 +388,31 @@ public class Gdx3DHud {
         clockLabel = new Label("", skin, "small");
         clockLabel.setColor(Color.WHITE);
         mainTopTable.add(clockLabel).pad(6);
-        stage.addActor(mainTopTable);
-
-        // Bottom UI Container
-        Table mainBottomTable = new Table();
-        mainBottomTable.setFillParent(true);
-        mainBottomTable.bottom();
-        stage.addActor(mainBottomTable);
+        mainTopTable.row();
 
         menuTable = new Table();
         // menuTable is populated in updateMenuButtons()
 
+        trainLabel = new Label("", skin, "hud-info");
+        trainLabel.setAlignment(com.badlogic.gdx.utils.Align.left);
         descLabel = new Label("", skin, "small");
-        descLabel.setWrap(true);
-        descLabel.setAlignment(com.badlogic.gdx.utils.Align.center);
-        globalHelpLabel = new Label(
-                "[LIGHT_GRAY][ALT+⏶⏷/kj / MOUSE WHEEL]: ZOOM | [ALT+⏴⏵/hl]: ROTATE CAMERA | [Z]: CHANGE CAMERA VIEW | [TAB]: HIDE/SHOW PANEL[]",
-                skin, "tiny");
-        globalHelpLabel.setWrap(true);
-        globalHelpLabel.setAlignment(com.badlogic.gdx.utils.Align.center);
+        descLabel.setAlignment(com.badlogic.gdx.utils.Align.left);
+        keysLabel = new Label(KEYS_TEXT, skin, "hud-info");
+        keysLabel.setAlignment(com.badlogic.gdx.utils.Align.left);
+
+        topPanel = new Table();
+        topPanel.setBackground(skin.newDrawable("white", new Color(0, 0, 0, 0.6f)));
+        topPanel.pad(8);
+        topPanel.left().top();
+        addTopPanelRows(topPanel);
+        mainTopTable.add(topPanel).left().padTop(2);
+        stage.addActor(mainTopTable);
+
+        // Bottom UI Container: the notch lever and the finances stay in their own bar.
+        Table mainBottomTable = new Table();
+        mainBottomTable.setFillParent(true);
+        mainBottomTable.bottom();
+        stage.addActor(mainBottomTable);
 
         bottomContainer = new Table();
         bottomContainer.setBackground(skin.newDrawable("white", new Color(0, 0, 0, 0.6f)));
@@ -370,7 +422,7 @@ public class Gdx3DHud {
         notchLever = new NotchLever();
         bottomContainer.add(notchLever).size(260, 46).padLeft(10).padRight(10);
 
-        // Finances Area (Now between NotchLever and menu)
+        // Finances Area
         Table financeArea = new Table();
 
         // Create separate styles to avoid sharing and overwriting skin styles
@@ -397,18 +449,38 @@ public class Gdx3DHud {
 
         bottomContainer.add(financeArea).width(200).left().bottom().padLeft(20).padRight(20);
 
-        Table labelArea = new Table();
-        labelArea.add(menuTable).padBottom(5).row();
-
-        labelArea.add(descLabel).fillX().expandX().padBottom(2).row();
-        labelArea.add(globalHelpLabel).fillX().expandX().padBottom(2).row();
-
-        bottomContainer.add(labelArea).expand().fill().padLeft(20).padRight(10);
-
         mainBottomTable.add(bottomContainer).expandX().fillX();
 
         updateMenuButtons();
         applyHelpLevel();
+    }
+
+    /**
+     * Adds the top-left block rows in {@link #TOP_PANEL_ROWS} order. The hint and key rows keep
+     * their cells so {@link #setRowVisible} can release their height when hidden: a hidden actor
+     * still reserves its cell height in Scene2D (#652).
+     */
+    private void addTopPanelRows(Table panel) {
+        for (TopRow row : TOP_PANEL_ROWS) {
+            switch (row) {
+                case MENU -> {
+                    panel.add(menuTable).left();
+                    panel.row();
+                }
+                case TRAIN -> {
+                    panel.add(trainLabel).left().padTop(2);
+                    panel.row();
+                }
+                case HINT -> {
+                    descCell = panel.add(descLabel).left().padTop(2);
+                    panel.row();
+                }
+                case KEYS -> {
+                    keysCell = panel.add(keysLabel).left().padTop(2);
+                    panel.row();
+                }
+            }
+        }
     }
 
     /** Applies a help level (2 full, 1 compact, 0 hidden); the presenter cycles it via Tab. */
@@ -418,8 +490,24 @@ public class Gdx3DHud {
     }
 
     private void applyHelpLevel() {
-        bottomContainer.setVisible(HudHelp.showBottomPanel(helpLevel));
-        globalHelpLabel.setVisible(HudHelp.showKeyHelp(helpLevel));
+        boolean panelVisible = HudHelp.showBottomPanel(helpLevel);
+        topPanel.setVisible(panelVisible);
+        bottomContainer.setVisible(panelVisible);
+        setRowVisible(keysCell, keysLabel, HudHelp.showKeyHelp(helpLevel));
+    }
+
+    /**
+     * Shows or hides a row by releasing its cell: {@code Actor.setVisible(false)} alone would keep
+     * the row height reserved (#652).
+     */
+    private static void setRowVisible(Cell<?> cell, Actor actor, boolean visible) {
+        if (visible) {
+            if (cell.getActor() == null) {
+                cell.setActor(actor);
+            }
+        } else if (cell.getActor() != null) {
+            cell.setActor(null);
+        }
     }
 
     /**
@@ -457,7 +545,7 @@ public class Gdx3DHud {
             boolean isEnabled = option.enabledIf().get();
             String formattedName = getMenuButtonText(option.gameModeName(), isEnabled);
 
-            TextButton button = new TextButton(formattedName, skin, "default");
+            TextButton button = new TextButton(formattedName, skin, "menu-button");
             button.setName(menuButtonName(option.gameModeName()));
             button.setDisabled(!isEnabled);
 
@@ -487,7 +575,7 @@ public class Gdx3DHud {
                 }
             });
 
-            menuTable.add(button).pad(5).height(30);
+            menuTable.add(button).padRight(10);
         }
     }
 
@@ -537,14 +625,15 @@ public class Gdx3DHud {
             notchLever.setVisible(true);
             notchLever.setNotch(loco.getSpeed());
             notchLever.setTargetNotch(loco.getTargetSpeed());
-
+            trainLabel.setText(trainStatusText(loco));
         } else {
             notchLever.setVisible(false);
+            trainLabel.setText("");
         }
 
         // Marcamos el botón seleccionado según el modo y actualizamos textos
         // dinámicamente
-        descLabel.setVisible(showMenuDescription(helpLevel, model.getMode()));
+        setRowVisible(descCell, descLabel, showMenuDescription(helpLevel, model.getMode()));
         for (Actor actor : menuTable.getChildren()) {
             if (actor instanceof TextButton) {
                 TextButton btn = (TextButton) actor;
@@ -562,8 +651,10 @@ public class Gdx3DHud {
                         btn.setText(getMenuButtonText(option.gameModeName(), isEnabled));
 
                         if (isSelected) {
-                            descLabel.setText(MenuText.selectedHint(option.gameModeDescription(),
-                                    commandJournalRecording()));
+                            descLabel.setText(INFO_MARKUP
+                                    + MenuText.selectedHint(option.gameModeDescription(),
+                                            commandJournalRecording())
+                                    + MARKUP_RESET);
                         }
                     }
                 }
@@ -593,6 +684,64 @@ public class Gdx3DHud {
      */
     static boolean showMenuDescription(int helpLevel, Model.GameMode mode) {
         return HudHelp.showSelectedHint(helpLevel) || mode == Model.GameMode.COMMAND;
+    }
+
+    /**
+     * Key-help row of the top-left block, worded in the 2D style (bracketed keys, sentence-case
+     * actions). Only bindings that exist in {@code Gdx3DInputHandler} are listed: Alt+arrows and
+     * the mouse wheel zoom, Alt+arrows rotate, z/Z cycle the camera, the mode letters, Tab and Esc.
+     * The 2D {@code [PgUp/Dn]: Scroll} row has no 3D binding, so it is omitted. Static and
+     * package-visible so a test can check it without a GL context.
+     */
+    static String keysText() {
+        return KEYS_TEXT;
+    }
+
+    /**
+     * Selected-train status row, same format as the 2D info bar (train id, 10-cell notch bar, speed
+     * progression and wagon count) with libGDX colour markup. Static and package-visible so a test
+     * can check the parity without a GL context.
+     */
+    static String trainStatusText(Locomotive loco) {
+        if (loco == null) {
+            return "";
+        }
+        Train train = loco.getTrain();
+        int trainId = train != null ? train.getId() : loco.getId();
+        int speed = loco.getSpeed();
+        int target = loco.getTargetSpeed();
+        String speedStr;
+        if (speed < target) {
+            speedStr = speed + "->" + target;
+        } else if (speed > target) {
+            speedStr = target + "<-" + speed;
+        } else {
+            speedStr = String.valueOf(speed);
+        }
+        int wagonsCount = (train != null && train.getLinkers() != null)
+                ? Math.max(0, train.getLinkers().size() - 1)
+                : 0;
+        return String.format("Train: %d | Speed: %s %s | Wagons: %d%s", trainId,
+                notchBar(speed, target, 10), speedStr, wagonsCount,
+                loco.isReversed() ? " (Rev)" : "");
+    }
+
+    /**
+     * 10-cell notch bar with the 2D semantics: current speed in green, the target in red when it
+     * differs, and empty cells in the label's grey.
+     */
+    static String notchBar(int current, int target, int max) {
+        StringBuilder bar = new StringBuilder();
+        for (int i = 1; i <= max; i++) {
+            if (i == target && current != target) {
+                bar.append("[RED]■[]");
+            } else if (i <= current) {
+                bar.append("[GREEN]■[]");
+            } else {
+                bar.append("□");
+            }
+        }
+        return bar.toString();
     }
 
     /**
