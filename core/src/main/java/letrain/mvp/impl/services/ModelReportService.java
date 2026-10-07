@@ -30,7 +30,7 @@ public final class ModelReportService {
 
     public static List<GameModeMenuOption> createMenuModel(Model model) {
         return Arrays.asList(new GameModeMenuOption("&Rails",
-                "[⏴⏵⏶⏷/hjkl]: Move [Shift]: Add rail [Ctrl]: Remove rail [Ins]: Add sensor [Home]: Add sem [Del]: Add speed [End]: Add station [#]: Steps [Space]: Reset steps",
+                "[⏴⏵⏶⏷/hjkl]: Move [Shift]: Add rail [a]: Add mode [#]: Steps [Space]: Reset steps",
                 () -> true, () -> (model.getEffectiveMode() == GameMode.RAILS),
                 () -> (GameMode.RAILS)),
                 new GameModeMenuOption("&Add",

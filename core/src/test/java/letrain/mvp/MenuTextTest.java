@@ -115,4 +115,22 @@ class MenuTextTest {
 
         assertEquals("[A-Z]: Locomotive | [a-z]: Wagon | [Enter]: Finish", trainsHint);
     }
+
+    @Test
+    @DisplayName("the RAILS hint drops the retired element shortcuts and sends the player to Add mode")
+    void should_WordTheRailsHint() {
+        String railsHint = new Model(1).getMenuModel().stream()
+                .filter(option -> option.gameModeName().equals("&Rails")).findFirst().orElseThrow()
+                .gameModeDescription();
+
+        assertEquals(
+                "[⏴⏵⏶⏷/hjkl]: Move [Shift]: Add rail [a]: Add mode [#]: Steps [Space]: Reset steps",
+                railsHint);
+        assertTrue(railsHint.contains("[a]: Add mode"),
+                "placing elements goes through Add mode now");
+        for (String retired : List.of("[Ctrl]", "[Ins]", "[Home]", "[Del]", "[End]")) {
+            assertFalse(railsHint.contains(retired),
+                    retired + " is retired and must not be advertised: " + railsHint);
+        }
+    }
 }
