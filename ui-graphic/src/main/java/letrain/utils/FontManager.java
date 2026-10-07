@@ -16,6 +16,15 @@ import org.slf4j.LoggerFactory;
 public class FontManager {
     private static final Logger log = LoggerFactory.getLogger(FontManager.class);
 
+    /**
+     * Non-ASCII glyphs used across the 3D HUD and renderer. FreeType only rasterises the characters
+     * listed in {@link FreeTypeFontParameter#characters}, so every symbol shown by the UI must be
+     * declared here or it renders as {@code ?}: arrows for the camera keys and mode hints,
+     * geometric shapes for the notch bar ({@code ■}/{@code □}) and triangles, the ellipsis used to
+     * truncate long labels, and the Spanish accents.
+     */
+    public static final String EXTRA_CHARS = "—…←↑→↓⏴⏵⏶⏷■□▲▶▼◀áÁéíóú";
+
     private FontManager() {
         // Utility class, no instantiation
     }
@@ -200,7 +209,7 @@ public class FontManager {
             FreeTypeFontGenerator generator = new FreeTypeFontGenerator(fileHandle);
             FreeTypeFontParameter parameter = new FreeTypeFontParameter();
             parameter.size = size;
-            parameter.characters = FreeTypeFontGenerator.DEFAULT_CHARS + "↑↓←→⏴⏵⏶⏷";
+            parameter.characters = FreeTypeFontGenerator.DEFAULT_CHARS + EXTRA_CHARS;
             parameter.magFilter = Texture.TextureFilter.Linear;
             parameter.minFilter = Texture.TextureFilter.Linear;
 

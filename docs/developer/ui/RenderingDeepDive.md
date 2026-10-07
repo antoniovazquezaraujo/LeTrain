@@ -105,7 +105,9 @@ Para que las capturas 3D y 2D coincidan, el strip inferior del HUD 3D (`bottomCo
 organiza en **dos columnas** (`Gdx3DHud.STRIP_COLUMNS`):
 
 - **Izquierda: bloque de menú** (ocupa el espacio restante) con **cuatro filas** en el mismo orden
-  que el `menuBox` 2D (`Gdx3DHud.MENU_BLOCK_ROWS`):
+  que el `menuBox` 2D (`Gdx3DHud.MENU_BLOCK_ROWS`). La tabla se ancla a la izquierda
+  (`Gdx3DHud.MENU_BLOCK_ALIGN`): sin esa alineación Scene2D centra el contenido cuando es más
+  estrecho que su celda y aparecía un hueco a la izquierda en TRAINS/PROGRAM/consola (hint corto).
   1. **Menú**: los 12 modos en una sola línea, alineados a la izquierda. Son `TextButton` del
      estilo `menu-button`, **aplanados** (sin fondo ni padding) para leerse como la tira de texto
      2D; el bloque azul del seleccionado y la clickabilidad se conservan (hover/press muy
@@ -130,6 +132,11 @@ organiza en **dos columnas** (`Gdx3DHud.STRIP_COLUMNS`):
   - **Finanzas compactas** (`Gdx3DHud.financeText`): `|In:...|Out:...|$:...|`, mismo texto y
     formato (`Locale.US`, dos decimales) que la barra de info 2D. El bloque grande de
     balance/ingresos/gastos del HUD 3D se elimina.
+
+**Glifos**: FreeType solo rasteriza los caracteres declarados en
+`FreeTypeFontParameter.characters`; `FontManager.EXTRA_CHARS` declara los no ASCII del HUD
+(`■ □ … á é í ó ú`, flechas `←↑→↓⏴⏵⏶⏷` y triángulos `▲▶▼◀`). Sin esa lista, la barra de notch, la
+elipsis y los acentos salían como `?`.
 
 Las filas 3 y 4 se liberan de su celda al ocultarse (`setRowVisible`): en Scene2D un actor
 invisible sigue reservando su altura (#652). El texto de los hints del modelo se normaliza en

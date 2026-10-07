@@ -75,6 +75,13 @@ public class Gdx3DHud {
     /** Both status lines are right-aligned at the screen edge (owner feedback on #719). */
     static final int STATUS_LINE_ALIGN = com.badlogic.gdx.utils.Align.right;
 
+    /**
+     * The menu block hugs the left edge: without an explicit alignment, Scene2D centers the table
+     * content when it is narrower than its cell, which left a gap where the old notch lever used to
+     * be in TRAINS/PROGRAM/COMMAND (short or absent hint).
+     */
+    static final int MENU_BLOCK_ALIGN = com.badlogic.gdx.utils.Align.left;
+
     private static final String KEYS_TEXT = "[Alt+▲▼ / Mouse Wheel]: Zoom | [Alt+◀▶]: Rotate"
             + " | [z/Z]: Camera | [a/r/d/f/s/t/c/u/p/n]: Modes | [Tab]: Toggle Panel"
             + " | [Esc]: Exit";
@@ -435,6 +442,7 @@ public class Gdx3DHud {
         statusArea.add(financeLabel).right().padTop(2);
 
         Table labelArea = new Table();
+        labelArea.align(MENU_BLOCK_ALIGN);
         addMenuBlockRows(labelArea);
 
         bottomContainer = new Table();
@@ -452,7 +460,7 @@ public class Gdx3DHud {
     private static void addStripColumns(Table strip, Table labelArea, Table statusArea) {
         for (StripColumn column : STRIP_COLUMNS) {
             switch (column) {
-                case MENU_BLOCK -> strip.add(labelArea).expand().fill().padRight(20);
+                case MENU_BLOCK -> strip.add(labelArea).expandX().fillX().padRight(20);
                 case STATUS_LINES -> strip.add(statusArea).right().top().padRight(10);
             }
         }
