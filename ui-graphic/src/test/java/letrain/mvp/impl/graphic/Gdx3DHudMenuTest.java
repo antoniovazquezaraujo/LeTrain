@@ -77,10 +77,10 @@ class Gdx3DHudMenuTest {
     }
 
     @Test
-    @DisplayName("the top-left block rows follow the 2D menu-box order")
-    void should_OrderTopPanelRowsLikeThe2dMenuBox() {
-        assertEquals(List.of(Gdx3DHud.TopRow.MENU, Gdx3DHud.TopRow.TRAIN, Gdx3DHud.TopRow.HINT,
-                Gdx3DHud.TopRow.KEYS), Gdx3DHud.TOP_PANEL_ROWS);
+    @DisplayName("the bottom menu block rows follow the 2D menu-box order")
+    void should_OrderMenuBlockRowsLikeThe2dMenuBox() {
+        assertEquals(List.of(Gdx3DHud.MenuRow.MENU, Gdx3DHud.MenuRow.TRAIN, Gdx3DHud.MenuRow.HINT,
+                Gdx3DHud.MenuRow.KEYS), Gdx3DHud.MENU_BLOCK_ROWS);
     }
 
     @Test

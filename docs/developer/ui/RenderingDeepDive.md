@@ -99,11 +99,12 @@ pintarlos.
   ayuda 2D; en 3D la excepción es el modo `COMMAND`, cuya línea de consola se pinta en esa misma
   etiqueta.
 
-### Bloque superior 3D (fase 2)
+### Bloque de menú 3D (fase 2)
 
-Para que las capturas 3D y 2D coincidan, el HUD 3D pinta en la **esquina superior izquierda**
-(palanca de notch y finanzas siguen en su barra inferior) un bloque de **cuatro filas** en el mismo
-orden que el `menuBox` 2D (`Gdx3DHud.TOP_PANEL_ROWS`):
+Para que las capturas 3D y 2D coincidan, el bloque de menú del HUD 3D se queda **donde estaba
+siempre** (la zona de etiquetas del `bottomContainer`, a la derecha de la palanca de notch y las
+finanzas) y pasa a tener **cuatro filas** en el mismo orden que el `menuBox` 2D
+(`Gdx3DHud.MENU_BLOCK_ROWS`):
 
 1. **Menú**: los 12 modos en una sola línea, alineados a la izquierda. Son `TextButton` del estilo
    `menu-button`, **aplanados** (sin fondo ni padding) para leerse como la tira de texto 2D; el
@@ -117,18 +118,16 @@ orden que el `menuBox` 2D (`Gdx3DHud.TOP_PANEL_ROWS`):
 4. **Teclas** (`Gdx3DHud.keysText`), misma caja/puntuación y caja normal que la fila 2D, solo con
    los bindings que existen de verdad en `Gdx3DInputHandler`: `Alt+▲▼`/rueda (zoom), `Alt+◀▶`
    (rotar), `z/Z` (cámara, salvo en TRAINS), letras de modo, `Tab` (panel) y `Esc` (salir). No hay
-   binding 3D para `PgUp/PgDn`, así que esa tecla 2D se omite.
+   binding 3D para `PgUp/PgDn`, así que esa tecla 2D se omite. Conserva el tamaño `tiny` original
+   de la línea de teclas 3D para que la fila completa quepa junto a la palanca y las finanzas.
 
 Las filas 3 y 4 se liberan de su celda al ocultarse (`setRowVisible`): en Scene2D un actor
 invisible sigue reservando su altura (#652). El texto de los hints del modelo se normaliza en
-`ModelReportService` (`[clave]: Acción`, caja normal) para que ambos clientes muestren exactamente
-lo mismo.
+`ModelReportService` (`[key]: Action`, caja normal) para que ambos clientes muestren exactamente lo
+mismo.
 
 Diferencias intencionales (tecnología, no información):
 
-- Posición: el menú 2D vive en la franja inferior (junto a la info del juego) y el bloque 3D va
-  arriba a la izquierda, debajo de la línea REC/reloj, para no chocar con la palanca de notch ni
-  las finanzas. Filas, orden y alineación a la izquierda son los mismos.
 - 2D pinta una fila de texto; 3D usa botones Scene2D aplanados (clickables) para esa misma fila.
 - La fila de teclas lista los bindings propios de cada cliente (en 2D `PgUp/Dn`/cámara de
   terminal; en 3D Alt/rueda/`z`), con idéntica caja y puntuación.

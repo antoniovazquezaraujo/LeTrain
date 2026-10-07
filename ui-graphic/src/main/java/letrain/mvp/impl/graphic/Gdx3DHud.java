@@ -50,16 +50,16 @@ public class Gdx3DHud {
     private static final String MARKUP_RESET = "[]";
 
     /**
-     * Rows of the top-left HUD block, in the same order as the 2D menu box (issue #710 phase 2):
-     * the menu strip, the selected-train status, the selected-mode hint and the key help. Kept as
-     * data so the deterministic order is testable without a GL context.
+     * Rows of the bottom menu block, in the same order as the 2D menu box (issue #710 phase 2): the
+     * menu strip, the selected-train status, the selected-mode hint and the key help. Kept as data
+     * so the deterministic order is testable without a GL context.
      */
-    enum TopRow {
+    enum MenuRow {
         MENU, TRAIN, HINT, KEYS
     }
 
-    static final List<TopRow> TOP_PANEL_ROWS =
-            List.of(TopRow.MENU, TopRow.TRAIN, TopRow.HINT, TopRow.KEYS);
+    static final List<MenuRow> MENU_BLOCK_ROWS =
+            List.of(MenuRow.MENU, MenuRow.TRAIN, MenuRow.HINT, MenuRow.KEYS);
 
     private static final String KEYS_TEXT = "[Alt+▲▼ / Mouse Wheel]: Zoom | [Alt+◀▶]: Rotate"
             + " | [z/Z]: Camera | [a/r/d/f/s/t/c/u/p/n]: Modes | [Tab]: Toggle Panel"
@@ -71,7 +71,6 @@ public class Gdx3DHud {
     private final Stage stage;
     private Skin skin;
     private Table menuTable;
-    private Table topPanel;
     private Table bottomContainer;
     private Label trainLabel;
     private Label descLabel;
@@ -246,12 +245,18 @@ public class Gdx3DHud {
         smallLabelStyle.fontColor = Color.WHITE;
         skin.add("small", smallLabelStyle);
 
-        // Info rows of the top-left block (train status, key help): the same grey #808080 the 2D
-        // menu box uses for its help lines (issue #710 phase 2).
+        // Info rows of the bottom menu block: the same grey #808080 the 2D menu box uses for its
+        // help lines (issue #710 phase 2). The key row keeps the original tiny size so the full row
+        // fits next to the notch lever and the finances.
         Label.LabelStyle hudInfoStyle = new Label.LabelStyle();
         hudInfoStyle.font = skin.getFont("small-font");
         hudInfoStyle.fontColor = Color.GRAY;
         skin.add("hud-info", hudInfoStyle);
+
+        Label.LabelStyle hudKeysStyle = new Label.LabelStyle();
+        hudKeysStyle.font = skin.getFont("tiny-font");
+        hudKeysStyle.fontColor = Color.GRAY;
+        skin.add("hud-keys", hudKeysStyle);
 
         Label.LabelStyle tinyLabelStyle = new Label.LabelStyle();
         tinyLabelStyle.font = skin.getFont("tiny-font");
@@ -373,9 +378,7 @@ public class Gdx3DHud {
         pixmapTriangleW.fillTriangle(0, 8, 16, 0, 16, 16);
         skin.add("white-triangle", new Texture(pixmapTriangleW));
 
-        // Top-left HUD block (issue #710 phase 2): REC + clock line first, then the menu strip,
-        // the selected-train status, the selected-mode hint and the key help, left-aligned in the
-        // same order as the 2D menu box. The notch lever and finances keep the bottom bar.
+        // Top-left REC indicator (blinking red dot while the command journal records)
         Table mainTopTable = new Table();
         mainTopTable.setFillParent(true);
         mainTopTable.top().left();
@@ -388,7 +391,15 @@ public class Gdx3DHud {
         clockLabel = new Label("", skin, "small");
         clockLabel.setColor(Color.WHITE);
         mainTopTable.add(clockLabel).pad(6);
-        mainTopTable.row();
+        stage.addActor(mainTopTable);
+
+        // Bottom UI Container: the notch lever and the finances keep their places, and the menu
+        // block (menu strip, train status, mode hint, key help) lives in the original label area
+        // to their right, ordered like the 2D menu box (issue #710 phase 2).
+        Table mainBottomTable = new Table();
+        mainBottomTable.setFillParent(true);
+        mainBottomTable.bottom();
+        stage.addActor(mainBottomTable);
 
         menuTable = new Table();
         // menuTable is populated in updateMenuButtons()
@@ -397,22 +408,8 @@ public class Gdx3DHud {
         trainLabel.setAlignment(com.badlogic.gdx.utils.Align.left);
         descLabel = new Label("", skin, "small");
         descLabel.setAlignment(com.badlogic.gdx.utils.Align.left);
-        keysLabel = new Label(KEYS_TEXT, skin, "hud-info");
+        keysLabel = new Label(KEYS_TEXT, skin, "hud-keys");
         keysLabel.setAlignment(com.badlogic.gdx.utils.Align.left);
-
-        topPanel = new Table();
-        topPanel.setBackground(skin.newDrawable("white", new Color(0, 0, 0, 0.6f)));
-        topPanel.pad(8);
-        topPanel.left().top();
-        addTopPanelRows(topPanel);
-        mainTopTable.add(topPanel).left().padTop(2);
-        stage.addActor(mainTopTable);
-
-        // Bottom UI Container: the notch lever and the finances stay in their own bar.
-        Table mainBottomTable = new Table();
-        mainBottomTable.setFillParent(true);
-        mainBottomTable.bottom();
-        stage.addActor(mainBottomTable);
 
         bottomContainer = new Table();
         bottomContainer.setBackground(skin.newDrawable("white", new Color(0, 0, 0, 0.6f)));
@@ -422,7 +419,7 @@ public class Gdx3DHud {
         notchLever = new NotchLever();
         bottomContainer.add(notchLever).size(260, 46).padLeft(10).padRight(10);
 
-        // Finances Area
+        // Finances Area (between the notch lever and the menu block, as before)
         Table financeArea = new Table();
 
         // Create separate styles to avoid sharing and overwriting skin styles
@@ -449,6 +446,10 @@ public class Gdx3DHud {
 
         bottomContainer.add(financeArea).width(200).left().bottom().padLeft(20).padRight(20);
 
+        Table labelArea = new Table();
+        addMenuBlockRows(labelArea);
+        bottomContainer.add(labelArea).expand().fill().padLeft(20).padRight(10);
+
         mainBottomTable.add(bottomContainer).expandX().fillX();
 
         updateMenuButtons();
@@ -456,12 +457,12 @@ public class Gdx3DHud {
     }
 
     /**
-     * Adds the top-left block rows in {@link #TOP_PANEL_ROWS} order. The hint and key rows keep
+     * Adds the bottom menu-block rows in {@link #MENU_BLOCK_ROWS} order. The hint and key rows keep
      * their cells so {@link #setRowVisible} can release their height when hidden: a hidden actor
      * still reserves its cell height in Scene2D (#652).
      */
-    private void addTopPanelRows(Table panel) {
-        for (TopRow row : TOP_PANEL_ROWS) {
+    private void addMenuBlockRows(Table panel) {
+        for (MenuRow row : MENU_BLOCK_ROWS) {
             switch (row) {
                 case MENU -> {
                     panel.add(menuTable).left();
@@ -490,9 +491,7 @@ public class Gdx3DHud {
     }
 
     private void applyHelpLevel() {
-        boolean panelVisible = HudHelp.showBottomPanel(helpLevel);
-        topPanel.setVisible(panelVisible);
-        bottomContainer.setVisible(panelVisible);
+        bottomContainer.setVisible(HudHelp.showBottomPanel(helpLevel));
         setRowVisible(keysCell, keysLabel, HudHelp.showKeyHelp(helpLevel));
     }
 
