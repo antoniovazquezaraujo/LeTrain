@@ -120,4 +120,18 @@ class FontManagerTest {
             FontManager.loadFont("Arial", -1);
         }, "Should use ValidationUtils.requirePositive()");
     }
+
+    @Test
+    @DisplayName("the generated charset includes the HUD glyphs: notch bar, ellipsis and accents")
+    void testExtraCharsCoverHudGlyphs() {
+        for (char c : "■□…áéíóú".toCharArray()) {
+            assertTrue(FontManager.EXTRA_CHARS.indexOf(c) >= 0,
+                    "EXTRA_CHARS must include '" + c + "' or it renders as '?'");
+        }
+        // Camera-key and hint arrows must stay rasterised too.
+        for (char c : "←↑→↓⏴⏵⏶⏷".toCharArray()) {
+            assertTrue(FontManager.EXTRA_CHARS.indexOf(c) >= 0,
+                    "EXTRA_CHARS must include '" + c + "'");
+        }
+    }
 }

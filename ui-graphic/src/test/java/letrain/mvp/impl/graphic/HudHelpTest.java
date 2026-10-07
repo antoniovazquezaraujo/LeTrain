@@ -38,4 +38,12 @@ class HudHelpTest {
         assertFalse(HudHelp.showKeyHelp(HudHelp.COMPACT));
         assertFalse(HudHelp.showKeyHelp(HudHelp.HIDDEN));
     }
+
+    @Test
+    @DisplayName("the selected-mode hint shows only at full level, like the 2D help bar")
+    void should_ShowSelectedHintOnlyAtFullLevel() {
+        assertTrue(HudHelp.showSelectedHint(HudHelp.FULL));
+        assertFalse(HudHelp.showSelectedHint(HudHelp.COMPACT));
+        assertFalse(HudHelp.showSelectedHint(HudHelp.HIDDEN));
+    }
 }
