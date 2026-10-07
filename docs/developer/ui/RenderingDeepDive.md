@@ -85,7 +85,7 @@ pintarlos.
   siguiente carácter como atajo (`&Rails` → `("", "R", "ails")`, `S&ensors` → `("S", "e", "nsors")`).
   Ambos clientes usan `MenuText.parse` y ninguno implementa su propio parseo del `&`.
 - **Texto de ayuda**: `MenuText.selectedHint(description, recording)` compone la línea del modo
-  seleccionado (`... | [R]: Record ON/OFF | [X]: Experiment`), idéntica en 2D y 3D. El flag de
+  seleccionado (`... | [R]:Record ON/OFF | [X]:Experiment`), idéntica en 2D y 3D. El flag de
   grabación sale del journal de comandos (`isRecording() && isSimulationPaused()`).
 - **Colores**: 2D `TerminalView` (blanco normal, `GREEN_BRIGHT` para el atajo, gris exacto
   `#808080` —`MENU_DISABLED_FG_COLOR`, un `TextColor.RGB` independiente del tema— para
@@ -140,7 +140,7 @@ elipsis y los acentos salían como `?`.
 
 Las filas 3 y 4 se liberan de su celda al ocultarse (`setRowVisible`): en Scene2D un actor
 invisible sigue reservando su altura (#652). El texto de los hints del modelo se normaliza en
-`ModelReportService` (`[key]: Action`, caja normal) para que ambos clientes muestren exactamente lo
+`ModelReportService` (`[key]:Action`, caja normal) para que ambos clientes muestren exactamente lo
 mismo.
 
 Diferencias intencionales (tecnología, no información):

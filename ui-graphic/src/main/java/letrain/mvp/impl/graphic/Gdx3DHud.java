@@ -82,9 +82,9 @@ public class Gdx3DHud {
      */
     static final int MENU_BLOCK_ALIGN = com.badlogic.gdx.utils.Align.left;
 
-    private static final String KEYS_TEXT = "[Alt+▲▼ / Mouse Wheel]: Zoom | [Alt+◀▶]: Rotate"
-            + " | [z/Z]: Camera | [a/r/d/f/s/t/c/u/p/n]: Modes | [Tab]: Toggle Panel"
-            + " | [Esc]: Exit";
+    private static final String KEYS_TEXT = "[Alt+▲▼ / Mouse Wheel]:Zoom | [Alt+◀▶]:Rotate"
+            + " | [z/Z]:Camera | [a/r/d/f/s/t/c/u/p/n]:Modes | [Tab]:Toggle Panel"
+            + " | [Esc]:Exit";
 
 
     private final Model model;
@@ -681,10 +681,10 @@ public class Gdx3DHud {
 
     /**
      * Key-help row of the top-left block, worded in the 2D style (bracketed keys, sentence-case
-     * actions). Only bindings that exist in {@code Gdx3DInputHandler} are listed: Alt+arrows and
-     * the mouse wheel zoom, Alt+arrows rotate, z/Z cycle the camera, the mode letters, Tab and Esc.
-     * The 2D {@code [PgUp/Dn]: Scroll} row has no 3D binding, so it is omitted. Static and
-     * package-visible so a test can check it without a GL context.
+     * actions, {@code [key]:Action}). Only bindings that exist in {@code Gdx3DInputHandler} are
+     * listed: Alt+arrows and the mouse wheel zoom, Alt+arrows rotate, z/Z cycle the camera, the
+     * mode letters, Tab and Esc. The 2D {@code [PgUp/Dn]:Scroll} row has no 3D binding, so it is
+     * omitted. Static and package-visible so a test can check it without a GL context.
      */
     static String keysText() {
         return KEYS_TEXT;
