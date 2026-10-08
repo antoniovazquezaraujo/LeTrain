@@ -3,6 +3,7 @@ package letrain.mvp.impl;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import letrain.economy.EconomyManager;
 import letrain.ground.GroundMap;
@@ -233,17 +234,34 @@ public class Model implements letrain.mvp.Model {
     private BlockManager createBlockManager() {
         letrain.segments.impl.BlockManagerImpl bmi = new letrain.segments.impl.BlockManagerImpl();
         bmi.setOnReleaseListener((releasedSegment) -> {
-            if (locomotives != null) {
-                for (Locomotive loco : locomotives) {
-                    Train train = loco.getTrain();
-                    if (train != null && train.isAutoMode()) {
-                        letrain.segments.Segment nextSeg =
-                                train.getSafetyManager().getNextSegment();
-                        if (train.getSafetyManager().isWaitingForBlock()
-                                && releasedSegment.equals(nextSeg)) {
-                            train.getSafetyManager().onBlockReleased();
-                        }
-                    }
+            if (locomotives == null) {
+                return;
+            }
+            // ADR-022 phase 2d: the freed canton goes to the first waiter by arrival turn (FIFO),
+            // not to the oldest locomotive. Ties break by locomotive id (the monotonic turn makes
+            // real ties impossible; the tie-break only orders waiters without a turn). A train
+            // with several locomotives appears once.
+            List<Locomotive> waiters = new ArrayList<>();
+            java.util.Set<Train> seen = new java.util.HashSet<>();
+            for (Locomotive loco : locomotives) {
+                Train train = loco.getTrain();
+                if (train == null || !train.isAutoMode()) {
+                    continue;
+                }
+                if (train.getSafetyManager().isWaitingForBlock()
+                        && releasedSegment.equals(train.getSafetyManager().getNextSegment())
+                        && seen.add(train)) {
+                    waiters.add(loco);
+                }
+            }
+            waiters.sort(Comparator.comparingLong(
+                    (Locomotive loco) -> bmi.getWaitTurn(loco.getTrain()).orElse(Long.MAX_VALUE))
+                    .thenComparingInt(Locomotive::getId));
+            for (Locomotive loco : waiters) {
+                Train train = loco.getTrain();
+                if (train.getSafetyManager().isWaitingForBlock()
+                        && releasedSegment.equals(train.getSafetyManager().getNextSegment())) {
+                    train.getSafetyManager().onBlockReleased();
                 }
             }
         });
