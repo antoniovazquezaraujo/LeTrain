@@ -70,7 +70,16 @@ public class TerminalView implements letrain.mvp.View {
     private TextColor bgColor;
     private boolean isUnderline = false;
     private boolean isBlink = false;
-    private int cameraDeadzone = 1;
+    /**
+     * Full-screen camera dead zone: {@code ensureVisible} treats it as "the whole visible map" and
+     * the flash outline as "the screen border" (#697).
+     */
+    static final int FULL_SCREEN_DEADZONE = 999;
+
+    /**
+     * The camera starts with the full-screen dead zone, so it only scrolls near the border (#697).
+     */
+    private int cameraDeadzone = FULL_SCREEN_DEADZONE;
     private boolean cameraPagination = false;
     private int flashDeadzoneTicks = 0;
     boolean endOfGame = false;
@@ -321,30 +330,11 @@ public class TerminalView implements letrain.mvp.View {
                 flashDeadzoneTicks--;
                 int radius = getCameraDeadzone();
                 if (radius >= 0) {
-                    int cols = getCols();
-                    int rows = getRows();
-                    int centerX = cols / 2;
-                    int centerY = rows / 2;
-
-                    int radiusX = (int) Math.round(radius * ((double) cols / rows));
-                    int radiusY = radius;
-
-                    int screenMinX = centerX - radiusX;
-                    int screenMaxX = centerX + radiusX;
-                    int screenMinY = centerY - radiusY;
-                    int screenMaxY = centerY + radiusY;
-
-                    if (radius >= 999) {
-                        screenMinX = 0;
-                        screenMaxX = cols - 1;
-                        screenMinY = 0;
-                        screenMaxY = rows - 1;
-                    }
-
-                    screenMinX = Math.max(0, screenMinX);
-                    screenMaxX = Math.min(cols - 1, screenMaxX);
-                    screenMinY = Math.max(0, screenMinY);
-                    screenMaxY = Math.min(rows - 1, screenMaxY);
+                    int[] rect = deadzoneRect(getCols(), getRows(), radius);
+                    int screenMinX = rect[0];
+                    int screenMinY = rect[1];
+                    int screenMaxX = rect[2];
+                    int screenMaxY = rect[3];
 
                     if (screenMinX <= screenMaxX && screenMinY <= screenMaxY) {
                         com.googlecode.lanterna.TextColor dotColor =
@@ -581,7 +571,20 @@ public class TerminalView implements letrain.mvp.View {
         if (cols <= 0 || rows <= 0) {
             return;
         }
+        Point next = scrollToKeepVisible(scrollOffset, cols, rows, x, y, radius, paginate);
+        if (!next.equals(scrollOffset)) {
+            setScrollOffset(next);
+        }
+    }
 
+    /**
+     * Scroll offset that keeps {@code (x, y)} inside the camera dead zone centered on the current
+     * viewport. With {@link #FULL_SCREEN_DEADZONE} the dead zone is the whole visible map (#697),
+     * so the camera only scrolls when the target is about to leave the screen. Pure and
+     * package-visible, so the scroll math can be unit-tested without a terminal.
+     */
+    static Point scrollToKeepVisible(Point scrollOffset, int cols, int rows, int x, int y,
+            int radius, boolean paginate) {
         int centerX = scrollOffset.getX() + cols / 2;
         int centerY = scrollOffset.getY() + rows / 2;
 
@@ -593,7 +596,7 @@ public class TerminalView implements letrain.mvp.View {
         int minY = centerY - radiusY;
         int maxY = centerY + radiusY;
 
-        if (radius >= 999) {
+        if (radius >= FULL_SCREEN_DEADZONE) {
             minX = scrollOffset.getX();
             maxX = scrollOffset.getX() + cols - 1;
             minY = scrollOffset.getY();
@@ -615,9 +618,38 @@ public class TerminalView implements letrain.mvp.View {
             newScrollY += (paginate ? Math.max(1, maxY - minY) : (y - maxY));
         }
 
-        if (newScrollX != scrollOffset.getX() || newScrollY != scrollOffset.getY()) {
-            setScrollOffset(new Point(newScrollX, newScrollY));
+        return new Point(newScrollX, newScrollY);
+    }
+
+    /**
+     * Flash rectangle of the dead zone as {@code {minX, minY, maxX, maxY}} in map cells, clamped to
+     * the screen. {@link #FULL_SCREEN_DEADZONE} spans the whole visible area, so the preview draws
+     * the map border. Pure and package-visible for tests.
+     */
+    static int[] deadzoneRect(int cols, int rows, int radius) {
+        int centerX = cols / 2;
+        int centerY = rows / 2;
+
+        int radiusX = (int) Math.round(radius * ((double) cols / rows));
+        int radiusY = radius;
+
+        int minX = centerX - radiusX;
+        int maxX = centerX + radiusX;
+        int minY = centerY - radiusY;
+        int maxY = centerY + radiusY;
+
+        if (radius >= FULL_SCREEN_DEADZONE) {
+            minX = 0;
+            maxX = cols - 1;
+            minY = 0;
+            maxY = rows - 1;
         }
+
+        minX = Math.max(0, minX);
+        maxX = Math.min(cols - 1, maxX);
+        minY = Math.max(0, minY);
+        maxY = Math.min(rows - 1, maxY);
+        return new int[] {minX, minY, maxX, maxY};
     }
 
     @Override
