@@ -164,6 +164,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         initModeKeyHandlers();
         // Start with the full menu/help visible so the controls are discoverable (Tab cycles it).
         this.model.setHelpLevel(FULL_HELP_LEVEL);
+        // Start with the full-screen camera dead zone (#697): the view only scrolls when the
+        // followed focus is about to leave the screen.
+        this.view.setCameraDeadzone(CAMERA_DEADZONE_STEPS[cameraDeadzoneIndex]);
         this.view.setHelpLevel(FULL_HELP_LEVEL);
     }
 
@@ -897,8 +900,16 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
     }
 
-    private static final int[] CAMERA_DEADZONE_STEPS = {1, 3, 6, 10, 15, 20, 25, 999};
-    private int cameraDeadzoneIndex = 0;
+    /**
+     * Dead-zone radii cycled by 'z', smallest first. The startup index is the last step,
+     * {@link TerminalView#FULL_SCREEN_DEADZONE} (#697), so the camera only scrolls when the focus
+     * is about to leave the screen; the first press then goes back to 1 and climbs again (999 → 1 →
+     * 3 → 6 → ...). Radii at or above half the map height are skipped because they would not change
+     * the framing.
+     */
+    private static final int[] CAMERA_DEADZONE_STEPS =
+            {1, 3, 6, 10, 15, 20, 25, TerminalView.FULL_SCREEN_DEADZONE};
+    private int cameraDeadzoneIndex = CAMERA_DEADZONE_STEPS.length - 1;
 
     private void cycleCameraDeadzone() {
         int maxRadius = view.getRows() / 2 - 1;
@@ -910,9 +921,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         do {
             cameraDeadzoneIndex = (cameraDeadzoneIndex + 1) % CAMERA_DEADZONE_STEPS.length;
             deadzone = CAMERA_DEADZONE_STEPS[cameraDeadzoneIndex];
-        } while (deadzone != 999 && deadzone >= maxRadius);
+        } while (deadzone != TerminalView.FULL_SCREEN_DEADZONE && deadzone >= maxRadius);
 
-        // 999 is handled specially by View as "full screen"
         view.setCameraDeadzone(deadzone);
         view.flashCameraDeadzone();
     }
