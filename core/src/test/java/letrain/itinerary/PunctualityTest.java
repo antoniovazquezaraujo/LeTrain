@@ -127,4 +127,36 @@ class PunctualityTest {
         assertTrue(punctuality.isEmpty());
         assertFalse(punctuality.stops().iterator().hasNext());
     }
+
+    @Test
+    @DisplayName("compact prints the signed current deviation for the HUD")
+    void compactFormat() {
+        Punctuality punctuality = new Punctuality();
+        punctuality.recordArrival(Waypoint.Type.STATION, 1, 2);
+        assertEquals("+2", punctuality.compact(), "late is positive");
+
+        punctuality.recordArrival(Waypoint.Type.STATION, 2, -1);
+        assertEquals("-1", punctuality.compact(),
+                "the latest measurement wins and early is signed");
+
+        punctuality.recordArrival(Waypoint.Type.STATION, 3, 0);
+        assertEquals("0", punctuality.compact(), "exact zero has no sign");
+    }
+
+    @Test
+    @DisplayName("compact is empty until a stop has been measured")
+    void compactEmptyHistory() {
+        assertEquals("", new Punctuality().compact());
+    }
+
+    @Test
+    @DisplayName("compact reuses the Current line format of describe (single source)")
+    void compactMatchesDescribe() {
+        Punctuality punctuality = new Punctuality();
+        punctuality.recordArrival(Waypoint.Type.STATION, 1, 3);
+        punctuality.recordDeparture(Waypoint.Type.STATION, 1, -2);
+
+        assertTrue(punctuality.describe().contains("Current: " + punctuality.compact() + " min"),
+                punctuality.describe());
+    }
 }

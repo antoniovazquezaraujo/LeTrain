@@ -1,6 +1,6 @@
 # ADR-022: Tiempo de Juego (Reloj, Día/Noche y Horarios)
 
-## Estado: PROPUESTO — fase 0 implementada (reloj, HUD y comando `time set`); fase 2a implementada (gramática y modelo de horarios); fase 2b implementada (retención, `park` y métrica de puntualidad en core; el HUD llega en 2c); saneo de sintaxis del lote 2 aplicado (`time set HH`, `park`/`stop` directos, `invert`≡`reverse`, sin auto-giro, comas del plan, comentarios `#`); enmienda de física: el arranque 0→1 cuesta `START_STEP_TICKS` (100 ticks), igual que un tramo completo
+## Estado: PROPUESTO — fase 0 implementada (reloj, HUD y comando `time set`); fase 2a implementada (gramática y modelo de horarios); fase 2b implementada (retención, `park` y métrica de puntualidad en core); fase 2c implementada (desviación firmada en la línea de estado del HUD 2D/3D); saneo de sintaxis del lote 2 aplicado (`time set HH`, `park`/`stop` directos, `invert`≡`reverse`, sin auto-giro, comas del plan, comentarios `#`); enmienda de física: el arranque 0→1 cuesta `START_STEP_TICKS` (100 ticks), igual que un tramo completo
 
 ## Contexto
 
@@ -190,11 +190,12 @@ Métrica (fase 2, solo medir; la economía horaria es la fase 4):
   un servicio todo adelantado imprime el menos adelantado (`Max: −1 min`).
 - `arrivalDelta` se mide al entrar en el waypoint; `departureDelta`, cuando termina la retención
   (a la hora programada, o antes si llegó tarde: sale de inmediato y el desfase es positivo).
-- Se muestra en **`info train N`** (detalle: una línea por parada más actual/media/máximo) y, en
-  la fase 2c, en el **HUD** con un simple número con signo referido al tren seleccionado/en
-  conducción; si el itinerario no tiene horas, o aún no se ha medido ninguna parada, no se muestra
-  nada. La historia vive en memoria (no viaja en el guardado): al cargar, el servicio se reanuda y
-  la vuelve a medir.
+- Se muestra en **`info train N`** (detalle: una línea por parada más actual/media/máximo) y en el
+  **HUD** 2D/3D como sufijo `| Punct: +2` de la línea de estado del tren seleccionado/en
+  conducción; el valor es el desfase actual firmado y sale de `Punctuality.compact()`, la misma
+  fuente que la línea `Current` de `info train N`. Si el itinerario no tiene horas, o aún no se ha
+  medido ninguna parada, no se muestra nada. La historia vive en memoria (no viaja en el guardado):
+  al cargar, el servicio se reanuda y la vuelve a medir.
 
 Compatibilidad (**decidida**): la sintaxis nueva es **estricta en todos los puntos de entrada**
 (consola, editor, escenarios, partidas guardadas, journals y `letrain-check`): las acciones sin

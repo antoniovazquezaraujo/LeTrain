@@ -116,7 +116,10 @@ organiza en **dos columnas** (`Gdx3DHud.STRIP_COLUMNS`):
   2. **Estado del tren** (`Gdx3DHud.trainStatusText`): `Train: N | Speed: <barra> X->Y | Wagons: N`,
      el mismo formato que la línea 2D, con la barra de 10 celdas (verde = velocidad actual, rojo =
      objetivo, gris = vacío). Es **el único indicador de notch** que queda: la palanca gráfica
-     antigua se eliminó.
+     antigua se eliminó. Cuando el tren seleccionado ha medido alguna parada de su itinerario,
+     ambas líneas 2D/3D añaden `| Punct: +2` con el desfase actual firmado
+     (`Punctuality.compact()`, la misma fuente que `info train N`); sin horas no se muestra nada
+     (fase 2c del [ADR-022](../adr/ADR-022-Game-Time.md)).
   3. **Hint del modo** (`MenuText.selectedHint`), en gris `#808080` como la barra de ayuda 2D. Si
      no cabe en la columna, se recorta con elipsis (no invade la columna derecha).
   4. **Teclas** (`Gdx3DHud.keysText`), misma caja/puntuación y caja normal que la fila 2D, solo con

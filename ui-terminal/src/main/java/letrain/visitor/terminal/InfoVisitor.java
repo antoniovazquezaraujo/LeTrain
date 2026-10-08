@@ -5,6 +5,7 @@ import com.googlecode.lanterna.TextColor.ANSI;
 import letrain.economy.EconomyManager;
 import letrain.ground.Ground;
 import letrain.ground.GroundMap;
+import letrain.itinerary.Punctuality;
 import letrain.map.Router;
 import letrain.map.impl.RailMap;
 import letrain.mvp.Model;
@@ -103,8 +104,8 @@ public class InfoVisitor implements Visitor {
         if (model.getMode() == letrain.mvp.Model.GameMode.COMMAND) {
             vehicleText = infoBarText;
         } else if (selectedLoco != null) {
-            int trainId = (selectedLoco.getTrain() != null) ? selectedLoco.getTrain().getId()
-                    : selectedLoco.getId();
+            Train selectedTrain = selectedLoco.getTrain();
+            int trainId = selectedTrain != null ? selectedTrain.getId() : selectedLoco.getId();
             String notchBar =
                     getNotchBar(selectedLoco.getSpeed(), selectedLoco.getTargetSpeed(), 10);
             int speed = selectedLoco.getSpeed();
@@ -117,12 +118,12 @@ public class InfoVisitor implements Visitor {
             } else {
                 speedStr = String.valueOf(speed);
             }
-            int wagonsCount = (selectedLoco.getTrain() != null
-                    && selectedLoco.getTrain().getLinkers() != null)
-                            ? Math.max(0, selectedLoco.getTrain().getLinkers().size() - 1)
-                            : 0;
-            vehicleText = String.format("Train: %d | Speed: %s %s | Wagons: %d%s", trainId,
-                    notchBar, speedStr, wagonsCount, selectedLoco.isReversed() ? " (Rev)" : "");
+            int wagonsCount = (selectedTrain != null && selectedTrain.getLinkers() != null)
+                    ? Math.max(0, selectedTrain.getLinkers().size() - 1)
+                    : 0;
+            vehicleText = String.format("Train: %d | Speed: %s %s | Wagons: %d%s%s", trainId,
+                    notchBar, speedStr, wagonsCount, selectedLoco.isReversed() ? " (Rev)" : "",
+                    punctualitySuffix(selectedTrain));
         } else if (infoBarText != null) {
             vehicleText = infoBarText;
         }
@@ -176,6 +177,20 @@ public class InfoVisitor implements Visitor {
             view.drawCommandLine(model.getCommandText(), model.getCommandError(),
                     model.getCommandNotice());
         }
+    }
+
+    /**
+     * Compact punctuality suffix for the train status line (ADR-022 phase 2c):
+     * {@code " | Punct: +2"}. Empty when there is no train/autopilot or no measured stop, so a
+     * train without times shows nothing. The value comes from {@link Punctuality#compact()}, the
+     * same formatting the {@code info train N} block uses.
+     */
+    private static String punctualitySuffix(Train train) {
+        if (train == null || train.getAutopilot() == null) {
+            return "";
+        }
+        return train.getAutopilot().punctuality().map(Punctuality::compact)
+                .map(value -> " | Punct: " + value).orElse("");
     }
 
     private String getNotchBar(int current, int target, int max) {
