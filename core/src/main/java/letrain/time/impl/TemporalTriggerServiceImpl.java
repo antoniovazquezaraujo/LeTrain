@@ -14,14 +14,16 @@ import org.slf4j.LoggerFactory;
 /**
  * Schedules each temporal trigger on the tick-based {@link SimulationScheduler} using
  * {@link GameClock#ticksUntil(GameTime)} (ADR-022 phase 3: deterministic, never wall time). A due
- * trigger re-arms the next occurrence; {@link #clear()} bumps a generation counter so the fires
- * still armed for a replaced program are harmless no-ops, without touching the shared scheduler
- * (the autopilot holds live there too).
+ * trigger runs its action block — through the same deferred runner as the event triggers — and then
+ * re-arms the next occurrence; {@link #clear()} bumps a generation counter so the fires still armed
+ * for a replaced program are harmless no-ops, without touching the shared scheduler (the autopilot
+ * holds live there too).
  *
  * <p>
  * The scheduler ticks before the game clock in {@code SimulationController}, so a fire can land one
  * tick early (or the clock can be rewound with {@code time set}); the due check then re-arms the
- * same target. Execution of the block actions is phase 3b: this class only schedules.
+ * same target. A failing action is logged and does not take down the simulation tick, and the
+ * trigger still re-arms unless its program was replaced while the action ran.
  */
 public class TemporalTriggerServiceImpl implements TemporalTriggerService {
 
@@ -38,8 +40,9 @@ public class TemporalTriggerServiceImpl implements TemporalTriggerService {
     }
 
     @Override
-    public Registration register(TemporalTrigger trigger) {
+    public Registration register(TemporalTrigger trigger, Runnable onFire) {
         Objects.requireNonNull(trigger, "trigger");
+        Objects.requireNonNull(onFire, "onFire");
         for (Entry entry : entries) {
             if (entry.trigger.equals(trigger)) {
                 return Registration.DUPLICATE;
@@ -48,7 +51,7 @@ public class TemporalTriggerServiceImpl implements TemporalTriggerService {
         if (entries.size() >= MAX_TRIGGERS) {
             return Registration.LIMIT_REACHED;
         }
-        Entry entry = new Entry(trigger);
+        Entry entry = new Entry(trigger, onFire);
         entries.add(entry);
         arm(entry);
         log.info("[Trigger] {} registered; next fire {} ({} ticks)", trigger.describe(), entry.next,
@@ -84,6 +87,11 @@ public class TemporalTriggerServiceImpl implements TemporalTriggerService {
     private void arm(Entry entry) {
         long armedGeneration = generation;
         entry.next = entry.trigger.nextFire(clock.now());
+        armAt(entry, armedGeneration);
+    }
+
+    /** Arms {@code entry.next} for the given program generation. */
+    private void armAt(Entry entry, long armedGeneration) {
         entry.ticks = Math.max(1, clock.ticksUntil(entry.next));
         scheduler.schedule((int) Math.min(entry.ticks, Integer.MAX_VALUE),
                 () -> onDue(entry, armedGeneration));
@@ -92,29 +100,53 @@ public class TemporalTriggerServiceImpl implements TemporalTriggerService {
     /**
      * A scheduled fire. A fire from a cleared/replaced program or one whose trigger was dropped is
      * ignored; an early fire (scheduler-before-clock order, or a rewound clock) is re-armed for the
-     * same target. Phase 3b runs the block actions right before re-arming.
+     * same target. A due fire runs the block actions first and then re-arms the next occurrence,
+     * unless the action itself replaced the program.
      */
     private void onDue(Entry entry, long armedGeneration) {
-        if (armedGeneration != generation || !entries.contains(entry)) {
+        if (isStale(entry, armedGeneration)) {
             return;
         }
         if (clock.now().compareTo(entry.next) < 0) {
-            entry.ticks = Math.max(1, clock.ticksUntil(entry.next));
-            scheduler.schedule((int) Math.min(entry.ticks, Integer.MAX_VALUE),
-                    () -> onDue(entry, armedGeneration));
+            armAt(entry, armedGeneration);
+            return;
+        }
+        runAction(entry);
+        if (isStale(entry, armedGeneration)) {
             return;
         }
         arm(entry);
     }
 
-    /** One registered trigger and the fire currently armed for it. */
+    /** True when the fire belongs to a replaced program or to a trigger no longer registered. */
+    private boolean isStale(Entry entry, long armedGeneration) {
+        return armedGeneration != generation || !entries.contains(entry);
+    }
+
+    /**
+     * Runs the trigger's block through the deferred runner the caller provided (the same one the
+     * event triggers use). A failing action is logged and swallowed: it must neither stop the timer
+     * nor take down the simulation tick. The visible channel for rejected actions is the runner's
+     * job, not this class's.
+     */
+    private void runAction(Entry entry) {
+        try {
+            entry.onFire.run();
+        } catch (RuntimeException e) {
+            log.error("[Trigger] {} action failed", entry.trigger.describe(), e);
+        }
+    }
+
+    /** One registered trigger, its block action and the fire currently armed for it. */
     private static final class Entry {
         private final TemporalTrigger trigger;
+        private final Runnable onFire;
         private GameTime next;
         private long ticks;
 
-        private Entry(TemporalTrigger trigger) {
+        private Entry(TemporalTrigger trigger, Runnable onFire) {
             this.trigger = trigger;
+            this.onFire = onFire;
         }
     }
 }

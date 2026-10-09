@@ -29,7 +29,7 @@ El lenguaje es **sensible a mayúsculas en todos los puntos de entrada** (consol
 
 ## ⚙️ Estructura del Lenguaje
 
-El lenguaje admite tres tipos principales de sentencias: comandos directos, creación/asignación de itinerarios (Autopilot) y bloques disparados por eventos (*triggers*).
+El lenguaje admite cuatro tipos principales de sentencias: comandos directos, creación/asignación de itinerarios (Autopilot), bloques disparados por eventos (*triggers*) y bloques disparados por el reloj (`at` / `every`).
 
 ### 1. Comandos Directos
 Se ejecutan inmediatamente. **Requieren punto y coma (`;`) al final**.
@@ -155,7 +155,57 @@ Responde a eventos del juego en tiempo real.
 
 **Comentarios:** `#` inicia un comentario de línea en cualquier punto del lenguaje (consola, `program { … }`, triggers y escenarios). Todo lo que sigue al `#` hasta el final de la línea se ignora.
 
-### 4. Comandos del Juego y Editor (Consola)
+### 4. Automatización por Reloj (`at` / `every`)
+
+Ejecuta bloques de acciones según el **reloj de juego** en lugar de según eventos. La sintaxis se acepta en `program { … }` y en la consola, igual que los triggers de eventos, y el bloque es el **mismo bloque de acciones** que los triggers de eventos (terminado en `;`, sin anidar).
+
+**Estructura Base:**
+```letrain
+at 6:30 {
+    semaphore 1 open;
+}
+
+every 30m {
+    semaphore 1 invert;
+}
+```
+
+- `at HH[:MM]` se dispara **cada día** a esa hora del reloj de juego. La hora usa el mismo formato que `arrival`/`departure`: `at 6` es 06:00 y `at 6:30` es 06:30; medianoche es `at 0:00`.
+- `every <cantidad>m|h|d` se dispara **periódicamente**: `m` minutos de juego, `h` horas de juego, `d` días de juego (`30m`, `2h`, `1d`).
+  - **Rejilla**: se dispara en una rejilla fija anclada a las 00:00 del reloj de juego (`every 30m` → 00:00, 00:30, 01:00…; `every 1h` → en punto). Si se registra a mitad de tramo, el primer disparo es el siguiente punto de la rejilla: creado a las 10:07, `every 30m` se dispara por primera vez a las 10:30.
+  - **Ancla `from` (opcional)**: `every 30m from 6:00` se dispara a las 6:00, 6:30, 7:00…; `every 30m from 6:15` a las 6:15, 6:45, 7:15…; si el periodo no divide el día, la rejilla sigue desplazándose de un día al siguiente (`every 45m from 6:15` → 6:15, 7:00, 7:45, 8:30…).
+- **Acciones**: el mismo conjunto que los triggers de eventos (ver sección 3): acciones de semáforo y aguja, y acciones de tren con **referencia explícita** (`train [ID] …` o `train at station|sensor|fork|semaphore [REF] …`). Una acción de tren genérica **sin referencia** (`train set speed 5;`) no tiene sentido en un bloque temporal (el ámbito es **global**): avisa de forma visible cuando el trigger se dispara y se ignora, mientras el resto del bloque sigue ejecutándose.
+- **Límites**: como máximo **64** triggers temporales activos. Un duplicado exacto (`at 6:30` registrado dos veces) avisa y se ignora, y un trigger que supera el límite también avisa y se ignora. De un duplicado solo llega a ejecutarse el primer bloque registrado.
+- **Guardado/carga (sin puesta al día)**: al cargar se reaplica el programa guardado. Una hora `at` ya pasada se programa para el **día siguiente**, y `every` continúa desde el reloj actual (su siguiente punto de rejilla): las horas que el juego estuvo cerrado no se recuperan de golpe.
+- **Reemplazo de programa**: al aplicar un programa (editor o sentencia `program`) se limpia el registro global y se re-registran los triggers del nuevo programa; los disparos ya armados del programa sustituido son no-ops inofensivos.
+- **Determinista**: los disparos se calculan con ticks de simulación, nunca con el reloj de pared, así que el replay y el undo reproducen las mismas horas de juego. La **pausa de edición congela el reloj**: los disparos no se acumulan en pausa; se reanudan donde quedó el reloj.
+
+Ejemplo: apertura y cierre diarios, servicio horario de mercancías y una orden de carga periódica para el tren que esté en la mina:
+
+```letrain
+# Apertura y cierre diarios de la línea
+at 6:30 {
+    semaphore 1 open;
+}
+at 21:00 {
+    semaphore 1 close;
+}
+
+# Servicio horario de mercancías
+every 1h {
+    train 5 set engine on;
+}
+
+# Cada 30 minutos desde las 06:15: carga el tren que esté en la mina
+every 30m from 6:15 {
+    train at station "Mine" load;
+}
+```
+
+> `station N load` no es una acción de trigger: `load`/`unload` siempre pertenecen a un **tren**,
+> así que escribe `train N load;` o `train at station N load;`.
+
+### 5. Comandos del Juego y Editor (Consola)
 Puedes teclear estos comandos directamente en el CLI para gestionar el estado del juego, el cursor y los archivos.
 
 **Estado del Juego y Archivos:**
@@ -239,6 +289,11 @@ train 1 set autopilot true;
 sensor "Entrada" on train enter {
     fork 2 set straight;
     semaphore 1 set open;
+}
+
+# Abrimos la línea cada mañana con el reloj de juego
+at 6:30 {
+    semaphore 1 open;
 }
 ```
 

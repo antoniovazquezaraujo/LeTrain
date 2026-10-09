@@ -20,9 +20,9 @@ import org.junit.jupiter.api.Test;
 
 /**
  * ADR-022 phase 3, F3a: temporal triggers in the program (grammar, world registry and scheduling).
- * The block actions are not executed yet (that is F3b); these tests check that the trigger is
- * parsed, registered with the right shape and that its next fire is armed from the game clock.
- * Deterministic: only game ticks drive the clock.
+ * These tests check that the trigger is parsed, registered with the right shape and that its next
+ * fire is armed from the game clock; execution and save/load live in
+ * {@link TemporalTriggerExecutionTest} (F3b). Deterministic: only game ticks drive the clock.
  */
 @DisplayName("Temporal trigger program: registry and scheduling (ADR-022 phase 3, F3a)")
 class TemporalTriggerProgramTest {

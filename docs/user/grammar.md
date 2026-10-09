@@ -29,7 +29,7 @@ The language is **case-sensitive in every entry point** (console, triggers and `
 
 ## ⚙️ Language Structure
 
-The language supports three main types of statements: direct commands, itinerary creation/assignment (Autopilot), and event-triggered blocks (*triggers*).
+The language supports four main types of statements: direct commands, itinerary creation/assignment (Autopilot), event-triggered blocks (*triggers*) and time-triggered blocks (`at` / `every`).
 
 ### 1. Direct Commands
 These are executed immediately. **They require a semicolon (`;`) at the end**.
@@ -156,7 +156,57 @@ Responds to game events in real-time.
 
 **Comments:** `#` starts a line comment anywhere in the language (console, `program { … }`, triggers and scenarios). Everything after the `#` up to the end of the line is ignored.
 
-### 4. Game & Editor Commands (Console)
+### 4. Time-Triggered Automation (`at` / `every`)
+
+Runs action blocks by the **game clock** instead of by game events. The syntax is accepted in `program { … }` and in the console, just like event triggers, and the block is the **same action block** as the event triggers (`;`-terminated, no nesting).
+
+**Base Structure:**
+```letrain
+at 6:30 {
+    semaphore 1 open;
+}
+
+every 30m {
+    semaphore 1 invert;
+}
+```
+
+- `at HH[:MM]` fires **every day** at that time of the game clock. The time uses the same format as `arrival`/`departure`: `at 6` is 06:00 and `at 6:30` is 06:30; midnight is `at 0:00`.
+- `every <amount>m|h|d` fires **periodically**: `m` game minutes, `h` game hours, `d` game days (`30m`, `2h`, `1d`).
+  - **Grid**: fires on a fixed grid anchored at 00:00 of the game clock (`every 30m` → 00:00, 00:30, 01:00…; `every 1h` → on the hour). Registered mid-slot, the first fire is the next grid point: created at 10:07, `every 30m` first fires at 10:30.
+  - **`from` anchor (optional)**: `every 30m from 6:00` fires at 6:00, 6:30, 7:00…; `every 30m from 6:15` at 6:15, 6:45, 7:15…; when the period does not divide the day the grid keeps drifting across midnight (`every 45m from 6:15` → 6:15, 7:00, 7:45, 8:30…).
+- **Actions**: the same set as event triggers (see section 3): semaphore and fork actions, and train actions with an **explicit reference** (`train [ID] …` or `train at station|sensor|fork|semaphore [REF] …`). A generic train action with **no train reference** (`train set speed 5;`) has no meaning in a time block (the scope is **global**): it warns visibly when the trigger fires and is ignored, while the rest of the block still runs.
+- **Limits**: at most **64** active temporal triggers. An exact duplicate (`at 6:30` registered twice) is warned and ignored, and a trigger over the limit is warned and ignored too. Only the first registered block of a duplicate ever runs.
+- **Save/load (no catch-up)**: the stored program is re-applied on load. An `at` time already passed is scheduled for the **next day**, and `every` continues from the current clock (its next grid point): the hours the game was closed are never replayed in a burst.
+- **Program replace**: applying a program (editor or `program` statement) clears the world registry and re-registers the new program's triggers; fires already armed for the replaced program are harmless no-ops.
+- **Deterministic**: fires are computed from simulation ticks, never the wall clock, so replay and undo reproduce the same game times. The **editing pause freezes the clock**: fires do not accumulate while paused; they resume where the clock was left.
+
+Example: a daily opening and closing, an hourly goods call and a periodic loading order for the train resting at the mine:
+
+```letrain
+# Daily opening and closing of the line
+at 6:30 {
+    semaphore 1 open;
+}
+at 21:00 {
+    semaphore 1 close;
+}
+
+# Hourly goods service
+every 1h {
+    train 5 set engine on;
+}
+
+# Every 30 minutes from 06:15: load the train resting at the mine
+every 30m from 6:15 {
+    train at station "Mine" load;
+}
+```
+
+> `station N load` is not a trigger action: `load`/`unload` always belong to a **train**, so write
+> `train N load;` or `train at station N load;`.
+
+### 5. Game & Editor Commands (Console)
 You can type these commands directly into the CLI to manage the game state, cursor, and files.
 
 **Game State & Files:**
@@ -240,6 +290,11 @@ train 1 set autopilot true;
 sensor "Approach" on train enter {
     fork 2 set straight;
     semaphore 1 set open;
+}
+
+# Open the line every morning with the game clock
+at 6:30 {
+    semaphore 1 open;
 }
 ```
 
