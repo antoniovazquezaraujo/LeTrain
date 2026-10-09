@@ -4,9 +4,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 import letrain.segments.BlockManager;
 import letrain.segments.Segment;
 import letrain.vehicle.rail.impl.Train;
@@ -16,6 +18,10 @@ public class BlockManagerImpl implements BlockManager {
     private final Map<Segment, List<Train>> segmentOwners = new ConcurrentHashMap<>();
     // Mapa inverso para optimizar consultas de trenes
     private final Map<Train, List<Segment>> trainSegments = new ConcurrentHashMap<>();
+    // Turno FIFO por tren que espera un cantón (ADR-022 fase 2d). El contador es monótono y
+    // determinista: se asigna en orden de petición, sin reloj de pared.
+    private final Map<Train, Long> waitTurns = new ConcurrentHashMap<>();
+    private final AtomicLong nextWaitTurn = new AtomicLong();
 
     private java.util.function.Consumer<Segment> onReleaseListener;
 
@@ -77,6 +83,7 @@ public class BlockManagerImpl implements BlockManager {
         if (train == null) {
             return;
         }
+        clearWaitTurn(train);
         List<Segment> owned = trainSegments.get(train);
         if (owned != null) {
             // Use a copy to avoid ConcurrentModificationException
@@ -96,6 +103,8 @@ public class BlockManagerImpl implements BlockManager {
     public void clearAll() {
         segmentOwners.clear();
         trainSegments.clear();
+        waitTurns.clear();
+        nextWaitTurn.set(0);
     }
 
     private void registerTrainSegment(Train train, Segment segment) {
@@ -110,5 +119,23 @@ public class BlockManagerImpl implements BlockManager {
     @Override
     public Set<Segment> getAllLockedSegments() {
         return segmentOwners.keySet();
+    }
+
+    @Override
+    public long requestWaitTurn(Train train) {
+        // computeIfAbsent assigns the next turn only once per wait: re-requests keep the original
+        // turn, so a train that is already waiting does not lose its arrival order.
+        return waitTurns.computeIfAbsent(train, k -> nextWaitTurn.getAndIncrement());
+    }
+
+    @Override
+    public OptionalLong getWaitTurn(Train train) {
+        Long turn = waitTurns.get(train);
+        return turn != null ? OptionalLong.of(turn) : OptionalLong.empty();
+    }
+
+    @Override
+    public void clearWaitTurn(Train train) {
+        waitTurns.remove(train);
     }
 }

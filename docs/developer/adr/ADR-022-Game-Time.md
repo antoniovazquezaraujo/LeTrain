@@ -437,24 +437,20 @@ Consecuencias:
   cantón, justo delante de la frontera**, el cruce completo. No puede "avanzar hasta el apartadero"
   porque, para los cantones, ese apartadero no delimita nada: es el mismo segmento.
 
-**Hoy (a sustituir por la decisión de abajo)**: cuando el cantón se libera, `Model` avisa a los que
-esperan **recorriendo `model.getLocomotives()` en orden**, y el primero de esa lista que está
-esperando el cantón reintenta el lock en el acto (`tryLock` es síncrono) y se lo queda. No es
-aleatorio —es determinista y reproducible—, pero **no es FIFO por llegada**: `locomotives` es el
-registro de locomotoras del mundo en **orden de creación** (o el del guardado, al cargar) y **no se
-reordena con el tráfico**, así que gana la locomotora más veterana de las que esperan, aunque haya
-llegado más tarde. El que pierde reintenta en la siguiente liberación (no hay inanición, aunque
-puede encadenar esperas). Además, antes de esperar el tren intenta `tryAlternativeSegment`: si
-existe un cantón paralelo entre los mismos nodos (p. ej. la vía de apartado) y no tiene paradas
-pendientes en el bloqueado, lo toma y evita la espera.
-
-**Decidido (a implementar)**: la prioridad debe ser **FIFO por llegada al cantón**, no el orden del
-registro de locomotoras. Plan: al empezar a esperar, el tren pide un **turno** monótono
-(determinista, sin reloj de pared, mantenido en el `BlockManager`); al liberarse el cantón, `Model`
-ordena a los que esperan por ese turno (empate: id de locomotora) y el primero que lo reclama se lo
-lleva; el turno se limpia al dejar de esperar. Hoy gana la más veterana; pasar a FIFO es pequeño y
-hay `BlockManagerTest`, `BlockReleaseIntegrationTest` y `TrainSafetyManagerTest` para cubrirlo. El
-PR de implementación sustituirá el párrafo *Hoy* de arriba por la descripción del FIFO.
+**FIFO por llegada (implementado)**: al empezar a esperar un cantón, el tren pide un **turno**
+monótono al `BlockManager` (`requestWaitTurn`), asignado en orden de petición y **sin reloj de
+pared** (determinista y reproducible en journal/replay). Mientras espera conserva su turno (la
+petición es idempotente: no lo pierde si se reevalúa la espera). Cuando el cantón se libera, `Model`
+recoge a todos los trenes que esperan ese cantón y **los ordena por turno** (empate: id de
+locomotora; un tren con varias locomotoras cuenta una vez); el primero de la cola reintenta el lock
+en el acto (`tryLock` es síncrono) y se lo queda. El turno se limpia al dejar de esperar, así que la
+siguiente espera del mismo tren pide un turno nuevo y va al final de la cola. El que pierde
+reintenta en la siguiente liberación (no hay inanición, aunque puede encadenar esperas). Cada
+espera pide su turno en el momento en que empieza (`scheduleStopAtBoundary`), también cuando un
+cruce se resuelve por `tryAlternativeSegment`. Además, antes de esperar el tren intenta
+`tryAlternativeSegment`: si existe un cantón paralelo entre los mismos nodos (p. ej. la vía de
+apartado) y no tiene paradas pendientes en el bloqueado, lo toma y evita la espera. Cubierto por
+`BlockManagerTest`, `BlockReleaseIntegrationTest` y `TrainSafetyManagerTest`.
 
 **Prioridades (diseño previsto, para cuando lleguen los trenes de pasajeros)**: la cola se ordenará
 por la clave **`(clase, turno)`** — clases tipo **pasajeros > mercancías > maniobras**, FIFO dentro
