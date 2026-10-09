@@ -4,7 +4,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import java.util.Collections;
+import java.util.Optional;
 import letrain.economy.EconomyManager;
+import letrain.itinerary.AutoPilot;
+import letrain.itinerary.Punctuality;
+import letrain.itinerary.Waypoint;
 import letrain.map.Point;
 import letrain.mvp.Model;
 import letrain.mvp.impl.terminal.TerminalView;
@@ -103,5 +107,61 @@ class InfoVisitorTest {
         // D1 contextual channel: the short notice travels with the command bar.
         verify(view).drawCommandLine("train 99 set speed 3;", "",
                 "Train 99 not found; order ignored");
+    }
+
+    /** First info-bar line (the train status row) for a model with the given locomotive. */
+    private static String firstInfoLine(Locomotive loco) {
+        TerminalView view = mock(TerminalView.class);
+        when(view.getCols()).thenReturn(100);
+        when(view.getMapScrollPage()).thenReturn(new Point(0, 0));
+
+        Model model = mock(Model.class);
+        when(model.getMode()).thenReturn(Model.GameMode.DRIVE);
+        when(model.getMenuModel()).thenReturn(Collections.emptyList());
+        when(model.getSelectedLocomotive()).thenReturn(loco);
+
+        Cursor cursor = mock(Cursor.class);
+        when(cursor.getPosition()).thenReturn(new Point(10, 20));
+        when(model.getCursor()).thenReturn(cursor);
+        when(model.getQuantifierSteps()).thenReturn(1);
+        when(model.getQuantifier()).thenReturn(1);
+
+        InfoVisitor visitor = new InfoVisitor(view);
+        visitor.visitModel(model);
+
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(view).setInfoBarText(captor.capture());
+        return captor.getValue().split("\n")[0];
+    }
+
+    @Test
+    @DisplayName("the train row appends the signed punctuality once the timetable measured a stop")
+    void visitModel_showsSignedPunctuality_whenTimetableMeasured() {
+        Locomotive loco = new Locomotive(1, "A");
+        Train train = new Train(1);
+        train.pushBack(loco);
+        Punctuality punctuality = new Punctuality();
+        punctuality.recordArrival(Waypoint.Type.STATION, 1, 2);
+        AutoPilot autopilot = mock(AutoPilot.class);
+        when(autopilot.punctuality()).thenReturn(Optional.of(punctuality));
+        train.setAutopilot(autopilot);
+
+        String firstLine = firstInfoLine(loco);
+
+        assertTrue(firstLine.contains("Train: 1"), firstLine);
+        assertTrue(firstLine.contains("| Punct: +2"), firstLine);
+    }
+
+    @Test
+    @DisplayName("a train without measured times shows no punctuality in the train row")
+    void visitModel_hidesPunctuality_withoutMeasurements() {
+        Locomotive loco = new Locomotive(1, "A");
+        Train train = new Train(1);
+        train.pushBack(loco);
+
+        String firstLine = firstInfoLine(loco);
+
+        assertTrue(firstLine.contains("Train: 1"), firstLine);
+        assertFalse(firstLine.contains("Punct"), firstLine);
     }
 }

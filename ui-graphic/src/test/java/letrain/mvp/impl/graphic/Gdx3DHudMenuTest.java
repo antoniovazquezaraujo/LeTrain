@@ -3,8 +3,14 @@ package letrain.mvp.impl.graphic;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Optional;
+import letrain.itinerary.AutoPilot;
+import letrain.itinerary.Punctuality;
+import letrain.itinerary.Waypoint;
 import letrain.mvp.MenuText;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameModeMenuOption;
@@ -116,6 +122,36 @@ class Gdx3DHudMenuTest {
     @DisplayName("no selected train means no status row")
     void should_FormatEmptyStatusWithoutSelection() {
         assertEquals("", Gdx3DHud.trainStatusText(null));
+    }
+
+    @Test
+    @DisplayName("the status row appends the signed punctuality with the info train format")
+    void should_FormatTrainStatusWithPunctuality() {
+        Locomotive loco = new Locomotive(7, "A");
+        loco.setCurrentSpeed(3);
+        loco.setTargetSpeed(5);
+        Train train = new Train(1);
+        train.pushBack(loco);
+        Punctuality punctuality = new Punctuality();
+        punctuality.recordDeparture(Waypoint.Type.STATION, 4, -1);
+        AutoPilot autopilot = mock(AutoPilot.class);
+        when(autopilot.punctuality()).thenReturn(Optional.of(punctuality));
+        train.setAutopilot(autopilot);
+
+        String status = Gdx3DHud.trainStatusText(loco);
+
+        assertEquals("Train: 1 | Speed: [GREEN]■[][GREEN]■[][GREEN]■[]□[RED]■[]□□□□□ 3->5"
+                + " | Wagons: 0 | Punct: -1", status);
+    }
+
+    @Test
+    @DisplayName("a train without measured times shows no punctuality in the status row")
+    void should_HidePunctualityWithoutMeasurements() {
+        Locomotive loco = new Locomotive(7, "A");
+        Train train = new Train(1);
+        train.pushBack(loco);
+
+        assertFalse(Gdx3DHud.trainStatusText(loco).contains("Punct"));
     }
 
     @Test

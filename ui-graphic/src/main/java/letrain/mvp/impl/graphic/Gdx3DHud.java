@@ -26,6 +26,7 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import letrain.itinerary.Punctuality;
 import letrain.mvp.MenuText;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameModeMenuOption;
@@ -748,9 +749,23 @@ public class Gdx3DHud {
         int wagonsCount = (train != null && train.getLinkers() != null)
                 ? Math.max(0, train.getLinkers().size() - 1)
                 : 0;
-        return String.format("Train: %d | Speed: %s %s | Wagons: %d%s", trainId,
+        return String.format("Train: %d | Speed: %s %s | Wagons: %d%s%s", trainId,
                 notchBar(speed, target, 10), speedStr, wagonsCount,
-                loco.isReversed() ? " (Rev)" : "");
+                loco.isReversed() ? " (Rev)" : "", punctualitySuffix(train));
+    }
+
+    /**
+     * Compact punctuality suffix for the Train row (ADR-022 phase 2c): {@code " | Punct: +2"}.
+     * Empty when the train has no autopilot or no measured stop, so a train without times shows
+     * nothing. The value comes from {@link Punctuality#compact()}, the same formatting the
+     * {@code info train N} block uses.
+     */
+    private static String punctualitySuffix(Train train) {
+        if (train == null || train.getAutopilot() == null) {
+            return "";
+        }
+        return train.getAutopilot().punctuality().map(Punctuality::compact)
+                .map(value -> " | Punct: " + value).orElse("");
     }
 
     /**
