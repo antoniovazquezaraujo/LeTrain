@@ -1,6 +1,6 @@
 # ADR-022: Tiempo de Juego (Reloj, Día/Noche y Horarios)
 
-## Estado: PROPUESTO — fase 0 implementada (reloj, HUD y comando `time set`); fase 2a implementada (gramática y modelo de horarios); fase 2b implementada (retención, `park` y métrica de puntualidad en core); fase 2c implementada (desviación firmada en la línea de estado del HUD 2D/3D); saneo de sintaxis del lote 2 aplicado (`time set HH`, `park`/`stop` directos, `invert`≡`reverse`, sin auto-giro, comas del plan, comentarios `#`); enmienda de física: el arranque 0→1 cuesta `START_STEP_TICKS` (100 ticks), igual que un tramo completo
+## Estado: PROPUESTO — fase 0 implementada (reloj, HUD y comando `time set`); fase 2 **completa** (#621–#626 y #645): gramática y modelo de horarios (2a), retención/`park`/puntualidad en core (2b), desviación firmada en el HUD 2D/3D (2c), maniobras de waypoint, `stop on contact` y arbitraje FIFO de cantones; fase 3 (disparadores temporales `at`/`every`, #563) con **contrato congelado** (D1–D7, ver *Disparadores temporales (fase 3)*), pendiente de implementación (F3a–F3d); saneo de sintaxis del lote 2 aplicado (`time set HH`, `park`/`stop` directos, `invert`≡`reverse`, sin auto-giro, comas del plan, comentarios `#`); enmienda de física: el arranque 0→1 cuesta `START_STEP_TICKS` (100 ticks), igual que un tramo completo
 
 ## Contexto
 
@@ -59,8 +59,8 @@ elegida en cada punto:
    `SimulationScheduler`; nada de lógica nueva en bucles periódicos.
 7. **`WAIT n` se mantiene en segundos de simulación** para no romper escenarios existentes. Los
    horarios se expresan en tiempo de juego como atributos del waypoint (`arrival HH:MM` /
-   `departure HH:MM`, ver *Horarios*); los disparadores temporales (`at "HH:mm"` / `every 30m`)
-   llegan en la fase 3.
+   `departure HH:MM`, ver *Horarios*); los disparadores temporales (`at HH:MM` / `every <periodo>`,
+   contrato congelado en *Disparadores temporales (fase 3)*) llegan en la fase 3.
 8. **Día/noche es visual** en esta fase (paleta del terminal y luz/faros en 3D); `isNight()` y
    `getDayNightRatio()` quedan disponibles para un futuro efecto sobre el gameplay.
 9. **Comando de consola del reloj**: `time;` muestra la hora actual (`Día 1 08:00`);
@@ -492,6 +492,83 @@ horario) en lugar de confiar en el plan.
 Punto abierto: fijar el parámetro de la antiinanición (X minutos de espera o N cesiones
 consecutivas) cuando existan los trenes de pasajeros.
 
+### Disparadores temporales (fase 3): `at` / `every` — contrato congelado
+
+Issue **#563**. Acciones automatizadas que se disparan por el **reloj de juego**, complementando los
+triggers de eventos ya existentes (`sensor 1 on train enter { … }`). El contrato está **congelado**
+(decisiones D1–D7); la implementación llega en las rebanadas F3a–F3d.
+
+**Sintaxis** (dentro de `program { … }` y en scripts de escenario):
+
+```letrain
+at 6:30 {
+    semaphore 1 open;
+}
+
+every 30m {
+    station 2 load;
+}
+```
+
+- `at <hora>` — se dispara **cada día** a esa hora del reloj de juego (`HH:MM`, misma forma que
+  `arrival`/`departure`; medianoche incluida).
+- `every <periodo>` — se dispara **periódicamente**; unidades `m` (minutos de juego), `h` (horas) y
+  `d` (días). Ej.: `30m`, `2h`, `1d`.
+  - **Anclaje (D7)**: rejilla fija del reloj desde las 00:00 del día de juego (`30m` → 00:00, 00:30,
+    01:00…; `1h` → en punto). Si se registra a mitad de tramo, el primer disparo es el siguiente
+    punto de la rejilla (creado a las 10:07 con `30m` → primer disparo 10:30).
+  - Azúcar opcional: `every 30m from 6:00` → 6:00, 6:30, 7:00…; `every 30m from 6:15` → 6:15, 6:45,
+    7:15…; `every 1h from 5:30` → 5:30, 6:30…; si el periodo no encaja en el día, sigue de un día al
+    siguiente (`every 45m from 6:15` → 6:15, 7:00, 7:45, 8:30…).
+- Los bloques van entre llaves, terminan sus acciones con `;` y no se anidan.
+- Sin selectores: el ámbito es **global** (el mundo), no por tren, en esta fase.
+
+**Semántica**:
+
+- **Determinista**: se calcula desde los **ticks** (`GameClock`, 20 TPS), nunca reloj de pared.
+  Replay/undo/escenarios reproducen los mismos disparos (ADR-020).
+- **Ejecución**: en el tick en que el reloj cruza el umbral (o el primero siguiente si la simulación
+  está pausada). La pausa de edición congela el reloj: no se acumulan disparos.
+- **Ámbito**: `program { … }` y consola. Registro en el mundo; un `create`/reemplazo del programa los
+  re-registra.
+- **Acciones permitidas**: las mismas que los triggers de eventos actuales (semáforos, forks,
+  acciones con selector `train at …`), más los comandos directos ya admitidos en trigger. Lo no
+  permitido: **aviso visible** y no se ejecuta.
+- **Carga de partida**: los `at` de horas ya pasadas **no se recuperan** (se programan para el día
+  siguiente); `every` continúa desde el reloj actual, sin catch-up. Decisión de simplicidad; evita
+  ráfagas al cargar.
+- **Límite**: máximo N temporizadores activos (p. ej. 64) con aviso; duplicados exactos advertidos.
+
+Casos de uso que validan la sintaxis:
+
+```letrain
+at 6:30  { semaphore 1 open; }                  # apertura matinal de la línea
+at 21:00 { semaphore 1 close; }                 # cierre nocturno
+every 1h { train 5 set engine on; }             # servicio horario de mercancías
+```
+
+**Decisiones congeladas (D1–D7)**:
+
+| # | Decisión | Congelada |
+|---|---|---|
+| D1 | Forma de la hora | `at 7:00` (coherente con `arrival`/`departure`) |
+| D2 | Recurrencia de `at` | diaria |
+| D3 | Unidades de `every` | `m`/`h`/`d` |
+| D4 | Al cargar partida | saltar eventos pasados (sin catch-up) |
+| D5 | Ámbito | global |
+| D6 | Acciones dentro | las mismas que los triggers de eventos |
+| D7 | Anclaje de `every` | rejilla fija del reloj anclada a 00:00 + `from HH:MM` opcional |
+
+**Plan por rebanadas**:
+
+- **F3a** — gramática + modelo + scheduling por `ticksUntil(GameTime)`; `help`; tests deterministas.
+- **F3b** — ejecución en el tick, replay/undo/save-load, avisos de acciones rechazadas.
+- **F3c** — demanda por franjas (se apoya en la economía de la fase 4).
+- **F3d** — integración con trenes de pasajeros (después del diseño de `PassengerTrains_Design.md`).
+
+**Fuera de alcance (fase 3)**: pasajeros como entidades individuales (el diseño ya propone
+intercambio abstracto) y triggers por fecha/estación del año (posible fase posterior).
+
 ### Contrato (implementado en la fase 0)
 
 ```java
@@ -522,15 +599,17 @@ public interface GameClock {
 |---|---|---|
 | 0 | Reloj de juego: `GameClock`, `time.dayDurationSeconds`, serialización, reloj en HUD 2D/3D y comando `time set` | Sin efecto en gameplay; tests deterministas |
 | 1 | Día/noche: paleta 2D, sol/luna/cielo, luz ambiental, faros y farolas en 3D usando `isNight()`/`getDayNightRatio()` | Visual; coordinar con #480 |
-| 2 | Horarios: `arrival` / `departure` por parada en los itinerarios y puntualidad básica; cruces en vía única y apartaderos | El autopilot retiene hasta la salida programada; se mide el delta |
-| 3 | Triggers temporales (`at`/`every`) y demanda por franjas; integración con trenes de pasajeros | Engancha con `PassengerTrains_Design.md` |
+| 2 | Horarios: `arrival` / `departure` por parada en los itinerarios y puntualidad básica; cruces en vía única y apartaderos | **Completa** (#621–#626 y #645): el autopilot retiene hasta la salida programada; se mide el delta |
+| 3 | Triggers temporales (`at`/`every`) y demanda por franjas; integración con trenes de pasajeros. **Contrato congelado** (#563, D1–D7; ver *Disparadores temporales (fase 3)*) | Rebanadas F3a–F3d; engancha con `PassengerTrains_Design.md` |
 | 4 | Economía horaria: mantenimiento diario, turnos de producción, tarifas por franja y bonus/multa por puntualidad | Reglas de negocio |
 
 ## Decisiones pendientes
 
-- Fase 2 diseñada (ver *Horarios* y *Cruces en vía única*): solo queda fijar el parámetro de la
-  antiinanición (X minutos de espera o N cesiones consecutivas) cuando existan los trenes de
-  pasajeros.
+- Fase 2 **implementada** (ver *Horarios* y *Cruces en vía única*): el único fleco abierto es fijar
+  el parámetro de la antiinanición (X minutos de espera o N cesiones consecutivas) cuando existan
+  los trenes de pasajeros.
+- Fase 3 con **contrato congelado** (D1–D7, ver *Disparadores temporales (fase 3)*): sin decisiones
+  abiertas; queda su implementación por rebanadas F3a–F3d.
 
 ## Alternativas consideradas
 
