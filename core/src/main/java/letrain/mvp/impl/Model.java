@@ -51,6 +51,14 @@ public class Model implements letrain.mvp.Model {
     @JsonIgnore
     private final transient letrain.utils.SimulationScheduler scheduler;
 
+    /**
+     * Temporal trigger registry and scheduler (ADR-022 phase 3, F3a). Transient like the scheduler:
+     * it is rebuilt on load and repopulated when the saved program is re-applied ({@code
+     * postLoadInit}).
+     */
+    @JsonIgnore
+    private transient letrain.time.TemporalTriggerService temporalTriggerService;
+
     @JsonIgnore
     private transient letrain.segments.RailwayGraph currentGraph;
 
@@ -1472,6 +1480,15 @@ public class Model implements letrain.mvp.Model {
     @JsonIgnore
     public letrain.utils.SimulationScheduler getScheduler() {
         return scheduler;
+    }
+
+    @Override
+    public letrain.time.TemporalTriggerService getTemporalTriggerService() {
+        if (temporalTriggerService == null) {
+            temporalTriggerService =
+                    new letrain.time.impl.TemporalTriggerServiceImpl(gameClock, scheduler);
+        }
+        return temporalTriggerService;
     }
 
     private letrain.track.Sensor selectedSensor;

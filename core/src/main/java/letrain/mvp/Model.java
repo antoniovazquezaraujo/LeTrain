@@ -25,6 +25,12 @@ public interface Model {
 
     letrain.time.GameClock getGameClock();
 
+    /**
+     * World registry of temporal triggers ({@code at}/{@code every}, ADR-022 phase 3). The scope is
+     * global (D5) and a program replace clears and re-registers it through the automation engine.
+     */
+    letrain.time.TemporalTriggerService getTemporalTriggerService();
+
     public void addScriptTrainEventListener(ScriptTrainEventListener listener);
 
     public void addCoreTrainEventListener(CoreTrainEventListener listener);

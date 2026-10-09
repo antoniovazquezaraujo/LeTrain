@@ -1,6 +1,6 @@
 # ADR-022: Tiempo de Juego (Reloj, Día/Noche y Horarios)
 
-## Estado: PROPUESTO — fase 0 implementada (reloj, HUD y comando `time set`); fase 2 **completa** (#621–#626 y #645): gramática y modelo de horarios (2a), retención/`park`/puntualidad en core (2b), desviación firmada en el HUD 2D/3D (2c), maniobras de waypoint, `stop on contact` y arbitraje FIFO de cantones; fase 3 (disparadores temporales `at`/`every`, #563) con **contrato congelado** (D1–D7, ver *Disparadores temporales (fase 3)*), pendiente de implementación (F3a–F3d); saneo de sintaxis del lote 2 aplicado (`time set HH`, `park`/`stop` directos, `invert`≡`reverse`, sin auto-giro, comas del plan, comentarios `#`); enmienda de física: el arranque 0→1 cuesta `START_STEP_TICKS` (100 ticks), igual que un tramo completo
+## Estado: PROPUESTO — fase 0 implementada (reloj, HUD y comando `time set`); fase 2 **completa** (#621–#626 y #645): gramática y modelo de horarios (2a), retención/`park`/puntualidad en core (2b), desviación firmada en el HUD 2D/3D (2c), maniobras de waypoint, `stop on contact` y arbitraje FIFO de cantones; fase 3 (disparadores temporales `at`/`every`, #563) con **contrato congelado** (D1–D7, ver *Disparadores temporales (fase 3)*): **F3a implementada** (gramática, registro y scheduling; la ejecución de las acciones llega en F3b); saneo de sintaxis del lote 2 aplicado (`time set HH`, `park`/`stop` directos, `invert`≡`reverse`, sin auto-giro, comas del plan, comentarios `#`); enmienda de física: el arranque 0→1 cuesta `START_STEP_TICKS` (100 ticks), igual que un tramo completo
 
 ## Contexto
 
@@ -559,6 +559,17 @@ every 1h { train 5 set engine on; }             # servicio horario de mercancía
 | D6 | Acciones dentro | las mismas que los triggers de eventos |
 | D7 | Anclaje de `every` | rejilla fija del reloj anclada a 00:00 + `from HH:MM` opcional |
 
+**Implementación F3a** (issue #731, esta entrega): la sintaxis vive en `ScriptLogicParser`
+(`temporalTrigger`: `at`/`every`, `from` opcional, bloques `commandBlock` sin anidar) y el modelo
+en `letrain.time.TemporalTrigger` (tipo AT/EVERY, hora/periodo/from; `nextFire(GameTime)` devuelve
+la primera ocurrencia **estrictamente posterior**, con rejilla absoluta D7 —el ancla se conserva
+aunque el periodo no divida el día— y rollover de medianoche). El mundo mantiene el registro
+global (`letrain.time.TemporalTriggerService`: máximo 64 activos, duplicados exactos y periodos
+inválidos/`0m`/unidades desconocidas avisan por el canal visible) y cada trigger arma su siguiente
+disparo con `GameClock.ticksUntil(...)` en el `SimulationScheduler`; al reemplazar el programa,
+`AutomationEngine` limpia el registro y lo repuebla (`create`/reasignación). **F3a no ejecuta las
+acciones del bloque**: solo parsea, registra y programa (la ejecución en el tick es F3b).
+
 **Plan por rebanadas**:
 
 - **F3a** — gramática + modelo + scheduling por `ticksUntil(GameTime)`; `help`; tests deterministas.
@@ -609,7 +620,7 @@ public interface GameClock {
   el parámetro de la antiinanición (X minutos de espera o N cesiones consecutivas) cuando existan
   los trenes de pasajeros.
 - Fase 3 con **contrato congelado** (D1–D7, ver *Disparadores temporales (fase 3)*): sin decisiones
-  abiertas; queda su implementación por rebanadas F3a–F3d.
+  abiertas; F3a implementada y quedan las rebanadas F3b–F3d.
 
 ## Alternativas consideradas
 
