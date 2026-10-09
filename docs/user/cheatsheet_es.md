@@ -99,7 +99,7 @@ Si no se incluye una distancia después de un giro, se avanza por defecto un pas
 | Entidad | Comando | Ejemplo |
 | :--- | :--- | :--- |
 | **Fork** (Desvíos) | `fork <id> set straight;` / `set curved;` / `set <dirección>;` / `flip;` | `fork 1 set curved;` |
-| **Semaphore** (Semáforos) | `semaphore <id> open;` / `close;` / `invert;` | `semaphore 2 invert;` |
+| **Semaphore** (Semáforos) | `semaphore <id> open;` / `close;` / `toggle;` / `invert;` | `semaphore 2 toggle;` |
 | **Speed Signal** (Velocidad) | `signal <id> set limit <número>;` <br> `signal <id> set mode max;` / `set mode min;` <br> `signal <id> invert;` | `signal 3 set limit 120;` <br> `signal 3 set mode max;` |
 | **Station** (Estaciones) | `station <id> invert;` | `station 1 invert;` |
 | **Sensor** | `sensor <id> invert;` | `sensor 2 invert;` |

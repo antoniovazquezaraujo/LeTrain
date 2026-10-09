@@ -149,10 +149,19 @@ Responds to game events in real-time.
 - Accidents: `train 1 on crash`, `train on contact forward`.
 
 **Special actions inside blocks (must end with `;`):**
-- *Semaphores:* `semaphore [ID] open;` / `semaphore [ID] close|closed;` / `semaphore [ID] set open|closed;` / `semaphore [ID] invert;`
+- *Semaphores:* `semaphore [ID] open;` / `semaphore [ID] close|closed;` / `semaphore [ID] set open|closed;` / `semaphore [ID] toggle;` / `semaphore [ID] invert;` (`toggle` flips the light state; `invert` flips the direction)
 - *Forks:* `fork [ID] set straight;` / `fork [ID] set curved;` / `fork [ID] set <dir>;` / `fork [ID] set flip;` / `fork [ID] flip;` (same behaviour as the console and waypoints: the direction maps to the route leaving towards it and, if there is none, it warns)
 - *Conditional Train:* You can use `train at station [ID|"name"]`, `train at sensor [ID|"name"]`, `train at fork [ID]`, or `train at semaphore [ID]` instead of a fixed train number to apply actions to the specific train that triggered the event or is located there. The place is resolved when the action runs; an unknown name warns and nothing runs.
 - If a trigger selector (sensor/fork/semaphore/station) does not exist when it is registered, the trigger warns and is not installed.
+
+**Time triggers:** `at [HH:MM] { … }` runs the block every day at that game-clock time; `every [N]m|h|d [from [HH:MM]] { … }` runs it periodically. The actions are the same as in event triggers, so a light can blink on its own:
+
+```letrain
+# Blink the junction light every half hour
+every 30m {
+    semaphore 1 toggle;
+}
+```
 
 **Comments:** `#` starts a line comment anywhere in the language (console, `program { … }`, triggers and scenarios). Everything after the `#` up to the end of the line is ignored.
 
@@ -190,7 +199,7 @@ You can type these commands directly into the CLI to manage the game state, curs
 
 **Infrastructure Actions (Direct):**
 You can directly command infrastructure outside of triggers:
-- `semaphore [ID] set open;` / `semaphore [ID] set closed;` / `semaphore [ID] invert;`
+- `semaphore [ID] set open;` / `semaphore [ID] set closed;` / `semaphore [ID] toggle;` / `semaphore [ID] invert;` (`toggle` flips the light state; `invert` flips the direction)
 - `fork [ID] set straight;` / `fork [ID] set curved;` / `fork [ID] set <dir>;` / `fork [ID] set flip;` / `fork [ID] flip;`
 - `signal [ID] set limit [NUM];` / `signal [ID] set mode (max|min);` / `signal [ID] invert;`
 - `station [ID] invert;` - Flip a station to face the opposite direction along the rail (platform side switches, same as Space in STATIONS mode).

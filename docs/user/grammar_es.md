@@ -148,10 +148,19 @@ Responde a eventos del juego en tiempo real.
 - Accidentes: `train 1 on crash`, `train on contact forward`.
 
 **Acciones especiales dentro de bloques (terminan en `;`):**
-- *Semáforos:* `semaphore [ID] open;` / `semaphore [ID] close|closed;` / `semaphore [ID] set open|closed;` / `semaphore [ID] invert;`
+- *Semáforos:* `semaphore [ID] open;` / `semaphore [ID] close|closed;` / `semaphore [ID] set open|closed;` / `semaphore [ID] toggle;` / `semaphore [ID] invert;` (`toggle` conmuta el estado de la luz; `invert` cambia la dirección)
 - *Cambios de Aguja (Forks):* `fork [ID] set straight;` / `fork [ID] set curved;` / `fork [ID] set <dirección>;` / `fork [ID] set flip;` / `fork [ID] flip;` (mismo comportamiento que en consola y en waypoints: la dirección mapea a la ruta que sale hacia ella y, si no existe, avisa)
 - *Tren Condicional:* Puedes usar `train at station [ID|"nombre"]`, `train at sensor [ID|"nombre"]`, `train at fork [ID]`, o `train at semaphore [ID]` en lugar de usar un número fijo de tren para aplicar acciones al tren que disparó el evento o que se encuentre allí. El sitio se resuelve cuando la acción se ejecuta; un nombre desconocido avisa y no se ejecuta nada.
 - Si el selector del trigger (sensor/aguja/semáforo/estación) no existe al registrarlo, se avisa y el trigger no se instala.
+
+**Triggers temporales:** `at [HH:MM] { … }` ejecuta el bloque cada día a esa hora del reloj de juego; `every [N]m|h|d [from [HH:MM]] { … }` lo ejecuta periódicamente. Las acciones son las mismas que en los triggers de evento, así que una luz puede parpadear sola:
+
+```letrain
+# Parpadea la luz del cruce cada media hora
+every 30m {
+    semaphore 1 toggle;
+}
+```
 
 **Comentarios:** `#` inicia un comentario de línea en cualquier punto del lenguaje (consola, `program { … }`, triggers y escenarios). Todo lo que sigue al `#` hasta el final de la línea se ignora.
 
@@ -189,7 +198,7 @@ Puedes teclear estos comandos directamente en el CLI para gestionar el estado de
 
 **Acciones de Infraestructura (Directas):**
 Puedes dar comandos directos a la infraestructura fuera de los bloques de eventos:
-- `semaphore [ID] set open;` / `semaphore [ID] set closed;` / `semaphore [ID] invert;`
+- `semaphore [ID] set open;` / `semaphore [ID] set closed;` / `semaphore [ID] toggle;` / `semaphore [ID] invert;` (`toggle` conmuta el estado de la luz; `invert` cambia la dirección)
 - `fork [ID] set straight;` / `fork [ID] set curved;` / `fork [ID] set <dirección>;` / `fork [ID] set flip;` / `fork [ID] flip;`
 - `signal [ID] set limit [NUM];` / `signal [ID] set mode (max|min);` / `signal [ID] invert;`
 - `station [ID] invert;` - Invertir la orientación de una estación para que mire en sentido contrario a lo largo de la vía (el andén cambia de lado, igual que Espacio en modo STATIONS).

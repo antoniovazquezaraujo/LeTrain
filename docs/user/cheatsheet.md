@@ -97,7 +97,7 @@
 | Entity | Command | Example |
 | :--- | :--- | :--- |
 | **Fork** (Switches) | `fork <id> set straight;` / `set curved;` / `set <dir>;` / `flip;` | `fork 1 set curved;` |
-| **Semaphore** (Signals) | `semaphore <id> open;` / `close;` / `invert;` | `semaphore 2 invert;` |
+| **Semaphore** (Signals) | `semaphore <id> open;` / `close;` / `toggle;` / `invert;` | `semaphore 2 toggle;` |
 | **Speed Signal** (Speed limits) | `signal <id> set limit <number>;` <br> `signal <id> set mode max;` / `set mode min;` <br> `signal <id> invert;` | `signal 3 set limit 120;` <br> `signal 3 set mode max;` |
 | **Station** (Stations) | `station <id> invert;` | `station 1 invert;` |
 | **Sensor** | `sensor <id> invert;` | `sensor 2 invert;` |

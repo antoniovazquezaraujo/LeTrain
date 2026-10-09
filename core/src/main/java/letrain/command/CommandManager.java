@@ -468,6 +468,18 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                     }
                 };
             }
+            // Issue #736: `toggle` flips the light state and leaves the direction alone (that is
+            // what `invert` does).
+            if (act.TOGGLE() != null) {
+                return (ExecutableCommand) (contextTrain) -> {
+                    RailSemaphore s = model.getSemaphore(id);
+                    if (s != null) {
+                        s.setOpen(!s.isOpen());
+                    } else {
+                        warnDeferred("Semaphore", "Semaphore " + id + " not found; action ignored");
+                    }
+                };
+            }
             // `semaphoreStatus()` is null for the bare OPEN/CLOSE/CLOSED forms: reading it blindly
             // used to NPE here (review finding 4).
             boolean open;
@@ -1133,6 +1145,10 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             if (act.INVERT() != null) {
                 sem.setCreationDir(sem.getCreationDir().inverse());
                 log.info("[DSL] Direct semaphore {} inverted", id);
+            } else if (act.TOGGLE() != null) {
+                sem.setOpen(!sem.isOpen());
+                log.info("[DSL] Direct semaphore {} toggled to {}", id,
+                        sem.isOpen() ? "open" : "closed");
             } else if (act.OPEN() != null || (act.semaphoreStatus() != null
                     && "open".equalsIgnoreCase(act.semaphoreStatus().getText()))) {
                 sem.setOpen(true);

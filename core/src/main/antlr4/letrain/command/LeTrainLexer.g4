@@ -46,6 +46,9 @@ DECELERATE: 'decelerate';
 // U2 (DSL review): a single token for both spellings; direct orders and waypoint actions accept
 // 'invert' and 'reverse' interchangeably.
 INVERT: 'invert' | 'reverse';
+// Issue #736: `semaphore N toggle;` flips the light state (open <-> closed). The direction is
+// only changed by `invert`/`reverse`.
+TOGGLE: 'toggle';
 
 // New Keywords for PlayerCommands
 NEW: 'new';
