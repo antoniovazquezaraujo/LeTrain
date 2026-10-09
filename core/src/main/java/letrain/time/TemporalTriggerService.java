@@ -8,14 +8,15 @@ import java.util.List;
  *
  * <p>
  * Each registered trigger keeps exactly one fire armed on the {@code SimulationScheduler}, computed
- * from {@link GameClock#ticksUntil(GameTime)}; when the fire is due the service re-arms the next
- * occurrence. {@link #clear()} drops the registry and invalidates the fires already armed, so a
- * program replace never leaves stale triggers behind while the shared scheduler keeps the autopilot
- * holds untouched.
+ * from {@link GameClock#ticksUntil(GameTime)}; when the fire is due the service runs the trigger's
+ * action block and re-arms the next occurrence. {@link #clear()} drops the registry and invalidates
+ * the fires already armed, so a program replace never leaves stale triggers behind while the shared
+ * scheduler keeps the autopilot holds untouched.
  *
  * <p>
- * Phase 3a (issue #731) only parses, registers and schedules: the trigger block actions are not
- * executed yet. Execution lands in phase 3b.
+ * Phase 3a (issue #731) parsed, registered and scheduled; phase 3b (issue #732) executes. The
+ * caller hands the service a {@link Runnable} built by the same deferred runner as the event
+ * triggers, so both kinds of trigger share the action semantics and the rejected-action warnings.
  */
 public interface TemporalTriggerService {
 
@@ -28,11 +29,11 @@ public interface TemporalTriggerService {
     }
 
     /**
-     * Registers a trigger and arms its next fire from the game clock. Exact duplicates are rejected
-     * and the active limit is enforced; the returned outcome tells the caller which warning (if
-     * any) to report.
+     * Registers a trigger with the block action to run when it fires, and arms its next fire from
+     * the game clock. Exact duplicates are rejected and the active limit is enforced; the returned
+     * outcome tells the caller which warning (if any) to report.
      */
-    Registration register(TemporalTrigger trigger);
+    Registration register(TemporalTrigger trigger, Runnable onFire);
 
     /** Registered triggers, in registration order. */
     List<TemporalTrigger> triggers();

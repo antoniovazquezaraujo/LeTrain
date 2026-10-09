@@ -120,6 +120,7 @@ The world runs on a logical game clock, independent from real time. The HUD show
   - `time;` - Show the current game date and time.
   - `time set HH[:MM];` - Jump the clock, e.g. `time set 21:30;` or `time set 9;` for 09:00. Out-of-range times are rejected with a warning and the clock does not move.
 - **Itinerary schedules use this clock**: The `arrival` and `departure` times of a waypoint are measured against the game clock, so `time set` is the quick way to test a timetable without waiting for the day to pass. See **Autopilot and Routes** below, **[grammar.md](grammar.md)** and **[scenarios.md](scenarios.md)**.
+- **Time triggers (`at` / `every`)**: the program can automate actions by the game clock, not only by events: `at 6:30 { semaphore 1 open; }` opens the line every morning and `every 30m { … }` repeats a block on a fixed grid (with an optional `from` anchor). They use the same action block as event triggers, so train actions need an explicit reference (`train 5 …` or `train at station "Mine" load;`). Limits (64 active) and duplicates warn visibly, and a rejected action warns when it fires and is ignored. Loading a savegame **never catches up lost hours**: an `at` time already passed waits for the next day and `every` resumes at its next grid point. The editing pause freezes the clock, so fires do not accumulate. Full syntax in **[grammar.md](grammar.md)** §4.
 
 ## 🤖 Autopilot and Routes
 

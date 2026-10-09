@@ -172,7 +172,30 @@ Once named, **you can use the name enclosed in quotes** (or without quotes if it
 
 ---
 
-## 11. App Info
+## 11. Time Triggers (`at` / `every`)
+
+Blocks that run by the **game clock** (the same action block as event triggers: `;`-terminated, no
+nesting). The first fire is always the next occurrence **strictly after** registration.
+
+| Command | Description | Example |
+| :--- | :--- | :--- |
+| `at <HH[:MM]> { ... }` | Runs the block every day at that game time. | `at 6:30 { semaphore 1 open; }` |
+| `every <n>m { ... }` | Every `n` game minutes, on the 00:00-anchored grid. | `every 30m { semaphore 1 open; }` |
+| `every <n>h { ... }` | Every `n` game hours, on the hour grid. | `every 2h { semaphore 1 close; }` |
+| `every <n>d { ... }` | Every `n` game days at 00:00 (or at the `from` time). | `every 1d { semaphore 1 close; }` |
+| `every <n>m from <HH[:MM]> { ... }` | Anchors the grid to `from` instead of 00:00. | `every 30m from 6:15 { semaphore 1 open; }` |
+| `train <id> <action>;` | Train action inside a trigger block (explicit reference required). | `train 5 set engine on;` |
+| `train at station <id\|"name"> <action>;` | Targets the train resting at the place when the block fires. | `train at station "Mine" load;` |
+
+> A generic train action without a reference (`train set speed 5;`) is **not allowed** in a time
+> trigger: it warns visibly when the block fires and is ignored. At most 64 active temporal
+> triggers (duplicates warn). Loading a savegame never catches up: an `at` time already passed
+> waits for the next day and `every` resumes at its next grid point. The editing pause freezes the
+> clock, so fires do not accumulate. Full syntax in **[grammar.md](grammar.md)** §4.
+
+---
+
+## 12. App Info
 
 | Command | Description | Example |
 | :--- | :--- | :--- |
