@@ -1,6 +1,6 @@
 # ADR-022: Tiempo de Juego (Reloj, Día/Noche y Horarios)
 
-## Estado: PROPUESTO — fase 0 implementada (reloj, HUD y comando `time set`); fase 2 **completa** (#621–#626 y #645): gramática y modelo de horarios (2a), retención/`park`/puntualidad en core (2b), desviación firmada en el HUD 2D/3D (2c), maniobras de waypoint, `stop on contact` y arbitraje FIFO de cantones; fase 3 (disparadores temporales `at`/`every`, #563) con **contrato congelado** (D1–D7, ver *Disparadores temporales (fase 3)*): **F3a implementada** (gramática, registro y scheduling; la ejecución de las acciones llega en F3b); saneo de sintaxis del lote 2 aplicado (`time set HH`, `park`/`stop` directos, `invert`≡`reverse`, sin auto-giro, comas del plan, comentarios `#`); enmienda de física: el arranque 0→1 cuesta `START_STEP_TICKS` (100 ticks), igual que un tramo completo
+## Estado: PROPUESTO — fase 0 implementada (reloj, HUD y comando `time set`); fase 2 **completa** (#621–#626 y #645): gramática y modelo de horarios (2a), retención/`park`/puntualidad en core (2b), desviación firmada en el HUD 2D/3D (2c), maniobras de waypoint, `stop on contact` y arbitraje FIFO de cantones; fase 3 (disparadores temporales `at`/`every`, #563) con **contrato congelado** (D1–D7, ver *Disparadores temporales (fase 3)*): **F3a implementada** (gramática, registro y scheduling) y **F3b implementada** (ejecución por el mismo runner que los triggers de eventos, avisos de acciones rechazadas, save/load sin catch-up y replay determinista); saneo de sintaxis del lote 2 aplicado (`time set HH`, `park`/`stop` directos, `invert`≡`reverse`, sin auto-giro, comas del plan, comentarios `#`); enmienda de física: el arranque 0→1 cuesta `START_STEP_TICKS` (100 ticks), igual que un tramo completo
 
 ## Contexto
 
@@ -559,7 +559,7 @@ every 1h { train 5 set engine on; }             # servicio horario de mercancía
 | D6 | Acciones dentro | las mismas que los triggers de eventos |
 | D7 | Anclaje de `every` | rejilla fija del reloj anclada a 00:00 + `from HH:MM` opcional |
 
-**Implementación F3a** (issue #731, esta entrega): la sintaxis vive en `ScriptLogicParser`
+**Implementación F3a** (issue #731): la sintaxis vive en `ScriptLogicParser`
 (`temporalTrigger`: `at`/`every`, `from` opcional, bloques `commandBlock` sin anidar) y el modelo
 en `letrain.time.TemporalTrigger` (tipo AT/EVERY, hora/periodo/from; `nextFire(GameTime)` devuelve
 la primera ocurrencia **estrictamente posterior**, con rejilla absoluta D7 —el ancla se conserva
@@ -567,13 +567,28 @@ aunque el periodo no divida el día— y rollover de medianoche). El mundo manti
 global (`letrain.time.TemporalTriggerService`: máximo 64 activos, duplicados exactos y periodos
 inválidos/`0m`/unidades desconocidas avisan por el canal visible) y cada trigger arma su siguiente
 disparo con `GameClock.ticksUntil(...)` en el `SimulationScheduler`; al reemplazar el programa,
-`AutomationEngine` limpia el registro y lo repuebla (`create`/reasignación). **F3a no ejecuta las
-acciones del bloque**: solo parsea, registra y programa (la ejecución en el tick es F3b).
+`AutomationEngine` limpia el registro y lo repuebla (`create`/reasignación).
+
+**Implementación F3b** (issue #732, esta entrega): cuando el reloj cruza el umbral,
+`TemporalTriggerServiceImpl.onDue` ejecuta el bloque a través del **mismo runner diferido que los
+triggers de eventos** (`CommandManager.runDeferredBlock`), así que acciones y avisos son idénticos
+en ambos caminos; las acciones genéricas de tren sin referencia (`train set speed …`) no tienen
+tren de contexto en un ámbito global (D5) y se rechazan con **aviso visible** mientras el resto del
+bloque sigue. Un fallo de acción se registra y no tumba el tick; el temporizador se re-arma salvo
+que el programa se reemplace mientras la acción corre. **Save/load**: `postLoadInit` reaplica el
+programa y `nextFire` calcula desde el reloj restaurado, así que un `at` ya pasado se programa para
+el día siguiente y `every` continúa en el siguiente punto de rejilla (sin catch-up). **Replay/undo**:
+el re-registro por generación deja los disparos del programa sustituido como no-ops, y un snapshot
+restaurado (`GameSaveService`/undo) reproduce los mismos disparos al mismo tiempo de juego. La
+pausa de edición congela scheduler y reloj: los disparos no se acumulan. Tests:
+`TemporalTriggerExecutionTest` (ejecución, pausa, duplicados, acción rechazada, load sin catch-up,
+snapshot y replay de journal); docs de usuario actualizadas (`grammar*.md`, `cheatsheet*.md`,
+`manual*.md`), validadas por `DslDocumentationSyntaxTest`.
 
 **Plan por rebanadas**:
 
 - **F3a** — gramática + modelo + scheduling por `ticksUntil(GameTime)`; `help`; tests deterministas.
-- **F3b** — ejecución en el tick, replay/undo/save-load, avisos de acciones rechazadas.
+- **F3b** — **implementada** (issue #732): ejecución en el tick por el runner de eventos, replay/undo/save-load, avisos de acciones rechazadas y docs de usuario.
 - **F3c** — demanda por franjas (se apoya en la economía de la fase 4).
 - **F3d** — integración con trenes de pasajeros (después del diseño de `PassengerTrains_Design.md`).
 
@@ -620,7 +635,7 @@ public interface GameClock {
   el parámetro de la antiinanición (X minutos de espera o N cesiones consecutivas) cuando existan
   los trenes de pasajeros.
 - Fase 3 con **contrato congelado** (D1–D7, ver *Disparadores temporales (fase 3)*): sin decisiones
-  abiertas; F3a implementada y quedan las rebanadas F3b–F3d.
+  abiertas; F3a y F3b implementadas y quedan las rebanadas F3c–F3d.
 
 ## Alternativas consideradas
 

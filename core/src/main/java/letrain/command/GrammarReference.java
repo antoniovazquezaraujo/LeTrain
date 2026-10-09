@@ -297,7 +297,7 @@ public class GrammarReference {
         train.add(trOn);
         root.add(train);
 
-        // ADR-022 phase 3: time-driven triggers (F3a: parsed, registered and scheduled).
+        // ADR-022 phase 3: time-driven triggers (F3a/F3b: parsed, registered, scheduled, executed).
         Node time = new Node("time").setExpanded(true);
         Node at = new Node("at (daily)").setExpanded(true);
         at.add(new Node("hh:mm", "at 6:30 {\n  semaphore 1 open;\n}"));

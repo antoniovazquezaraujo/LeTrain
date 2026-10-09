@@ -81,6 +81,15 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
 
     interface ExecutableCommand {
         void execute(Train contextTrain);
+
+        /**
+         * True when the action needs the train that triggered the event: a generic {@code train …}
+         * order with no number and no place. Event triggers always provide that train; a temporal
+         * trigger is global (D5), so the action is rejected with a visible notice and skipped.
+         */
+        default boolean requiresContextTrain() {
+            return false;
+        }
     }
 
     // ── Statement dispatch ─────────────────────────────────────────
@@ -100,10 +109,11 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             List<ExecutableCommand> commands = (List<ExecutableCommand>) visit(ctx.commandBlock());
             setupTrigger(ctx.trigger(), commands);
         } else if (ctx.temporalTrigger() != null) {
-            // ADR-022 phase 3 (F3a): time-driven. The block is visited (and validated) now; F3b
-            // will run its commands when the timer fires.
-            visit(ctx.commandBlock());
-            setupTemporalTrigger(ctx.temporalTrigger());
+            // ADR-022 phase 3 (F3b): time-driven. The block is visited (and validated) now and runs
+            // through the same deferred runner as the event triggers when the timer fires.
+            @SuppressWarnings("unchecked")
+            List<ExecutableCommand> commands = (List<ExecutableCommand>) visit(ctx.commandBlock());
+            setupTemporalTrigger(ctx.temporalTrigger(), commands);
         } else if (ctx.createItinerary() != null) {
             // create itinerary block — } is the terminator
             visit(ctx.createItinerary());
@@ -148,7 +158,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                                 || (sense.startsWith("b") && !isForward);
                         if ("enter".equals(event) && senseMatch
                                 && (filterTrainId == null || filterTrainId == train.getId())) {
-                            commands.forEach(c -> c.execute(train));
+                            runDeferredBlock(commands, train);
                         }
                     }
 
@@ -158,7 +168,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                                 || (sense.startsWith("b") && !isForward);
                         if ("exit".equals(event) && senseMatch
                                 && (filterTrainId == null || filterTrainId == train.getId())) {
-                            commands.forEach(c -> c.execute(train));
+                            runDeferredBlock(commands, train);
                         }
                     }
                 });
@@ -186,7 +196,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                                             || (sense.startsWith("b") && !isForward);
                             if ("enter".equals(event) && senseMatch
                                     && (filterTrainId == null || filterTrainId == train.getId())) {
-                                commands.forEach(c -> c.execute(train));
+                                runDeferredBlock(commands, train);
                             }
                         }
 
@@ -197,7 +207,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                                             || (sense.startsWith("b") && !isForward);
                             if ("exit".equals(event) && senseMatch
                                     && (filterTrainId == null || filterTrainId == train.getId())) {
-                                commands.forEach(c -> c.execute(train));
+                                runDeferredBlock(commands, train);
                             }
                         }
                     });
@@ -227,7 +237,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                                             || (sense.startsWith("b") && !isForward);
                             if ("enter".equals(event) && senseMatch
                                     && (filterTrainId == null || filterTrainId == train.getId())) {
-                                commands.forEach(c -> c.execute(train));
+                                runDeferredBlock(commands, train);
                             }
                         }
 
@@ -238,7 +248,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                                             || (sense.startsWith("b") && !isForward);
                             if ("exit".equals(event) && senseMatch
                                     && (filterTrainId == null || filterTrainId == train.getId())) {
-                                commands.forEach(c -> c.execute(train));
+                                runDeferredBlock(commands, train);
                             }
                         }
                     });
@@ -267,7 +277,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                                             || (sense.startsWith("b") && !isForward);
                             if ("enter".equals(event) && senseMatch
                                     && (filterTrainId == null || filterTrainId == train.getId())) {
-                                commands.forEach(c -> c.execute(train));
+                                runDeferredBlock(commands, train);
                             }
                         }
 
@@ -278,7 +288,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                                             || (sense.startsWith("b") && !isForward);
                             if ("exit".equals(event) && senseMatch
                                     && (filterTrainId == null || filterTrainId == train.getId())) {
-                                commands.forEach(c -> c.execute(train));
+                                runDeferredBlock(commands, train);
                             }
                         }
                     });
@@ -302,7 +312,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                                 || (sense.startsWith("b") && !isForward);
                         if ("enter".equals(event) && senseMatch
                                 && (filterTrainId == null || filterTrainId == train.getId())) {
-                            commands.forEach(c -> c.execute(train));
+                            runDeferredBlock(commands, train);
                         }
                     }
 
@@ -312,7 +322,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                                 || (sense.startsWith("b") && !isForward);
                         if ("exit".equals(event) && senseMatch
                                 && (filterTrainId == null || filterTrainId == train.getId())) {
-                            commands.forEach(c -> c.execute(train));
+                            runDeferredBlock(commands, train);
                         }
                     }
                 });
@@ -323,7 +333,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                     public void onCrash(Train train, letrain.map.Point pos, int speed) {
                         if ("crash".equals(event)
                                 && (filterTrainId == null || filterTrainId == train.getId())) {
-                            commands.forEach(c -> c.execute(train));
+                            runDeferredBlock(commands, train);
                         }
                     }
 
@@ -331,7 +341,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                     public void onContact(Train train, letrain.map.Point pos, int speed) {
                         if ("contact".equals(event)
                                 && (filterTrainId == null || filterTrainId == train.getId())) {
-                            commands.forEach(c -> c.execute(train));
+                            runDeferredBlock(commands, train);
                         }
                     }
                 });
@@ -343,15 +353,17 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
      * ADR-022 phase 3 (contract D1-D7): registers an {@code at}/{@code every} trigger in the world
      * registry, which arms its next fire on the scheduler. An invalid hour/period, an exact
      * duplicate and the active limit are visible warnings; the trigger is then ignored. The block
-     * actions are parsed and validated now but not executed yet (F3b).
+     * runs through the same deferred runner as the event triggers when the timer fires (F3b).
      */
-    private void setupTemporalTrigger(ScriptLogicParser.TemporalTriggerContext ctx) {
+    private void setupTemporalTrigger(ScriptLogicParser.TemporalTriggerContext ctx,
+            List<ExecutableCommand> commands) {
         TemporalTrigger trigger = buildTemporalTrigger(ctx);
         if (trigger == null) {
             return; // invalid: the specific warning was already reported
         }
         TemporalTriggerService service = model.getTemporalTriggerService();
-        TemporalTriggerService.Registration result = service.register(trigger);
+        TemporalTriggerService.Registration result =
+                service.register(trigger, () -> runDeferredBlock(commands, null));
         switch (result) {
             case DUPLICATE -> warnUser("Trigger",
                     "Duplicate temporal trigger '" + trigger.describe() + "'; ignored");
@@ -518,9 +530,20 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                         }
                     };
                 } else {
-                    return (ExecutableCommand) (contextTrain) -> {
-                        if (contextTrain != null) {
-                            baseAction.execute(contextTrain);
+                    // A generic `train …` order runs on the train that triggered the event. A
+                    // temporal trigger has no triggering train (global scope, D5): the runner
+                    // rejects it with a visible notice instead of silently using null.
+                    return new ExecutableCommand() {
+                        @Override
+                        public void execute(Train contextTrain) {
+                            if (contextTrain != null) {
+                                baseAction.execute(contextTrain);
+                            }
+                        }
+
+                        @Override
+                        public boolean requiresContextTrain() {
+                            return true;
                         }
                     };
                 }
@@ -843,6 +866,25 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
         log.warn("[DSL] {}", text);
         if (deferredWarningSink != null) {
             deferredWarningSink.accept(title, text);
+        }
+    }
+
+    /**
+     * Runs a deferred command block: an event trigger firing or a temporal trigger firing share
+     * this single path, so their actions behave identically. A generic {@code train …} order needs
+     * the triggering train; a temporal trigger has none (global scope, D5), so it is rejected with
+     * a visible notice and skipped while the rest of the block still runs.
+     */
+    private void runDeferredBlock(List<ExecutableCommand> commands, Train contextTrain) {
+        for (ExecutableCommand command : commands) {
+            if (contextTrain == null && command.requiresContextTrain()) {
+                warnDeferred("Trigger",
+                        "Action without a train reference is not allowed in a temporal trigger"
+                                + " (use 'train <id> ...' or 'train at <place> ...');"
+                                + " action ignored");
+                continue;
+            }
+            command.execute(contextTrain);
         }
     }
 

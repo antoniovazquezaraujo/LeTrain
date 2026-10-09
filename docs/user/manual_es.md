@@ -124,6 +124,7 @@ El mundo funciona con un reloj de juego lógico, independiente del tiempo real. 
   - `time;` - Muestra la fecha y hora de juego actuales.
   - `time set HH[:MM];` - Salta el reloj, p. ej. `time set 21:30;` o `time set 9;` para las 09:00. Las horas fuera de rango se rechazan con un aviso y el reloj no se mueve.
 - **Los horarios de los itinerarios usan este reloj**: Las horas `arrival` y `departure` de un waypoint se miden con el reloj de juego, así que `time set` es la forma rápida de probar un horario sin esperar a que pase el día. Ver **Autopilot y Rutas** más abajo, **[grammar_es.md](grammar_es.md)** y **[scenarios_es.md](scenarios_es.md)**.
+- **Disparadores temporales (`at` / `every`)**: el programa puede automatizar acciones por el reloj de juego, no solo por eventos: `at 6:30 { semaphore 1 open; }` abre la línea cada mañana y `every 30m { … }` repite un bloque en una rejilla fija (con `from` opcional para anclar la rejilla). Usan el mismo bloque de acciones que los triggers de eventos, así que las acciones de tren van con referencia explícita (`train 5 …` o `train at station "Mina" load;`). Los límites (64 activos) y duplicados avisan, y una acción no permitida avisa al dispararse y se ignora. Cargar una partida **no recupera las horas perdidas**: un `at` ya pasado espera al día siguiente y `every` continúa en su siguiente punto de rejilla. La pausa de edición congela el reloj: los disparos no se acumulan. Sintaxis completa en **[grammar_es.md](grammar_es.md)** §4.
 
 ## 🤖 Autopilot y Rutas
 
