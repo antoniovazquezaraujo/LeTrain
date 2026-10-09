@@ -176,7 +176,13 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
                         Segment segEntered = (headNextTrack instanceof RailTrack)
                                 ? graph.getSegment((RailTrack) headNextTrack)
                                 : null;
-                        if (segExited != null && !segExited.equals(segEntered)) {
+                        // ADR-022 phase 2e: when the train steps onto the shared boundary fork it
+                        // has not cleared the node yet, so the old canton stays locked. The
+                        // onForkExited event releases it once the tail leaves the fork. Releasing
+                        // here would wake a train waiting on the other side while this train still
+                        // occupies the shared rail, and its start would fire a false contact.
+                        if (segExited != null && !segExited.equals(segEntered)
+                                && !(headNextTrack instanceof ForkRailTrack)) {
                             train.getSafetyManager().onSegmentExited(segExited);
                         }
                     }
@@ -241,7 +247,10 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
                     Segment segEntered = (lastLinkerNextTrack instanceof RailTrack)
                             ? graph.getSegment((RailTrack) lastLinkerNextTrack)
                             : null;
-                    if (segExited != null && !segExited.equals(segEntered)) {
+                    // Same deferred release as the single-linker path: the tail stepping onto the
+                    // shared boundary fork does not clear the node yet (ADR-022 phase 2e).
+                    if (segExited != null && !segExited.equals(segEntered)
+                            && !(lastLinkerNextTrack instanceof ForkRailTrack)) {
                         train.getSafetyManager().onSegmentExited(segExited);
                     }
                 }
