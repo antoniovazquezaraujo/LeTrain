@@ -192,7 +192,10 @@
 - [[letrain.time.GameClockListener|GameClockListener]] (core)
 - [[letrain.time.GameTime|GameTime]] (core)
 - [[letrain.time.SolarModel|SolarModel]] (core)
+- [[letrain.time.TemporalTrigger|TemporalTrigger]] (core)
+- [[letrain.time.TemporalTriggerService|TemporalTriggerService]] (core)
 - [[letrain.time.impl.SimpleGameClock|SimpleGameClock]] (core)
+- [[letrain.time.impl.TemporalTriggerServiceImpl|TemporalTriggerServiceImpl]] (core)
 
 ## letrain.track
 - [[letrain.track.CargoTypes|CargoTypes]] (core)
