@@ -157,6 +157,13 @@ STOP: 'stop';
 // ADR-022 phase 2b: hold at the waypoint with the engine off, keeping the autopilot
 PARK: 'park';
 
+// ADR-022 phase 3: time-driven automation (`at HH:MM { ... }` / `every 30m [from HH:MM] { ... }`).
+// The period units `m`/`h`/`d` need no token: `30m` lexes as one ID (digits + unit) and `30 m`
+// as NUMBER + M/ID, so ScriptLogicParser validates amount and unit and an unknown unit stays a
+// semantic warning instead of a lexer error.
+EVERY: 'every';
+FROM: 'from';
+
 // Issue #619: one-shot "stop at ..." / "stop when blocked" train orders
 AT: 'at';
 WHEN: 'when';

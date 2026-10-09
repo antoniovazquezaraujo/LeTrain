@@ -132,6 +132,9 @@ public class AutomationEngine {
         model.getForks().forEach(ForkRailTrack::removeAllForkEventListeners);
         model.getSemaphores().forEach(RailSemaphore::removeAllSemaphoreEventListeners);
         model.removeAllScriptTrainEventListeners();
+        // ADR-022 phase 3 (D5): the temporal triggers are global world state too; the new program
+        // re-registers its own when it is visited below.
+        model.getTemporalTriggerService().clear();
     }
 
     /**

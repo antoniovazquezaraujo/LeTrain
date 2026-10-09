@@ -297,6 +297,20 @@ public class GrammarReference {
         train.add(trOn);
         root.add(train);
 
+        // ADR-022 phase 3: time-driven triggers (F3a: parsed, registered and scheduled).
+        Node time = new Node("time").setExpanded(true);
+        Node at = new Node("at (daily)").setExpanded(true);
+        at.add(new Node("hh:mm", "at 6:30 {\n  semaphore 1 open;\n}"));
+        at.add(new Node("hh", "at 6 {\n  train 5 set engine on;\n}"));
+        time.add(at);
+        Node every = new Node("every (period)").setExpanded(true);
+        every.add(new Node("minutes", "every 30m {\n  semaphore 1 open;\n}"));
+        every.add(new Node("hours", "every 2h {\n  \n}"));
+        every.add(new Node("days", "every 1d {\n  \n}"));
+        every.add(new Node("from hh:mm", "every 30m from 6:00 {\n  \n}"));
+        time.add(every);
+        root.add(time);
+
         // ACTIONS
         Node actHeading = new Node("ACTIONS").setHeading(true);
         root.add(actHeading);
