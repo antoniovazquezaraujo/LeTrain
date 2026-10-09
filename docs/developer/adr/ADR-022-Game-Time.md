@@ -506,7 +506,7 @@ at 6:30 {
 }
 
 every 30m {
-    station 2 load;
+    semaphore 1 invert;
 }
 ```
 
