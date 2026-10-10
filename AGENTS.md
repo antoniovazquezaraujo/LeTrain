@@ -15,6 +15,17 @@ Este proyecto usa un equipo de agentes definido en `.opencode/agents/`:
 
 **IMPORTANTE: Al iniciar cada sesión, lee `CONTRIBUTING.md`.** Define el flujo Git del proyecto: ramas `feature/...` o `fix/...` desde `develop`, **PROHIBIDO commitear directamente a `develop`** (está protegida), PRs en inglés y `mvn clean test` en verde antes de abrir o actualizar un PR.
 
+## Espacio de trabajo auxiliar (`letrain-lab`)
+
+Los artefactos que **no deben commitearse** viven **fuera del repositorio**, en `/home/antonio/dev/letrain-lab/`:
+
+- `notes/` — borradores de diseño, contratos y documentos de trabajo; se revisan antes de formalizarse en `docs/`.
+- `demo/` — prototipos independientes (pueden usar las clases compiladas del juego, p. ej. `core/target/classes`).
+- `wt/` — worktrees temporales de los agentes:
+  `git worktree add /home/antonio/dev/letrain-lab/wt/<nombre> -b <rama> origin/develop` (se eliminan al terminar la tarea).
+
+Reglas: nada de `letrain-lab/` se commitea; **no** usar `/tmp` (se borra al salir de la sesión); los worktrees **nunca** dentro del checkout principal.
+
 ## Estructura del Proyecto
 
 ```
