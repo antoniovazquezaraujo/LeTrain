@@ -1,0 +1,202 @@
+[🇪🇸 Leer en Español](cheatsheet_es.md)
+
+# LeTrain - CLI Command Cheat Sheet
+
+---
+
+## 1. Topological and Absolute Navigation
+
+| Command | Description | Example |
+| :--- | :--- | :--- |
+| `go <x>, <y>;` | Move the cursor to absolute Cartesian coordinates. | `go 10, -5;` |
+| `go next <entity>;` | Follow the track forward until finding the entity. | `go next fork;` |
+| `go <entity> <id>;` | Teleport the cursor to an entity's location. | `go st "Madrid";` |
+| `go prev <entity>;` | Follow the track backward until finding the entity. | `go prev st;` |
+| **`gn <entity>;`** | Quick abbreviation for `go next`. | `gn st;` |
+| **`gp <entity>;`** | Quick abbreviation for `go prev`. | `gp fk;` |
+| `go end;` | Follow the current track until the end of the line. | `go end;` |
+
+> **Entity Abbreviations**: 
+> - **`st`** = `station`
+> - **`sn`** = `sensor` 
+> - **`fk`** = `fork`
+> - **`sm`** = `semaphore`
+> - **`sg`** = `signal`
+> - **`tr`** = `train`
+> - **`rl`** = `rail`
+
+> **Command Abbreviations**: 
+> - **`go`** = `g`
+
+---
+
+## 2. Bookmarks
+
+| Command | Description | Example |
+| :--- | :--- | :--- |
+| `mark <name>;` | Save current coordinates under a name or number. | `mark base;` |
+| `go mark <name>;` | Teleport the cursor to the bookmark. | `go mark base;` |
+| **`g m <name>;`** | Quick abbreviation to jump to a bookmark. | `g m base;` |
+
+> **Bookmark Names**: 
+> - If a bookmark name contains spaces, wrap it in double quotes, e.g. `go mark "central station";`
+
+---
+
+## 3. Cursor Heading
+
+| Command | Description | Example |
+| :--- | :--- | :--- |
+| `face <direction>;` | Turn toward a compass heading (`n, s, e, w, ne, nw, se, sw`). | `face ne;` |
+| `face <entity> <id>;` | Rotate cursor heading toward an entity. | `face tr 1;` |
+| `face m <string>;` | Rotate cursor heading toward a bookmark. | `face m "madrid";` |
+
+---
+
+## 4. Track Management (Turtle Graphics)
+
+| Base Command | Action | Example |
+| :--- | :--- | :--- |
+| `write <sequence>;` | Advance while laying new track. | `write 5, l, m base, r, 1;` |
+| `move <sequence>;` | Move the cursor without building track. | `move 5, l;` |
+| `del <sequence>;` | Advance while **ripping up track** (destroys trains and entities). | `del 3;` |
+| `clear <sequence>;` | Advance while removing **only trains and wagons** (preserves tracks). | `clear 10;` |
+
+> **Sequence Elements**: 
+> - `<number>`: Number of grid cells to advance straight ahead.
+> - **`l`**: Turn left.
+> - **`r`**: Turn right.
+> - `m <mark_name>`: Automatically navigate toward a bookmark.
+> 
+> If no distance is specified after a turn, it defaults to 1 step (e.g. the sequence `"r,r,3"` is equivalent to `"r,1,r,3"`).
+
+---
+
+## 5. Creating and Deleting Entities and Vehicles
+
+| Command | Description | Example |
+| :--- | :--- | :--- |
+| `new st;` / `new sm;` / `new sg;` | Create infrastructure at the cursor position. | `new st;` |
+| `new loco <Letter> [color];` | Create a locomotive with the specified letter and optional color. | `new loco Z blue;` |
+| `new wagon <Letter> [type];` | Create a wagon with the specified letter and optional cargo type. | `new wagon B ruby;` |
+| `del <entity> <id>;` | Delete an entity (stations, semaphores, etc.) leaving the track intact. | `del sm 1;` |
+| `clear <entity> <id>;` | Delete a train or wagon by its ID. | `clear tr 1;` |
+
+---
+
+> **Available Colors**:
+> `red`, `green`, `blue`, `yellow`, `black`, `white`, `orange`, `purple`, `gray`, `brown`
+>
+> **Cargo Types**:
+> `coal`, `gold`, `ruby`
+
+---
+
+## 6. Direct Infrastructure Control
+
+| Entity | Command | Example |
+| :--- | :--- | :--- |
+| **Fork** (Switches) | `fork <id> set straight;` / `set curved;` / `set <dir>;` / `flip;` | `fork 1 set curved;` |
+| **Semaphore** (Signals) | `semaphore <id> open;` / `close;` / `toggle;` / `invert;` | `semaphore 2 toggle;` |
+| **Speed Signal** (Speed limits) | `signal <id> set limit <number>;` <br> `signal <id> set mode max;` / `set mode min;` <br> `signal <id> invert;` | `signal 3 set limit 120;` <br> `signal 3 set mode max;` |
+| **Station** (Stations) | `station <id> invert;` | `station 1 invert;` |
+| **Sensor** | `sensor <id> invert;` | `sensor 2 invert;` |
+
+---
+
+## 7. Direct Train and Vehicle Control
+
+| Base Command | Action | Example |
+| :--- | :--- | :--- |
+| `train <id> couple <dir> [n\|all];` | Couple wagons in the given direction (`forward`/`fw` or `backward`/`bw`). If `n` is omitted, couples all wagons; `all` is explicit. | `train 1 couple forward 2;` or `train 1 couple backward all;` |
+| `train <id> uncouple <dir> [n\|all];` | Uncouple wagons in the given direction (`forward`/`fw` or `backward`/`bw`); with no count it detaches every vehicle on that side (like `couple`); `all` is explicit. | `train 1 uncouple backward 1;` |
+| `train <id> set speed <n>;` | Set target train speed. | `train 1 set speed 5;` |
+| `train <id> stop at station <id\|"name"> [speed <n>];` | Drives to the station and stops there; the speed belongs to the order. | `train 1 stop at station "B" speed 3;` |
+| `train <id> stop at sensor <id\|"name"> [speed <n>];` | Drives to the sensor and stops on it. | `train 1 stop at sensor 5 speed 2;` |
+| `train <id> stop at end [speed <n>];` | Drives to the end of track and brakes on the last rail. | `train 1 stop at end speed 2;` |
+| `train <id> stop when blocked [speed <n>];` | Advances and stops at the first block (does not resume). | `train 1 stop when blocked speed 2;` |
+| `train <id> stop on contact [speed <n>];` | Drives until touching the vehicle ahead and stays pressed (ready for `couple`); at crash speed the touch is a crash. | `train 1 stop on contact speed 2;` |
+| `train <id> reverse;` | Reverse direction of travel (`invert` is a synonym). | `train 1 reverse;` |
+| `train <id> stop;` | Brake and turn the autopilot off. | `train 1 stop;` |
+| `train <id> park;` | Brake, switch the engine off and keep the autopilot. | `train 1 park;` |
+| `train <id> set engine on;` / `off;` | Turn locomotive engine on or off. | `train 1 set engine on;` |
+| `train <id> set autopilot true;` | Enable autopilot mode. | `train 1 set autopilot true;` |
+| `train <id> load;` / `unload;` | Load or unload cargo (must be stopped at a station). | `train 1 load;` |
+
+> `couple`/`uncouple` work by the **physical sense** of the train: `forward` is the head side and
+> `backward` the tail. With the locomotive leading and pulling the wagons, the wagons are behind:
+> use `uncouple backward 1` to leave them (the same orders are available as waypoint actions).
+>
+> `all` is a reserved word (`uncouple backward all`); to use it as a name you must quote it:
+> `info station "all";`.
+
+---
+
+## 8. Saving and Loading
+
+| Command | Description | Example |
+| :--- | :--- | :--- |
+| `save <name?>;` | Save the map. If omitted, uses an automatic name. | `save "map1";` |
+| `load <name?>;` | Load a saved map. | `load "map1";` |
+
+---
+
+## 9. Names and Custom References
+
+Any train or infrastructure element (stations, semaphores, bookmarks, etc.) can be given a custom name so you don't have to remember numeric IDs.
+
+| Command | Description | Example |
+| :--- | :--- | :--- |
+| `<entity> <id> set name "<name>";` | Assign a name to an entity using its numeric ID. | `train 1 set name "Express";`<br>`st 2 set name "Central";` |
+| `<entity> "<old_name>" set name "<new_name>";` | Rename an entity that already has a name. | `train "Express" set name "HighSpeed";` |
+
+Once named, **you can use the name enclosed in quotes** (or without quotes if it has no spaces) in any command expecting an `<id>`:
+
+- `train "HighSpeed" set engine on;`
+- `go st "Central";`
+- `clear tr "HighSpeed";`
+
+> **Strict case**: keywords are always lowercase (`train`, `station`, `sensor`…), and names are matched **exactly** as written: `"Central"` and `"central"` are different names. A wrong-case reference warns `not found` and does nothing. Inside `program { ... }` the text runs verbatim, strings included — there is no lowercasing.
+
+---
+
+## 10. Game Clock
+
+| Command | Description | Example |
+| :--- | :--- | :--- |
+| `time;` | Report the current game day and time. | `time;` |
+| `time set <hour>;` | Set the hour on the current day (`00`–`23`); minutes go back to `:00`. | `time set 9;` |
+| `time set <HH:MM>;` | Set hour and minute (`00:00`–`23:59`); single-digit hours are accepted. | `time set 18:45;` |
+
+> A valid change is silent: watch the HUD clock. Out-of-range values (`time set 25;`, `time set 25:99;`) warn `Invalid time …` and leave the clock untouched.
+
+---
+
+## 11. Time Triggers (`at` / `every`)
+
+Blocks that run by the **game clock** (the same action block as event triggers: `;`-terminated, no
+nesting). The first fire is always the next occurrence **strictly after** registration.
+
+| Command | Description | Example |
+| :--- | :--- | :--- |
+| `at <HH[:MM]> { ... }` | Runs the block every day at that game time. | `at 6:30 { semaphore 1 open; }` |
+| `every <n>m { ... }` | Every `n` game minutes, on the 00:00-anchored grid. | `every 30m { semaphore 1 open; }` |
+| `every <n>h { ... }` | Every `n` game hours, on the hour grid. | `every 2h { semaphore 1 close; }` |
+| `every <n>d { ... }` | Every `n` game days at 00:00 (or at the `from` time). | `every 1d { semaphore 1 close; }` |
+| `every <n>m from <HH[:MM]> { ... }` | Anchors the grid to `from` instead of 00:00. | `every 30m from 6:15 { semaphore 1 open; }` |
+| `train <id> <action>;` | Train action inside a trigger block (explicit reference required). | `train 5 set engine on;` |
+| `train at station <id\|"name"> <action>;` | Targets the train resting at the place when the block fires. | `train at station "Mine" load;` |
+
+> A generic train action without a reference (`train set speed 5;`) is **not allowed** in a time
+> trigger: it warns visibly when the block fires and is ignored. At most 64 active temporal
+> triggers (duplicates warn). Loading a savegame never catches up: an `at` time already passed
+> waits for the next day and `every` resumes at its next grid point. The editing pause freezes the
+> clock, so fires do not accumulate. Full syntax in **[grammar.md](grammar.md)** §4.
+
+---
+
+## 12. App Info
+
+| Command | Description | Example |
+| :--- | :--- | :--- |
+| `version;` | Report the version of the running build (the same one as the window title). | `version;` |
