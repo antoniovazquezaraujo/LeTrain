@@ -143,7 +143,7 @@ commandItem : (
 trainExtractor : TRAIN AT placeSelector;
 placeSelector  : forkSelector | semaphoreSelector | stationSelector | sensorSelector;
 
-semaphoreAction : OPEN | CLOSED | CLOSE | SET semaphoreStatus | INVERT ;
+semaphoreAction : OPEN | CLOSED | CLOSE | SET semaphoreStatus | INVERT | TOGGLE ;
 forkAction      : SET forkDirection | FLIP ;
 engineAction    : SET ENGINE (ON | OFF);
 trainAction     : SET trainSense | ACCELERATE | DECELERATE | SET SPEED trainSpeed | INVERT | PARK | STOP | coupleAction | uncoupleAction | SET NAME STRING | LOAD | UNLOAD | engineAction | stopOrder;

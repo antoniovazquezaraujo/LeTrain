@@ -171,6 +171,7 @@ public class GrammarReference {
 
         Node ops = new Node("element ops").setExpanded(true);
         ops.add(new Node("invert", "semaphore 1 invert;"));
+        ops.add(new Node("toggle", "semaphore 1 toggle;"));
         ops.add(new Node("fork branch", "fork 1 set curved;"));
         ops.add(new Node("signal limit", "signal 1 set limit 40;"));
         ops.add(new Node("signal mode", "signal 1 set mode max;"));
@@ -358,6 +359,7 @@ public class GrammarReference {
         Node semAct = new Node("semaphore").setExpanded(true);
         semAct.add(new Node("open", "semaphore # set open;"));
         semAct.add(new Node("closed", "semaphore # set closed;"));
+        semAct.add(new Node("toggle", "semaphore # toggle;"));
         semAct.add(new Node("invert", "semaphore # invert;"));
         root.add(semAct);
 
