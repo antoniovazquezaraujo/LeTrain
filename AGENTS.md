@@ -17,14 +17,14 @@ Este proyecto usa un equipo de agentes definido en `.opencode/agents/`:
 
 ## Espacio de trabajo auxiliar (`letrain-lab`)
 
-Los artefactos que **no deben commitearse** viven **fuera del repositorio**, en `/home/antonio/dev/letrain-lab/`:
+Los artefactos que **no deben commitearse** viven **fuera del repositorio**, en la **carpeta hermana del repo** (por defecto `/home/antonio/dev/letrain-lab/`):
 
 - `notes/` — borradores de diseño, contratos y documentos de trabajo; se revisan antes de formalizarse en `docs/`.
 - `demo/` — prototipos independientes (pueden usar las clases compiladas del juego, p. ej. `core/target/classes`).
 - `wt/` — worktrees temporales de los agentes:
-  `git worktree add /home/antonio/dev/letrain-lab/wt/<nombre> -b <rama> origin/develop` (se eliminan al terminar la tarea).
+  `git worktree add /home/antonio/dev/letrain-lab/wt/<nombre> -b <rama> origin/develop`.
 
-Reglas: nada de `letrain-lab/` se commitea; **no** usar `/tmp` (se borra al salir de la sesión); los worktrees **nunca** dentro del checkout principal.
+Reglas: nada de `letrain-lab/` se commitea; **no guardar allí ni en `/tmp` nada que deba sobrevivir a la sesión** (`/tmp` se borra al salir); los worktrees **nunca** dentro del checkout principal; **al terminar una tarea**, eliminar su worktree (`git worktree remove`) y borrar la rama.
 
 ## Estructura del Proyecto
 
