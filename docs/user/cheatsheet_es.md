@@ -142,6 +142,7 @@ Si no se incluye una distancia después de un giro, se avanza por defecto un pas
 | :--- | :--- | :--- |
 | `save <nombre?>;` | Guarda el mapa. Si omites el nombre, usa uno automático. | `save "mapa1";` |
 | `load <nombre?>;` | Carga el mapa. | `load "mapa1";` |
+| `new game;` | Abre el diálogo de Nueva Partida (semilla, terreno, ajustes). | `new game;` |
 
 ---
 

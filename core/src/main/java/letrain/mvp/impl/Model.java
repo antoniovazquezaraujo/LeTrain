@@ -1502,6 +1502,29 @@ public class Model implements letrain.mvp.Model {
         this.groundMap = new letrain.ground.impl.GroundMap(seed, this.economyManager);
     }
 
+    /**
+     * Creates a fresh game from the New Game dialog (S2, issue #746): a world generated from
+     * {@code seed} whose settings were validated against {@link letrain.settings.SettingsCatalog}
+     * and applied before any terrain is generated, so the calibrated terrain proportions and the
+     * economy match the form. It reuses the same machinery as the scenario/load path: a seeded
+     * model plus {@code EconomyManager.applyConfig}, followed by re-wiring the day clock (which the
+     * constructor had set from {@code letrain.cfg}).
+     *
+     * @param seed generation seed (callers resolve the literal {@code random} before calling)
+     * @param settings validated catalogue values; unknown keys are ignored
+     * @throws IllegalArgumentException when a setting is malformed or out of range
+     */
+    public static Model newGame(int seed, java.util.Map<String, String> settings) {
+        java.util.Map<String, String> validated =
+                letrain.settings.SettingsCatalog.validateAll(settings);
+        Model model = new Model(seed);
+        model.getEconomyManager().applyConfig(validated);
+        model.getGameClock()
+                .setDayDurationSeconds(model.getEconomyManager().getDayDurationSeconds());
+        model.getGameClock().setLatitude(model.getEconomyManager().getLatitude());
+        return model;
+    }
+
     public void setEventLogManager(EventLogManager eventLogManager) {
         this.eventLogManager = eventLogManager;
     }

@@ -14,10 +14,20 @@ Bienvenido al manual oficial de **LeTrain**. Aquí encontrarás todo lo que nece
 
 El juego se puede controlar tanto en su versión 2D como en la 3D mediante el teclado. A continuación, las teclas y modos principales:
 
-### Portada y menú File
-- El juego abre con una **portada** sencilla (un tren dibujado en ASCII en la terminal 2D, texto en la vista 3D). Pulsa **cualquier tecla** para entrar al mundo.
-- Pulsa **Esc** para abrir el menú **File**, con las mismas palabras en 2D y 3D: **New** (visible; llega con la rebanada de Nueva Partida/ajustes), **Load**, **Save**, **Settings** (visible; llega con la rebanada de ajustes) y **Quit**. **Esc** de nuevo cierra el menú y **Quit** sale del juego.
+### Portada, menú File y Nueva Partida
+- El juego abre con una **portada** sencilla (un tren dibujado en ASCII en la terminal 2D, texto en la vista 3D). Pulsa **cualquier tecla** para pasar al **menú File**: el juego 2D ya no arranca el mundo solo, así que **New** o **Load** son lo que inicia tu red ferroviaria.
+- Pulsa **Esc** para abrir el menú **File**, con las mismas palabras en 2D y 3D: **New**, **Load**, **Save**, **Settings** y **Quit**. **Esc** de nuevo cierra el menú y **Quit** sale del juego.
+  - **New** (2D) abre el diálogo de **Nueva Partida**: semilla, proporciones de terreno y las secciones del catálogo (ver abajo). Es la forma de empezar una partida desde el menú inicial. Con una partida en curso pide confirmación primero (el flujo completo Guardar/Descartar/Cancelar llegará más adelante); la partida sin guardar se descarta.
+  - **Save** aparece deshabilitado con el motivo *no game in progress* hasta que haya partida.
+  - **Settings** sigue visible pero deshabilitado hasta su rebanada; en el cliente 3D **New** y **Settings** están deshabilitados con *3D parity slice* por ahora.
 - El **LeTrain Editor** ya no tiene botones `Save`/`Load`: viven en el menú File. Los comandos de consola `save;`/`load;` siguen funcionando.
+- El comando de consola **`new game;`** abre el mismo diálogo de Nueva Partida desde la CLI.
+
+#### Diálogo de Nueva Partida (2D)
+- **Semilla**: al abrir el diálogo se sortea una semilla aleatoria. Es editable, copiable y el botón **new** sortea otra.
+- **Terreno**: sliders de **Agua %** y **Montaña %**. La regla es *agua + montaña ≤ 95 %*: al mover un slider se ajusta el otro, de modo que siempre queda al menos un 5 % de campo. La **barra apilada** muestra el reparto del 100 % (agua / campo / montaña) y la línea de estado muestra siempre el **objetivo** junto a lo **medido** para esa semilla.
+- **Preview**: muestreo adaptativo del terreno (mismo ruido y umbrales calibrados que el generador del mundo) dibujado con medios bloques. Es grande a partir de **120×30**, compacto en **80×24** y desaparece por debajo de 80×24 (los sliders y los porcentajes medidos se mantienen).
+- **Secciones**: los campos de **Terrain**, **Game**, **Economy**, **Construction** y **UI** salen del catálogo de ajustes, con sus rangos y unidades (casillas para las opciones de sí/no). **Start** construye el mundo con esos valores; **Cancel**/Esc lo deja todo como estaba.
 
 ### Navegación y Vistas
 - **Flechas de dirección (o h, j, k, l)**: Mover el cursor libremente o seguir una vía (estilo Vim).

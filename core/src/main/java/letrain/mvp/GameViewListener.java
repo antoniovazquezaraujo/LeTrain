@@ -9,6 +9,14 @@ public interface GameViewListener {
 
     void onNewGame();
 
+    /**
+     * True while a game is running (started from New or loaded). The File menu disables {@code
+     * Save} at the boot menu until then (D8); clients without a boot menu keep the default.
+     */
+    default boolean hasActiveGame() {
+        return true;
+    }
+
     void onSaveGame(File file);
 
     void onLoadGame(File file);

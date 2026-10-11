@@ -123,6 +123,7 @@ public class GrammarReference {
         root.add(time);
         Node recordMode = new Node("record/edit mode (R, Shift+R)");
         root.add(recordMode);
+        root.add(new Node("new game", "new game;"));
         root.add(new Node("save / load", "save backup; load backup;"));
         root.add(new Node("export / import", "export my_network; import my_network;"));
         root.add(new Node("quit", "quit;"));

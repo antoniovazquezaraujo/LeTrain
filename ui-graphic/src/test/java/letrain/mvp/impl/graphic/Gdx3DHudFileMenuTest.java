@@ -18,14 +18,12 @@ class Gdx3DHudFileMenuTest {
     @Test
     @DisplayName("every shared row shows the same words as 2D, lock reasons included")
     void should_ShowTheSharedLabels() {
-        List<FileMenuText.Item> items = FileMenuText.items();
+        List<FileMenuText.Item> items = FileMenuText.items(FileMenuText.MenuState.graphic());
 
-        assertEquals("New (settings arrive in the next slice)",
-                Gdx3DHud.fileMenuButtonText(items.get(0)));
+        assertEquals("New (3D parity slice)", Gdx3DHud.fileMenuButtonText(items.get(0)));
         assertEquals("Load", Gdx3DHud.fileMenuButtonText(items.get(1)));
         assertEquals("Save", Gdx3DHud.fileMenuButtonText(items.get(2)));
-        assertEquals("Settings (arrives with the settings slice)",
-                Gdx3DHud.fileMenuButtonText(items.get(3)));
+        assertEquals("Settings (3D parity slice)", Gdx3DHud.fileMenuButtonText(items.get(3)));
         assertEquals("Quit", Gdx3DHud.fileMenuButtonText(items.get(4)));
     }
 
