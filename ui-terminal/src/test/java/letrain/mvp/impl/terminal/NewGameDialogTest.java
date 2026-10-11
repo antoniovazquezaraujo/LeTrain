@@ -8,9 +8,21 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.googlecode.lanterna.TextColor;
+import com.googlecode.lanterna.gui2.Direction;
+import com.googlecode.lanterna.gui2.Interactable;
+import com.googlecode.lanterna.gui2.LinearLayout;
+import com.googlecode.lanterna.gui2.Panel;
+import com.googlecode.lanterna.input.KeyStroke;
+import com.googlecode.lanterna.input.KeyType;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Stream;
 import letrain.ground.TerrainPreview;
+import letrain.mvp.NewGameText;
+import letrain.settings.SettingApplyState;
 import letrain.settings.SettingCategory;
+import letrain.settings.SettingDefinition;
+import letrain.settings.SettingValueType;
 import letrain.settings.SettingsCatalog;
 import letrain.visitor.terminal.TerminalPalette;
 import org.junit.jupiter.api.DisplayName;
@@ -21,9 +33,10 @@ import org.junit.jupiter.api.Test;
  * stacked bar, the scrolling column, the catalogue field labels and the preview colours are
  * functions of the terminal size and the proportions, so they are pinned here without opening a
  * terminal. Issue #749 polishes them: square preview, single scrolling column, hotkeys and the
- * brown mountain.
+ * brown mountain. Issue #751 drops every range hint, aligns the whole dialog on one value column
+ * and rejects invalid commits with a range tooltip.
  */
-@DisplayName("New Game dialog layout (#746, polish #749)")
+@DisplayName("New Game dialog layout (#746, polish #749, field format #751)")
 class NewGameDialogTest {
 
     private static final List<String> FIELD_KEYS =
@@ -92,21 +105,137 @@ class NewGameDialogTest {
     }
 
     @Test
-    @DisplayName("catalogue rows read as label + range, value and unit apart (#749)")
+    @DisplayName("labels are just the field names: no range hint survives (#751)")
     void should_LabelCatalogueFields() {
-        assertEquals("Water (0..95)", label("terrain.waterPercent"));
+        assertEquals("Water", label("terrain.waterPercent"));
         assertEquals("%", unit("terrain.waterPercent"));
-        assertEquals("Latitude (-90..90)", label("world.latitude"));
+        assertEquals("Latitude", label("world.latitude"));
         assertEquals("°", unit("world.latitude"));
-        assertEquals("View radius (5+)", label("map.VIEW_RADIUS"));
+        assertEquals("View radius", label("map.VIEW_RADIUS"));
         assertEquals("cells", unit("map.VIEW_RADIUS"));
-        assertEquals("Starting balance (0+)", label("startingBalance"));
+        assertEquals("Starting balance", label("startingBalance"));
         assertEquals("", unit("startingBalance"));
         // "ticks" reads in full: the single column has room for it.
-        assertEquals("Normal track delay (0+)", label("delay.NORMAL_TRACK"));
+        assertEquals("Normal track delay", label("delay.NORMAL_TRACK"));
         assertEquals("ticks", unit("delay.NORMAL_TRACK"));
         assertEquals("Highlight blocked tracks", label("ui.highlightBlockedTracks"));
         assertEquals("", unit("ui.highlightBlockedTracks"));
+        SettingsCatalog.definitions()
+                .forEach(definition -> assertFalse(
+                        NewGameDialog.fieldLabel(definition).contains("("),
+                        definition.key() + " must not carry a range hint"));
+    }
+
+    @Test
+    @DisplayName("every value starts after the widest field name of the whole dialog (#751)")
+    void should_AlignTheValueColumn() {
+        int column = NewGameDialog.fieldValueColumn();
+        String widest = Stream
+                .concat(SettingsCatalog.definitions().stream().map(SettingDefinition::displayName),
+                        Stream.of(NewGameText.SEED_LABEL, NewGameText.WATER_LABEL,
+                                NewGameText.MOUNTAIN_LABEL))
+                .max(Comparator.comparingInt(String::length)).orElseThrow();
+
+        assertEquals(widest.length() + 2, column, "widest name + ':' + one space");
+        assertEquals(widest + ": ", NewGameDialog.alignedLabel(widest, column),
+                "the widest name keeps a single space before the value");
+        for (String name : List.of(NewGameText.SEED_LABEL, NewGameText.WATER_LABEL,
+                NewGameText.MOUNTAIN_LABEL, "Starting balance", widest)) {
+            String aligned = NewGameDialog.alignedLabel(name, column);
+            assertEquals(column, aligned.length(), name + " must end at the value column");
+            assertTrue(aligned.startsWith(name + ":"), name + " keeps the colon glued");
+            assertTrue(aligned.endsWith(" "), name + " pads between colon and value");
+        }
+        assertEquals("Starting balance:" + " ".repeat(column - 17),
+                NewGameDialog.alignedLabel("Starting balance", column));
+    }
+
+    @Test
+    @DisplayName("commit validation rejects out-of-range and malformed values (#751)")
+    void should_ValidateCommits() {
+        SettingDefinition water = SettingsCatalog.definition("terrain.waterPercent").orElseThrow();
+        assertEquals("95", NewGameDialog.normalizeCommit(water, " 95 "));
+        assertNull(NewGameDialog.normalizeCommit(water, "96"), "above the maximum");
+        assertNull(NewGameDialog.normalizeCommit(water, "-1"), "below the minimum");
+        assertNull(NewGameDialog.normalizeCommit(water, "abc"), "not a number");
+
+        SettingDefinition latitude = SettingsCatalog.definition("world.latitude").orElseThrow();
+        assertEquals("90.0", NewGameDialog.normalizeCommit(latitude, " 90.0 "));
+        assertNull(NewGameDialog.normalizeCommit(latitude, "90.5"));
+
+        SettingDefinition seed = SettingsCatalog.definition("seed").orElseThrow();
+        assertEquals("777", NewGameDialog.normalizeCommit(seed, " 777 "));
+        assertNull(NewGameDialog.normalizeCommit(seed, "random"),
+                "the seed box only takes integers once the dialog is open");
+        assertNull(NewGameDialog.normalizeCommit(seed, "7.7"));
+    }
+
+    @Test
+    @DisplayName("the tooltip names the allowed range: bounded, minimum, maximum (#751)")
+    void should_DescribeTheAllowedRange() {
+        assertEquals("Allowed: 0..95", NewGameDialog
+                .allowedRange(SettingsCatalog.definition("terrain.waterPercent").orElseThrow()));
+        assertEquals("Minimum: 5", NewGameDialog
+                .allowedRange(SettingsCatalog.definition("map.VIEW_RADIUS").orElseThrow()));
+        assertEquals("Maximum: 12",
+                NewGameDialog.allowedRange(new SettingDefinition("test.maxOnly",
+                        SettingCategory.CONSTRUCTION, "Max only", SettingValueType.INTEGER, null,
+                        null, 12.0, "12", SettingApplyState.LIVE)));
+        assertEquals("Allowed: whole number",
+                NewGameDialog.allowedRange(SettingsCatalog.definition("seed").orElseThrow()));
+    }
+
+    @Test
+    @DisplayName("an invalid commit reverts, keeps the focus and opens the tooltip (#751)")
+    void should_RevertInvalidCommitsWithATooltip() {
+        int column = NewGameDialog.fieldValueColumn();
+        NewGameDialog.ValidatingTextBox box = new NewGameDialog.ValidatingTextBox(
+                SettingsCatalog.definition("terrain.waterPercent").orElseThrow(), "25", column);
+        Panel host = new Panel(new LinearLayout(Direction.VERTICAL));
+        box.setTooltipHost(host);
+
+        // Typing alone never validates: no tooltip until the commit.
+        box.setText("96");
+        assertTrue(host.getChildrenList().isEmpty(), "no tooltip while typing");
+
+        assertEquals(Interactable.Result.HANDLED, box.handleKeyStroke(new KeyStroke(KeyType.Tab)),
+                "the rejected commit is consumed so the focus stays");
+        assertEquals("25", box.getText(), "the previous value comes back");
+        Panel tooltipLine = (Panel) host.getChildrenList().get(0);
+        assertEquals("Allowed: 0..95",
+                ((NewGameDialog.TooltipBox) tooltipLine.getChildrenList().get(1)).text());
+
+        // A valid commit applies, normalises and closes the tooltip.
+        box.setText("40");
+        assertEquals(Interactable.Result.MOVE_FOCUS_NEXT,
+                box.handleKeyStroke(new KeyStroke(KeyType.Enter)),
+                "a valid commit follows the normal focus flow");
+        assertEquals("40", box.getText());
+        assertTrue(host.getChildrenList().isEmpty(), "the tooltip closes on a valid commit");
+    }
+
+    @Test
+    @DisplayName("the seed box only commits whole numbers; its tooltip says so (#751)")
+    void should_RejectNonIntegerSeeds() {
+        int column = NewGameDialog.fieldValueColumn();
+        NewGameDialog.ValidatingTextBox box = new NewGameDialog.ValidatingTextBox(
+                SettingsCatalog.definition("seed").orElseThrow(), "777", column);
+        Panel host = new Panel(new LinearLayout(Direction.VERTICAL));
+        box.setTooltipHost(host);
+
+        box.setText("random");
+        assertEquals(Interactable.Result.HANDLED,
+                box.handleKeyStroke(new KeyStroke(KeyType.Enter)));
+        assertEquals("777", box.getText(), "the previous seed comes back");
+        Panel tooltipLine = (Panel) host.getChildrenList().get(0);
+        assertEquals("Allowed: whole number",
+                ((NewGameDialog.TooltipBox) tooltipLine.getChildrenList().get(1)).text());
+
+        box.setText("  123  ");
+        assertEquals(Interactable.Result.MOVE_FOCUS_NEXT,
+                box.handleKeyStroke(new KeyStroke(KeyType.Enter)));
+        assertEquals("123", box.getText(), "valid seeds are normalised");
+        assertTrue(host.getChildrenList().isEmpty());
     }
 
     @Test
