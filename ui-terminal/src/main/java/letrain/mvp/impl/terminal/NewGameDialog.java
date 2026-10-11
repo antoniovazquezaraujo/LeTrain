@@ -35,7 +35,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import letrain.ground.TerrainCalibrator;
@@ -64,8 +63,8 @@ import letrain.visitor.terminal.TerminalPalette;
  * #751).</li>
  * <li><b>Start</b> validates the whole form and returns the settings map to the presenter, which
  * builds the world via {@code Model.newGame}. <b>Esc</b> (or Cancel) returns nothing.
- * <b>Alt+1..5</b> switch tabs; <b>Alt+N</b> draws a seed, <b>Alt+S</b> starts, <b>Alt+C</b> cancels
- * (the old dialog advertised no keys and answered none, #749).</li>
+ * <b>Alt+1..5</b> switch tabs, <b>Alt+S</b> starts and <b>Alt+C</b> cancels (the old dialog
+ * advertised no keys and answered none, #749; the seed is drawn once at open, #754).</li>
  * </ul>
  *
  * <p>
@@ -83,6 +82,8 @@ final class NewGameDialog {
     static final int TAB_ROWS = 1;
     /** Rows the Start/Cancel footer takes. */
     static final int FOOTER_ROWS = 1;
+    /** Blank row between the tab bar and the first field of every section (#754). */
+    static final int SECTION_TOP_ROWS = 1;
     /**
      * Rows the terrain controls above the preview take inside the Terrain tab: seed, water,
      * mountain, bar and status line.
@@ -111,8 +112,8 @@ final class NewGameDialog {
     static final int FIELD_RGB = 0x4CA331;
     static final int MOUNTAIN_RGB = 0x80664D;
 
-    /** Footer hint: the Alt access keys (tabs are numeric, so all letters stay free). */
-    static final String HOTKEY_HINT = "Alt+1-5 tabs · Alt+S start · Alt+C cancel";
+    /** Footer hint: the Alt access keys (Alt+N left with the seed button, #754). */
+    static final String HOTKEY_HINT = "Alt+1-5 · Alt+S · Alt+C";
 
     /** Preview sizes: {@code sampleRows} is the sampled grid height; each text row shows two. */
     record PreviewPlan(int columns, int sampleRows) {
@@ -121,22 +122,28 @@ final class NewGameDialog {
         }
     }
 
+    /** Rows left for one section body: terminal minus the tab bar, the blank row and the footer. */
+    static int sectionRows(int rows) {
+        return rows - TAB_ROWS - FOOTER_ROWS - SECTION_TOP_ROWS;
+    }
+
     /**
      * How much preview fits in a terminal of {@code columns x rows}: {@code null} below 80x24
      * (concept §7). The sample grid is square and covers the whole calibration window, so the
      * half-block render (two sample rows per text row, each column a full cell wide) shows the
-     * world with its 1:1 cells. A screen-wide grid stretched the world horizontally (#749).
+     * world with its 1:1 cells; a screen-wide grid stretched the world horizontally (#749). The
+     * preview is half as wide and half as tall as the first design — about a quarter of the section
+     * area — so it no longer takes over the dialog (#754).
      */
     static PreviewPlan previewPlan(int columns, int rows) {
         if (columns < MIN_COLUMNS || rows < MIN_ROWS) {
             return null;
         }
-        int contentRows = rows - TAB_ROWS - FOOTER_ROWS;
-        int previewTextRows = contentRows - TERRAIN_CHROME_ROWS;
+        int previewTextRows = sectionRows(rows) - TERRAIN_CHROME_ROWS;
         if (previewTextRows < 2) {
             return null;
         }
-        int sample = Math.min(columns - PREVIEW_MARGIN_COLUMNS, previewTextRows * 2);
+        int sample = Math.min((columns - PREVIEW_MARGIN_COLUMNS) / 2, (previewTextRows / 2) * 2);
         return new PreviewPlan(sample, sample);
     }
 
@@ -315,12 +322,6 @@ final class NewGameDialog {
         seedBox.setPreferredSize(new TerminalSize(SEED_BOX_WIDTH, 1));
         seedBox.setTooltipHost(seedHost);
         seedRow.addComponent(seedBox);
-        seedRow.addComponent(new EmptySpace(new TerminalSize(1, 1)));
-        Runnable drawSeed = () -> {
-            seed[0] = NewGameForm.nextSeed(new Random());
-            seedBox.setText(String.valueOf(seed[0]));
-        };
-        seedRow.addComponent(mnemonicButton(NewGameText.NEW_SEED, 'N', drawSeed));
         seedHost.addComponent(seedRow);
 
         PercentSlider water =
@@ -367,7 +368,7 @@ final class NewGameDialog {
         water.setOnChange(onSliderChange);
         mountain.setOnChange(onSliderChange);
         seedBox.setTextChangeListener((text, ignored) -> {
-            // Fired by typing and by the `new` button, which also recalibrates the preview.
+            // Fired by typing: keep the preview on the last valid seed.
             try {
                 seed[0] = Integer.parseInt(text.trim());
                 recalibrate.run();
@@ -456,9 +457,6 @@ final class NewGameDialog {
                 } else if (key == 'c') {
                     window.close();
                     deliverEvent.set(false);
-                } else if (key == 'n') {
-                    drawSeed.run();
-                    deliverEvent.set(false);
                 }
             }
         });
@@ -473,10 +471,15 @@ final class NewGameDialog {
         return result[0];
     }
 
-    /** Swaps the active section into the content area; the tab bar repaints its active style. */
+    /**
+     * Swaps the active section into the content area; the tab bar repaints its active style. Every
+     * section keeps a blank row under the tabs (#754).
+     */
     private static void showSection(Panel content, Map<SettingCategory, Panel> sections,
             SettingCategory active, BasicWindow window) {
         content.removeAllComponents();
+        content.addComponent(new EmptySpace(new TerminalSize(1, SECTION_TOP_ROWS)),
+                BorderLayout.Location.TOP);
         Panel section = sections.get(active);
         content.addComponent(section, BorderLayout.Location.CENTER);
         // If the focus lived inside the section just swapped out, hand it to the new section's

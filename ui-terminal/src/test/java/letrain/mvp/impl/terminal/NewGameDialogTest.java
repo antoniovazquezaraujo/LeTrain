@@ -34,9 +34,10 @@ import org.junit.jupiter.api.Test;
  * functions of the terminal size and the proportions, so they are pinned here without opening a
  * terminal. Issue #749 polishes them: square preview, single scrolling column, hotkeys and the
  * brown mountain. Issue #751 drops every range hint, aligns the whole dialog on one value column
- * and rejects invalid commits with a range tooltip.
+ * and rejects invalid commits with a range tooltip. Issue #754 halves the preview, adds the blank
+ * row under the tabs and removes the seed button (and Alt+N).
  */
-@DisplayName("New Game dialog layout (#746, polish #749, field format #751)")
+@DisplayName("New Game dialog layout (#746, polish #749/#754, field format #751)")
 class NewGameDialogTest {
 
     private static final List<String> FIELD_KEYS =
@@ -44,29 +45,29 @@ class NewGameDialogTest {
                     "delay.NORMAL_TRACK", "ui.highlightBlockedTracks");
 
     @Test
-    @DisplayName("120x30: the preview samples a 46x46 square (23 text rows) with half blocks")
+    @DisplayName("120x30: the preview samples a 22x22 square (11 text rows), a quarter of the area")
     void should_PlanSquarePreviewAt120x30() {
         NewGameDialog.PreviewPlan plan = NewGameDialog.previewPlan(120, 30);
 
         assertNotNull(plan);
-        assertEquals(46, plan.columns());
-        assertEquals(46, plan.sampleRows());
-        assertEquals(23, plan.textRows());
+        assertEquals(22, plan.columns());
+        assertEquals(22, plan.sampleRows());
+        assertEquals(11, plan.textRows());
     }
 
     @Test
-    @DisplayName("80x24: the preview samples a 34x34 square (17 text rows)")
+    @DisplayName("80x24: the preview samples a 16x16 square (8 text rows)")
     void should_PlanSquarePreviewAt80x24() {
         NewGameDialog.PreviewPlan plan = NewGameDialog.previewPlan(80, 24);
 
         assertNotNull(plan);
-        assertEquals(34, plan.columns());
-        assertEquals(34, plan.sampleRows());
-        assertEquals(17, plan.textRows());
+        assertEquals(16, plan.columns());
+        assertEquals(16, plan.sampleRows());
+        assertEquals(8, plan.textRows());
     }
 
     @Test
-    @DisplayName("the sample grid is square at every size: the world keeps its 1:1 cells (#749)")
+    @DisplayName("the sample grid is square at every size and never takes over the dialog (#749, #754)")
     void should_KeepTheWorldSquare() {
         int[][] sizes = {{80, 24}, {100, 30}, {120, 30}, {200, 60}};
         for (int[] size : sizes) {
@@ -76,11 +77,23 @@ class NewGameDialogTest {
                     size[0] + "x" + size[1] + " must sample as many rows as columns");
             assertTrue(plan.sampleRows() <= 2 * plan.textRows(),
                     size[0] + "x" + size[1] + " must fit the half-block rows");
-            assertTrue(plan.sampleRows() <= size[0] - 4,
-                    size[0] + "x" + size[1] + " must respect the preview margin");
-            assertTrue(plan.textRows() <= size[1] - 1 - 1 - 5,
+            assertTrue(plan.sampleRows() <= (size[0] - 4) / 2,
+                    size[0] + "x" + size[1] + " must stay at half the width at most");
+            assertTrue(
+                    plan.textRows() <= NewGameDialog.sectionRows(size[1])
+                            - NewGameDialog.TERRAIN_CHROME_ROWS,
                     size[0] + "x" + size[1] + " must not overflow the content area");
         }
+    }
+
+    @Test
+    @DisplayName("every section starts one blank row below the tab bar (#754)")
+    void should_ReserveABlankRowUnderTheTabs() {
+        assertEquals(1, NewGameDialog.SECTION_TOP_ROWS);
+        assertEquals(24 - NewGameDialog.TAB_ROWS - NewGameDialog.FOOTER_ROWS - 1,
+                NewGameDialog.sectionRows(24));
+        assertEquals(30 - NewGameDialog.TAB_ROWS - NewGameDialog.FOOTER_ROWS - 1,
+                NewGameDialog.sectionRows(30));
     }
 
     @Test
@@ -309,6 +322,15 @@ class NewGameDialogTest {
         assertTrue(NewGameDialog.tabHotkey('0', tabs).isEmpty(), "no tab for 0");
         assertTrue(NewGameDialog.tabHotkey('t', tabs).isEmpty(),
                 "tabs are numeric: letters stay free for the actions");
+    }
+
+    @Test
+    @DisplayName("the footer hint lists the Alt keys and no Alt+N anymore (#754)")
+    void should_AdvertiseTheAltKeys() {
+        assertEquals("Alt+1-5 · Alt+S · Alt+C", NewGameDialog.HOTKEY_HINT);
+        assertTrue(NewGameDialog.HOTKEY_HINT.contains("Alt+S"), "Start stays advertised");
+        assertTrue(NewGameDialog.HOTKEY_HINT.contains("Alt+C"), "Cancel stays advertised");
+        assertFalse(NewGameDialog.HOTKEY_HINT.contains("Alt+N"), "the seed button is gone");
     }
 
     private static String label(String key) {

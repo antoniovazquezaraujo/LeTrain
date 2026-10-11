@@ -25,11 +25,11 @@ El juego se puede controlar tanto en su versión 2D como en la 3D mediante el te
 
 #### Diálogo de Nueva Partida (2D)
 - La pestaña **Terrain** se abre primero y concentra todos los controles del terreno: la semilla, los sliders de **Agua %**/**Montaña %**, la **barra apilada**, la línea de **objetivo/medido** y el **preview**. Las demás pestañas (**Game**, **Economy**, **Construction**, **UI**) muestran solo el catálogo de ajustes.
-- **Semilla**: al abrir el diálogo se sortea una semilla aleatoria. Es editable, copiable y el botón **new** sortea otra.
+- **Semilla**: al abrir el diálogo se sortea una semilla aleatoria. Sigue siendo editable y copiable.
 - **Terreno**: la regla es *agua + montaña ≤ 95 %*: al mover un slider se ajusta el otro, de modo que siempre queda al menos un 5 % de campo. La **barra apilada** muestra el reparto del 100 % (agua / campo / montaña).
-- **Preview**: muestreo adaptativo **cuadrado** del terreno (mismo ruido y umbrales calibrados que el generador del mundo) dibujado con medios bloques, de modo que el mundo conserva sus celdas 1:1; la montaña va en el marrón del juego. Aparece a partir de **80×24** y crece con la terminal (34×34 celdas en 80×24, 46×46 en 120×30); por debajo de 80×24 se mantienen los sliders, la barra y la línea objetivo/medido.
+- **Preview**: muestreo adaptativo **cuadrado** del terreno (mismo ruido y umbrales calibrados que el generador del mundo) dibujado con medios bloques, de modo que el mundo conserva sus celdas 1:1; la montaña va en el marrón del juego. Aparece a partir de **80×24** y crece con la terminal (16×16 celdas en 80×24, 22×22 en 120×30: en torno a un cuarto del área de la sección, para no comerse el diálogo); por debajo de 80×24 se mantienen los sliders, la barra y la línea objetivo/medido.
 - **Secciones**: **una columna con scroll** por pestaña, un campo por fila como `Nombre: valor` (más su unidad; casillas para las opciones de sí/no). Todos los valores empiezan en la misma columna, tras el nombre más ancho del diálogo, así que al cambiar de pestaña no se mueven. Sin pistas de rango en las filas: al confirmar un valor inválido (**Enter**/Tab) se conserva el anterior y se abre una cajita con el rango permitido (`Allowed: 0..95`, `Minimum: 0`, `Maximum: 12`). **Start** construye el mundo con esos valores; **Cancel**/Esc lo deja todo como estaba.
-- **Teclas**: **Alt+1..5** cambian de pestaña, **Alt+N** sortea una semilla, **Alt+S** arranca y **Alt+C** cancela (**Esc** también cancela).
+- **Teclas**: **Alt+1..5** cambian de pestaña, **Alt+S** arranca y **Alt+C** cancela (**Esc** también cancela).
 
 ### Navegación y Vistas
 - **Flechas de dirección (o h, j, k, l)**: Mover el cursor libremente o seguir una vía (estilo Vim).
