@@ -1,0 +1,123 @@
+package letrain.mvp.impl;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.io.ByteArrayInputStream;
+import java.util.Map;
+import letrain.ground.TerrainCalibrator;
+import letrain.settings.SettingsCatalog;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+@DisplayName("Savegame: the game's settings travel with it")
+class SavegameSettingsTest {
+
+    private static final int GRID = TerrainCalibrator.SAMPLE_SIZE;
+    private static final int STRIDE = 4;
+
+    private final GameSaveService saves = new GameSaveService();
+
+    /** Deterministic terrain sampling over the calibration region (no cells materialized). */
+    private static int[] terrainSignature(Model model) {
+        int side = (GRID + STRIDE - 1) / STRIDE;
+        int[] signature = new int[side * side];
+        int i = 0;
+        for (int y = 0; y < GRID; y += STRIDE) {
+            for (int x = 0; x < GRID; x += STRIDE) {
+                signature[i++] = model.getGroundMap().getBackgroundTerrain(x, y);
+            }
+        }
+        return signature;
+    }
+
+    @Test
+    @DisplayName("serialization writes a settings section with the effective keys")
+    void savegame_hasSettingsSection() throws Exception {
+        Model model = new Model(123);
+        model.getEconomyManager()
+                .applyConfig(Map.of("terrain.waterPercent", "30", "terrain.mountainPercent", "15"));
+
+        ObjectNode tree = (ObjectNode) new ObjectMapper().readTree(saves.toBytes(model));
+
+        assertTrue(tree.has("settings"), tree.toPrettyString());
+        assertEquals("30", tree.path("settings").path("terrain.waterPercent").asText());
+        assertEquals("15", tree.path("settings").path("terrain.mountainPercent").asText());
+    }
+
+    @Test
+    @DisplayName("loading applies the settings carried by the savegame")
+    void roundTrip_appliesSettings() {
+        Model model = new Model(123);
+        model.getEconomyManager()
+                .applyConfig(Map.of("terrain.waterPercent", "30", "terrain.mountainPercent", "15",
+                        "startingBalance", "500", "ui.highlightBlockedTracks", "false"));
+
+        Model loaded = saves.fromBytes(saves.toBytes(model));
+
+        assertNotNull(loaded);
+        assertTrue(loaded.getEconomyManager().isTerrainPercentEnabled());
+        assertEquals(30, loaded.getEconomyManager().getWaterPercent());
+        assertEquals(15, loaded.getEconomyManager().getMountainPercent());
+        assertFalse(loaded.getEconomyManager().isHighlightBlockedTracks());
+        assertEquals(500f, loaded.getEconomyManager().getBalance(), 0.001f);
+    }
+
+    @Test
+    @DisplayName("the loaded world generates the same terrain as the saved one")
+    void roundTrip_terrainMatches() {
+        Model model = new Model(123);
+        model.getEconomyManager()
+                .applyConfig(Map.of("terrain.waterPercent", "40", "terrain.mountainPercent", "10"));
+
+        Model loaded = saves.fromBytes(saves.toBytes(model));
+
+        assertNotNull(loaded);
+        assertArrayEquals(terrainSignature(model), terrainSignature(loaded));
+    }
+
+    @Test
+    @DisplayName("a fresh new game round-trips with the D2 defaults")
+    void freshGame_roundTripsWithDefaults() {
+        Model loaded = saves.fromBytes(saves.toBytes(new Model(123)));
+
+        assertNotNull(loaded);
+        assertTrue(loaded.getEconomyManager().isTerrainPercentEnabled());
+        assertEquals(SettingsCatalog.DEFAULT_WATER_PERCENT,
+                loaded.getEconomyManager().getWaterPercent());
+        assertEquals(SettingsCatalog.DEFAULT_MOUNTAIN_PERCENT,
+                loaded.getEconomyManager().getMountainPercent());
+    }
+
+    @Test
+    @DisplayName("a savegame without the settings section keeps its legacy thresholds (old saves)")
+    void oldSavegame_keepsLegacyLook() throws Exception {
+        Model model = new Model(123);
+        model.getEconomyManager()
+                .applyConfig(Map.of("threshold.WATER", "100", "threshold.ROCK", "200"));
+
+        // Emulate a savegame written before this slice: no settings section, and no percent fields
+        // in the economy block either.
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode tree = (ObjectNode) mapper.readTree(saves.toBytes(model));
+        tree.remove("settings");
+        ObjectNode economy = (ObjectNode) tree.path("economyManager");
+        economy.remove("terrainPercentEnabled");
+        economy.remove("terrainWaterPercent");
+        economy.remove("terrainMountainPercent");
+        byte[] oldSave = mapper.writeValueAsBytes(tree);
+
+        Model loaded = saves.load(new ByteArrayInputStream(oldSave)).orElseThrow();
+
+        assertFalse(loaded.getEconomyManager().isTerrainPercentEnabled());
+        assertEquals(100f, loaded.getEconomyManager().getWaterThreshold(), 0.001f);
+        assertEquals(200f, loaded.getEconomyManager().getRockThreshold(), 0.001f);
+        assertArrayEquals(terrainSignature(model), terrainSignature(loaded),
+                "an old savegame must keep its historical look");
+    }
+}
