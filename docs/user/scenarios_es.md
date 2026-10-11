@@ -82,12 +82,12 @@ Pulsa `p` para abrir el **LeTrain Editor**. Sus tres pestañas forman el escenar
 ![El LeTrain Editor con la pestaña Config seleccionada](images/config-editor.png)
 
 La referencia rápida de la derecha muestra solo los comandos que tienen sentido en la pestaña
-activa; al elegir uno se inserta en una línea nueva. El pie tiene `Save`/`Load` (partida guardada),
-`Export`/`Import` (fichero de escenario), `Reload from game` (recargar desde el mundo),
-`Apply program` (aplicar el programa editado al juego en marcha) y `Rebuild world` (validar el
-escenario y reconstruir el mundo con un replay). `Rebuild world` pide confirmación antes: el mundo
-actual se descarta. `Esc` cierra el editor. Si hay errores, aparece una lista con scroll que te
-lleva a la línea del fallo.
+activa; al elegir uno se inserta en una línea nueva. El pie tiene `Export`/`Import` (fichero de
+escenario), `Reload from game` (recargar desde el mundo), `Apply program` (aplicar el programa
+editado al juego en marcha), `Rebuild world` (validar el escenario y reconstruir el mundo con un
+replay) y `Close`; las partidas guardadas se han movido al menú File (`Esc`). `Rebuild world` pide
+confirmación antes: el mundo actual se descarta. `Esc` cierra el editor. Si hay errores, aparece
+una lista con scroll que te lleva a la línea del fallo.
 
 `Apply program` vuelve a aplicar el Program desde cero: los trenes en marcha se reinician (se
 cancelan las misiones, se limpian las esperas de bloque y el tren frena) y un itinerario reasignado

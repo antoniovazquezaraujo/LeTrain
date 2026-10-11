@@ -90,6 +90,13 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private final GameSaveService gameSaveService;
 
     /**
+     * Title cover (issue #743): shown at startup, any key continues. Kept in the presenter so the
+     * key that dismisses the cover is consumed and never reaches the game.
+     */
+    private boolean coverActive = false;
+    private boolean coverEnabled = true;
+
+    /**
      * Soundscape glue (styles, zones, weather), owned by the launcher; {@code null} in tests and
      * when audio is disabled, in which case the legacy {@link letrain.audio.AudioController}
      * ambient keeps playing.
@@ -412,10 +419,37 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
     }
 
+    /**
+     * Skips the title cover. Used by headless runs and direct scenario launches that must land on
+     * the world without a splash (issue #743).
+     */
+    public void setCoverEnabled(boolean enabled) {
+        this.coverEnabled = enabled;
+    }
+
+    /** True while the title cover is on screen waiting for any key. */
+    public boolean isCoverActive() {
+        return coverActive;
+    }
+
+    /** Shows the cover; {@link #start()} calls this unless the cover was disabled. */
+    void showCover() {
+        coverActive = true;
+        view.setCoverVisible(true);
+    }
+
+    /** Dismisses the cover (any key continues) and hands the screen back to the game. */
+    void dismissCover() {
+        coverActive = false;
+        view.setCoverVisible(false);
+    }
+
     public void start() {
         running = true;
         try {
-
+            if (coverEnabled) {
+                showCover();
+            }
             model.setMode(RAILS);
             letrain.map.Point startPos = model.getCursor().getPosition();
             view.centerOn(startPos.getX(), startPos.getY());
@@ -423,6 +457,27 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             while (running) {
                 com.googlecode.lanterna.input.KeyStroke rawStroke = view.readKey();
                 boolean endOfGame = view.isEndOfGame(rawStroke);
+                if (coverActive) {
+                    // Cover: any key continues. The dismissing keystroke is consumed with the
+                    // rest of the queued burst, so it never reaches the game as an action.
+                    if (rawStroke != null) {
+                        dismissCover();
+                        while (rawStroke != null) {
+                            rawStroke = view.readKey();
+                            endOfGame = endOfGame || view.isEndOfGame(rawStroke);
+                        }
+                    }
+                    if (endOfGame) {
+                        break;
+                    }
+                    if (coverActive) {
+                        view.paint();
+                    } else {
+                        view.clear();
+                    }
+                    Thread.sleep(50);
+                    continue;
+                }
                 // Handles the whole queued burst: the old code discarded every key after the first
                 // one of the frame, so fast typing (commands) and quick taps got lost.
                 while (rawStroke != null) {
@@ -714,6 +769,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     @Override
     public void onChar(InputEvent keyEvent) {
+        if (coverActive) {
+            // Any key continues from the cover; the key is consumed, never acted on.
+            dismissCover();
+            return;
+        }
         if (((TerminalView) view).isShowingOverlay()) {
             // Vim-style pager: j/k (or Ctrl+N/P) scroll, h/l change width, PageUp/PageDown page,
             // +/- width, F maximize.
@@ -889,7 +949,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             view.setHelpLevel(next);
             return;
         } else if (keyEvent.getKeyType() == KeyType.Escape) {
-            view.showExitDialog();
+            // Esc opens the File menu (owner decision D11); Quit lives inside it now.
+            view.showFileMenu();
         } else if (handleModeHotkey(keyEvent)) {
             return;
         }

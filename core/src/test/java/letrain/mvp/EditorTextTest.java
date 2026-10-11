@@ -2,6 +2,7 @@ package letrain.mvp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -46,14 +47,17 @@ class EditorTextTest {
     }
 
     @Test
-    @DisplayName("the footer buttons carry the D7 names and keep Save/Load/Export/Import/Close")
+    @DisplayName("the footer carries the D7 names without Save/Load (moved to the File menu, #743)")
     void should_WordTheFooterButtonsExactly() {
         assertEquals(
-                List.of("Save", "Load", "Export", "Import", "Reload from game", "Apply program",
-                        "Rebuild world", "Close"),
-                List.of(EditorText.SAVE, EditorText.LOAD, EditorText.EXPORT, EditorText.IMPORT,
-                        EditorText.RELOAD_FROM_GAME, EditorText.APPLY_PROGRAM,
-                        EditorText.REBUILD_WORLD, EditorText.CLOSE));
+                List.of("Export", "Import", "Reload from game", "Apply program", "Rebuild world",
+                        "Close"),
+                List.of(EditorText.EXPORT, EditorText.IMPORT, EditorText.RELOAD_FROM_GAME,
+                        EditorText.APPLY_PROGRAM, EditorText.REBUILD_WORLD, EditorText.CLOSE));
+        assertThrows(NoSuchFieldException.class, () -> EditorText.class.getDeclaredField("SAVE"),
+                "Save lives in the File menu now");
+        assertThrows(NoSuchFieldException.class, () -> EditorText.class.getDeclaredField("LOAD"),
+                "Load lives in the File menu now");
     }
 
     @Test

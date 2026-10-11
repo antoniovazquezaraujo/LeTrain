@@ -78,7 +78,8 @@ public interface View {
 
     void showIDE();
 
-    void showExitDialog();
+    /** Opens the File menu (Esc in both clients): New/Load/Save/Settings/Quit. */
+    void showFileMenu();
 
     public int getCols();
 

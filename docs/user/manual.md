@@ -12,6 +12,11 @@ Welcome to the official **LeTrain** manual. Here you will find everything you ne
 
 The game can be controlled via the keyboard in both its 2D and 3D versions. Below are the main keys and modes:
 
+### Title cover and File menu
+- The game opens with a simple **title cover** (a small train drawn in ASCII in the 2D terminal, text in the 3D view). Press **any key** to continue into the world.
+- Press **Esc** to open the **File** menu, with the same words in 2D and 3D: **New** (visible; it arrives with the New Game/settings slice), **Load**, **Save**, **Settings** (visible; it arrives with the settings slice) and **Quit**. **Esc** closes the menu again and **Quit** leaves the game.
+- The in-game **LeTrain Editor** no longer has `Save`/`Load` buttons: they live in the File menu. The console commands `save;`/`load;` still work.
+
 ### Navigation and Views
 - **Arrow Keys (or h, j, k, l)**: Move the cursor freely or follow a track (Vim-style navigation).
 - **Alt + Arrows (or Alt + h, j, k, l)**: Zoom and pan/orbit the camera.
@@ -23,7 +28,7 @@ The game can be controlled via the keyboard in both its 2D and 3D versions. Belo
   - **g**: Build Speed Signal
 - **Key 'o'**: Instantly relocate the cursor to the currently selected train, station, fork, sensor, or speed signal; a brief white cross flashes around the cursor so you can spot it.
 - **Key 'z'**: In 3D: Toggle between the three cameras (Perspective, Top-down, and Cab view). In 2D: Cycle the camera deadzone box.
-- **Esc**: In 3D: Exit the game menu.
+- **Esc**: Open the **File** menu (`New`/`Load`/`Save`/`Settings`/`Quit`). Press it again to close the menu.
 - **Key 'Z' (Shift+z)**: In 2D: Toggle camera pagination mode.
 - **Key 'Tab'**: Cycle through the information bar visibility levels (Compact, Full, Hidden).
 
@@ -78,8 +83,8 @@ For a complete reference of the CLI commands, see **[grammar.md](grammar.md)**.
 - **`p`**: Open the **LeTrain Editor** (scenario editor). It has three tabs — **Scenario**
   (`seed` + `on build` + `on start`), **Programming** (the automation script) and **Config** (game
   settings) — a per-tab quick reference, and a footer with `Export`/`Import` of `.ltr` scenario
-  files, `Reload from game`, `Apply program` and `Rebuild world`. `Esc` closes it. See
-  **[scenarios.md](scenarios.md)**.
+  files, `Reload from game`, `Apply program`, `Rebuild world` and `Close`. Save/Load moved to the
+  File menu (**Esc**). `Esc` closes the editor. See **[scenarios.md](scenarios.md)**.
 - **Record/edit mode (`R`)**: while it is on, **`u`** undoes and **Ctrl+R** redoes edits (the same
   as `undo;` / `redo;`). Outside this mode, `u` is the **Unlink** mode.
 
