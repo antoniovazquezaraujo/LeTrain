@@ -82,6 +82,7 @@ class GrammarReferenceTest {
         assertTrue(anyContains(snippets, "ls;"));
         assertTrue(anyContains(snippets, "info;"));
         assertTrue(anyContains(snippets, "journal;"));
+        assertTrue(anyContains(snippets, "new game;"));
         assertFalse(anyContains(snippets, "new st;"));
     }
 

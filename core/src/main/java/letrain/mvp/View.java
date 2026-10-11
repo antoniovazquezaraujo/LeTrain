@@ -1,6 +1,7 @@
 package letrain.mvp;
 
 import java.util.List;
+import java.util.Map;
 import letrain.map.Point;
 import letrain.mvp.Model.GameModeMenuOption;
 
@@ -80,6 +81,25 @@ public interface View {
 
     /** Opens the File menu (Esc in both clients): New/Load/Save/Settings/Quit. */
     void showFileMenu();
+
+    /**
+     * Opens the New Game dialog (2D today, 3D in S4) prefilled with the current effective
+     * configuration.
+     *
+     * @return the validated settings chosen by the player, or {@code null} when the dialog was
+     *         cancelled
+     */
+    default Map<String, String> showNewGameDialog(Map<String, String> currentSettings) {
+        return null;
+    }
+
+    /**
+     * Simple yes/no confirmation dialog; {@code false} when there is no dialog or the player says
+     * no.
+     */
+    default boolean confirm(String title, String message) {
+        return false;
+    }
 
     public int getCols();
 
