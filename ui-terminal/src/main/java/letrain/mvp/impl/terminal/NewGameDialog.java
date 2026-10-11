@@ -28,13 +28,13 @@ import com.googlecode.lanterna.gui2.WindowListenerAdapter;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
 import com.googlecode.lanterna.input.KeyStroke;
+import com.googlecode.lanterna.input.KeyType;
 import com.googlecode.lanterna.screen.Screen;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import letrain.ground.TerrainCalibrator;
@@ -48,8 +48,8 @@ import letrain.settings.SettingsCatalog;
 import letrain.visitor.terminal.TerminalPalette;
 
 /**
- * 2D New Game dialog (S2, issue #746; layout polished for #749). Full-screen, borderless, built
- * from the shared catalogue:
+ * 2D New Game dialog (S2, issue #746; layout polished for #749, field format #751). Full-screen,
+ * borderless, built from the shared catalogue:
  *
  * <ul>
  * <li><b>Terrain</b> tab (opens first): seed (random, editable and copyable), water/mountain
@@ -58,12 +58,13 @@ import letrain.visitor.terminal.TerminalPalette;
  * {@link TerrainPreview} with the same calibrated thresholds the world generator uses. The terrain
  * controls live only in this tab: they are no longer pinned above every section (#749).</li>
  * <li><b>Sections</b>: Game, Economy, Construction and UI read
- * {@link SettingsCatalog#definitions()} as a single scrolling column of label + value + unit rows
- * (the 3-field grid felt cramped, #749).</li>
+ * {@link SettingsCatalog#definitions()} as a single scrolling column of {@code Name: value} rows
+ * (the 3-field grid felt cramped, #749; no range hints and one aligned value column for every tab,
+ * #751).</li>
  * <li><b>Start</b> validates the whole form and returns the settings map to the presenter, which
  * builds the world via {@code Model.newGame}. <b>Esc</b> (or Cancel) returns nothing.
- * <b>Alt+1..5</b> switch tabs; <b>Alt+N</b> draws a seed, <b>Alt+S</b> starts, <b>Alt+C</b> cancels
- * (the old dialog advertised no keys and answered none, #749).</li>
+ * <b>Alt+1..5</b> switch tabs, <b>Alt+S</b> starts and <b>Alt+C</b> cancels (the old dialog
+ * advertised no keys and answered none, #749; the seed is drawn once at open, #754).</li>
  * </ul>
  *
  * <p>
@@ -81,20 +82,22 @@ final class NewGameDialog {
     static final int TAB_ROWS = 1;
     /** Rows the Start/Cancel footer takes. */
     static final int FOOTER_ROWS = 1;
+    /** Blank row between the tab bar and the first field of every section (#754). */
+    static final int SECTION_TOP_ROWS = 1;
     /**
      * Rows the terrain controls above the preview take inside the Terrain tab: seed, water,
      * mountain, bar and status line.
      */
     static final int TERRAIN_CHROME_ROWS = 5;
 
+    /** Rows one tooltip box takes when a commit is rejected: top border, text, bottom border. */
+    static final int TOOLTIP_ROWS = 3;
+
     /** Width of one slider's bar, in cells. */
     static final int SLIDER_BAR_WIDTH = 40;
     /** Width of the seed text box, in cells. */
     static final int SEED_BOX_WIDTH = 10;
 
-    private static final int LABEL_WIDTH = 10;
-    /** Label column of a catalogue row; values line up on the right of it. */
-    private static final int FIELD_LABEL_WIDTH = 30;
     /** Wide enough for the longest default ({@code 1000000.0}) plus the caret. */
     private static final int FIELD_WIDTH = 12;
     /** Margin the preview keeps against the section edges, in cells. */
@@ -109,8 +112,8 @@ final class NewGameDialog {
     static final int FIELD_RGB = 0x4CA331;
     static final int MOUNTAIN_RGB = 0x80664D;
 
-    /** Footer hint: the Alt access keys (tabs are numeric, so all letters stay free). */
-    static final String HOTKEY_HINT = "Alt+1-5 tabs · Alt+S start · Alt+C cancel";
+    /** Footer hint: the Alt access keys (Alt+N left with the seed button, #754). */
+    static final String HOTKEY_HINT = "Alt+1-5 · Alt+S · Alt+C";
 
     /** Preview sizes: {@code sampleRows} is the sampled grid height; each text row shows two. */
     record PreviewPlan(int columns, int sampleRows) {
@@ -119,22 +122,28 @@ final class NewGameDialog {
         }
     }
 
+    /** Rows left for one section body: terminal minus the tab bar, the blank row and the footer. */
+    static int sectionRows(int rows) {
+        return rows - TAB_ROWS - FOOTER_ROWS - SECTION_TOP_ROWS;
+    }
+
     /**
      * How much preview fits in a terminal of {@code columns x rows}: {@code null} below 80x24
      * (concept §7). The sample grid is square and covers the whole calibration window, so the
      * half-block render (two sample rows per text row, each column a full cell wide) shows the
-     * world with its 1:1 cells. A screen-wide grid stretched the world horizontally (#749).
+     * world with its 1:1 cells; a screen-wide grid stretched the world horizontally (#749). The
+     * preview is half as wide and half as tall as the first design — about a quarter of the section
+     * area — so it no longer takes over the dialog (#754).
      */
     static PreviewPlan previewPlan(int columns, int rows) {
         if (columns < MIN_COLUMNS || rows < MIN_ROWS) {
             return null;
         }
-        int contentRows = rows - TAB_ROWS - FOOTER_ROWS;
-        int previewTextRows = contentRows - TERRAIN_CHROME_ROWS;
+        int previewTextRows = sectionRows(rows) - TERRAIN_CHROME_ROWS;
         if (previewTextRows < 2) {
             return null;
         }
-        int sample = Math.min(columns - PREVIEW_MARGIN_COLUMNS, previewTextRows * 2);
+        int sample = Math.min((columns - PREVIEW_MARGIN_COLUMNS) / 2, (previewTextRows / 2) * 2);
         return new PreviewPlan(sample, sample);
     }
 
@@ -168,24 +177,68 @@ final class NewGameDialog {
         return cells;
     }
 
-    /** Label of one catalogue field: display name plus a compact range hint ({@code (0..95)}). */
+    /** Label of one catalogue field: only the display name, no range hints (#751). */
     static String fieldLabel(SettingDefinition definition) {
-        if (definition.min() != null && definition.max() != null) {
-            return definition.displayName() + " (" + number(definition.min()) + ".."
-                    + number(definition.max()) + ")";
-        }
-        if (definition.min() != null) {
-            return definition.displayName() + " (" + number(definition.min()) + "+)";
-        }
-        if (definition.max() != null) {
-            return definition.displayName() + " (.." + number(definition.max()) + ")";
-        }
         return definition.displayName();
+    }
+
+    /**
+     * Column (0-based) where every value starts, in every tab: right after the widest field name of
+     * the whole dialog plus the colon and one space (#751). Terrain rows (seed, water, mountain)
+     * share the same column, so switching tabs never moves the values.
+     */
+    static int fieldValueColumn() {
+        int widest = 0;
+        for (SettingDefinition definition : SettingsCatalog.definitions()) {
+            widest = Math.max(widest, definition.displayName().length());
+        }
+        widest = Math.max(widest, NewGameText.SEED_LABEL.length());
+        widest = Math.max(widest, NewGameText.WATER_LABEL.length());
+        widest = Math.max(widest, NewGameText.MOUNTAIN_LABEL.length());
+        return widest + 2;
+    }
+
+    /**
+     * {@code Name:} padded with spaces so the value starts at {@code column}; the widest name keeps
+     * exactly one space after the colon (#751).
+     */
+    static String alignedLabel(String name, int column) {
+        return name + ":" + " ".repeat(Math.max(1, column - name.length() - 1));
     }
 
     /** Unit shown after the value; {@code "ticks"} in full, the single column has room for it. */
     static String fieldUnit(SettingDefinition definition) {
         return definition.unitValue().orElse("");
+    }
+
+    /** Allowed-range hint of the tooltip shown when a commit is rejected (#751). */
+    static String allowedRange(SettingDefinition definition) {
+        if (definition.min() != null && definition.max() != null) {
+            return "Allowed: " + number(definition.min()) + ".." + number(definition.max());
+        }
+        if (definition.min() != null) {
+            return "Minimum: " + number(definition.min());
+        }
+        if (definition.max() != null) {
+            return "Maximum: " + number(definition.max());
+        }
+        return "Allowed: whole number";
+    }
+
+    /**
+     * Normalised text of a candidate commit, or {@code null} when it is not a valid value for the
+     * field: out of range, malformed, or a seed that is not a whole number (the seed's literal
+     * {@code random} is resolved when the dialog opens, so the box only takes integers).
+     */
+    static String normalizeCommit(SettingDefinition definition, String text) {
+        try {
+            if (definition.type() == SettingValueType.SEED) {
+                return String.valueOf(Integer.parseInt(text.trim()));
+            }
+            return SettingsCatalog.validate(definition.key(), text);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     private static String number(double value) {
@@ -258,24 +311,24 @@ final class NewGameDialog {
         Panel content = new Panel(new BorderLayout());
 
         // --- Terrain tab: seed, sliders, bar, status and preview (only here since #749) -----
+        final int column = fieldValueColumn();
         final int[] seed = {form.seed()};
+        Panel seedHost = new Panel(new LinearLayout(Direction.VERTICAL));
         Panel seedRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
-        seedRow.addComponent(new Label(NewGameText.SEED_LABEL).setLabelWidth(LABEL_WIDTH));
-        TextBox seedBox = new TextBox(String.valueOf(seed[0]));
+        seedRow.addComponent(new Label(alignedLabel(NewGameText.SEED_LABEL, column)));
+        ValidatingTextBox seedBox = new ValidatingTextBox(
+                SettingsCatalog.definition(NewGameForm.SEED_KEY).orElseThrow(),
+                String.valueOf(seed[0]), column);
         seedBox.setPreferredSize(new TerminalSize(SEED_BOX_WIDTH, 1));
+        seedBox.setTooltipHost(seedHost);
         seedRow.addComponent(seedBox);
-        seedRow.addComponent(new EmptySpace(new TerminalSize(1, 1)));
-        Runnable drawSeed = () -> {
-            seed[0] = NewGameForm.nextSeed(new Random());
-            seedBox.setText(String.valueOf(seed[0]));
-        };
-        seedRow.addComponent(mnemonicButton(NewGameText.NEW_SEED, 'N', drawSeed));
+        seedHost.addComponent(seedRow);
 
         PercentSlider water =
-                new PercentSlider(NewGameText.WATER_LABEL, form.waterPercent(), () -> {
+                new PercentSlider(NewGameText.WATER_LABEL, column, form.waterPercent(), () -> {
                 });
-        PercentSlider mountain =
-                new PercentSlider(NewGameText.MOUNTAIN_LABEL, form.mountainPercent(), () -> {
+        PercentSlider mountain = new PercentSlider(NewGameText.MOUNTAIN_LABEL, column,
+                form.mountainPercent(), () -> {
                 });
         StackedBar bar = new StackedBar(palette, form.waterPercent(), form.mountainPercent());
 
@@ -315,7 +368,7 @@ final class NewGameDialog {
         water.setOnChange(onSliderChange);
         mountain.setOnChange(onSliderChange);
         seedBox.setTextChangeListener((text, ignored) -> {
-            // Fired by typing and by the `new` button, which also recalibrates the preview.
+            // Fired by typing: keep the preview on the last valid seed.
             try {
                 seed[0] = Integer.parseInt(text.trim());
                 recalibrate.run();
@@ -326,7 +379,7 @@ final class NewGameDialog {
         });
 
         ScrollColumn terrain = new ScrollColumn();
-        terrain.addComponent(seedRow);
+        terrain.addComponent(seedHost);
         terrain.addComponent(water);
         terrain.addComponent(mountain);
         terrain.addComponent(singleRowComponent(bar));
@@ -344,7 +397,7 @@ final class NewGameDialog {
         sections.put(SettingCategory.TERRAIN, terrain);
         for (SettingCategory category : tabs) {
             if (category != SettingCategory.TERRAIN) {
-                sections.put(category, buildSection(category, form, readers));
+                sections.put(category, buildSection(category, form, readers, column));
             }
         }
 
@@ -404,9 +457,6 @@ final class NewGameDialog {
                 } else if (key == 'c') {
                     window.close();
                     deliverEvent.set(false);
-                } else if (key == 'n') {
-                    drawSeed.run();
-                    deliverEvent.set(false);
                 }
             }
         });
@@ -421,10 +471,15 @@ final class NewGameDialog {
         return result[0];
     }
 
-    /** Swaps the active section into the content area; the tab bar repaints its active style. */
+    /**
+     * Swaps the active section into the content area; the tab bar repaints its active style. Every
+     * section keeps a blank row under the tabs (#754).
+     */
     private static void showSection(Panel content, Map<SettingCategory, Panel> sections,
             SettingCategory active, BasicWindow window) {
         content.removeAllComponents();
+        content.addComponent(new EmptySpace(new TerminalSize(1, SECTION_TOP_ROWS)),
+                BorderLayout.Location.TOP);
         Panel section = sections.get(active);
         content.addComponent(section, BorderLayout.Location.CENTER);
         // If the focus lived inside the section just swapped out, hand it to the new section's
@@ -489,55 +544,175 @@ final class NewGameDialog {
     }
 
     /**
-     * Builds the single-column body of one catalogue section: one field per row, label + value +
-     * unit. The text of every widget is registered in {@code readers} so Start collects the form in
-     * one place.
+     * Builds the single-column body of one catalogue section: one field per row, {@code Name:} plus
+     * the value (+ unit) aligned on {@code column}. The text of every widget is registered in
+     * {@code readers} so Start collects the form in one place.
      */
     private static ScrollColumn buildSection(SettingCategory category, NewGameForm form,
-            Map<String, Supplier<String>> readers) {
-        ScrollColumn column = new ScrollColumn();
+            Map<String, Supplier<String>> readers, int column) {
+        ScrollColumn columnPanel = new ScrollColumn();
         for (SettingDefinition definition : SettingsCatalog.definitions()) {
             if (definition.category() == category) {
-                column.addComponent(fieldRow(definition, form, readers));
+                columnPanel.addComponent(fieldRow(definition, form, readers, column));
             }
         }
-        return column;
+        return columnPanel;
     }
 
-    /** Label + value (+ unit) of one catalogue field. */
+    /**
+     * One field row ({@code Name:} + value + unit), wrapped so a rejected commit can open its
+     * tooltip below the input line without moving the values (#751).
+     */
     private static Panel fieldRow(SettingDefinition definition, NewGameForm form,
-            Map<String, Supplier<String>> readers) {
-        Panel row = new Panel(new LinearLayout(Direction.HORIZONTAL));
-        row.addComponent(new Label(fieldLabel(definition)).setLabelWidth(FIELD_LABEL_WIDTH));
+            Map<String, Supplier<String>> readers, int column) {
+        Panel row = new Panel(new LinearLayout(Direction.VERTICAL));
+        Panel line = new Panel(new LinearLayout(Direction.HORIZONTAL));
+        line.addComponent(new Label(alignedLabel(definition.displayName(), column)));
         if (definition.type() == SettingValueType.BOOLEAN) {
             CheckBox checkBox =
                     scrollingCheckBox(Boolean.parseBoolean(form.value(definition.key())));
-            row.addComponent(checkBox);
+            line.addComponent(checkBox);
             readers.put(definition.key(), () -> checkBox.isChecked() ? "true" : "false");
         } else {
-            TextBox textBox = scrollingTextBox(form.value(definition.key()));
-            row.addComponent(textBox);
+            ValidatingTextBox textBox =
+                    new ValidatingTextBox(definition, form.value(definition.key()), column);
+            line.addComponent(textBox);
             String unit = fieldUnit(definition);
             if (!unit.isEmpty()) {
-                row.addComponent(new Label(" " + unit));
+                line.addComponent(new Label(" " + unit));
             }
             readers.put(definition.key(), textBox::getText);
+            textBox.setTooltipHost(row);
         }
+        row.addComponent(line);
         return row;
     }
 
-    /** Text box that scrolls its column when it takes focus (Tab/arrow form navigation). */
-    private static TextBox scrollingTextBox(String value) {
-        return new TextBox(new TerminalSize(FIELD_WIDTH, 1), value) {
-            @Override
-            protected void afterEnterFocus(Interactable.FocusChangeDirection direction,
-                    Interactable previouslyInFocus) {
-                revealInColumn(this);
+    /**
+     * Text box that commits with Enter/Tab: a valid value updates the field, an invalid one is
+     * discarded (the previous value comes back, the focus stays) and a tooltip with the allowed
+     * range opens next to the field (#751). It also scrolls its column when it takes focus
+     * (Tab/arrow form navigation).
+     */
+    static final class ValidatingTextBox extends TextBox {
+
+        private final SettingDefinition definition;
+        private final int valueColumn;
+        private String lastValid;
+        private Panel tooltipHost;
+        private Panel tooltipLine;
+
+        ValidatingTextBox(SettingDefinition definition, String value, int valueColumn) {
+            super(new TerminalSize(FIELD_WIDTH, 1), value);
+            this.definition = definition;
+            this.valueColumn = valueColumn;
+            this.lastValid = value;
+        }
+
+        /** Panel that receives the tooltip line when a commit is rejected (the field row). */
+        void setTooltipHost(Panel host) {
+            this.tooltipHost = host;
+        }
+
+        @Override
+        protected void afterEnterFocus(Interactable.FocusChangeDirection direction,
+                Interactable previouslyInFocus) {
+            revealInColumn(this);
+        }
+
+        @Override
+        public Result handleKeyStroke(KeyStroke keyStroke) {
+            KeyType keyType = keyStroke.getKeyType();
+            if (keyType == KeyType.Enter || keyType == KeyType.Tab
+                    || keyType == KeyType.ReverseTab) {
+                if (!commit()) {
+                    return Result.HANDLED; // rejected: the focus stays on the field
+                }
             }
-        };
+            return super.handleKeyStroke(keyStroke);
+        }
+
+        /**
+         * Applies the current text when valid and updates the previous value; otherwise reverts the
+         * text and opens the range tooltip.
+         *
+         * @return {@code true} when the value was accepted
+         */
+        boolean commit() {
+            String normalized = normalizeCommit(definition, getText());
+            if (normalized != null) {
+                lastValid = normalized;
+                if (!normalized.equals(getText())) {
+                    setText(normalized);
+                }
+                hideTooltip();
+                return true;
+            }
+            setText(lastValid);
+            showTooltip();
+            return false;
+        }
+
+        private void showTooltip() {
+            if (tooltipHost == null) {
+                return;
+            }
+            if (tooltipLine == null) {
+                tooltipLine = new Panel(new LinearLayout(Direction.HORIZONTAL));
+                tooltipLine.addComponent(new EmptySpace(new TerminalSize(valueColumn, 1)));
+                tooltipLine.addComponent(new TooltipBox(allowedRange(definition)));
+                tooltipHost.addComponent(tooltipLine);
+            }
+            tooltipHost.invalidate();
+            revealInColumn(this);
+        }
+
+        private void hideTooltip() {
+            if (tooltipLine != null && tooltipHost != null) {
+                tooltipHost.removeComponent(tooltipLine);
+                tooltipLine = null;
+                tooltipHost.invalidate();
+            }
+        }
     }
 
-    /** Checkbox counterpart of {@link #scrollingTextBox}. */
+    /** Bordered hint (three rows: top, text, bottom) opened next to a field (#751). */
+    static final class TooltipBox extends AbstractComponent<TooltipBox> {
+
+        private final String text;
+
+        TooltipBox(String text) {
+            this.text = text;
+        }
+
+        String text() {
+            return text;
+        }
+
+        @Override
+        protected ComponentRenderer<TooltipBox> createDefaultRenderer() {
+            return new Renderer();
+        }
+
+        private final class Renderer implements ComponentRenderer<TooltipBox> {
+            @Override
+            public TerminalSize getPreferredSize(TooltipBox component) {
+                return new TerminalSize(component.text.length() + 4, TOOLTIP_ROWS);
+            }
+
+            @Override
+            public void drawComponent(TextGUIGraphics graphics, TooltipBox component) {
+                graphics.setForegroundColor(TerminalView.NORMAL_MENU_FG_COLOR);
+                graphics.setBackgroundColor(TerminalView.NORMAL_MENU_BG_COLOR);
+                String horizontal = "─".repeat(component.text.length() + 2);
+                graphics.putString(0, 0, "┌" + horizontal + "┐");
+                graphics.putString(0, 1, "│ " + component.text + " │");
+                graphics.putString(0, 2, "└" + horizontal + "┘");
+            }
+        }
+    }
+
+    /** Checkbox counterpart of {@link ValidatingTextBox}: reveals its row when it takes focus. */
     private static CheckBox scrollingCheckBox(boolean checked) {
         CheckBox checkBox = new CheckBox() {
             @Override
@@ -695,13 +870,15 @@ final class NewGameDialog {
     static final class PercentSlider extends AbstractInteractableComponent<PercentSlider> {
 
         private final String label;
+        private final int valueColumn;
         private int value;
         private int max = SettingsCatalog.MAX_TERRAIN_PERCENT;
         private Runnable onChange = () -> {
         };
 
-        PercentSlider(String label, int value, Runnable onChange) {
+        PercentSlider(String label, int valueColumn, int value, Runnable onChange) {
             this.label = label;
+            this.valueColumn = valueColumn;
             this.value = value;
             this.onChange = onChange;
         }
@@ -776,7 +953,7 @@ final class NewGameDialog {
         private final class Renderer implements InteractableRenderer<PercentSlider> {
             @Override
             public TerminalSize getPreferredSize(PercentSlider component) {
-                return new TerminalSize(LABEL_WIDTH + 1 + SLIDER_BAR_WIDTH + 2 + 1 + 4, 1);
+                return new TerminalSize(valueColumn + 1 + SLIDER_BAR_WIDTH + 2 + 1 + 4, 1);
             }
 
             @Override
@@ -790,20 +967,22 @@ final class NewGameDialog {
                         : TerminalView.NORMAL_MENU_FG_COLOR;
                 graphics.setForegroundColor(labelColor);
                 graphics.setBackgroundColor(TerminalView.NORMAL_MENU_BG_COLOR);
-                String padded = label + " ".repeat(Math.max(0, LABEL_WIDTH - label.length()));
-                graphics.putString(0, 0, padded);
-                int x = LABEL_WIDTH + 1;
+                graphics.putString(0, 0, alignedLabel(label, valueColumn));
+                int x = valueColumn;
+                // At least 5 cells of bar; the full 40 when the terminal has room (70 columns).
+                int barWidth = Math.min(SLIDER_BAR_WIDTH,
+                        Math.max(5, graphics.getSize().getColumns() - valueColumn - 7));
                 int filled = component.max == 0 ? 0
-                        : (int) Math.round(component.value * SLIDER_BAR_WIDTH
+                        : (int) Math.round(component.value * barWidth
                                 / (double) SettingsCatalog.MAX_TERRAIN_PERCENT);
                 graphics.putString(x, 0, "[");
                 graphics.setForegroundColor(
                         component.isFocused() ? TextColor.ANSI.CYAN_BRIGHT : TextColor.ANSI.GREEN);
                 graphics.putString(x + 1, 0, "#".repeat(filled));
                 graphics.setForegroundColor(TerminalView.MENU_DISABLED_FG_COLOR);
-                graphics.putString(x + 1 + filled, 0, "-".repeat(SLIDER_BAR_WIDTH - filled));
+                graphics.putString(x + 1 + filled, 0, "-".repeat(barWidth - filled));
                 graphics.setForegroundColor(labelColor);
-                graphics.putString(x + 1 + SLIDER_BAR_WIDTH, 0,
+                graphics.putString(x + 1 + barWidth, 0,
                         "] " + String.format("%3d%%", component.value));
             }
         }
