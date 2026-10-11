@@ -48,8 +48,8 @@ import letrain.settings.SettingsCatalog;
 import letrain.visitor.terminal.TerminalPalette;
 
 /**
- * 2D New Game dialog (S2, issue #746; layout polished for #749). Full-screen, borderless, built
- * from the shared catalogue:
+ * 2D New Game dialog (S2, issue #746; layout polished for #749, range wording #751). Full-screen,
+ * borderless, built from the shared catalogue:
  *
  * <ul>
  * <li><b>Terrain</b> tab (opens first): seed (random, editable and copyable), water/mountain
@@ -168,17 +168,20 @@ final class NewGameDialog {
         return cells;
     }
 
-    /** Label of one catalogue field: display name plus a compact range hint ({@code (0..95)}). */
+    /**
+     * Label of one catalogue field: display name plus a plain-English range hint: bounded
+     * {@code (0..95)}, min-only {@code (0 or more)}, max-only {@code (up to 12)} (#751).
+     */
     static String fieldLabel(SettingDefinition definition) {
         if (definition.min() != null && definition.max() != null) {
             return definition.displayName() + " (" + number(definition.min()) + ".."
                     + number(definition.max()) + ")";
         }
         if (definition.min() != null) {
-            return definition.displayName() + " (" + number(definition.min()) + "+)";
+            return definition.displayName() + " (" + number(definition.min()) + " or more)";
         }
         if (definition.max() != null) {
-            return definition.displayName() + " (.." + number(definition.max()) + ")";
+            return definition.displayName() + " (up to " + number(definition.max()) + ")";
         }
         return definition.displayName();
     }

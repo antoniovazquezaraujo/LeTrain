@@ -71,7 +71,8 @@ Las pestañas **Terrain / Game / Economy / Construction / UI** se generan iteran
 
 - `SettingCategory.WORLD` se muestra como **Game** (`displayName()`).
 - **Una sola columna con scroll**: cada campo es una fila `etiqueta (rango)` + valor + unidad.
-  `fieldLabel()` deja el rango sin unidad (`Water (0..95)`, `Normal track delay (0+)`) y
+  `fieldLabel()` deja el rango sin unidad y en inglés llano (#751): acotado `Water (0..95)`,
+  solo-mínimo `Normal track delay (0 or more)`, solo-máximo `(up to 12)`; y
   `fieldUnit()` da la unidad completa (`%`, `°`, `cells`, `ticks`). La columna (`ScrollColumn`) se
   desplaza siguiendo el foco (Tab/flechas) y marca la posición con una barra fina en el borde
   derecho cuando hay desbordamiento.

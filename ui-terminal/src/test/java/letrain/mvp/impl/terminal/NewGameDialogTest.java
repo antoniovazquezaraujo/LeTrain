@@ -10,7 +10,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.googlecode.lanterna.TextColor;
 import java.util.List;
 import letrain.ground.TerrainPreview;
+import letrain.settings.SettingApplyState;
 import letrain.settings.SettingCategory;
+import letrain.settings.SettingDefinition;
+import letrain.settings.SettingValueType;
 import letrain.settings.SettingsCatalog;
 import letrain.visitor.terminal.TerminalPalette;
 import org.junit.jupiter.api.DisplayName;
@@ -21,9 +24,9 @@ import org.junit.jupiter.api.Test;
  * stacked bar, the scrolling column, the catalogue field labels and the preview colours are
  * functions of the terminal size and the proportions, so they are pinned here without opening a
  * terminal. Issue #749 polishes them: square preview, single scrolling column, hotkeys and the
- * brown mountain.
+ * brown mountain. Issue #751 words the field ranges in plain English.
  */
-@DisplayName("New Game dialog layout (#746, polish #749)")
+@DisplayName("New Game dialog layout (#746, polish #749, ranges #751)")
 class NewGameDialogTest {
 
     private static final List<String> FIELD_KEYS =
@@ -92,21 +95,37 @@ class NewGameDialogTest {
     }
 
     @Test
-    @DisplayName("catalogue rows read as label + range, value and unit apart (#749)")
+    @DisplayName("catalogue rows read as label + plain-English range, value and unit apart (#749, #751)")
     void should_LabelCatalogueFields() {
         assertEquals("Water (0..95)", label("terrain.waterPercent"));
         assertEquals("%", unit("terrain.waterPercent"));
         assertEquals("Latitude (-90..90)", label("world.latitude"));
         assertEquals("°", unit("world.latitude"));
-        assertEquals("View radius (5+)", label("map.VIEW_RADIUS"));
+        assertEquals("View radius (5 or more)", label("map.VIEW_RADIUS"));
         assertEquals("cells", unit("map.VIEW_RADIUS"));
-        assertEquals("Starting balance (0+)", label("startingBalance"));
+        assertEquals("Starting balance (0 or more)", label("startingBalance"));
         assertEquals("", unit("startingBalance"));
         // "ticks" reads in full: the single column has room for it.
-        assertEquals("Normal track delay (0+)", label("delay.NORMAL_TRACK"));
+        assertEquals("Normal track delay (0 or more)", label("delay.NORMAL_TRACK"));
         assertEquals("ticks", unit("delay.NORMAL_TRACK"));
         assertEquals("Highlight blocked tracks", label("ui.highlightBlockedTracks"));
         assertEquals("", unit("ui.highlightBlockedTracks"));
+    }
+
+    @Test
+    @DisplayName("max-only ranges read as '(up to N)' and unbounded fields carry no hint (#751)")
+    void should_WordMaxOnlyAndUnboundedRanges() {
+        assertEquals("Max only (up to 12)",
+                label(new SettingDefinition("test.maxOnly", SettingCategory.CONSTRUCTION,
+                        "Max only", SettingValueType.INTEGER, "ticks", null, 12.0, "12",
+                        SettingApplyState.LIVE)));
+        assertEquals("Max only (up to 12.5)",
+                label(new SettingDefinition("test.maxOnly.decimal", SettingCategory.CONSTRUCTION,
+                        "Max only", SettingValueType.DECIMAL, null, null, 12.5, "12.5",
+                        SettingApplyState.LIVE)));
+        assertEquals("Unbounded",
+                label(new SettingDefinition("test.unbounded", SettingCategory.UI, "Unbounded",
+                        SettingValueType.SEED, null, null, null, "x", SettingApplyState.NEW_GAME)));
     }
 
     @Test
@@ -183,7 +202,11 @@ class NewGameDialogTest {
     }
 
     private static String label(String key) {
-        return NewGameDialog.fieldLabel(SettingsCatalog.definition(key).orElseThrow());
+        return label(SettingsCatalog.definition(key).orElseThrow());
+    }
+
+    private static String label(SettingDefinition definition) {
+        return NewGameDialog.fieldLabel(definition);
     }
 
     private static String unit(String key) {
