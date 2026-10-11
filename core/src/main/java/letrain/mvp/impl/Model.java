@@ -1,6 +1,7 @@
 package letrain.mvp.impl;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -200,6 +201,30 @@ public class Model implements letrain.mvp.Model {
     int quantifierSteps = 0;
     LocalDateTime lastSaveTime = null;
 
+    /**
+     * Settings snapshot read from a savegame's {@code settings} section (concept §6); applied to
+     * the economy manager in {@link #postLoadInit()}. Null on live models and on savegames written
+     * before the section existed.
+     */
+    @JsonIgnore
+    private transient java.util.Map<String, String> loadedSettings;
+
+    /**
+     * Effective settings snapshot, serialized with the savegame so a game carries its own rules.
+     * Computed on demand from the economy manager, so it always matches the live configuration
+     * (scenario settings included).
+     */
+    @JsonProperty("settings")
+    public java.util.Map<String, String> getSettings() {
+        return economyManager == null ? java.util.Map.of() : economyManager.effectiveConfig();
+    }
+
+    /** Receives a savegame's settings section; {@link #postLoadInit()} applies it. */
+    @JsonProperty("settings")
+    public void setSettings(java.util.Map<String, String> settings) {
+        this.loadedSettings = settings;
+    }
+
     private transient AutomationEngine automationEngine;
     private transient SimulationService internalSimService;
     private transient letrain.time.impl.SimpleGameClock gameClock =
@@ -358,7 +383,9 @@ public class Model implements letrain.mvp.Model {
     public void postLoadInit() {
         // NOTE: the economy/settings are NOT reloaded from the local file here on purpose: a
         // savegame or an imported scenario carries its own settings, and those must win over the
-        // local letrain.cfg for the world (terrain included) to be reproducible.
+        // local letrain.cfg for the world (terrain included) to be reproducible. Savegames
+        // predating the "settings" section fall back to their serialized legacy thresholds.
+        applySavedSettings();
         rebuildTrackConnections();
         if (nextSpeedSignalId == 0) {
             for (Sensor s : getSensors()) {
@@ -384,17 +411,9 @@ public class Model implements letrain.mvp.Model {
 
         if (this.groundMap != null) {
             try {
-                java.lang.reflect.Field noiseField =
-                        letrain.ground.impl.GroundMap.class.getDeclaredField("noise");
-                noiseField.setAccessible(true);
-                noiseField.set(this.groundMap, new letrain.ground.PerlinNoise(this.seed));
-                java.lang.reflect.Field ecoField =
-                        letrain.ground.impl.GroundMap.class.getDeclaredField("economyManager");
-                ecoField.setAccessible(true);
-                ecoField.set(this.groundMap, this.economyManager);
-                if (this.groundMap instanceof letrain.ground.impl.GroundMap) {
-                    ((letrain.ground.impl.GroundMap) this.groundMap).rebuildCellsFromBlocks();
-                }
+                letrain.ground.impl.GroundMap impl = (letrain.ground.impl.GroundMap) this.groundMap;
+                impl.initGenerator(this.seed, this.economyManager);
+                impl.rebuildCellsFromBlocks();
             } catch (Exception e) {
                 log.error("Error re-initializing GroundMap", e);
             }
@@ -456,6 +475,23 @@ public class Model implements letrain.mvp.Model {
             this.mode = letrain.mvp.Model.GameMode.RAILS;
             this.commandText = "";
             this.commandError = "";
+        }
+    }
+
+    /**
+     * Applies the settings snapshot carried by a savegame (its "settings" section, concept §6)
+     * before the world generator is rebuilt, so the loaded terrain matches the saved one. A
+     * savegame without the section (written before it existed) falls back to its serialized legacy
+     * thresholds, which keeps its historical look.
+     */
+    private void applySavedSettings() {
+        if (economyManager == null) {
+            return;
+        }
+        if (loadedSettings != null && !loadedSettings.isEmpty()) {
+            economyManager.applyConfig(loadedSettings);
+        } else {
+            economyManager.fallBackToLegacyTerrain();
         }
     }
 

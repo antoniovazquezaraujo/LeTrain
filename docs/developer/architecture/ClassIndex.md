@@ -67,6 +67,7 @@
 - [[letrain.ground.GroundMap|GroundMap]] (core)
 - [[letrain.ground.NoiseGenerator|NoiseGenerator]] (core)
 - [[letrain.ground.PerlinNoise|PerlinNoise]] (core)
+- [[letrain.ground.TerrainCalibrator|TerrainCalibrator]] (core)
 - [[letrain.ground.ZoneSensor|ZoneSensor]] (core)
 - [[letrain.ground.impl.GroundMap|GroundMap]] (core)
 - [[letrain.ground.impl.Terrain2D|Terrain2D]] (core)
@@ -106,6 +107,9 @@
 - [[letrain.map.impl.SimpleRouter|SimpleRouter]] (core)
 
 ## letrain.mvp
+- [[letrain.mvp.CoverText|CoverText]] (core)
+- [[letrain.mvp.EditorText|EditorText]] (core)
+- [[letrain.mvp.FileMenuText|FileMenuText]] (core)
 - [[letrain.mvp.GameViewListener|GameViewListener]] (core)
 - [[letrain.mvp.MenuText|MenuText]] (core)
 - [[letrain.mvp.Model|Model]] (core)
@@ -158,6 +162,13 @@
 - [[letrain.segments.impl.RailwayGraphImpl|RailwayGraphImpl]] (core)
 - [[letrain.segments.impl.SegmentImpl|SegmentImpl]] (core)
 - [[letrain.segments.impl.TopologyServiceImpl|TopologyServiceImpl]] (core)
+
+## letrain.settings
+- [[letrain.settings.SettingApplyState|SettingApplyState]] (core)
+- [[letrain.settings.SettingCategory|SettingCategory]] (core)
+- [[letrain.settings.SettingDefinition|SettingDefinition]] (core)
+- [[letrain.settings.SettingValueType|SettingValueType]] (core)
+- [[letrain.settings.SettingsCatalog|SettingsCatalog]] (core)
 
 ## letrain.soundscape
 - [[letrain.soundscape.Band|Band]] (soundscape)

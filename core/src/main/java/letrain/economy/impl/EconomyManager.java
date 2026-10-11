@@ -83,6 +83,20 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     @com.fasterxml.jackson.annotation.JsonProperty("rockThreshold")
     private float rockThreshold = 180f;
 
+    /**
+     * When true (default), terrain generation calibrates thresholds per seed from
+     * {@code terrain.waterPercent} / {@code terrain.mountainPercent} (D2 defaults 25/10). Legacy
+     * keys switch it off and keep the historical threshold look.
+     */
+    @com.fasterxml.jackson.annotation.JsonProperty("terrainPercentEnabled")
+    private boolean terrainPercentEnabled = true;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("terrainWaterPercent")
+    private int waterPercent = letrain.settings.SettingsCatalog.DEFAULT_WATER_PERCENT;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("terrainMountainPercent")
+    private int mountainPercent = letrain.settings.SettingsCatalog.DEFAULT_MOUNTAIN_PERCENT;
+
     @com.fasterxml.jackson.annotation.JsonProperty("viewRadius")
     private int viewRadius = 15;
 
@@ -580,6 +594,8 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     @Override
     public Map<String, String> effectiveConfig() {
         Map<String, String> config = new java.util.LinkedHashMap<>();
+        config.put("time.dayDurationSeconds", String.valueOf(dayDurationSeconds));
+        config.put("world.latitude", String.valueOf(latitude));
         config.put("fuelCostPerMeter", String.valueOf(fuelCostPerMeter));
         config.put("cargoLoadingFee", String.valueOf(cargoLoadingFee));
         config.put("startingBalance", String.valueOf(startingBalance));
@@ -595,12 +611,20 @@ public class EconomyManager implements letrain.economy.EconomyManager {
         config.put("threshold.RUBY", String.valueOf(rubyThreshold));
         config.put("threshold.WATER", String.valueOf(waterThreshold));
         config.put("threshold.ROCK", String.valueOf(rockThreshold));
+        // Percent mode exports both the new keys (authoritative) and the legacy thresholds, so an
+        // older reader still gets a deterministic world. A legacy snapshot must not export the
+        // percent keys, or reloading it would silently switch the terrain to calibration.
+        if (terrainPercentEnabled) {
+            config.put("terrain.waterPercent", String.valueOf(waterPercent));
+            config.put("terrain.mountainPercent", String.valueOf(mountainPercent));
+        }
         config.put("map.VIEW_RADIUS", String.valueOf(viewRadius));
         for (Presenter.TrackType type : Presenter.TrackType.values()) {
             config.put("delay." + type.name(), String.valueOf(getConstructionDelay(type)));
         }
         config.put("derail.minCurveInterval", String.valueOf(derailMinCurveInterval));
         config.put("derail.minSpeed", String.valueOf(derailMinSpeed));
+        config.put("ui.highlightBlockedTracks", String.valueOf(highlightBlockedTracks));
         return config;
     }
 
@@ -635,10 +659,31 @@ public class EconomyManager implements letrain.economy.EconomyManager {
                 .parseFloat(props.getProperty("threshold.COAL", String.valueOf(coalThreshold)));
         rubyThreshold = Float
                 .parseFloat(props.getProperty("threshold.RUBY", String.valueOf(rubyThreshold)));
-        waterThreshold = Float
-                .parseFloat(props.getProperty("threshold.WATER", String.valueOf(waterThreshold)));
-        rockThreshold = Float
-                .parseFloat(props.getProperty("threshold.ROCK", String.valueOf(rockThreshold)));
+
+        // Terrain proportions (D2). Within one source the new percent keys win over the legacy
+        // thresholds; a source that only carries legacy keys (old scenario/savegame, current
+        // letrain.cfg) keeps the historical look. Sources are applied in precedence order
+        // (scenario > savegame > cfg > defaults), so the last source defining a terrain key
+        // decides the mode.
+        boolean hasPercentKeys = props.containsKey("terrain.waterPercent")
+                || props.containsKey("terrain.mountainPercent");
+        if (props.containsKey("terrain.waterPercent")) {
+            waterPercent = Integer.parseInt(props.getProperty("terrain.waterPercent"));
+        }
+        if (props.containsKey("terrain.mountainPercent")) {
+            mountainPercent = Integer.parseInt(props.getProperty("terrain.mountainPercent"));
+        }
+        if (props.containsKey("threshold.WATER")) {
+            waterThreshold = Float.parseFloat(props.getProperty("threshold.WATER"));
+        }
+        if (props.containsKey("threshold.ROCK")) {
+            rockThreshold = Float.parseFloat(props.getProperty("threshold.ROCK"));
+        }
+        if (hasPercentKeys) {
+            terrainPercentEnabled = true;
+        } else if (props.containsKey("threshold.WATER") || props.containsKey("threshold.ROCK")) {
+            terrainPercentEnabled = false;
+        }
         viewRadius =
                 Integer.parseInt(props.getProperty("map.VIEW_RADIUS", String.valueOf(viewRadius)));
 
@@ -700,6 +745,26 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     @Override
     public float getRockThreshold() {
         return rockThreshold;
+    }
+
+    @Override
+    public boolean isTerrainPercentEnabled() {
+        return terrainPercentEnabled;
+    }
+
+    @Override
+    public int getWaterPercent() {
+        return waterPercent;
+    }
+
+    @Override
+    public int getMountainPercent() {
+        return mountainPercent;
+    }
+
+    @Override
+    public void fallBackToLegacyTerrain() {
+        terrainPercentEnabled = false;
     }
 
     @Override
