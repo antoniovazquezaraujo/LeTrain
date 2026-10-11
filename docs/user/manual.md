@@ -40,7 +40,7 @@ LeTrain is deeply modal. Pressing the following keys will switch your current in
 - **`g`**: **Speed Signals Mode** - Manage speed limit signals.
 - **`n`**: **Stations Mode** - Select and inspect stations.
 - **`e`**: **Sensors Mode** - Select and inspect sensors.
-- **`p`**: **Program Mode** - Open the IDE to write automation scripts.
+- **`p`**: **Programming Mode** - Open the editor to write automation scripts.
 - **`:`**: **CLI Mode** - Open the command line interface.
 - **`R`**: **Toggle Record/edit mode** (off by default). When enabled, the world (trains, economy, derailments) freezes while you are in any editing mode (Rails, Add, Stations, Sensors, Semaphores, Speed Signals, Forks, Trains, console or program editor), track construction becomes instantaneous, and every edit is journaled for deterministic undo and scenario export. Simulation only runs in play/view modes (Drive, Menu, Link/Unlink) or when the toggle is off.
 
@@ -76,9 +76,10 @@ For a complete reference of the CLI commands, see **[grammar.md](grammar.md)**.
 
 ### Scenario Editor and Undo/Redo
 - **`p`**: Open the **LeTrain Editor** (scenario editor). It has three tabs — **Scenario**
-  (`seed` + `on build` + `on start`), **Program** (the automation script) and **Config** (game
+  (`seed` + `on build` + `on start`), **Programming** (the automation script) and **Config** (game
   settings) — a per-tab quick reference, and a footer with `Export`/`Import` of `.ltr` scenario
-  files, `Refresh`, `Reprogram` and `Rebuild`. `Esc` closes it. See **[scenarios.md](scenarios.md)**.
+  files, `Reload from game`, `Apply program` and `Rebuild world`. `Esc` closes it. See
+  **[scenarios.md](scenarios.md)**.
 - **Record/edit mode (`R`)**: while it is on, **`u`** undoes and **Ctrl+R** redoes edits (the same
   as `undo;` / `redo;`). Outside this mode, `u` is the **Unlink** mode.
 
