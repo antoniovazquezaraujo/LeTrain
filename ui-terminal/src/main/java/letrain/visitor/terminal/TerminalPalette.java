@@ -103,6 +103,11 @@ public final class TerminalPalette {
         this.depth = depth;
     }
 
+    /** Colour mode the terminal was detected with; dialogs adapt their palette to it. */
+    public Depth depth() {
+        return depth;
+    }
+
     /** Detecta el modo de color del terminal con las convenciones habituales. */
     public static TerminalPalette detect() {
         String colorterm = System.getenv("COLORTERM");

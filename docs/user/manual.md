@@ -22,10 +22,12 @@ The game can be controlled via the keyboard in both its 2D and 3D versions. Belo
 - Console command **`new game;`** opens the same New Game dialog from the CLI.
 
 #### New Game dialog (2D)
+- The **Terrain** tab opens first and keeps every terrain control: the seed, the **Water %**/**Mountain %** sliders, the **stacked bar**, the **target/measured** line and the **preview**. The other tabs (**Game**, **Economy**, **Construction**, **UI**) show the settings catalogue only.
 - **Seed**: a random seed is drawn when the dialog opens. It is editable, copyable and the **new** button draws another one.
-- **Terrain**: **Water %** and **Mountain %** sliders. The rule is *water + mountain ≤ 95 %*: moving one slider clamps the other, so there is always at least 5 % of field. The **stacked bar** shows the 100 % split (water / field / mountain) and the status line always shows the **target** proportions next to the **measured** ones for that seed.
-- **Preview**: an adaptive terrain sampler (same noise and calibrated thresholds as the world generator) drawn with half blocks. It is large from **120×30**, compact at **80×24** and hidden below 80×24 (the sliders and the measured percentages stay).
-- **Sections**: **Terrain**, **Game**, **Economy**, **Construction** and **UI** fields come from the settings catalogue, with their ranges and units (checkboxes for on/off options). **Start** builds the world with those values; **Cancel**/Esc leaves everything as it was.
+- **Terrain**: the rule is *water + mountain ≤ 95 %*: moving one slider clamps the other, so there is always at least 5 % of field. The 100 % **stacked bar** shows the water / field / mountain split.
+- **Preview**: an adaptive **square** terrain sampler (same noise and calibrated thresholds as the world generator) drawn with half blocks, so the world keeps its 1:1 cell shape; the mountain is the game brown. It appears from **80×24** and grows with the terminal (34×34 cells at 80×24, 46×46 at 120×30); below 80×24 the sliders, the bar and the target/measured line stay.
+- **Sections**: one **scrolling column** per tab, one field per row with its range, value and unit (checkboxes for on/off options). **Start** builds the world with those values; **Cancel**/Esc leaves everything as it was.
+- **Keys**: **Alt+1..5** switch tabs, **Alt+N** draws a new seed, **Alt+S** starts and **Alt+C** cancels (**Esc** also cancels).
 
 ### Navigation and Views
 - **Arrow Keys (or h, j, k, l)**: Move the cursor freely or follow a track (Vim-style navigation).

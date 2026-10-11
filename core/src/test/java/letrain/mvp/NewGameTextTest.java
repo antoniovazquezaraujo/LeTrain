@@ -15,16 +15,18 @@ class NewGameTextTest {
     void should_ShowProportions() {
         assertEquals("Target: water 25% · mountain 10% · field 65%",
                 NewGameText.targetLine(25, 10));
-        assertEquals("   measured: 24% / 9% / 67%", NewGameText.measuredSuffix(24, 9));
-        assertEquals("Target: water 25% · mountain 10% · field 65%   measured: 24% / 9% / 67%",
+        assertEquals("  measured: 24%/9%/67%", NewGameText.measuredSuffix(24, 9));
+        assertEquals("Target: water 25% · mountain 10% · field 65%  measured: 24%/9%/67%",
                 NewGameText.terrainStatusLine(25, 10, 24, 9));
     }
 
     @Test
-    @DisplayName("the status line fits an 80-column terminal")
+    @DisplayName("the status line fits the 70-column terminal the dialog is validated on (#749)")
     void should_FitTheMinimumTerminal() {
-        assertTrue(NewGameText.terrainStatusLine(95, 0, 95, 0).length() <= 80,
+        assertTrue(NewGameText.terrainStatusLine(95, 0, 95, 0).length() <= 70,
                 NewGameText.terrainStatusLine(95, 0, 95, 0));
+        assertTrue(NewGameText.terrainStatusLine(95, 3, 95, 3).length() <= 70,
+                NewGameText.terrainStatusLine(95, 3, 95, 3));
         assertTrue(NewGameText.NO_PREVIEW.length() > 0);
     }
 

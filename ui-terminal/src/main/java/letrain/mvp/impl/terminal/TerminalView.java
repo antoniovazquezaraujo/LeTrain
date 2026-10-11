@@ -1388,8 +1388,11 @@ public class TerminalView implements letrain.mvp.View {
         footer.addComponent(button);
     }
 
-    /** A button renderer that highlights the mnemonic letter (red) inside {@code < label >}. */
-    private static com.googlecode.lanterna.gui2.InteractableRenderer<Button> mnemonicRenderer(
+    /**
+     * A button renderer that highlights the mnemonic letter (red) inside {@code < label >}. Shared
+     * with the other modal dialogs (the New Game dialog highlights its Alt access keys).
+     */
+    static com.googlecode.lanterna.gui2.InteractableRenderer<Button> mnemonicRenderer(
             char mnemonic) {
         return new com.googlecode.lanterna.gui2.InteractableRenderer<Button>() {
             @Override
