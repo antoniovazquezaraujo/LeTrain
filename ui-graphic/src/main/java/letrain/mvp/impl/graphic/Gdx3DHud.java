@@ -25,8 +25,10 @@ import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Consumer;
 import letrain.itinerary.Punctuality;
+import letrain.mvp.EditorText;
 import letrain.mvp.MenuText;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameModeMenuOption;
@@ -109,6 +111,7 @@ public class Gdx3DHud {
 
     private Window ideWindow;
     private boolean exitDialogOpen;
+    private boolean rebuildDialogOpen;
 
     private Window messageWindow;
     private ScrollPane messageScroll;
@@ -551,6 +554,59 @@ public class Gdx3DHud {
         return text.toString();
     }
 
+    /**
+     * Tab text of the editor window: the shared {@link EditorText} tab names in the HUD's padded
+     * button style, so the 2D and 3D tabs read the same.
+     */
+    static String editorTabText(String label) {
+        return " " + label + " ";
+    }
+
+    /** Tab text with the mnemonic tinted (Alt hint), mirroring the 2D tab highlight. */
+    static String editorTabAltText(String label, char mnemonic) {
+        return mnemonicMarkup(label, mnemonic, false);
+    }
+
+    /**
+     * Footer button text of the editor window: the shared {@link EditorText} words in the HUD's
+     * uppercase button style (the 2D footer shows the same words in title case).
+     */
+    static String editorButtonText(String label) {
+        return " " + label.toUpperCase(Locale.ROOT) + " ";
+    }
+
+    /**
+     * Footer button text with the mnemonic tinted (Alt hint), mirroring the 2D footer highlight.
+     */
+    static String editorButtonAltText(String label, char mnemonic) {
+        return mnemonicMarkup(label, mnemonic, true);
+    }
+
+    /**
+     * Pads {@code label} and tints the first occurrence of {@code mnemonic} with the shortcut
+     * colour; the 2D renderers highlight the same letter, so both Alt hints match.
+     */
+    private static String mnemonicMarkup(String label, char mnemonic, boolean upperCase) {
+        String text = upperCase ? label.toUpperCase(Locale.ROOT) : label;
+        int at = indexOfIgnoreCase(text, mnemonic);
+        if (at < 0) {
+            return " " + text + " ";
+        }
+        return " " + text.substring(0, at) + "[#42A5F5]" + text.charAt(at) + "[]"
+                + text.substring(at + 1) + " ";
+    }
+
+    /** First position of {@code letter} in {@code text}, ignoring case; -1 when absent. */
+    private static int indexOfIgnoreCase(String text, char letter) {
+        char upper = Character.toUpperCase(letter);
+        for (int i = 0; i < text.length(); i++) {
+            if (Character.toUpperCase(text.charAt(i)) == upper) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     public void updateMenuButtons() {
         menuTable.clearChildren();
         for (GameModeMenuOption option : model.getMenuModel()) {
@@ -906,6 +962,116 @@ public class Gdx3DHud {
     }
 
     /**
+     * Confirmation before {@code Rebuild world}: the replay replaces the current world, so the
+     * player must agree first (issue #740). Same keyboard navigation as the exit menu (Tab/arrows
+     * move the focus, Enter/Space activate, Esc cancels).
+     */
+    private void confirmRebuildWorld(Runnable onConfirm) {
+        if (rebuildDialogOpen) {
+            return;
+        }
+        rebuildDialogOpen = true;
+        Gdx.app.postRunnable(() -> {
+            final Actor blocker = new Actor();
+            blocker.setBounds(0, 0, stage.getWidth(), stage.getHeight());
+            blocker.addListener(new InputListener() {
+                @Override
+                public boolean touchDown(InputEvent event, float x, float y, int pointer,
+                        int button) {
+                    return true;
+                }
+            });
+
+            final com.badlogic.gdx.scenes.scene2d.ui.Dialog dialog =
+                    new com.badlogic.gdx.scenes.scene2d.ui.Dialog(EditorText.REBUILD_CONFIRM_TITLE,
+                            skin.get("dialog", Window.WindowStyle.class)) {
+                        @Override
+                        protected void result(Object object) {
+                            rebuildDialogOpen = false;
+                            blocker.remove();
+                            if (Boolean.TRUE.equals(object)) {
+                                onConfirm.run();
+                            }
+                        }
+                    };
+
+            Label message = new Label(EditorText.REBUILD_CONFIRM_MESSAGE, skin, "medium");
+            message.setWrap(true);
+            dialog.getContentTable().pad(10, 48, 24, 48).add(message).width(560f);
+
+            TextButton rebuildButton = new TextButton(EditorText.REBUILD_WORLD, skin);
+            TextButton cancelButton = new TextButton("Cancel", skin);
+            dialog.getButtonTable().defaults().space(24).minWidth(140).minHeight(50);
+            dialog.button(rebuildButton, Boolean.TRUE);
+            dialog.button(cancelButton, Boolean.FALSE);
+
+            // Keyboard navigation: Tab/arrows move the focus between the buttons, Enter/Space
+            // activate the focused one and Esc cancels. The dialog is modal, so it swallows the
+            // rest of the keys while open.
+            final Runnable paintFocus = () -> {
+                Actor focused = stage.getKeyboardFocus();
+                rebuildButton.getLabel()
+                        .setColor(focused == rebuildButton ? Color.CYAN : Color.WHITE);
+                cancelButton.getLabel()
+                        .setColor(focused == cancelButton ? Color.CYAN : Color.WHITE);
+            };
+            InputListener navigation = new InputListener() {
+                @Override
+                public boolean keyDown(InputEvent event, int keycode) {
+                    if (keycode == Input.Keys.TAB || keycode == Input.Keys.RIGHT
+                            || keycode == Input.Keys.LEFT) {
+                        Actor focused = stage.getKeyboardFocus();
+                        stage.setKeyboardFocus(
+                                focused == rebuildButton ? cancelButton : rebuildButton);
+                        paintFocus.run();
+                        return true;
+                    }
+                    if (keycode == Input.Keys.ENTER || keycode == Input.Keys.NUMPAD_ENTER
+                            || keycode == Input.Keys.SPACE) {
+                        activate(stage.getKeyboardFocus() == rebuildButton);
+                        return true;
+                    }
+                    if (keycode == Input.Keys.ESCAPE) {
+                        activate(false);
+                        return true;
+                    }
+                    return true;
+                }
+
+                @Override
+                public boolean keyTyped(InputEvent event, char character) {
+                    return true;
+                }
+
+                private void activate(boolean confirmed) {
+                    rebuildDialogOpen = false;
+                    blocker.remove();
+                    dialog.hide(null);
+                    if (confirmed) {
+                        onConfirm.run();
+                    }
+                }
+            };
+            rebuildButton.addListener(navigation);
+            cancelButton.addListener(navigation);
+
+            // Reserve enough top padding so the title fits inside the title bar (Window sizes
+            // the title table to `padTop`).
+            dialog.padTop(46);
+            dialog.pack();
+            dialog.setWidth(Math.max(dialog.getWidth(), 560f));
+            dialog.setHeight(Math.max(dialog.getHeight(), 240f));
+            dialog.setPosition((stage.getWidth() - dialog.getWidth()) / 2,
+                    (stage.getHeight() - dialog.getHeight()) / 2);
+
+            stage.addActor(blocker);
+            stage.addActor(dialog);
+            stage.setKeyboardFocus(rebuildButton);
+            paintFocus.run();
+        });
+    }
+
+    /**
      * Shows a message (console help/info, listings, errors) in the right-side panel. It is
      * deliberately **not** a dialog: the panel never takes the keyboard focus, so the console and
      * the game stay usable while it is open.
@@ -1012,7 +1178,7 @@ public class Gdx3DHud {
             window.getTitleLabel().setAlignment(com.badlogic.gdx.utils.Align.center);
             window.getTitleTable().getCells().first().expandX();
 
-            // ---- State: three tabs (Scenario / Program / Config)
+            // ---- State: three tabs (Scenario / Programming / Config)
             final String[] scenarioBuffer = {view.getScenarioText()};
             final String[] programBuffer =
                     {letrain.command.ScenarioFile.programSection(view.getProgram())};
@@ -1229,10 +1395,12 @@ public class Gdx3DHud {
 
             // ---- Tab bar
             Table tabBar = new Table();
-            final TextButton scenarioTabBtn =
-                    new TextButton(" Scenario ", skin, "monospace-button");
-            final TextButton programTabBtn = new TextButton(" Program ", skin, "monospace-button");
-            final TextButton configTabBtn = new TextButton(" Config ", skin, "monospace-button");
+            final TextButton scenarioTabBtn = new TextButton(editorTabText(EditorText.TAB_SCENARIO),
+                    skin, "monospace-button");
+            final TextButton programTabBtn = new TextButton(
+                    editorTabText(EditorText.TAB_PROGRAMMING), skin, "monospace-button");
+            final TextButton configTabBtn =
+                    new TextButton(editorTabText(EditorText.TAB_CONFIG), skin, "monospace-button");
             tabBar.add(scenarioTabBtn).padRight(5);
             tabBar.add(programTabBtn).padRight(5);
             tabBar.add(configTabBtn);
@@ -1419,7 +1587,7 @@ public class Gdx3DHud {
                         letrain.command.ScenarioCompiler.compile(full);
                 showDiagnostics.accept(result);
                 if (result.ok()) {
-                    view.onPlayScenarioText(full);
+                    confirmRebuildWorld(() -> view.onPlayScenarioText(full));
                 }
             };
             final Runnable closeAction = () -> {
@@ -1494,14 +1662,22 @@ public class Gdx3DHud {
 
             // ---- Footer
             Table footer = new Table();
-            TextButton saveBtn = new TextButton(" SAVE ", skin, "monospace-button");
-            TextButton loadBtn = new TextButton(" LOAD ", skin, "monospace-button");
-            TextButton exportBtn = new TextButton(" EXPORT ", skin, "monospace-button");
-            TextButton importBtn = new TextButton(" IMPORT ", skin, "monospace-button");
-            TextButton refreshBtn = new TextButton(" REFRESH ", skin, "monospace-button");
-            TextButton reprogramBtn = new TextButton(" REPROGRAM ", skin, "monospace-button");
-            TextButton rebuildBtn = new TextButton(" REBUILD ", skin, "monospace-button");
-            TextButton closeBtn = new TextButton(" CLOSE ", skin, "monospace-button");
+            TextButton saveBtn =
+                    new TextButton(editorButtonText(EditorText.SAVE), skin, "monospace-button");
+            TextButton loadBtn =
+                    new TextButton(editorButtonText(EditorText.LOAD), skin, "monospace-button");
+            TextButton exportBtn =
+                    new TextButton(editorButtonText(EditorText.EXPORT), skin, "monospace-button");
+            TextButton importBtn =
+                    new TextButton(editorButtonText(EditorText.IMPORT), skin, "monospace-button");
+            TextButton refreshBtn = new TextButton(editorButtonText(EditorText.RELOAD_FROM_GAME),
+                    skin, "monospace-button");
+            TextButton reprogramBtn = new TextButton(editorButtonText(EditorText.APPLY_PROGRAM),
+                    skin, "monospace-button");
+            TextButton rebuildBtn = new TextButton(editorButtonText(EditorText.REBUILD_WORLD), skin,
+                    "monospace-button");
+            TextButton closeBtn =
+                    new TextButton(editorButtonText(EditorText.CLOSE), skin, "monospace-button");
             footer.add(saveBtn).pad(4);
             footer.add(loadBtn).pad(4);
             footer.add(exportBtn).pad(4);
@@ -1597,17 +1773,31 @@ public class Gdx3DHud {
                             return;
                         }
                         altState[0] = alt;
-                        saveBtn.setText(alt ? " [#42A5F5]S[]AVE " : " SAVE ");
-                        loadBtn.setText(alt ? " [#42A5F5]L[]OAD " : " LOAD ");
-                        exportBtn.setText(alt ? " [#42A5F5]E[]XPORT " : " EXPORT ");
-                        importBtn.setText(alt ? " [#42A5F5]I[]MPORT " : " IMPORT ");
-                        refreshBtn.setText(alt ? " [#42A5F5]R[]EFRESH " : " REFRESH ");
-                        reprogramBtn.setText(alt ? " RE[#42A5F5]P[]ROGRAM " : " REPROGRAM ");
-                        rebuildBtn.setText(alt ? " RE[#42A5F5]B[]UILD " : " REBUILD ");
-                        closeBtn.setText(alt ? " [#42A5F5]C[]LOSE " : " CLOSE ");
-                        scenarioTabBtn.setText(alt ? " Scen[#42A5F5]a[]rio " : " Scenario ");
-                        programTabBtn.setText(alt ? " Pro[#42A5F5]g[]ram " : " Program ");
-                        configTabBtn.setText(alt ? " Con[#42A5F5]f[]ig " : " Config ");
+                        saveBtn.setText(alt ? editorButtonAltText(EditorText.SAVE, 'S')
+                                : editorButtonText(EditorText.SAVE));
+                        loadBtn.setText(alt ? editorButtonAltText(EditorText.LOAD, 'L')
+                                : editorButtonText(EditorText.LOAD));
+                        exportBtn.setText(alt ? editorButtonAltText(EditorText.EXPORT, 'E')
+                                : editorButtonText(EditorText.EXPORT));
+                        importBtn.setText(alt ? editorButtonAltText(EditorText.IMPORT, 'I')
+                                : editorButtonText(EditorText.IMPORT));
+                        refreshBtn
+                                .setText(alt ? editorButtonAltText(EditorText.RELOAD_FROM_GAME, 'R')
+                                        : editorButtonText(EditorText.RELOAD_FROM_GAME));
+                        reprogramBtn
+                                .setText(alt ? editorButtonAltText(EditorText.APPLY_PROGRAM, 'P')
+                                        : editorButtonText(EditorText.APPLY_PROGRAM));
+                        rebuildBtn.setText(alt ? editorButtonAltText(EditorText.REBUILD_WORLD, 'B')
+                                : editorButtonText(EditorText.REBUILD_WORLD));
+                        closeBtn.setText(alt ? editorButtonAltText(EditorText.CLOSE, 'C')
+                                : editorButtonText(EditorText.CLOSE));
+                        scenarioTabBtn.setText(alt ? editorTabAltText(EditorText.TAB_SCENARIO, 'a')
+                                : editorTabText(EditorText.TAB_SCENARIO));
+                        programTabBtn
+                                .setText(alt ? editorTabAltText(EditorText.TAB_PROGRAMMING, 'g')
+                                        : editorTabText(EditorText.TAB_PROGRAMMING));
+                        configTabBtn.setText(alt ? editorTabAltText(EditorText.TAB_CONFIG, 'f')
+                                : editorTabText(EditorText.TAB_CONFIG));
                     })));
 
             Table mainContent = new Table();

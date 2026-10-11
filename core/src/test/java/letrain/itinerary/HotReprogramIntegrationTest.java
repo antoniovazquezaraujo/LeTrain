@@ -21,11 +21,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Issue #653: applying a program again (editor REPROGRAM, console) must reset the train automation
- * coherently before the new text builds it back. Pending waypoint actions of the old plan must not
- * resume against the new one, a stale block wait must not survive, and a running train must be
- * announced because its service restarts from the first waypoint (ADR-009: every APPLY wipes and
- * recreates the state).
+ * Issue #653: applying a program again (editor Apply program, console) must reset the train
+ * automation coherently before the new text builds it back. Pending waypoint actions of the old
+ * plan must not resume against the new one, a stale block wait must not survive, and a running
+ * train must be announced because its service restarts from the first waypoint (ADR-009: every
+ * APPLY wipes and recreates the state).
  */
 @DisplayName("Issue #653: hot program re-apply")
 class HotReprogramIntegrationTest {

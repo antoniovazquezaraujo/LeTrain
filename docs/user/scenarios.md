@@ -72,18 +72,20 @@ letrain-check my-scenario.ltr
 Press `p` to open the **LeTrain Editor**. Its three tabs together make up the scenario:
 
 - **Scenario** — `seed` + `on build` + `on start`.
-- **Program** — the `program { ... }` block.
+- **Programming** — the `program { ... }` block.
 - **Config** — the `configuration { ... }` settings.
 
 ![The LeTrain Editor with the Config tab selected](images/config-editor.png)
 
 The quick reference on the right shows only the commands that make sense for the active tab;
 selecting one inserts it on a new line. The footer holds `Save`/`Load` (savegame),
-`Export`/`Import` (scenario file), `Refresh` (reload from the world), `Reprogram` (apply the
-Program) and `Rebuild` (validate and play the scenario). `Esc` closes the editor. When there are
-errors, a small scrollable list lets you jump to the offending line.
+`Export`/`Import` (scenario file), `Reload from game` (reload from the world), `Apply program`
+(apply the edited program to the running game) and `Rebuild world` (validate the scenario and
+replay it to rebuild the world). `Rebuild world` asks for confirmation first: the current world is
+discarded. `Esc` closes the editor. When there are errors, a small scrollable list lets you jump to
+the offending line.
 
-`Reprogram` applies the Program again from scratch: trains that are running are reset (missions
+`Apply program` applies the Program again from scratch: trains that are running are reset (missions
 cancelled, block waits cleared and the train braked) and a reassigned itinerary restarts from its
 first waypoint. Every train that was running is announced, so a hot re-program never re-runs a
 maneuver in progress silently.

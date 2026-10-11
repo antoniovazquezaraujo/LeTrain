@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import letrain.map.Page;
 import letrain.map.Point;
+import letrain.mvp.EditorText;
 import letrain.mvp.GameViewListener;
 import letrain.mvp.MenuText;
 import letrain.mvp.Model.GameModeMenuOption;
@@ -753,6 +754,27 @@ public class TerminalView implements letrain.mvp.View {
         }
     }
 
+    /**
+     * One footer action of the editor: the shared label plus the Alt mnemonic highlighted in 2D.
+     */
+    record FooterAction(String label, char mnemonic) {
+    }
+
+    /**
+     * The editor footer in display order (issue #740). The labels are the shared {@link EditorText}
+     * words, so the 2D and 3D clients cannot drift; static and package-visible so a test can pin
+     * them without opening the modal window.
+     */
+    static List<FooterAction> editorFooterActions() {
+        return List.of(new FooterAction(EditorText.SAVE, 'S'),
+                new FooterAction(EditorText.LOAD, 'L'), new FooterAction(EditorText.EXPORT, 'E'),
+                new FooterAction(EditorText.IMPORT, 'I'),
+                new FooterAction(EditorText.RELOAD_FROM_GAME, 'R'),
+                new FooterAction(EditorText.APPLY_PROGRAM, 'P'),
+                new FooterAction(EditorText.REBUILD_WORLD, 'B'),
+                new FooterAction(EditorText.CLOSE, 'C'));
+    }
+
     @Override
     public void showIDE() {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
@@ -763,9 +785,9 @@ public class TerminalView implements letrain.mvp.View {
 
         Panel mainPanel = new Panel(new BorderLayout());
 
-        // Three tabs share one editor: Scenario (seed + on build + on start), Program
+        // Three tabs share one editor: Scenario (seed + on build + on start), Programming
         // (program { ... }) and Config (configuration { ... }). The Scenario draft persists
-        // between openings until the user hits Refresh.
+        // between openings until the user hits Reload from game.
         final int tabScenario = 0;
         final int tabProgram = 1;
         final int tabConfig = 2;
@@ -998,6 +1020,9 @@ public class TerminalView implements letrain.mvp.View {
                 }
                 return;
             }
+            if (!confirmRebuildWorld(gui)) {
+                return;
+            }
             gameViewListener.onPlayScenarioText(full);
         };
         final Runnable saveAction = () -> showSaveDialog();
@@ -1010,15 +1035,16 @@ public class TerminalView implements letrain.mvp.View {
             window.close();
         };
 
-        // Fixed footer row: every action is always available, independent of the active tab.
-        addFooterButton(footer, "Save", 'S', saveAction);
-        addFooterButton(footer, "Load", 'L', loadAction);
-        addFooterButton(footer, "Export", 'E', exportAction);
-        addFooterButton(footer, "Import", 'I', importAction);
-        addFooterButton(footer, "Refresh", 'R', refreshAction);
-        addFooterButton(footer, "Reprogram", 'P', reprogramAction);
-        addFooterButton(footer, "Rebuild", 'B', rebuildAction);
-        addFooterButton(footer, "Close", 'C', cancelAction);
+        // Fixed footer row: every action is always available, independent of the active tab. The
+        // labels and mnemonics come from editorFooterActions() (the shared EditorText wording,
+        // same words as the 3D HUD); the actions stay in the same order.
+        final Runnable[] footerActions = {saveAction, loadAction, exportAction, importAction,
+                refreshAction, reprogramAction, rebuildAction, cancelAction};
+        List<FooterAction> footerButtons = editorFooterActions();
+        for (int i = 0; i < footerButtons.size(); i++) {
+            addFooterButton(footer, footerButtons.get(i).label(), footerButtons.get(i).mnemonic(),
+                    footerActions[i]);
+        }
 
         // Tabs glow their own colour when active (distinct from the focus style).
         com.googlecode.lanterna.gui2.InteractableRenderer<Button> tabRenderer =
@@ -1033,8 +1059,8 @@ public class TerminalView implements letrain.mvp.View {
                     public void drawComponent(com.googlecode.lanterna.gui2.TextGUIGraphics graphics,
                             Button component) {
                         String label = component.getLabel();
-                        int tab = "Scenario".equals(label) ? tabScenario
-                                : "Program".equals(label) ? tabProgram : tabConfig;
+                        int tab = EditorText.TAB_SCENARIO.equals(label) ? tabScenario
+                                : EditorText.TAB_PROGRAMMING.equals(label) ? tabProgram : tabConfig;
                         if (tab == activeTab[0]) {
                             graphics.setForegroundColor(
                                     com.googlecode.lanterna.TextColor.ANSI.BLACK);
@@ -1069,11 +1095,11 @@ public class TerminalView implements letrain.mvp.View {
                         return null;
                     }
                 };
-        Button scenarioTabBtn = new Button("Scenario", switchToScenario);
+        Button scenarioTabBtn = new Button(EditorText.TAB_SCENARIO, switchToScenario);
         scenarioTabBtn.setRenderer(tabRenderer);
-        Button programTabBtn = new Button("Program", switchToProgram);
+        Button programTabBtn = new Button(EditorText.TAB_PROGRAMMING, switchToProgram);
         programTabBtn.setRenderer(tabRenderer);
-        Button configTabBtn = new Button("Config", switchToConfig);
+        Button configTabBtn = new Button(EditorText.TAB_CONFIG, switchToConfig);
         configTabBtn.setRenderer(tabRenderer);
         tabBar.addComponent(scenarioTabBtn);
         tabBar.addComponent(programTabBtn);
@@ -1227,6 +1253,18 @@ public class TerminalView implements letrain.mvp.View {
             sb.append("\n... (").append(total - shown).append(" more)");
         }
         return sb.toString();
+    }
+
+    /** Asks before rebuilding the world: the replay discards the current world (issue #740). */
+    private static boolean confirmRebuildWorld(MultiWindowTextGUI gui) {
+        com.googlecode.lanterna.gui2.dialogs.MessageDialogButton choice =
+                new com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder()
+                        .setTitle(EditorText.REBUILD_CONFIRM_TITLE)
+                        .setText(EditorText.REBUILD_CONFIRM_MESSAGE)
+                        .addButton(com.googlecode.lanterna.gui2.dialogs.MessageDialogButton.Yes)
+                        .addButton(com.googlecode.lanterna.gui2.dialogs.MessageDialogButton.No)
+                        .build().showDialog(gui);
+        return choice == com.googlecode.lanterna.gui2.dialogs.MessageDialogButton.Yes;
     }
 
     /** Asks whether to export a scenario that has syntax errors. */

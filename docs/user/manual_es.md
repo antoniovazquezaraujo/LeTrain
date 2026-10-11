@@ -42,7 +42,7 @@ LeTrain está fuertemente basado en modos. Al pulsar las siguientes teclas cambi
 - **`g`**: **Modo Speed Signals (Señales)** - Gestionar señales de límite de velocidad.
 - **`n`**: **Modo Stations (Estaciones)** - Seleccionar e inspeccionar estaciones.
 - **`e`**: **Modo Sensors (Sensores)** - Seleccionar e inspeccionar sensores.
-- **`p`**: **Modo Program (Programa)** - Abrir el IDE para programar automatizaciones.
+- **`p`**: **Modo Programming (Programación)** - Abrir el editor para programar automatizaciones.
 - **`:`**: **Modo CLI (Consola)** - Abrir la consola de comandos integrados.
 - **`R`**: **Conmutar el modo Record/edición** (apagado por defecto). Al activarlo, el mundo (trenes, economía, descarrilamientos) se congela mientras estés en cualquier modo de edición (Rails, Add, Estaciones, Sensores, Semáforos, Señales, Desvíos, Trenes, consola o editor de programa), la construcción de vía se vuelve instantánea y cada edición se graba en el diario para el undo determinista y la exportación de escenarios. La simulación solo corre en modos de juego/vista (Drive, Menú, Link/Unlink) o cuando el toggle está apagado.
 
@@ -78,10 +78,10 @@ Para una referencia completa de los comandos, consulta **[grammar_es.md](grammar
 
 ### Editor de Escenarios y Undo/Redo
 - **`p`**: Abre el **LeTrain Editor** (editor de escenarios). Tiene tres pestañas — **Scenario**
-  (`seed` + `on build` + `on start`), **Program** (el script de automatización) y **Config**
+  (`seed` + `on build` + `on start`), **Programming** (el script de automatización) y **Config**
   (ajustes del juego) — una referencia rápida por pestaña, y un pie con `Export`/`Import` de
-  ficheros de escenario `.ltr`, `Refresh`, `Reprogram` y `Rebuild`. `Esc` lo cierra. Ver
-  **[scenarios_es.md](scenarios_es.md)**.
+  ficheros de escenario `.ltr`, `Reload from game`, `Apply program` y `Rebuild world`. `Esc` lo
+  cierra. Ver **[scenarios_es.md](scenarios_es.md)**.
 - **Modo Record/edición (`R`)**: mientras está activo, **`u`** deshace y **Ctrl+R** rehace
   ediciones (igual que `undo;` / `redo;`). Fuera de este modo, `u` es el modo **Unlink**
   (Desenganchar).
