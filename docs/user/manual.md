@@ -12,10 +12,20 @@ Welcome to the official **LeTrain** manual. Here you will find everything you ne
 
 The game can be controlled via the keyboard in both its 2D and 3D versions. Below are the main keys and modes:
 
-### Title cover and File menu
-- The game opens with a simple **title cover** (a small train drawn in ASCII in the 2D terminal, text in the 3D view). Press **any key** to continue into the world.
-- Press **Esc** to open the **File** menu, with the same words in 2D and 3D: **New** (visible; it arrives with the New Game/settings slice), **Load**, **Save**, **Settings** (visible; it arrives with the settings slice) and **Quit**. **Esc** closes the menu again and **Quit** leaves the game.
+### Title cover, File menu and New Game
+- The game opens with a simple **title cover** (a small train drawn in ASCII in the 2D terminal, text in the 3D view). Press **any key** to continue to the **File menu**: the 2D game no longer auto-starts a world, so **New** or **Load** is what starts your railway.
+- Press **Esc** to open the **File** menu, with the same words in 2D and 3D: **New**, **Load**, **Save**, **Settings** and **Quit**. **Esc** closes the menu again and **Quit** leaves the game.
+  - **New** (2D) opens the **New Game** dialog: seed, terrain proportions and the catalogue sections (see below). It is the way to start a game from the boot menu. With a game in progress it asks for confirmation first (the full Save/Discard/Cancel flow arrives later); the unsaved game is discarded.
+  - **Save** is disabled with the reason *no game in progress* until a game is running.
+  - **Settings** is visible but still disabled until its slice; in the 3D client **New** and **Settings** are disabled with *3D parity slice* for now.
 - The in-game **LeTrain Editor** no longer has `Save`/`Load` buttons: they live in the File menu. The console commands `save;`/`load;` still work.
+- Console command **`new game;`** opens the same New Game dialog from the CLI.
+
+#### New Game dialog (2D)
+- **Seed**: a random seed is drawn when the dialog opens. It is editable, copyable and the **new** button draws another one.
+- **Terrain**: **Water %** and **Mountain %** sliders. The rule is *water + mountain ≤ 95 %*: moving one slider clamps the other, so there is always at least 5 % of field. The **stacked bar** shows the 100 % split (water / field / mountain) and the status line always shows the **target** proportions next to the **measured** ones for that seed.
+- **Preview**: an adaptive terrain sampler (same noise and calibrated thresholds as the world generator) drawn with half blocks. It is large from **120×30**, compact at **80×24** and hidden below 80×24 (the sliders and the measured percentages stay).
+- **Sections**: **Terrain**, **Game**, **Economy**, **Construction** and **UI** fields come from the settings catalogue, with their ranges and units (checkboxes for on/off options). **Start** builds the world with those values; **Cancel**/Esc leaves everything as it was.
 
 ### Navigation and Views
 - **Arrow Keys (or h, j, k, l)**: Move the cursor freely or follow a track (Vim-style navigation).
