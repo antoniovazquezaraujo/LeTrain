@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import letrain.map.Page;
 import letrain.map.Point;
@@ -822,6 +823,28 @@ public class TerminalView implements letrain.mvp.View {
         TerminalView.this.gameViewListener.onLoadGame(result);
     }
 
+    /**
+     * New Game dialog (S2): seed, terrain sliders with the stacked bar and adaptive preview, and
+     * the catalogue sections. Returns the validated settings or {@code null} when cancelled.
+     */
+    @Override
+    public Map<String, String> showNewGameDialog(Map<String, String> currentSettings) {
+        return NewGameDialog.show(screen, currentSettings);
+    }
+
+    /** Simple yes/no confirmation (used before discarding a game in progress, #417 pending). */
+    @Override
+    public boolean confirm(String title, String message) {
+        MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+        com.googlecode.lanterna.gui2.dialogs.MessageDialogButton choice =
+                new com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder().setTitle(title)
+                        .setText(message)
+                        .addButton(com.googlecode.lanterna.gui2.dialogs.MessageDialogButton.Yes)
+                        .addButton(com.googlecode.lanterna.gui2.dialogs.MessageDialogButton.No)
+                        .build().showDialog(gui);
+        return choice == com.googlecode.lanterna.gui2.dialogs.MessageDialogButton.Yes;
+    }
+
     @Override
     public void showExportDialog() {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
@@ -1547,9 +1570,10 @@ public class TerminalView implements letrain.mvp.View {
 
     /**
      * File menu ({@code Esc} in both clients), built from the shared {@link FileMenuText} rows so
-     * the 2D terminal and the 3D HUD read the same words in the same order. New/Settings are
-     * visible but disabled with their lock reason; Load/Save open their dialogs; Quit ends the
-     * game. {@code Esc} closes the menu again (owner decision D11).
+     * the 2D terminal and the 3D HUD read the same words in the same order. New opens the New Game
+     * dialog; at the boot menu (no game yet) Save is disabled with its reason (D8); Settings stays
+     * visible but disabled until its slice; Load/Save open their dialogs; Quit ends the game. Esc
+     * closes the menu again (owner decision D11).
      */
     @Override
     public void showFileMenu() {
@@ -1560,7 +1584,7 @@ public class TerminalView implements letrain.mvp.View {
         Panel contentPanel = new Panel();
         contentPanel.setLayoutManager(new LinearLayout(Direction.VERTICAL));
         contentPanel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
-        for (FileMenuText.Item item : FileMenuText.items()) {
+        for (FileMenuText.Item item : fileMenuItems(gameViewListener.hasActiveGame())) {
             Button button =
                     new Button(FileMenuText.displayLabel(item), fileMenuAction(item, window));
             button.setEnabled(item.enabled());
@@ -1570,9 +1594,19 @@ public class TerminalView implements letrain.mvp.View {
         gui.addWindowAndWait(window);
     }
 
+    /** The rows the 2D menu shows for the current game state (boot menu vs in-game, D8). */
+    static List<FileMenuText.Item> fileMenuItems(boolean hasGame) {
+        return FileMenuText.items(FileMenuText.MenuState.terminal(hasGame));
+    }
+
     /** Action of one File menu row; locked rows stay disabled and never run it. */
     private Runnable fileMenuAction(FileMenuText.Item item, Window window) {
         switch (item.command()) {
+            case NEW:
+                return () -> {
+                    window.close();
+                    gameViewListener.onNewGame();
+                };
             case LOAD:
                 return () -> {
                     showLoadDialog();
@@ -1588,7 +1622,6 @@ public class TerminalView implements letrain.mvp.View {
                     setEndOfGame(true);
                     window.close();
                 };
-            case NEW:
             case SETTINGS:
             default:
                 return () -> {

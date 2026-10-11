@@ -924,9 +924,10 @@ public class Gdx3DHud {
 
             // One row per shared item, in the shared order. Locked rows are non-focusable and
             // keep their label greyed out, with the lock reason coming from the shared wording.
+            // 3D keeps New/Settings disabled with the parity reason until S4.
             final List<TextButton> focusable = new ArrayList<>();
             final java.util.Map<TextButton, Runnable> actions = new java.util.HashMap<>();
-            for (FileMenuText.Item item : FileMenuText.items()) {
+            for (FileMenuText.Item item : FileMenuText.items(FileMenuText.MenuState.graphic())) {
                 final TextButton button = new TextButton(fileMenuButtonText(item), skin);
                 final Runnable action = fileMenuAction(item, close);
                 if (item.enabled()) {
