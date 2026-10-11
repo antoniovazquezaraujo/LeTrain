@@ -36,7 +36,9 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import letrain.map.Page;
 import letrain.map.Point;
+import letrain.mvp.CoverText;
 import letrain.mvp.EditorText;
+import letrain.mvp.FileMenuText;
 import letrain.mvp.GameViewListener;
 import letrain.mvp.MenuText;
 import letrain.mvp.Model.GameModeMenuOption;
@@ -85,6 +87,9 @@ public class TerminalView implements letrain.mvp.View {
     private int flashDeadzoneTicks = 0;
     boolean endOfGame = false;
     private int helpLevel = 0;
+
+    /** True while the title cover is on screen; {@link #paint()} draws it instead of the game. */
+    private boolean coverVisible = false;
 
     /**
      * Hand-edited scenario text kept between IDE openings; null means "regenerate from the world".
@@ -203,6 +208,86 @@ public class TerminalView implements letrain.mvp.View {
 
     public boolean isEndOfGame(KeyStroke keyStroke) {
         return endOfGame;
+    }
+
+    /**
+     * Shows or hides the title cover; while visible, {@link #paint()} draws it instead of the game.
+     */
+    public void setCoverVisible(boolean visible) {
+        this.coverVisible = visible;
+    }
+
+    /** True while the title cover is on screen. */
+    public boolean isCoverVisible() {
+        return coverVisible;
+    }
+
+    /**
+     * Screen lines of the cover, vertically centred for a terminal of {@code rows} rows: game
+     * title, train art and the any-key prompt. Every content line is padded to the width of the
+     * train art, so painting the block at a single left offset keeps the art aligned (centring each
+     * line on its own would shear the train). Package-visible and static so a test can pin the
+     * cover without a real terminal.
+     */
+    static String[] coverScreenLines(int rows) {
+        int width = CoverText.ASCII_ART.stream().mapToInt(String::length).max().orElse(0);
+        java.util.List<String> content = new java.util.ArrayList<>();
+        content.add(centerPad(CoverText.TITLE, width));
+        content.add("");
+        for (String artLine : CoverText.ASCII_ART) {
+            content.add(padRight(artLine, width));
+        }
+        content.add("");
+        content.add(centerPad(CoverText.PROMPT, width));
+        String[] lines = new String[Math.max(0, rows)];
+        java.util.Arrays.fill(lines, "");
+        int start = Math.max(0, (rows - content.size()) / 2);
+        for (int i = 0; i < content.size() && start + i < rows; i++) {
+            lines[start + i] = content.get(i);
+        }
+        return lines;
+    }
+
+    /** Pads {@code line} with spaces on both sides until it is {@code width} columns wide. */
+    private static String centerPad(String line, int width) {
+        int padding = Math.max(0, width - line.length());
+        int left = padding / 2;
+        return padRight(" ".repeat(left) + line, width);
+    }
+
+    /** Pads {@code line} with spaces on the right until it is {@code width} columns wide. */
+    private static String padRight(String line, int width) {
+        return line + " ".repeat(Math.max(0, width - line.length()));
+    }
+
+    /** Paints the cover full-screen and refreshes; called by {@link #paint()} while visible. */
+    private void paintCover() {
+        if (screen == null) {
+            return;
+        }
+        try {
+            TerminalSize size = screen.getTerminalSize();
+            TextGraphics tg = screen.newTextGraphics();
+            tg.setBackgroundColor(NORMAL_MENU_BG_COLOR);
+            tg.setForegroundColor(NORMAL_MENU_FG_COLOR);
+            tg.fillRectangle(TerminalPosition.TOP_LEFT_CORNER, size, ' ');
+            String[] lines = coverScreenLines(size.getRows());
+            int blockWidth = 0;
+            for (String line : lines) {
+                blockWidth = Math.max(blockWidth, line.length());
+            }
+            int startX = Math.max(0, (size.getColumns() - blockWidth) / 2);
+            for (int y = 0; y < lines.length; y++) {
+                if (!lines[y].isBlank()) {
+                    tg.putString(startX, y, lines[y]);
+                }
+            }
+            this.screen.refresh();
+            Thread.yield();
+        } catch (IOException e) {
+            log.error("Error refreshing the cover, window might be closed", e);
+            setEndOfGame(true);
+        }
     }
 
     @Override
@@ -324,6 +409,11 @@ public class TerminalView implements letrain.mvp.View {
             TerminalView.this.gameViewListener.onScreenResized(gameBoxSize.getColumns(),
                     gameBoxSize.getRows());
             gameBox.fillRectangle(gameBoxPosition, gameBoxSize, ' ');
+        }
+
+        if (coverVisible) {
+            paintCover();
+            return;
         }
 
         try {
@@ -766,8 +856,7 @@ public class TerminalView implements letrain.mvp.View {
      * them without opening the modal window.
      */
     static List<FooterAction> editorFooterActions() {
-        return List.of(new FooterAction(EditorText.SAVE, 'S'),
-                new FooterAction(EditorText.LOAD, 'L'), new FooterAction(EditorText.EXPORT, 'E'),
+        return List.of(new FooterAction(EditorText.EXPORT, 'E'),
                 new FooterAction(EditorText.IMPORT, 'I'),
                 new FooterAction(EditorText.RELOAD_FROM_GAME, 'R'),
                 new FooterAction(EditorText.APPLY_PROGRAM, 'P'),
@@ -1025,11 +1114,6 @@ public class TerminalView implements letrain.mvp.View {
             }
             gameViewListener.onPlayScenarioText(full);
         };
-        final Runnable saveAction = () -> showSaveDialog();
-        final Runnable loadAction = () -> {
-            showLoadDialog();
-            window.close();
-        };
         final Runnable cancelAction = () -> {
             saveActive.run();
             window.close();
@@ -1037,9 +1121,10 @@ public class TerminalView implements letrain.mvp.View {
 
         // Fixed footer row: every action is always available, independent of the active tab. The
         // labels and mnemonics come from editorFooterActions() (the shared EditorText wording,
-        // same words as the 3D HUD); the actions stay in the same order.
-        final Runnable[] footerActions = {saveAction, loadAction, exportAction, importAction,
-                refreshAction, reprogramAction, rebuildAction, cancelAction};
+        // same words as the 3D HUD); the actions stay in the same order. Save/Load moved to the
+        // File menu (Esc) in issue #743.
+        final Runnable[] footerActions = {exportAction, importAction, refreshAction,
+                reprogramAction, rebuildAction, cancelAction};
         List<FooterAction> footerButtons = editorFooterActions();
         for (int i = 0; i < footerButtons.size(); i++) {
             addFooterButton(footer, footerButtons.get(i).label(), footerButtons.get(i).mnemonic(),
@@ -1151,12 +1236,6 @@ public class TerminalView implements letrain.mvp.View {
                         deliverEvent.set(false);
                     } else if (c == 'b') {
                         rebuildAction.run();
-                        deliverEvent.set(false);
-                    } else if (c == 's') {
-                        saveAction.run();
-                        deliverEvent.set(false);
-                    } else if (c == 'l') {
-                        loadAction.run();
                         deliverEvent.set(false);
                     } else if (c == 'c') {
                         cancelAction.run();
@@ -1466,31 +1545,55 @@ public class TerminalView implements letrain.mvp.View {
         return false;
     }
 
+    /**
+     * File menu ({@code Esc} in both clients), built from the shared {@link FileMenuText} rows so
+     * the 2D terminal and the 3D HUD read the same words in the same order. New/Settings are
+     * visible but disabled with their lock reason; Load/Save open their dialogs; Quit ends the
+     * game. {@code Esc} closes the menu again (owner decision D11).
+     */
     @Override
-    public void showExitDialog() {
+    public void showFileMenu() {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
-        BasicWindow window = new BasicWindow();
+        BasicWindow window = new BasicWindow(FileMenuText.TITLE);
         window.setHints(Arrays.asList(Window.Hint.CENTERED));
-        window.setTitle("LeTrain");
+        window.setCloseWindowWithEscape(true);
         Panel contentPanel = new Panel();
         contentPanel.setLayoutManager(new LinearLayout(Direction.VERTICAL));
         contentPanel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
-        contentPanel.addComponent(new Button("Exit", new Runnable() {
-            @Override
-            public void run() {
-                setEndOfGame(true);
-                window.close();
-            }
-        }));
-        contentPanel.addComponent(new Button("Play!", new Runnable() {
-            @Override
-            public void run() {
-                window.close();
-            }
-        }));
-
+        for (FileMenuText.Item item : FileMenuText.items()) {
+            Button button =
+                    new Button(FileMenuText.displayLabel(item), fileMenuAction(item, window));
+            button.setEnabled(item.enabled());
+            contentPanel.addComponent(button);
+        }
         window.setComponent(contentPanel);
         gui.addWindowAndWait(window);
+    }
+
+    /** Action of one File menu row; locked rows stay disabled and never run it. */
+    private Runnable fileMenuAction(FileMenuText.Item item, Window window) {
+        switch (item.command()) {
+            case LOAD:
+                return () -> {
+                    showLoadDialog();
+                    window.close();
+                };
+            case SAVE:
+                return () -> {
+                    showSaveDialog();
+                    window.close();
+                };
+            case QUIT:
+                return () -> {
+                    setEndOfGame(true);
+                    window.close();
+                };
+            case NEW:
+            case SETTINGS:
+            default:
+                return () -> {
+                };
+        }
     }
 
     protected void setEndOfGame(boolean endOfGame) {

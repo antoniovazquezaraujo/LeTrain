@@ -124,7 +124,7 @@ organiza en **dos columnas** (`Gdx3DHud.STRIP_COLUMNS`):
      no cabe en la columna, se recorta con elipsis (no invade la columna derecha).
   4. **Teclas** (`Gdx3DHud.keysText`), misma caja/puntuación y caja normal que la fila 2D, solo con
      los bindings que existen de verdad en `Gdx3DInputHandler`: `Alt+▲▼`/rueda (zoom), `Alt+◀▶`
-     (rotar), `z/Z` (cámara, salvo en TRAINS), letras de modo, `Tab` (panel) y `Esc` (salir). No
+     (rotar), `z/Z` (cámara, salvo en TRAINS), letras de modo, `Tab` (panel) y `Esc` (menú). No
      hay binding 3D para `PgUp/PgDn`, así que esa tecla 2D se omite. Conserva el tamaño `tiny`
      original de la línea de teclas 3D para que la fila completa quepa.
 - **Derecha: líneas de estado al borde de pantalla**, ambas alineadas a la derecha
@@ -156,6 +156,31 @@ Diferencias intencionales (tecnología, no información):
   compartido.
 - La línea de consola y los hints 3D no hacen wrap: se recortan (el hint con elipsis) en lugar de
   crecer en varias líneas.
+
+## Portada y menú File: paridad 2D/3D (#743)
+
+La portada y el menú File también nacen de fuentes compartidas en `core`, de modo que las
+palabras no pueden divergir entre clientes:
+
+- **Portada** (`CoverText`): `TITLE`, `PROMPT` y el arte ASCII (`ASCII_ART`, solo 2D). La 2D la
+  pinta con `TerminalView.coverScreenLines(rows)`/`paintCover()` (helper estático puro, testeable
+  sin terminal); la 3D monta una `Table` opaca a pantalla completa en `Gdx3DHud.showCover()` con
+  el mismo `TITLE`/`PROMPT`.
+- **Estado de portada**: vive en el presentador (`coverActive`), no en la vista. Cualquier tecla
+  continúa; la tecla que despide la portada se consume y **nunca** llega al juego como acción
+  (`TerminalPresenter` drena la ráfaga de teclas leídas; `Gdx3DInputHandler` traga el `keyDown` y
+  su `keyTyped`). `setCoverEnabled(false)` la salta en contextos headless/lanzamiento directo de
+  escenario; `letrain-check` ni siquiera arranca un presentador.
+- **Menú File** (`FileMenuText`): `items()` define estructura, orden, palabras y estado
+  (`enabled` + `disabledReason`) de `New`/`Load`/`Save`/`Settings`/`Quit`, y `displayLabel(item)`
+  añade el motivo entre paréntesis mientras la entrada está bloqueada. En este slice `New`
+  (motivo *settings arrive in the next slice*) y `Settings` (*arrives with the settings slice*)
+  están visibles pero deshabilitadas; `Load`/`Save` abren sus diálogos y `Quit` sustituye al
+  antiguo cierre directo con `Esc` (decisión D11). `Esc` abre el menú (`view.showFileMenu()` en
+  ambos presentadores) y `Esc` de nuevo lo cierra.
+- **Editor**: los pies 2D (`TerminalView.editorFooterActions`) y 3D (`Gdx3DHud`) ya no llevan
+  `Save`/`Load`: quedan `Export`/`Import`/`Reload from game`/`Apply program`/`Rebuild world`/
+  `Close`. Los comandos de consola `save;`/`load;` se mantienen.
 
 ## Invariantes de la Vista
 - Ninguna clase de renderizado debe modificar el estado del `Model`.

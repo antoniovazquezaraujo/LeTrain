@@ -14,6 +14,11 @@ Bienvenido al manual oficial de **LeTrain**. Aquí encontrarás todo lo que nece
 
 El juego se puede controlar tanto en su versión 2D como en la 3D mediante el teclado. A continuación, las teclas y modos principales:
 
+### Portada y menú File
+- El juego abre con una **portada** sencilla (un tren dibujado en ASCII en la terminal 2D, texto en la vista 3D). Pulsa **cualquier tecla** para entrar al mundo.
+- Pulsa **Esc** para abrir el menú **File**, con las mismas palabras en 2D y 3D: **New** (visible; llega con la rebanada de Nueva Partida/ajustes), **Load**, **Save**, **Settings** (visible; llega con la rebanada de ajustes) y **Quit**. **Esc** de nuevo cierra el menú y **Quit** sale del juego.
+- El **LeTrain Editor** ya no tiene botones `Save`/`Load`: viven en el menú File. Los comandos de consola `save;`/`load;` siguen funcionando.
+
 ### Navegación y Vistas
 - **Flechas de dirección (o h, j, k, l)**: Mover el cursor libremente o seguir una vía (estilo Vim).
 - **Alt + Flechas (o Alt + h, j, k, l)**: Hacer zoom y rotar/panear la cámara.
@@ -25,7 +30,7 @@ El juego se puede controlar tanto en su versión 2D como en la 3D mediante el te
   - **g**: Construir Señal de Velocidad
 - **Tecla 'o'**: Reubicar el cursor instantáneamente sobre el tren, estación, desvío, sensor o señal de velocidad seleccionado actualmente; una breve cruz blanca destella alrededor del cursor para localizarlo.
 - **Tecla 'z'**: En 3D: Alternar entre las tres cámaras (Perspectiva, Cenital y Cabina). En 2D: Cambiar el tamaño de la zona muerta de la cámara.
-- **Esc**: En 3D: Salir del menú del juego.
+- **Esc**: Abrir el menú **File** (`New`/`Load`/`Save`/`Settings`/`Quit`). Púlsala de nuevo para cerrar el menú.
 - **Tecla 'Z' (Mayús+z)**: En 2D: Activar o desactivar la paginación de cámara.
 - **Tecla 'Tab'**: Alternar entre los diferentes niveles de visibilidad de la barra de información (Compacta, Completa, Oculta).
 
@@ -80,8 +85,9 @@ Para una referencia completa de los comandos, consulta **[grammar_es.md](grammar
 - **`p`**: Abre el **LeTrain Editor** (editor de escenarios). Tiene tres pestañas — **Scenario**
   (`seed` + `on build` + `on start`), **Programming** (el script de automatización) y **Config**
   (ajustes del juego) — una referencia rápida por pestaña, y un pie con `Export`/`Import` de
-  ficheros de escenario `.ltr`, `Reload from game`, `Apply program` y `Rebuild world`. `Esc` lo
-  cierra. Ver **[scenarios_es.md](scenarios_es.md)**.
+  ficheros de escenario `.ltr`, `Reload from game`, `Apply program`, `Rebuild world` y `Close`.
+  Save/Load se han movido al menú File (**Esc**). `Esc` cierra el editor. Ver
+  **[scenarios_es.md](scenarios_es.md)**.
 - **Modo Record/edición (`R`)**: mientras está activo, **`u`** deshace y **Ctrl+R** rehace
   ediciones (igual que `undo;` / `redo;`). Fuera de este modo, `u` es el modo **Unlink**
   (Desenganchar).

@@ -164,6 +164,13 @@ public class GraphicPresenter extends ApplicationAdapter
     private Gdx3DInputHandler inputHandler;
     private final SoundscapeAmbience ambience;
 
+    /**
+     * Title cover (issue #743): shown at startup, any key continues. Kept in the presenter so the
+     * key that dismisses the cover is consumed and never reaches the game.
+     */
+    private boolean coverActive = false;
+    private boolean coverEnabled = true;
+
     public GraphicPresenter(letrain.mvp.Model model) {
         this(model, null);
     }
@@ -286,9 +293,14 @@ public class GraphicPresenter extends ApplicationAdapter
         multiplexer.addProcessor(inputHandler);
         Gdx.input.setInputProcessor(multiplexer);
 
+        // Cover first: the world waits behind the title until the player presses any key.
+        if (coverEnabled) {
+            showCover();
+        }
+
         // The app starts fullscreen (no maximize animation), but switch to a normal maximized
         // window
-        // right away so the OS/window behaviour (Esc exit menu, etc.) is the usual one.
+        // right away so the OS/window behaviour (Esc file menu, etc.) is the usual one.
         com.badlogic.gdx.Graphics.DisplayMode dm = Gdx.graphics.getDisplayMode();
         Gdx.graphics.setWindowedMode(dm.width, dm.height);
         if (Gdx.graphics instanceof com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics) {
@@ -309,8 +321,48 @@ public class GraphicPresenter extends ApplicationAdapter
 
     private com.badlogic.gdx.graphics.g3d.ModelInstance tableInstance;
 
+    /**
+     * Skips the title cover. Used by headless runs and direct scenario launches that must land on
+     * the world without a splash (issue #743).
+     */
+    public void setCoverEnabled(boolean enabled) {
+        this.coverEnabled = enabled;
+    }
+
+    /** True while the title cover is on screen waiting for any key. */
+    public boolean isCoverActive() {
+        return coverActive;
+    }
+
+    /** Shows the cover; {@code create()} calls this unless the cover was disabled. */
+    public void showCover() {
+        coverActive = true;
+        if (hud != null) {
+            hud.showCover();
+        }
+    }
+
+    /** Dismisses the cover (any key continues) and hands the screen back to the game. */
+    public void dismissCover() {
+        coverActive = false;
+        if (hud != null) {
+            hud.hideCover();
+        }
+    }
+
     @Override
     public void render() {
+        if (coverActive) {
+            // Title cover: a plain dark frame with the shared title and prompt; the world does not
+            // simulate nor render until the player continues.
+            Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+            Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
+            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
+            if (hud != null) {
+                hud.render(Gdx.graphics.getDeltaTime());
+            }
+            return;
+        }
         // Bucle de lógica del juego (aprox 20 tps como en el Presenter original)
         stateTime += Gdx.graphics.getDeltaTime();
         if (stateTime > 0.05f) {
@@ -1276,10 +1328,11 @@ public class GraphicPresenter extends ApplicationAdapter
         hud.showIDE();
     }
 
+    /** Opens the File menu (Esc): shared wording/structure with the 2D terminal (issue #743). */
     @Override
-    public void showExitDialog() {
+    public void showFileMenu() {
         if (hud != null) {
-            hud.showExitMenu();
+            hud.showFileMenu();
         }
     }
 

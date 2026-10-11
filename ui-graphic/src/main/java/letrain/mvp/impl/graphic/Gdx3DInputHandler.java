@@ -44,6 +44,13 @@ public class Gdx3DInputHandler implements InputProcessor {
     private static final long INITIAL_REPEAT_DELAY_MS = 400;
     private static final long REPEAT_INTERVAL_MS = 50;
 
+    /**
+     * Cover key handling (issue #743): the key that dismisses the title cover and its typed
+     * character must not reach the game (e.g. ':' must not open the console).
+     */
+    private boolean swallowCoverTyped = false;
+    private int coverDismissKeycode = -1;
+
     private int forkIdAccumulator = 0;
     private int semaphoreIdAccumulator = 0;
     private int stationIdAccumulator = 0;
@@ -135,8 +142,16 @@ public class Gdx3DInputHandler implements InputProcessor {
 
     @Override
     public boolean keyDown(int keycode) {
+        if (view.isCoverActive()) {
+            // Cover: any key continues; the keystroke (and its typed character) is consumed so it
+            // never reaches the game as an action.
+            view.dismissCover();
+            swallowCoverTyped = true;
+            coverDismissKeycode = keycode;
+            return true;
+        }
         // Esc must never enter the auto-repeat map: it is used to open/close modal UI, its keyUp
-        // is consumed by that UI, and repeating it would keep reopening the exit dialog.
+        // is consumed by that UI, and repeating it would keep reopening the file menu.
         if (keycode != Input.Keys.ESCAPE) {
             pressedKeys.put(keycode, System.currentTimeMillis() + INITIAL_REPEAT_DELAY_MS);
         }
@@ -176,6 +191,11 @@ public class Gdx3DInputHandler implements InputProcessor {
 
     @Override
     public boolean keyUp(int keycode) {
+        if (keycode == coverDismissKeycode) {
+            // The dismissing key produced no keyTyped (arrow, Esc...): drop the swallow guard.
+            swallowCoverTyped = false;
+            coverDismissKeycode = -1;
+        }
         pressedKeys.remove(keycode);
         InputEvent keyStroke = translateKeyCodeForUp(keycode);
         if (keyStroke != null) {
@@ -193,6 +213,11 @@ public class Gdx3DInputHandler implements InputProcessor {
 
     @Override
     public boolean keyTyped(char character) {
+        if (swallowCoverTyped) {
+            // Typed character of the key that dismissed the cover: consumed, never acted on.
+            swallowCoverTyped = false;
+            return true;
+        }
         // 1. Toggle de cámara (en TRAINS la 'z' es una letra de aspecto, como en 2D)
         if ((character == 'z' || character == 'Z') && model.getMode() != Model.GameMode.TRAINS) {
             cameraController.cycleMode(!model.getLocomotives().isEmpty());
@@ -559,11 +584,11 @@ public class Gdx3DInputHandler implements InputProcessor {
             }
         }
 
-        // Esc opens the exit menu in the normal modes (COMMAND cancels above; ADD goes back below;
-        // PROGRAM is the modal editor, which handles Esc itself).
+        // Esc opens the File menu in the normal modes (COMMAND cancels above; ADD goes back below;
+        // PROGRAM is the modal editor, which handles Esc itself). Quit lives inside the menu.
         if (stroke.getKeyType() == KeyType.Escape && model.getMode() != Model.GameMode.ADD
                 && model.getMode() != Model.GameMode.PROGRAM) {
-            view.showExitDialog();
+            view.showFileMenu();
             return;
         }
 

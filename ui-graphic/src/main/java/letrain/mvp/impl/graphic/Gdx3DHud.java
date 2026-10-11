@@ -28,7 +28,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
 import letrain.itinerary.Punctuality;
+import letrain.mvp.CoverText;
 import letrain.mvp.EditorText;
+import letrain.mvp.FileMenuText;
 import letrain.mvp.MenuText;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameModeMenuOption;
@@ -87,7 +89,7 @@ public class Gdx3DHud {
 
     private static final String KEYS_TEXT = "[Alt+▲▼ / Mouse Wheel]:Zoom | [Alt+◀▶]:Rotate"
             + " | [z/Z]:Camera | [a/r/d/f/s/t/c/u/p/n]:Modes | [Tab]:Toggle Panel"
-            + " | [Esc]:Exit";
+            + " | [Esc]:Menu";
 
 
     private final Model model;
@@ -110,8 +112,9 @@ public class Gdx3DHud {
     private int helpLevel = HudHelp.FULL;
 
     private Window ideWindow;
-    private boolean exitDialogOpen;
+    private boolean fileMenuOpen;
     private boolean rebuildDialogOpen;
+    private Table coverTable;
 
     private Window messageWindow;
     private ScrollPane messageScroll;
@@ -857,12 +860,47 @@ public class Gdx3DHud {
         return desc;
     }
 
-    /** Exit confirmation menu (opened with Esc), mirroring the 2D exit/quit prompt. */
-    public void showExitMenu() {
-        if (exitDialogOpen) {
+    /** Full-screen title cover: shown at startup, any key continues (issue #743). */
+    public void showCover() {
+        if (coverTable != null) {
             return;
         }
-        exitDialogOpen = true;
+        coverTable = new Table();
+        coverTable.setFillParent(true);
+        coverTable.setBackground(skin.newDrawable("white", new Color(0f, 0f, 0f, 1f)));
+        Label title = new Label(CoverText.TITLE, skin, "large");
+        title.setAlignment(com.badlogic.gdx.utils.Align.center);
+        Label prompt = new Label(CoverText.PROMPT, skin, "medium");
+        prompt.setAlignment(com.badlogic.gdx.utils.Align.center);
+        coverTable.add(title).row();
+        coverTable.add(prompt).padTop(48f);
+        stage.addActor(coverTable);
+    }
+
+    /** Removes the title cover; the game behind becomes visible and playable. */
+    public void hideCover() {
+        if (coverTable == null) {
+            return;
+        }
+        coverTable.remove();
+        coverTable = null;
+    }
+
+    /** True while the title cover is on screen. */
+    public boolean isCoverVisible() {
+        return coverTable != null;
+    }
+
+    /**
+     * File menu ({@code Esc} in both clients), built from the shared {@link FileMenuText} rows:
+     * New/Load/Save/Settings/Quit. Locked rows stay visible but disabled with their reason next to
+     * the label; Esc closes the menu again (owner decision D11).
+     */
+    public void showFileMenu() {
+        if (fileMenuOpen) {
+            return;
+        }
+        fileMenuOpen = true;
         Gdx.app.postRunnable(() -> {
             final Actor blocker = new Actor();
             blocker.setBounds(0, 0, stage.getWidth(), stage.getHeight());
@@ -875,53 +913,74 @@ public class Gdx3DHud {
             });
 
             final com.badlogic.gdx.scenes.scene2d.ui.Dialog dialog =
-                    new com.badlogic.gdx.scenes.scene2d.ui.Dialog("LeTrain",
-                            skin.get("dialog", Window.WindowStyle.class)) {
-                        @Override
-                        protected void result(Object object) {
-                            exitDialogOpen = false;
-                            blocker.remove();
-                            if (Boolean.TRUE.equals(object)) {
-                                Gdx.app.exit();
-                            }
+                    new com.badlogic.gdx.scenes.scene2d.ui.Dialog(FileMenuText.TITLE,
+                            skin.get("dialog", Window.WindowStyle.class));
+
+            final Runnable close = () -> {
+                fileMenuOpen = false;
+                blocker.remove();
+                dialog.hide(null);
+            };
+
+            // One row per shared item, in the shared order. Locked rows are non-focusable and
+            // keep their label greyed out, with the lock reason coming from the shared wording.
+            final List<TextButton> focusable = new ArrayList<>();
+            final java.util.Map<TextButton, Runnable> actions = new java.util.HashMap<>();
+            for (FileMenuText.Item item : FileMenuText.items()) {
+                final TextButton button = new TextButton(fileMenuButtonText(item), skin);
+                final Runnable action = fileMenuAction(item, close);
+                if (item.enabled()) {
+                    focusable.add(button);
+                } else {
+                    button.setDisabled(true);
+                    button.getLabel().setColor(Color.GRAY);
+                }
+                button.addListener(new ChangeListener() {
+                    @Override
+                    public void changed(ChangeEvent event, Actor actor) {
+                        if (item.enabled()) {
+                            action.run();
                         }
-                    };
+                    }
+                });
+                actions.put(button, action);
+                dialog.getContentTable().add(button).width(560f).pad(6).row();
+            }
 
-            Label message = new Label("Exit LeTrain?", skin, "medium");
-            dialog.getContentTable().pad(10, 48, 24, 48).add(message);
-
-            TextButton exitButton = new TextButton("Exit", skin);
-            TextButton cancelButton = new TextButton("Cancel", skin);
-            dialog.getButtonTable().defaults().space(24).minWidth(140).minHeight(50);
-            dialog.button(exitButton, Boolean.TRUE);
-            dialog.button(cancelButton, Boolean.FALSE);
-
-            // Keyboard navigation: Tab/arrows move the focus between the buttons, Enter/Space
-            // activate the focused one and Esc cancels. The dialog is modal, so it swallows the
-            // rest of the keys while open.
+            // Keyboard navigation: Tab/arrows move the focus between the enabled rows, Enter/Space
+            // activate the focused one and Esc closes the menu. The dialog is modal, so it swallows
+            // the rest of the keys while open.
             final Runnable paintFocus = () -> {
                 Actor focused = stage.getKeyboardFocus();
-                exitButton.getLabel().setColor(focused == exitButton ? Color.CYAN : Color.WHITE);
-                cancelButton.getLabel()
-                        .setColor(focused == cancelButton ? Color.CYAN : Color.WHITE);
+                for (TextButton button : focusable) {
+                    button.getLabel().setColor(focused == button ? Color.CYAN : Color.WHITE);
+                }
             };
             InputListener navigation = new InputListener() {
                 @Override
                 public boolean keyDown(InputEvent event, int keycode) {
-                    if (keycode == Input.Keys.TAB || keycode == Input.Keys.RIGHT
-                            || keycode == Input.Keys.LEFT) {
+                    if (keycode == Input.Keys.TAB || keycode == Input.Keys.UP
+                            || keycode == Input.Keys.DOWN || keycode == Input.Keys.LEFT
+                            || keycode == Input.Keys.RIGHT) {
                         Actor focused = stage.getKeyboardFocus();
-                        stage.setKeyboardFocus(focused == exitButton ? cancelButton : exitButton);
+                        int index = focusable.indexOf(focused);
+                        int step =
+                                (keycode == Input.Keys.UP || keycode == Input.Keys.LEFT) ? -1 : 1;
+                        int next = Math.floorMod(index + step, focusable.size());
+                        stage.setKeyboardFocus(focusable.get(next));
                         paintFocus.run();
                         return true;
                     }
                     if (keycode == Input.Keys.ENTER || keycode == Input.Keys.NUMPAD_ENTER
                             || keycode == Input.Keys.SPACE) {
-                        activate(stage.getKeyboardFocus() == exitButton);
+                        Runnable action = actions.get(stage.getKeyboardFocus());
+                        if (action != null) {
+                            action.run();
+                        }
                         return true;
                     }
                     if (keycode == Input.Keys.ESCAPE) {
-                        activate(false);
+                        close.run();
                         return true;
                     }
                     return true;
@@ -931,34 +990,56 @@ public class Gdx3DHud {
                 public boolean keyTyped(InputEvent event, char character) {
                     return true;
                 }
-
-                private void activate(boolean exit) {
-                    exitDialogOpen = false;
-                    blocker.remove();
-                    if (exit) {
-                        Gdx.app.exit();
-                    } else {
-                        dialog.hide(null);
-                    }
-                }
             };
-            exitButton.addListener(navigation);
-            cancelButton.addListener(navigation);
+            for (TextButton button : focusable) {
+                button.addListener(navigation);
+            }
 
             // Reserve enough top padding so the title fits inside the title bar (Window sizes
             // the title table to `padTop`).
             dialog.padTop(46);
             dialog.pack();
-            dialog.setWidth(Math.max(dialog.getWidth(), 460f));
-            dialog.setHeight(Math.max(dialog.getHeight(), 240f));
+            dialog.setWidth(Math.max(dialog.getWidth(), 620f));
+            dialog.setHeight(Math.max(dialog.getHeight(), 420f));
             dialog.setPosition((stage.getWidth() - dialog.getWidth()) / 2,
                     (stage.getHeight() - dialog.getHeight()) / 2);
 
             stage.addActor(blocker);
             stage.addActor(dialog);
-            stage.setKeyboardFocus(exitButton);
+            stage.setKeyboardFocus(focusable.get(0));
             paintFocus.run();
         });
+    }
+
+    /**
+     * Row text of the File menu: the shared label, plus the lock reason while the row is disabled.
+     * The 2D terminal shows the exact same words (issue #743).
+     */
+    static String fileMenuButtonText(FileMenuText.Item item) {
+        return FileMenuText.displayLabel(item);
+    }
+
+    /** Action of one File menu row; locked rows stay disabled and never run it. */
+    private Runnable fileMenuAction(FileMenuText.Item item, Runnable close) {
+        switch (item.command()) {
+            case LOAD:
+                return () -> {
+                    close.run();
+                    view.showLoadDialog();
+                };
+            case SAVE:
+                return () -> {
+                    close.run();
+                    view.showSaveDialog();
+                };
+            case QUIT:
+                return () -> Gdx.app.exit();
+            case NEW:
+            case SETTINGS:
+            default:
+                return () -> {
+                };
+        }
     }
 
     /**
@@ -1522,12 +1603,7 @@ public class Gdx3DHud {
                 window.invalidateHierarchy();
             };
 
-            // ---- Actions
-            final Runnable saveAction = () -> {
-                saveActive.run();
-                view.showSaveDialog();
-            };
-            final Runnable loadAction = () -> view.showLoadDialog();
+            // ---- Actions (Save/Load moved to the File menu, issue #743)
             final Runnable refreshAction = () -> {
                 scenarioBuffer[0] = view.getScenarioText();
                 programBuffer[0] = letrain.command.ScenarioFile.programSection(view.getProgram());
@@ -1660,12 +1736,8 @@ public class Gdx3DHud {
                 }
             });
 
-            // ---- Footer
+            // ---- Footer (Save/Load moved to the File menu, issue #743)
             Table footer = new Table();
-            TextButton saveBtn =
-                    new TextButton(editorButtonText(EditorText.SAVE), skin, "monospace-button");
-            TextButton loadBtn =
-                    new TextButton(editorButtonText(EditorText.LOAD), skin, "monospace-button");
             TextButton exportBtn =
                     new TextButton(editorButtonText(EditorText.EXPORT), skin, "monospace-button");
             TextButton importBtn =
@@ -1678,26 +1750,12 @@ public class Gdx3DHud {
                     "monospace-button");
             TextButton closeBtn =
                     new TextButton(editorButtonText(EditorText.CLOSE), skin, "monospace-button");
-            footer.add(saveBtn).pad(4);
-            footer.add(loadBtn).pad(4);
             footer.add(exportBtn).pad(4);
             footer.add(importBtn).pad(4);
             footer.add(refreshBtn).pad(4);
             footer.add(reprogramBtn).pad(4);
             footer.add(rebuildBtn).pad(4);
             footer.add(closeBtn).pad(4);
-            saveBtn.addListener(new ChangeListener() {
-                @Override
-                public void changed(ChangeEvent event, Actor actor) {
-                    saveAction.run();
-                }
-            });
-            loadBtn.addListener(new ChangeListener() {
-                @Override
-                public void changed(ChangeEvent event, Actor actor) {
-                    loadAction.run();
-                }
-            });
             exportBtn.addListener(new ChangeListener() {
                 @Override
                 public void changed(ChangeEvent event, Actor actor) {
@@ -1747,8 +1805,6 @@ public class Gdx3DHud {
                                 : (activeTab[0] == 1 ? Color.GREEN : Color.WHITE));
                         configTabBtn.setColor(focused == configTabBtn ? Color.CYAN
                                 : (activeTab[0] == 2 ? Color.GREEN : Color.WHITE));
-                        saveBtn.setColor(focused == saveBtn ? Color.CYAN : Color.WHITE);
-                        loadBtn.setColor(focused == loadBtn ? Color.CYAN : Color.WHITE);
                         exportBtn.setColor(focused == exportBtn ? Color.CYAN : Color.WHITE);
                         importBtn.setColor(focused == importBtn ? Color.CYAN : Color.WHITE);
                         refreshBtn.setColor(focused == refreshBtn ? Color.CYAN : Color.WHITE);
@@ -1773,10 +1829,6 @@ public class Gdx3DHud {
                             return;
                         }
                         altState[0] = alt;
-                        saveBtn.setText(alt ? editorButtonAltText(EditorText.SAVE, 'S')
-                                : editorButtonText(EditorText.SAVE));
-                        loadBtn.setText(alt ? editorButtonAltText(EditorText.LOAD, 'L')
-                                : editorButtonText(EditorText.LOAD));
                         exportBtn.setText(alt ? editorButtonAltText(EditorText.EXPORT, 'E')
                                 : editorButtonText(EditorText.EXPORT));
                         importBtn.setText(alt ? editorButtonAltText(EditorText.IMPORT, 'I')
@@ -1815,8 +1867,6 @@ public class Gdx3DHud {
             final java.util.List<Actor> focusCycle = new ArrayList<>();
             focusCycle.add(textArea);
             focusCycle.add(refTree);
-            focusCycle.add(saveBtn);
-            focusCycle.add(loadBtn);
             focusCycle.add(exportBtn);
             focusCycle.add(importBtn);
             focusCycle.add(refreshBtn);
@@ -1870,12 +1920,6 @@ public class Gdx3DHud {
                             return true;
                         } else if (keycode == com.badlogic.gdx.Input.Keys.F) {
                             switchTo.accept(2);
-                            return true;
-                        } else if (keycode == com.badlogic.gdx.Input.Keys.S) {
-                            saveAction.run();
-                            return true;
-                        } else if (keycode == com.badlogic.gdx.Input.Keys.L) {
-                            loadAction.run();
                             return true;
                         } else if (keycode == com.badlogic.gdx.Input.Keys.E) {
                             exportAction.run();

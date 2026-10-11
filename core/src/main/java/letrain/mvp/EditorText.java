@@ -17,9 +17,7 @@ public final class EditorText {
     public static final String TAB_PROGRAMMING = "Programming";
     public static final String TAB_CONFIG = "Config";
 
-    // ---- Footer buttons
-    public static final String SAVE = "Save";
-    public static final String LOAD = "Load";
+    // ---- Footer buttons (Save/Load moved to the File menu, issue #743)
     public static final String EXPORT = "Export";
     public static final String IMPORT = "Import";
     public static final String RELOAD_FROM_GAME = "Reload from game";
