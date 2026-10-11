@@ -43,11 +43,11 @@ public final class NewGameText {
     }
 
     /**
-     * Measured proportions appended to the target line (same line, so the terrain block stays
-     * compact even on an 80x24 terminal). Always visible, preview or not.
+     * Measured proportions appended to the target line (same line, compact slashes, so the whole
+     * block still fits a 70-column terminal; #749). Always visible, preview or not.
      */
     public static String measuredSuffix(int waterPercent, int mountainPercent) {
-        return "   measured: " + waterPercent + "% / " + mountainPercent + "% / "
+        return "  measured: " + waterPercent + "%/" + mountainPercent + "%/"
                 + fieldPercent(waterPercent, mountainPercent) + "%";
     }
 

@@ -24,10 +24,12 @@ El juego se puede controlar tanto en su versión 2D como en la 3D mediante el te
 - El comando de consola **`new game;`** abre el mismo diálogo de Nueva Partida desde la CLI.
 
 #### Diálogo de Nueva Partida (2D)
+- La pestaña **Terrain** se abre primero y concentra todos los controles del terreno: la semilla, los sliders de **Agua %**/**Montaña %**, la **barra apilada**, la línea de **objetivo/medido** y el **preview**. Las demás pestañas (**Game**, **Economy**, **Construction**, **UI**) muestran solo el catálogo de ajustes.
 - **Semilla**: al abrir el diálogo se sortea una semilla aleatoria. Es editable, copiable y el botón **new** sortea otra.
-- **Terreno**: sliders de **Agua %** y **Montaña %**. La regla es *agua + montaña ≤ 95 %*: al mover un slider se ajusta el otro, de modo que siempre queda al menos un 5 % de campo. La **barra apilada** muestra el reparto del 100 % (agua / campo / montaña) y la línea de estado muestra siempre el **objetivo** junto a lo **medido** para esa semilla.
-- **Preview**: muestreo adaptativo del terreno (mismo ruido y umbrales calibrados que el generador del mundo) dibujado con medios bloques. Es grande a partir de **120×30**, compacto en **80×24** y desaparece por debajo de 80×24 (los sliders y los porcentajes medidos se mantienen).
-- **Secciones**: los campos de **Terrain**, **Game**, **Economy**, **Construction** y **UI** salen del catálogo de ajustes, con sus rangos y unidades (casillas para las opciones de sí/no). **Start** construye el mundo con esos valores; **Cancel**/Esc lo deja todo como estaba.
+- **Terreno**: la regla es *agua + montaña ≤ 95 %*: al mover un slider se ajusta el otro, de modo que siempre queda al menos un 5 % de campo. La **barra apilada** muestra el reparto del 100 % (agua / campo / montaña).
+- **Preview**: muestreo adaptativo **cuadrado** del terreno (mismo ruido y umbrales calibrados que el generador del mundo) dibujado con medios bloques, de modo que el mundo conserva sus celdas 1:1; la montaña va en el marrón del juego. Aparece a partir de **80×24** y crece con la terminal (34×34 celdas en 80×24, 46×46 en 120×30); por debajo de 80×24 se mantienen los sliders, la barra y la línea objetivo/medido.
+- **Secciones**: **una columna con scroll** por pestaña, un campo por fila con su rango, valor y unidad (casillas para las opciones de sí/no). **Start** construye el mundo con esos valores; **Cancel**/Esc lo deja todo como estaba.
+- **Teclas**: **Alt+1..5** cambian de pestaña, **Alt+N** sortea una semilla, **Alt+S** arranca y **Alt+C** cancela (**Esc** también cancela).
 
 ### Navegación y Vistas
 - **Flechas de dirección (o h, j, k, l)**: Mover el cursor libremente o seguir una vía (estilo Vim).
