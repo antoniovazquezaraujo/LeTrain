@@ -238,6 +238,9 @@ final class NewGameDialog {
 
     /** Allowed-range hint of the tooltip shown when a commit is rejected (#751). */
     static String allowedRange(SettingDefinition definition) {
+        if (definition.type() == SettingValueType.TIME_OF_DAY) {
+            return "Allowed: 00:00..23:59";
+        }
         if (definition.min() != null && definition.max() != null) {
             return "Allowed: " + number(definition.min()) + ".." + number(definition.max());
         }

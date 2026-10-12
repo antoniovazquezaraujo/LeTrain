@@ -53,6 +53,22 @@ class NewGameFormTest {
     }
 
     @Test
+    @DisplayName("the start day/time keys prefill raw and normalise on toSettings (S2b)")
+    void should_CarryTheClockStart() {
+        NewGameForm form =
+                NewGameForm.forNewGame(Map.of("time.startDay", "90", "time.startTime", "6:30"));
+
+        assertEquals("90", form.value("time.startDay"));
+        assertEquals("6:30", form.value("time.startTime"), "the raw text is kept while editing");
+
+        form.setValue("time.startTime", "7:05");
+        Map<String, String> settings = form.toSettings();
+
+        assertEquals("90", settings.get("time.startDay"));
+        assertEquals("07:05", settings.get("time.startTime"));
+    }
+
+    @Test
     @DisplayName("raising water clamps mountain so the pair never exceeds 95 %")
     void should_ClampMountainWhenWaterRises() {
         NewGameForm form = NewGameForm.forNewGame(Map.of(), new Random(1));

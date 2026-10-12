@@ -28,10 +28,10 @@ elegida en cada punto:
 | Origen del tiempo | Ticks lógicos | Ticks lógicos (se congela en pausa) | Ticks lógicos; la pausa de edición (ADR-020) congela el reloj |
 | Servicio | `GameClock` (interfaz + impl) | `SimulationClock` | `GameClock` en `letrain.time`, avanza desde `SimulationController.tick()` |
 | Escala | `time.scale` (s de juego/tick), default 1 | `time.dayDurationSeconds` (segundos reales por día de juego), default 1440 (día = 24 min reales) | Adoptar `time.dayDurationSeconds = 1440` (más legible); equivale a 3 s de juego/tick |
-| Hora inicial | 06:00 | 08:00, Día 1 | 08:00, Día 1 (arranque de jornada) |
+| Hora inicial | 06:00 | 08:00, Día 1 | 08:00, Día 1 (arranque de jornada); configurable por partida desde S2b |
 | Interpolación visual | `isNight()` | `isNight()` + `getDayNightRatio()` (0..1) | Ambas: `isNight()` para lógica y `getDayNightRatio()` para luces/cielo |
 | Eventos | Listeners de hora/día + `SimulationScheduler` | Uso directo desde servicios/presenters | Listeners + scheduler; nada de polling en `tick()` |
-| Persistencia | `elapsedTicks` (long) | campo `gameTime` opcional en `Model` | Long simple (`elapsedTicks`) y `GameTime` derivado; saves viejos → 08:00 Día 1 |
+| Persistencia | `elapsedTicks` (long) | campo `gameTime` opcional en `Model` | Long simple (`elapsedTicks`) y `GameTime` derivado; saves viejos → 08:00 Día 1. Desde S2b el origen viaja en `settings` (`time.startDay`/`time.startTime`) |
 | `WAIT n` | Sigue en segundos de simulación | No lo redefine | Se mantiene por compatibilidad; horarios con `DEPART`/`UNTIL` |
 | DSL horarios | `DEPART hh:mm`, `UNTIL hh:mm`, `on time` | `DEPART AT hh:mm`, `WAIT UNTIL hh:mm`, `AT "07:00" DO`, `EVERY 30m` | **Horas por parada**: `arrival HH:MM` (medida) / `departure HH:MM` (retención) como atributos del waypoint (ver *Horarios*); `EVERY` entra en la fase 3 |
 | Día/noche | Visual en fase 1 | Sol/luna/cielo, faros, farolas, tinte 2D | Igual: visual primero, `isNight()` disponible para gameplay futuro |
@@ -52,9 +52,16 @@ elegida en cada punto:
    3 segundos de juego por tick. La escala se fija al crear la partida y no se cambia en caliente
    (ver *Escala temporal* más abajo).
 4. **Hora inicial**: 08:00 del Día 1, día de 24 h. Sin fechas ni estaciones del año en esta fase;
-   el modelo queda preparado para añadirlas.
+   el modelo queda preparado para añadirlas. **S2b (#759)**: el origen es configurable por partida
+   con los ajustes `time.startDay` (1..366) y `time.startTime` (`HH:MM`, 00:00..23:59), ambos de
+   estado NEW_GAME; los defaults (Día 1, 08:00) conservan el comportamiento histórico. El origen se
+   aplica al crear la partida (`Model.newGame`) o al importar un escenario; una partida cargada
+   **no** salta al origen: conserva su `elapsedTicks` y el origen solo reancla ese contador al
+   instante guardado (saves anteriores a S2b, sin las claves, cargan con el origen por defecto).
 5. **Serialización**: contador `elapsedTicks` (long) en `Model`; `GameTime` se deriva. Los guardados
-   antiguos cargan con el valor por defecto (08:00, Día 1) sin romperse.
+   antiguos cargan con el valor por defecto (08:00, Día 1) sin romperse. Desde S2b el origen
+   (`time.startDay`/`time.startTime`) viaja en la sección `settings` del savegame y del escenario;
+   `Model.newGame` lo aplica al reloj antes del primer tick.
 6. Los **eventos de tiempo** (cambio de hora, día/noche, horarios) se despachan vía
    `SimulationScheduler`; nada de lógica nueva en bucles periódicos.
 7. **`WAIT n` se mantiene en segundos de simulación** para no romper escenarios existentes. Los
@@ -67,8 +74,9 @@ elegida en cada punto:
    `time set HH:MM;` o `time set HH;` fija la hora del día actual **sin diálogo de confirmación**
    (el cambio ya se ve en el reloj del HUD). Una hora fuera de rango (`time set 25:99`, `time set
    25`) se rechaza con aviso y **el reloj queda intacto**. El salto es determinista y se journaliza,
-   así que el replay reproduce la misma hora. Los instantes anteriores al origen (Día 1, 08:00)
-   ruedan al día siguiente; no se toca la duración del día (esa escala se fija al crear la partida).
+   así que el replay reproduce la misma hora. Los instantes anteriores al origen (Día 1, 08:00 por
+   defecto; el configurado en S2b) ruedan hacia delante día a día; no se toca la duración del día
+   (esa escala se fija al crear la partida).
 10. **Ciclo solar por latitud** (fase 1): `SolarModel` (core) calcula amanecer/atardecer y
     elevación/acimut del sol a partir del día del año, la hora y la latitud. `getDayNightRatio()`
     se deriva de la elevación con una banda de crepúsculo de 18°, y `world.latitude`

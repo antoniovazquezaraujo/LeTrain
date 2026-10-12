@@ -309,6 +309,7 @@ public class Model implements letrain.mvp.Model {
         this.economyManager.reloadConfig();
         this.gameClock.setDayDurationSeconds(this.economyManager.getDayDurationSeconds());
         this.gameClock.setLatitude(this.economyManager.getLatitude());
+        this.gameClock.setStartTime(clockOrigin());
         if (seed == 0) {
             seed = 1 + (int) (Math.random() * 255);
         }
@@ -483,6 +484,12 @@ public class Model implements letrain.mvp.Model {
      * before the world generator is rebuilt, so the loaded terrain matches the saved one. A
      * savegame without the section (written before it existed) falls back to its serialized legacy
      * thresholds, which keeps its historical look.
+     *
+     * <p>
+     * The clock origin ({@code time.startDay} / {@code time.startTime}, S2b) is restored here from
+     * the loaded settings: the savegame's {@code elapsedTicks} came with the JSON and keeps
+     * pointing at the same instant, so a loaded game never jumps back to its creation time. Old
+     * savegames without the keys keep the default origin (day 1, 08:00) and load exactly as before.
      */
     private void applySavedSettings() {
         if (economyManager == null) {
@@ -493,6 +500,16 @@ public class Model implements letrain.mvp.Model {
         } else {
             economyManager.fallBackToLegacyTerrain();
         }
+        gameClock.setStartTime(clockOrigin());
+    }
+
+    /**
+     * Creation-time origin ({@code time.startDay} / {@code time.startTime}) the economy settings
+     * ask for: day 1 at 08:00 unless a new game, cfg or savegame says otherwise (S2b).
+     */
+    private letrain.time.GameTime clockOrigin() {
+        return letrain.time.GameTime.ofMinuteOfDay(economyManager.getStartDay(),
+                economyManager.getStartMinuteOfDay());
     }
 
     private void setupModelTrainEventListeners() {
@@ -1508,7 +1525,8 @@ public class Model implements letrain.mvp.Model {
      * and applied before any terrain is generated, so the calibrated terrain proportions and the
      * economy match the form. It reuses the same machinery as the scenario/load path: a seeded
      * model plus {@code EconomyManager.applyConfig}, followed by re-wiring the day clock (which the
-     * constructor had set from {@code letrain.cfg}).
+     * constructor had set from {@code letrain.cfg}): day duration, latitude and the S2b origin
+     * ({@code time.startDay} / {@code time.startTime}, day 1 08:00 by default).
      *
      * @param seed generation seed (callers resolve the literal {@code random} before calling)
      * @param settings validated catalogue values; unknown keys are ignored
@@ -1522,6 +1540,7 @@ public class Model implements letrain.mvp.Model {
         model.getGameClock()
                 .setDayDurationSeconds(model.getEconomyManager().getDayDurationSeconds());
         model.getGameClock().setLatitude(model.getEconomyManager().getLatitude());
+        model.getGameClock().setStartTime(model.clockOrigin());
         return model;
     }
 

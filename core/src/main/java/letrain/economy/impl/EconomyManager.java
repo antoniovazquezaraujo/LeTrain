@@ -68,6 +68,16 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     private int dayDurationSeconds = letrain.time.GameClock.DEFAULT_DAY_DURATION_SECONDS;
     private double latitude = letrain.time.SolarModel.DEFAULT_LATITUDE;
 
+    /**
+     * Creation-time origin of the game clock ({@code time.startDay} / {@code time.startTime}, S2b):
+     * day (1..366) and minute of day (0..1439). Defaults keep the ADR-022 origin (day 1, 08:00).
+     */
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private int startDay = letrain.time.GameClock.DEFAULT_START_DAY;
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private int startMinuteOfDay = letrain.time.GameClock.DEFAULT_START_MINUTE_OF_DAY;
+
     @com.fasterxml.jackson.annotation.JsonProperty("goldThreshold")
     private float goldThreshold = 0.30f;
 
@@ -507,6 +517,18 @@ public class EconomyManager implements letrain.economy.EconomyManager {
         return latitude;
     }
 
+    /** Creation-time start day of the clock ({@code time.startDay}, S2b): 1..366, default 1. */
+    @Override
+    public int getStartDay() {
+        return startDay;
+    }
+
+    /** Creation-time start minute of day of the clock ({@code time.startTime}, S2b), 0..1439. */
+    @Override
+    public int getStartMinuteOfDay() {
+        return startMinuteOfDay;
+    }
+
     public float getTotalExpenses() {
         return totalExpenses;
     }
@@ -596,6 +618,8 @@ public class EconomyManager implements letrain.economy.EconomyManager {
         Map<String, String> config = new java.util.LinkedHashMap<>();
         config.put("time.dayDurationSeconds", String.valueOf(dayDurationSeconds));
         config.put("world.latitude", String.valueOf(latitude));
+        config.put("time.startDay", String.valueOf(startDay));
+        config.put("time.startTime", letrain.time.GameTime.formatTimeOfDay(startMinuteOfDay));
         config.put("fuelCostPerMeter", String.valueOf(fuelCostPerMeter));
         config.put("cargoLoadingFee", String.valueOf(cargoLoadingFee));
         config.put("startingBalance", String.valueOf(startingBalance));
@@ -636,6 +660,7 @@ public class EconomyManager implements letrain.economy.EconomyManager {
         if (!Double.isNaN(newLatitude)) {
             latitude = Math.max(-90.0, Math.min(90.0, newLatitude));
         }
+        applyClockOrigin(props);
 
         // Load general costs
         fuelCostPerMeter = Float.parseFloat(
@@ -718,6 +743,31 @@ public class EconomyManager implements letrain.economy.EconomyManager {
             String key = "cargo." + type.name();
             if (props.containsKey(key)) {
                 cargoBaseValues.put(type, Float.parseFloat(props.getProperty(key)));
+            }
+        }
+    }
+
+    /**
+     * Creation-time origin of the game clock (S2b): {@code time.startDay} / {@code time.startTime}.
+     * The day is clamped to the catalogue range (1..366) and a malformed time keeps the previous
+     * value (the catalogue validates the dialog path; a broken local cfg must not take the game
+     * down). Legacy sources carry neither key, so the ADR-022 default (day 1, 08:00) is kept.
+     */
+    private void applyClockOrigin(Properties props) {
+        String dayValue = props.getProperty("time.startDay");
+        if (dayValue != null) {
+            try {
+                startDay = Math.max(1, Math.min(366, Integer.parseInt(dayValue.trim())));
+            } catch (NumberFormatException e) {
+                log.warn("Ignoring malformed time.startDay: '{}'", dayValue);
+            }
+        }
+        String timeValue = props.getProperty("time.startTime");
+        if (timeValue != null) {
+            try {
+                startMinuteOfDay = letrain.time.GameTime.parseMinuteOfDay(timeValue);
+            } catch (IllegalArgumentException e) {
+                log.warn("Ignoring malformed time.startTime: '{}'", timeValue);
             }
         }
     }

@@ -12,6 +12,8 @@ import java.io.ByteArrayInputStream;
 import java.util.Map;
 import letrain.ground.TerrainCalibrator;
 import letrain.settings.SettingsCatalog;
+import letrain.time.GameClock;
+import letrain.time.GameTime;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -92,6 +94,49 @@ class SavegameSettingsTest {
                 loaded.getEconomyManager().getWaterPercent());
         assertEquals(SettingsCatalog.DEFAULT_MOUNTAIN_PERCENT,
                 loaded.getEconomyManager().getMountainPercent());
+    }
+
+    @Test
+    @DisplayName("the clock origin travels with the settings and the load keeps the instant (S2b)")
+    void roundTrip_restoresTheRunningClockWithCustomStart() {
+        Model model = Model.newGame(123, Map.of("time.startDay", "300", "time.startTime", "06:30"));
+        for (int i = 0; i < 200; i++) {
+            model.getGameClock().tick();
+        }
+        GameTime saved = model.getGameClock().now();
+
+        Model loaded = saves.fromBytes(saves.toBytes(model));
+
+        assertNotNull(loaded);
+        assertEquals(new GameTime(300, 6, 40), saved, "10 game minutes after the custom start");
+        assertEquals("300", loaded.getEconomyManager().effectiveConfig().get("time.startDay"));
+        assertEquals("06:30", loaded.getEconomyManager().effectiveConfig().get("time.startTime"));
+        assertEquals(saved, loaded.getGameClock().now(),
+                "the load restores the running clock, it never jumps back to the start");
+        assertEquals(model.getGameClock().elapsedTicks(), loaded.getGameClock().elapsedTicks());
+    }
+
+    @Test
+    @DisplayName("a savegame without the start keys loads at the default origin (legacy, S2b)")
+    void oldSavegame_withoutStartKeys_keepsDefaultOrigin() throws Exception {
+        Model model = new Model(123);
+        for (int i = 0; i < 60 * GameClock.TICKS_PER_SECOND; i++) {
+            model.getGameClock().tick();
+        }
+
+        // Emulate a savegame written before S2b: the settings section exists but carries no
+        // start keys.
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode tree = (ObjectNode) mapper.readTree(saves.toBytes(model));
+        ObjectNode settings = (ObjectNode) tree.path("settings");
+        settings.remove("time.startDay");
+        settings.remove("time.startTime");
+        byte[] oldSave = mapper.writeValueAsBytes(tree);
+
+        Model loaded = saves.load(new ByteArrayInputStream(oldSave)).orElseThrow();
+
+        assertEquals(new GameTime(1, 9, 0), loaded.getGameClock().now(),
+                "day 1, 08:00 origin plus the restored hour counter");
     }
 
     @Test

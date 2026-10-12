@@ -154,6 +154,10 @@ class NewGameDialogTest {
         assertEquals("%", unit("terrain.waterPercent"));
         assertEquals("Latitude", label("world.latitude"));
         assertEquals("°", unit("world.latitude"));
+        assertEquals("Start day", label("time.startDay"));
+        assertEquals("", unit("time.startDay"));
+        assertEquals("Start time", label("time.startTime"));
+        assertEquals("", unit("time.startTime"));
         assertEquals("View radius", label("map.VIEW_RADIUS"));
         assertEquals("cells", unit("map.VIEW_RADIUS"));
         assertEquals("Starting balance", label("startingBalance"));
@@ -232,6 +236,13 @@ class NewGameDialogTest {
         assertNull(NewGameDialog.normalizeCommit(seed, "random"),
                 "the seed box only takes integers once the dialog is open");
         assertNull(NewGameDialog.normalizeCommit(seed, "7.7"));
+
+        SettingDefinition startTime = SettingsCatalog.definition("time.startTime").orElseThrow();
+        assertEquals("06:30", NewGameDialog.normalizeCommit(startTime, "6:30"),
+                "the commit is zero-padded to HH:MM");
+        assertEquals("23:59", NewGameDialog.normalizeCommit(startTime, "23:59"));
+        assertNull(NewGameDialog.normalizeCommit(startTime, "24:00"));
+        assertNull(NewGameDialog.normalizeCommit(startTime, "12:5"));
     }
 
     @Test
@@ -247,6 +258,10 @@ class NewGameDialogTest {
                         null, 12.0, "12", SettingApplyState.LIVE)));
         assertEquals("Allowed: whole number",
                 NewGameDialog.allowedRange(SettingsCatalog.definition("seed").orElseThrow()));
+        assertEquals("Allowed: 00:00..23:59", NewGameDialog
+                .allowedRange(SettingsCatalog.definition("time.startTime").orElseThrow()));
+        assertEquals("Allowed: 1..366", NewGameDialog
+                .allowedRange(SettingsCatalog.definition("time.startDay").orElseThrow()));
     }
 
     @Test

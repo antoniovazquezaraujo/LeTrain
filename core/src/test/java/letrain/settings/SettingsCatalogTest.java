@@ -29,12 +29,12 @@ class SettingsCatalogTest {
                 SettingsCatalog.definitions().stream().map(SettingDefinition::key).toList();
 
         List<String> expected = List.of("seed", "terrain.waterPercent", "terrain.mountainPercent",
-                "world.latitude", "time.dayDurationSeconds", "map.VIEW_RADIUS", "startingBalance",
-                "fuelCostPerMeter", "cargoLoadingFee", "cargo.GOLD", "cargo.COAL", "cargo.RUBY",
-                "price.CONSTRUCTED_NORMAL_RAIL_TRACK", "price.DESTROYED_NORMAL_RAIL_TRACK",
-                "price.TRAIN_CRASHED", "delay.NORMAL_TRACK", "delay.BRIDGE_TRACK",
-                "delay.TUNNEL_TRACK", "derail.minCurveInterval", "derail.minSpeed",
-                "ui.highlightBlockedTracks");
+                "world.latitude", "time.dayDurationSeconds", "time.startDay", "time.startTime",
+                "map.VIEW_RADIUS", "startingBalance", "fuelCostPerMeter", "cargoLoadingFee",
+                "cargo.GOLD", "cargo.COAL", "cargo.RUBY", "price.CONSTRUCTED_NORMAL_RAIL_TRACK",
+                "price.DESTROYED_NORMAL_RAIL_TRACK", "price.TRAIN_CRASHED", "delay.NORMAL_TRACK",
+                "delay.BRIDGE_TRACK", "delay.TUNNEL_TRACK", "derail.minCurveInterval",
+                "derail.minSpeed", "ui.highlightBlockedTracks");
         assertTrue(keys.containsAll(expected),
                 "missing keys: " + expected.stream().filter(k -> !keys.contains(k)).toList());
 
@@ -87,11 +87,29 @@ class SettingsCatalogTest {
     }
 
     @Test
+    @DisplayName("the S2b start keys default to the ADR-022 origin (day 1, 08:00)")
+    void startDefaults_areD1At0800() {
+        SettingDefinition startDay = SettingsCatalog.definition("time.startDay").orElseThrow();
+        SettingDefinition startTime = SettingsCatalog.definition("time.startTime").orElseThrow();
+
+        assertEquals(SettingCategory.WORLD, startDay.category());
+        assertEquals(SettingValueType.INTEGER, startDay.type());
+        assertEquals("1", startDay.defaultValue());
+        assertEquals(1.0, startDay.min());
+        assertEquals(366.0, startDay.max());
+        assertEquals(SettingCategory.WORLD, startTime.category());
+        assertEquals(SettingValueType.TIME_OF_DAY, startTime.type());
+        assertEquals("08:00", startTime.defaultValue());
+    }
+
+    @Test
     @DisplayName("apply states follow the concept: terrain NEW_GAME, world REAPPLY, the rest LIVE")
     void applyStates_matchConcept() {
         assertEquals(SettingApplyState.NEW_GAME, applyStateOf("seed"));
         assertEquals(SettingApplyState.NEW_GAME, applyStateOf("terrain.waterPercent"));
         assertEquals(SettingApplyState.NEW_GAME, applyStateOf("terrain.mountainPercent"));
+        assertEquals(SettingApplyState.NEW_GAME, applyStateOf("time.startDay"));
+        assertEquals(SettingApplyState.NEW_GAME, applyStateOf("time.startTime"));
         assertEquals(SettingApplyState.REAPPLY, applyStateOf("world.latitude"));
         assertEquals(SettingApplyState.REAPPLY, applyStateOf("map.VIEW_RADIUS"));
         assertEquals(SettingApplyState.LIVE, applyStateOf("time.dayDurationSeconds"));
@@ -108,6 +126,8 @@ class SettingsCatalogTest {
     @CsvSource({"terrain.waterPercent, -1", "terrain.waterPercent, 96",
             "terrain.mountainPercent, 96", "world.latitude, -91", "world.latitude, 91",
             "time.dayDurationSeconds, 59", "time.dayDurationSeconds, 86401", "map.VIEW_RADIUS, 4",
+            "time.startDay, 0", "time.startDay, 367", "time.startTime, 24:00",
+            "time.startTime, 12:60", "time.startTime, 12:5", "time.startTime, noon",
             "startingBalance, -0.01", "fuelCostPerMeter, -1", "delay.TUNNEL_TRACK, -1",
             "derail.minSpeed, -1", "derail.minCurveInterval, -2",
             "ui.highlightBlockedTracks, maybe", "seed, notANumber", "unknown.key, 1"})
@@ -129,6 +149,13 @@ class SettingsCatalogTest {
         assertEquals("true", SettingsCatalog.validate("ui.highlightBlockedTracks", "true"));
         assertEquals("40.0", SettingsCatalog.validate("world.latitude", "40.0"));
         assertEquals("0.5", SettingsCatalog.validate("fuelCostPerMeter", "0.5"));
+        assertEquals("1", SettingsCatalog.validate("time.startDay", " 1 "));
+        assertEquals("366", SettingsCatalog.validate("time.startDay", "366"));
+        assertEquals("06:30", SettingsCatalog.validate("time.startTime", "6:30"),
+                "H:MM is accepted and zero-padded");
+        assertEquals("08:00", SettingsCatalog.validate("time.startTime", "8:00"));
+        assertEquals("00:00", SettingsCatalog.validate("time.startTime", " 00:00 "));
+        assertEquals("23:59", SettingsCatalog.validate("time.startTime", "23:59"));
     }
 
     @Test
