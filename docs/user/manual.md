@@ -32,8 +32,9 @@ The game can be controlled via the keyboard in both its 2D and 3D versions. Belo
 
 #### Settings dialog (2D)
 - **File → Settings** opens it while a game is running (disabled with *no game in progress* at the boot menu; the 3D client waits for its 3D parity slice). It uses the same form conventions as the New Game dialog: tabs by page, aligned values, Enter/Tab commits with a range tooltip.
-- Every row carries its state: green **●** *live* and yellow **●** *reapply* are editable (applying a changed *reapply* asks for confirmation first); red **●** *requires a new game* and white **●** *defined by scenario* stay locked and show their reason. A small legend under the tabs repeats the meanings.
-- **Apply** sends the editable values to the running game (invalid, new-game-only and scenario-locked values are listed with their reason and the dialog stays open). **Restore** puts the current values back. **New game with these values…** confirms and opens the New Game form prefilled with the form values. **Save as defaults** writes them into `letrain.cfg`. **Close** (or Esc) leaves.
+- Every row carries its state: green **●** *live* and yellow **●** *reapply* are editable (applying a changed *reapply* asks for confirmation first); red **●** *requires a new game* stays locked. Scenario-locked values (rare, scenario games only) render disabled too. A small colour legend at the bottom of the screen repeats the meanings.
+- The **Terrain** tab shows the New Game terrain block (seed, Water/Mountain sliders, the three-colour bar and the map) with the running world's parameters, read-only.
+- **Apply** sends the editable values to the running game (invalid, new-game-only and scenario-locked values are listed with their reason and the dialog stays open). **Restore** puts the current values back. **New game** confirms and opens the New Game form prefilled with the form values. **Save as defaults** writes them into `letrain.cfg`. **Close** (or Esc) leaves.
 - **Keys**: **Alt+A/R/N/S/C** for the actions, **Alt+T/G/E/B/U** for the tabs, **Tab** walks the fields of the active page and the footer.
 
 ### Navigation and Views

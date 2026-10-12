@@ -2284,8 +2284,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     /**
      * File → Settings (S3b, #764): opens the in-game dialog with the current effective values (plus
      * the world seed), the scenario-locked keys and a port that applies settings to the running
-     * game and writes {@code letrain.cfg} defaults (D4). Choosing "New game with these values…"
-     * closes the dialog and re-enters the New Game flow with the form prefilled.
+     * game and writes {@code letrain.cfg} defaults (D4). Choosing "New game" closes the dialog and
+     * re-enters the New Game flow with the form prefilled.
      */
     @Override
     public void onSettings() {

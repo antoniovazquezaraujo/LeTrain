@@ -47,7 +47,8 @@ import org.junit.jupiter.api.Test;
  * value column, flushes the preview left, removes the target/measured line, stretches the stacked
  * bar to the slider row and switches the tabs to letter hotkeys. Issue #757 integrates the tab
  * mnemonics, renames Construction to Build, adds the left margin/map gap, replaces the value on the
- * first keystroke after focus and paints the dialog with a black theme.
+ * first keystroke after focus and paints the dialog with a black theme. Issue #767 extracts the
+ * terrain block so the in-game Settings dialog can reuse it read-only.
  */
 @DisplayName("New Game dialog layout (#746, polish #749/#754/#755/#757, field format #751)")
 class NewGameDialogTest {
@@ -113,6 +114,35 @@ class NewGameDialogTest {
 
         assertEquals(TERRAIN_COLUMN, row.getChildrenList().get(1).getPosition().getColumn(),
                 "Lanterna's default 1-column gap must not shift the values");
+    }
+
+    @Test
+    @DisplayName("the terrain block is reusable read-only with the world values (#767)")
+    void should_ShareTheTerrainBlock() {
+        NewGameDialog.TerrainControls controls = new NewGameDialog.TerrainControls(123456, 25, 10,
+                new TerminalPalette(TerminalPalette.Depth.TRUECOLOR), new TerminalSize(120, 30));
+
+        assertEquals("123456", controls.seedBox().getText());
+        assertEquals(25, controls.water().value());
+        assertEquals(10, controls.mountain().value());
+
+        controls.setEnabled(false);
+        assertFalse(controls.seedBox().isEnabled(), "read-only seed box");
+        assertFalse(controls.water().isEnabled(), "read-only slider");
+        assertFalse(controls.mountain().isEnabled(), "read-only slider");
+
+        NewGameDialog.ScrollColumn column = new NewGameDialog.ScrollColumn();
+        controls.addTo(column);
+        assertEquals(6, column.getChildrenList().size(),
+                "seed, water, mountain, bar, gap and preview");
+
+        NewGameDialog.TerrainControls small = new NewGameDialog.TerrainControls(1, 25, 10,
+                new TerminalPalette(TerminalPalette.Depth.TRUECOLOR), new TerminalSize(70, 20));
+        NewGameDialog.ScrollColumn smallColumn = new NewGameDialog.ScrollColumn();
+        small.addTo(smallColumn);
+        assertNull(NewGameDialog.previewPlan(70, 20), "below 80x24 there is no preview");
+        assertEquals(6, smallColumn.getChildrenList().size(),
+                "the no-preview notice keeps the sixth row");
     }
 
     @Test
