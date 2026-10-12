@@ -30,6 +30,12 @@ The game can be controlled via the keyboard in both its 2D and 3D versions. Belo
 - **Game tab**: besides the world settings it sets the clock origin of the new game: **Start day** (1..366, default 1) and **Start time** (`HH:MM`, default 08:00, accepted as `H:MM` or `HH:MM` and normalised to zero-padded `HH:MM` on confirm). They only apply when the world is created: a loaded game always continues at its saved date and time.
 - **Keys**: **Alt+T/G/E/B/U** switch tabs by their letter (also **Ctrl+Tab**/**Ctrl+Shift+Tab** to cycle), **Alt+S** starts and **Alt+C**/**Esc** cancels. The dialog has a black background.
 
+#### Settings dialog (2D)
+- **File → Settings** opens it while a game is running (disabled with *no game in progress* at the boot menu; the 3D client waits for its 3D parity slice). It uses the same form conventions as the New Game dialog: tabs by page, aligned values, Enter/Tab commits with a range tooltip.
+- Every row carries its state: green **●** *live* and yellow **●** *reapply* are editable (applying a changed *reapply* asks for confirmation first); red **●** *requires a new game* and white **●** *defined by scenario* stay locked and show their reason. A small legend under the tabs repeats the meanings.
+- **Apply** sends the editable values to the running game (invalid, new-game-only and scenario-locked values are listed with their reason and the dialog stays open). **Restore** puts the current values back. **New game with these values…** confirms and opens the New Game form prefilled with the form values. **Save as defaults** writes them into `letrain.cfg`. **Close** (or Esc) leaves.
+- **Keys**: **Alt+A/R/N/S/C** for the actions, **Alt+T/G/E/B/U** for the tabs, **Tab** walks the fields of the active page and the footer.
+
 ### Navigation and Views
 - **Arrow Keys (or h, j, k, l)**: Move the cursor freely or follow a track (Vim-style navigation).
 - **Alt + Arrows (or Alt + h, j, k, l)**: Zoom and pan/orbit the camera.

@@ -571,7 +571,7 @@ final class NewGameDialog {
     }
 
     /** Button with its Alt mnemonic highlighted, the same style as the editor footer. */
-    private static Button mnemonicButton(String label, char mnemonic, Runnable action) {
+    static Button mnemonicButton(String label, char mnemonic, Runnable action) {
         Button button = new Button(label, action);
         button.setRenderer(TerminalView.mnemonicRenderer(mnemonic));
         return button;
@@ -581,7 +581,7 @@ final class NewGameDialog {
      * `< Terrain >` tabs: the active one is reversed, and the Alt mnemonic letter lives inside the
      * name (its first letter) highlighted like the footer buttons (#757).
      */
-    private static InteractableRenderer<Button> tabRenderer(SettingCategory category,
+    static InteractableRenderer<Button> tabRenderer(SettingCategory category,
             SettingCategory[] active) {
         return new InteractableRenderer<Button>() {
             @Override
@@ -815,7 +815,7 @@ final class NewGameDialog {
     }
 
     /** Checkbox counterpart of {@link ValidatingTextBox}: reveals its row when it takes focus. */
-    private static CheckBox scrollingCheckBox(boolean checked) {
+    static CheckBox scrollingCheckBox(boolean checked) {
         CheckBox checkBox = new CheckBox() {
             @Override
             protected void afterEnterFocus(Interactable.FocusChangeDirection direction,
