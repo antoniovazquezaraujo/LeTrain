@@ -34,11 +34,11 @@ portada --cualquier tecla--> menú File (sin partida: Save deshabilitado)
 ## Layout y preview adaptativo
 
 El diálogo ocupa la pantalla completa sin decoración (`FULL_SCREEN` + `NO_DECORATIONS`). Una única
-fila de pestañas (`< 1 Terrain > < 2 Game > …`) corona la ventana, debajo va **una línea en blanco**
-(`SECTION_TOP_ROWS`, en todas las pestañas, #754) y el pie (1 fila: Start/Cancel + atajos) la
-cierra; el área central es la sección activa. Los controles de terreno (semilla, sliders, barra,
-estado y preview) viven **solo en la pestaña Terrain** (#749): antes se quedaban fijos sobre todas
-las secciones.
+fila de pestañas (`< T Terrain > < G Game > …`, letra de atajo resaltada, #755) corona la ventana,
+debajo va **una línea en blanco** (`SECTION_TOP_ROWS`, en todas las pestañas, #754) y el pie (1
+fila: Start/Cancel) la cierra; el área central es la sección activa. Los controles de terreno
+(semilla, sliders, barra y preview) viven **solo en la pestaña Terrain** (#749): antes se quedaban
+fijos sobre todas las secciones.
 
 `NewGameDialog.previewPlan(columns, rows)` es una función pura sobre `sectionRows(rows)` (terminal
 menos pestañas, línea en blanco y pie). La rejilla muestreada es **cuadrada**
@@ -46,7 +46,7 @@ menos pestañas, línea en blanco y pie). La rejilla muestreada es **cuadrada**
 mismo cuadrado de mundo, así que los medios bloques (dos filas de muestreo por fila de terminal)
 conservan las celdas 1:1 del mundo. Una rejilla ancha estiraba el mundo en horizontal (#749). Desde
 #754 el preview ocupa la **mitad de ancho y alto** del primer diseño (≈1/4 del área), para no
-comerse el diálogo:
+comerse el diálogo, y desde #755 va **pegado al borde izquierdo** (x=0):
 
 | Terminal | Muestreo | Filas de texto |
 | :--- | :--- | :--- |
@@ -64,8 +64,13 @@ comerse el diálogo:
   campo `#4CA331` y montaña **`#80664D`** (antes blanco, #749). `terrainColor()` resuelve el modo
   del terminal: truecolor exacto, 256 el índice más cercano y ANSI-16 el rojo oscuro con el que el
   mapa 2D degrada su roca (no hay marrón en 16 colores, pero nunca blanco).
-- Sin preview, los sliders y la línea **objetivo vs medido** siguen visibles (concepto §7); la
-  línea usa porcentajes compactos (`25%/10%/65%`) para caber también en 70 columnas.
+- Sin preview (< 80×24) los sliders y la barra siguen visibles; el aviso es
+  `No preview at this size (needs 80x24+)`. La línea **Target/Measured** desapareció en #755, así
+  que `TERRAIN_CHROME_ROWS` baja a 4 (seed, water, mountain y barra) y los tamaños de preview no
+  cambian.
+- La **barra apilada** ocupa la fila completa del slider: empieza en el borde izquierdo y acaba
+  donde termina el porcentaje (`valueColumn + bar + 7`, 59 celdas a 70 columnas) con
+  `stackedBarWidth()`, compartiendo `sliderBarWidth()` con el slider.
 
 ## Secciones
 
@@ -75,11 +80,12 @@ Las pestañas **Terrain / Game / Economy / Construction / UI** se generan iteran
 - `SettingCategory.WORLD` se muestra como **Game** (`displayName()`).
 - **Una sola columna con scroll**: cada campo es una fila `Nombre: valor` + unidad. La etiqueta es
   solo el nombre (`fieldLabel()`, sin pistas de rango, #751); `alignedLabel()` pega los dos puntos
-  al nombre y rellena con espacios hasta `fieldValueColumn()` (el nombre más ancho de todo el
-  diálogo + `: `, 26 celdas hoy), así que **todos los valores de todas las pestañas** —incluidas
-  las filas Terrain (Seed, Water %, Mountain %)— empiezan en la misma columna. `fieldUnit()` da la
-  unidad completa (`%`, `°`, `cells`, `ticks`). La columna (`ScrollColumn`) se desplaza siguiendo
-  el foco (Tab/flechas) y marca la posición con una barra fina en el borde derecho cuando hay
+  al nombre y rellena con espacios hasta la **columna de la página**: `valueColumn(fieldNames())`
+  toma el nombre más ancho de esa pestaña + `: ` (#755). Terrain usa la suya (12: Seed, Water %,
+  Mountain %) y cada sección la suya (Game 14, Economy 21, Construction 24, UI 26), así que el
+  hueco a la izquierda de los valores se recorta en todas las páginas. `fieldUnit()` da la unidad
+  completa (`%`, `°`, `cells`, `ticks`). La columna (`ScrollColumn`) se desplaza siguiendo el foco
+  (Tab/flechas) y marca la posición con una barra fina en el borde derecho cuando hay
   desbordamiento.
 - Campos numéricos → `ValidatingTextBox`; booleanos → `CheckBox`.
 - **Commit con Enter/Tab**: `normalizeCommit()` valida contra el catálogo (un seed solo admite
@@ -95,19 +101,22 @@ Las pestañas **Terrain / Game / Economy / Construction / UI** se generan iteran
 
 El diálogo no tenía teclas de acceso funcionales (#749). Ahora:
 
-- **Alt+1..5**: cambia de pestaña (el número va resaltado en cada pestaña).
-- **Alt+S**: Start; **Alt+C**: Cancel (además de Esc). **Alt+N** desaparece con el botón `new` de
-  la semilla (#754): la semilla se sortea una vez al abrir y sigue siendo editable.
-- El pie recuerda los atajos (`Alt+1-5 · Alt+S · Alt+C`) y las letras mnemónicas de los botones van
-  resaltadas con `TerminalView.mnemonicRenderer`, el mismo estilo que el pie del editor.
+- **Alt+T/G/E/C/U**: cambia de pestaña por la letra inicial del nombre (`tabHotkey()`,
+  `tabLetter()`), que va resaltada en cada pestaña (#755). Los números de #749 ya no valen.
+- **Alt+S**: Start (mnemónico del botón). **Cancel queda solo con Esc**: la C pertenece a la
+  pestaña Construction (#755).
+- El pie es solo Start/Cancel: **no hay texto de atajos** (se quitó `HOTKEY_HINT` en #755). La
+  letra mnemónica de Start va resaltada con `TerminalView.mnemonicRenderer`, el mismo estilo que el
+  pie del editor.
 
 ## Tests
 
 - `core`: `NewGameFormTest`, `TerrainPreviewTest`, `ModelNewGameTest`, `NewGameTextTest`,
   `PlayerCommandExecutorNewGameTest`, `FileMenuTextTest` (estados 2D portada/partida y 3D).
 - `ui-terminal`: `NewGameDialogTest` (plan de preview cuadrado, scroll, barra apilada, etiquetas
-  limpias, columna de valores compartida, commit inválido → valor anterior + tooltip, colores del
-  terreno y atajos), `TerminalPaletteTest` (incluye el modo del terminal expuesto),
+  limpias, columna por página, ancho de la barra sobre la fila del slider, commit inválido → valor
+  anterior + tooltip, colores del terreno y atajos por letra), `TerminalPaletteTest` (incluye el
+  modo del terminal expuesto),
   `TerminalPresenterNewGameTest` (portada → menú → partida, confirmación, cancelar, consola).
 - `ui-graphic`: `Gdx3DHudFileMenuTest` fija los motivos de bloqueo 3D («3D parity slice»).
 

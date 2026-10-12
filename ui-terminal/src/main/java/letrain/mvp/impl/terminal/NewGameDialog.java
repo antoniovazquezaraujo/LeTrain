@@ -37,7 +37,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
-import letrain.ground.TerrainCalibrator;
 import letrain.ground.TerrainPreview;
 import letrain.mvp.NewGameText;
 import letrain.settings.NewGameForm;
@@ -54,17 +53,18 @@ import letrain.visitor.terminal.TerminalPalette;
  * <ul>
  * <li><b>Terrain</b> tab (opens first): seed (random, editable and copyable), water/mountain
  * sliders honouring the catalogue rule (water + mountain ≤ 95 %, the field is the remainder), a 100
- * % stacked bar, the target/measured proportions and an adaptive preview that samples
- * {@link TerrainPreview} with the same calibrated thresholds the world generator uses. The terrain
- * controls live only in this tab: they are no longer pinned above every section (#749).</li>
+ * % stacked bar that spans the water/mountain row, and a left-aligned adaptive preview that samples
+ * {@link TerrainPreview} with the same calibrated thresholds the world generator uses (#755 removed
+ * the target/measured line). The terrain controls live only in this tab: they are no longer pinned
+ * above every section (#749).</li>
  * <li><b>Sections</b>: Game, Economy, Construction and UI read
  * {@link SettingsCatalog#definitions()} as a single scrolling column of {@code Name: value} rows
- * (the 3-field grid felt cramped, #749; no range hints and one aligned value column for every tab,
- * #751).</li>
+ * (the 3-field grid felt cramped, #749; no range hints, #751; each page aligns its values after its
+ * own widest name, #755).</li>
  * <li><b>Start</b> validates the whole form and returns the settings map to the presenter, which
- * builds the world via {@code Model.newGame}. <b>Esc</b> (or Cancel) returns nothing.
- * <b>Alt+1..5</b> switch tabs, <b>Alt+S</b> starts and <b>Alt+C</b> cancels (the old dialog
- * advertised no keys and answered none, #749; the seed is drawn once at open, #754).</li>
+ * builds the world via {@code Model.newGame}. <b>Esc</b> cancels (the Cancel button keeps no
+ * mnemonic). <b>Alt+T/G/E/C/U</b> switch tabs and <b>Alt+S</b> starts (the old dialog advertised no
+ * keys and answered none, #749; letter hotkeys #755; the seed is drawn once at open, #754).</li>
  * </ul>
  *
  * <p>
@@ -86,9 +86,9 @@ final class NewGameDialog {
     static final int SECTION_TOP_ROWS = 1;
     /**
      * Rows the terrain controls above the preview take inside the Terrain tab: seed, water,
-     * mountain, bar and status line.
+     * mountain and the 100 % bar (the target/measured line is gone, #755).
      */
-    static final int TERRAIN_CHROME_ROWS = 5;
+    static final int TERRAIN_CHROME_ROWS = 4;
 
     /** Rows one tooltip box takes when a commit is rejected: top border, text, bottom border. */
     static final int TOOLTIP_ROWS = 3;
@@ -111,9 +111,6 @@ final class NewGameDialog {
     static final int WATER_RGB = 0x3366CC;
     static final int FIELD_RGB = 0x4CA331;
     static final int MOUNTAIN_RGB = 0x80664D;
-
-    /** Footer hint: the Alt access keys (Alt+N left with the seed button, #754). */
-    static final String HOTKEY_HINT = "Alt+1-5 · Alt+S · Alt+C";
 
     /** Preview sizes: {@code sampleRows} is the sampled grid height; each text row shows two. */
     record PreviewPlan(int columns, int sampleRows) {
@@ -152,6 +149,23 @@ final class NewGameDialog {
      * every segment totals exactly {@code width} cells (largest remainder: no segment vanishes
      * while it has cells to claim).
      */
+    /**
+     * Width of a slider bar when the value column starts at {@code valueColumn}: the full
+     * {@link #SLIDER_BAR_WIDTH} when it fits, down to 5 cells in narrow terminals. The closing
+     * {@code "] 100%"} span takes 7 cells after the bar.
+     */
+    static int sliderBarWidth(int columns, int valueColumn) {
+        return Math.min(SLIDER_BAR_WIDTH, Math.max(5, columns - valueColumn - 7));
+    }
+
+    /**
+     * Width of the 100 % stacked bar: the full Water/Mountain row, from the left edge to the end of
+     * the slider percentage ({@code valueColumn + bar + 7}; 59 cells at 70 columns, #755).
+     */
+    static int stackedBarWidth(int columns, int valueColumn) {
+        return Math.min(columns, valueColumn + sliderBarWidth(columns, valueColumn) + 7);
+    }
+
     static int[] stackedBarWidths(int waterPercent, int mountainPercent, int width) {
         int[] parts =
                 {waterPercent, Math.max(0, 100 - waterPercent - mountainPercent), mountainPercent};
@@ -183,24 +197,24 @@ final class NewGameDialog {
     }
 
     /**
-     * Column (0-based) where every value starts, in every tab: right after the widest field name of
-     * the whole dialog plus the colon and one space (#751). Terrain rows (seed, water, mountain)
-     * share the same column, so switching tabs never moves the values.
+     * Column (0-based) where the values of one page start: after its widest name plus the colon and
+     * one space (#755). Each page computes its own column, so short pages (Terrain: 12, Seed and
+     * sliders sit close) lose the big gap the old global column left on the left of the values.
      */
-    static int fieldValueColumn() {
-        int widest = 0;
-        for (SettingDefinition definition : SettingsCatalog.definitions()) {
-            widest = Math.max(widest, definition.displayName().length());
-        }
-        widest = Math.max(widest, NewGameText.SEED_LABEL.length());
-        widest = Math.max(widest, NewGameText.WATER_LABEL.length());
-        widest = Math.max(widest, NewGameText.MOUNTAIN_LABEL.length());
-        return widest + 2;
+    static int valueColumn(List<String> names) {
+        return names.stream().mapToInt(String::length).max().orElse(0) + 2;
+    }
+
+    /** Display names of the fields of one catalogue section, in form order. */
+    static List<String> fieldNames(SettingCategory category) {
+        return SettingsCatalog.definitions().stream()
+                .filter(definition -> definition.category() == category)
+                .map(SettingDefinition::displayName).toList();
     }
 
     /**
      * {@code Name:} padded with spaces so the value starts at {@code column}; the widest name keeps
-     * exactly one space after the colon (#751).
+     * exactly one space after the colon (#751, per-page columns #755).
      */
     static String alignedLabel(String name, int column) {
         return name + ":" + " ".repeat(Math.max(1, column - name.length() - 1));
@@ -281,15 +295,23 @@ final class NewGameDialog {
         return Math.max(0, Math.min(maxOffset, candidate));
     }
 
+    /** Letter of the Alt shortcut of a tab: the first letter of its name ({@code T/G/E/C/U}). */
+    static char tabLetter(SettingCategory category) {
+        return Character.toUpperCase(category.displayName().charAt(0));
+    }
+
     /**
-     * Tab selected by an Alt access key: {@code '1'..'5'} in tab order, empty for any other key.
+     * Tab selected by an Alt access key: its letter ({@code T/G/E/C/U}, case-insensitive), empty
+     * for any other key (#755).
      */
     static Optional<SettingCategory> tabHotkey(char key, List<SettingCategory> tabs) {
-        if (key < '1' || key > '9') {
-            return Optional.empty();
+        char letter = Character.toLowerCase(key);
+        for (SettingCategory category : tabs) {
+            if (letter == Character.toLowerCase(tabLetter(category))) {
+                return Optional.of(category);
+            }
         }
-        int index = key - '1';
-        return index < tabs.size() ? Optional.of(tabs.get(index)) : Optional.empty();
+        return Optional.empty();
     }
 
     /**
@@ -310,8 +332,9 @@ final class NewGameDialog {
         Panel root = new Panel(new BorderLayout());
         Panel content = new Panel(new BorderLayout());
 
-        // --- Terrain tab: seed, sliders, bar, status and preview (only here since #749) -----
-        final int column = fieldValueColumn();
+        // --- Terrain tab: seed, sliders, bar and preview (only here since #749) -----
+        final int column = valueColumn(List.of(NewGameText.SEED_LABEL, NewGameText.WATER_LABEL,
+                NewGameText.MOUNTAIN_LABEL));
         final int[] seed = {form.seed()};
         Panel seedHost = new Panel(new LinearLayout(Direction.VERTICAL));
         Panel seedRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
@@ -330,9 +353,8 @@ final class NewGameDialog {
         PercentSlider mountain = new PercentSlider(NewGameText.MOUNTAIN_LABEL, column,
                 form.mountainPercent(), () -> {
                 });
-        StackedBar bar = new StackedBar(palette, form.waterPercent(), form.mountainPercent());
-
-        Label status = new Label("");
+        StackedBar bar =
+                new StackedBar(palette, column, form.waterPercent(), form.mountainPercent());
 
         // The preview updates on every slider/seed change: same noise, thresholds and mapping as
         // the world generator.
@@ -341,12 +363,7 @@ final class NewGameDialog {
                 screen.getTerminalSize().getRows());
 
         Runnable recalibrate = () -> {
-            TerrainCalibrator.Calibration calibration = TerrainCalibrator.calibrate(seed[0],
-                    form.waterPercent(), form.mountainPercent());
             bar.setPercentages(form.waterPercent(), form.mountainPercent());
-            status.setText(NewGameText.terrainStatusLine(form.waterPercent(),
-                    form.mountainPercent(), calibration.measuredWaterPercent(),
-                    calibration.measuredMountainPercent()));
             if (plan != null) {
                 previewPanel.setGrid(TerrainPreview.sample(seed[0], form.waterPercent(),
                         form.mountainPercent(), plan.columns(), plan.sampleRows()));
@@ -383,7 +400,6 @@ final class NewGameDialog {
         terrain.addComponent(water);
         terrain.addComponent(mountain);
         terrain.addComponent(singleRowComponent(bar));
-        terrain.addComponent(status);
         if (plan != null) {
             terrain.addComponent(previewPanel);
         } else {
@@ -397,16 +413,15 @@ final class NewGameDialog {
         sections.put(SettingCategory.TERRAIN, terrain);
         for (SettingCategory category : tabs) {
             if (category != SettingCategory.TERRAIN) {
-                sections.put(category, buildSection(category, form, readers, column));
+                sections.put(category, buildSection(category, form, readers));
             }
         }
 
         Panel tabBar = new Panel(new LinearLayout(Direction.HORIZONTAL));
         final SettingCategory[] active = {SettingCategory.TERRAIN};
-        for (int i = 0; i < tabs.size(); i++) {
-            SettingCategory category = tabs.get(i);
+        for (SettingCategory category : tabs) {
             Button button = new Button(category.displayName());
-            button.setRenderer(tabRenderer(category, i, active));
+            button.setRenderer(tabRenderer(category, active));
             button.addListener(triggered -> {
                 active[0] = category;
                 showSection(content, sections, category, window);
@@ -435,10 +450,10 @@ final class NewGameDialog {
 
         Panel footer = new Panel(new LinearLayout(Direction.HORIZONTAL));
         footer.addComponent(mnemonicButton(NewGameText.START, 'S', startAction));
-        footer.addComponent(mnemonicButton(NewGameText.CANCEL, 'C', window::close));
-        footer.addComponent(new Label("  " + HOTKEY_HINT));
+        // Cancel keeps no mnemonic: C belongs to the Construction tab (#755).
+        footer.addComponent(new Button(NewGameText.CANCEL, window::close));
 
-        // Alt access keys: tabs by number, actions by letter (see the footer hint).
+        // Alt access keys: tabs by their letter, Start by S (Cancel keeps Esc only, #755).
         window.addWindowListener(new WindowListenerAdapter() {
             @Override
             public void onInput(Window w, KeyStroke keyStroke, AtomicBoolean deliverEvent) {
@@ -453,9 +468,6 @@ final class NewGameDialog {
                     deliverEvent.set(false);
                 } else if (key == 's') {
                     startAction.run();
-                    deliverEvent.set(false);
-                } else if (key == 'c') {
-                    window.close();
                     deliverEvent.set(false);
                 }
             }
@@ -506,8 +518,10 @@ final class NewGameDialog {
         return button;
     }
 
-    /** `< 1 Terrain >` tabs: the active one is reversed, the Alt number stays highlighted. */
-    private static InteractableRenderer<Button> tabRenderer(SettingCategory category, int index,
+    /**
+     * `< T Terrain >` tabs: the active one is reversed, the Alt letter stays highlighted (#755).
+     */
+    private static InteractableRenderer<Button> tabRenderer(SettingCategory category,
             SettingCategory[] active) {
         return new InteractableRenderer<Button>() {
             @Override
@@ -526,13 +540,14 @@ final class NewGameDialog {
                 } else {
                     graphics.applyThemeStyle(component.getThemeDefinition().getNormal());
                 }
-                graphics.putString(0, 0, "< " + (index + 1) + " " + component.getLabel() + " >");
+                graphics.putString(0, 0,
+                        "< " + tabLetter(category) + " " + component.getLabel() + " >");
                 if (isActive) {
                     graphics.enableModifiers(com.googlecode.lanterna.SGR.BOLD);
                 } else {
                     graphics.setForegroundColor(TerminalView.SHORTCUT_COLOR);
                 }
-                graphics.putString(2, 0, String.valueOf(index + 1));
+                graphics.putString(2, 0, String.valueOf(tabLetter(category)));
                 graphics.disableModifiers(com.googlecode.lanterna.SGR.BOLD);
             }
 
@@ -545,12 +560,13 @@ final class NewGameDialog {
 
     /**
      * Builds the single-column body of one catalogue section: one field per row, {@code Name:} plus
-     * the value (+ unit) aligned on {@code column}. The text of every widget is registered in
-     * {@code readers} so Start collects the form in one place.
+     * the value (+ unit) aligned on the page's own column (#755). The text of every widget is
+     * registered in {@code readers} so Start collects the form in one place.
      */
     private static ScrollColumn buildSection(SettingCategory category, NewGameForm form,
-            Map<String, Supplier<String>> readers, int column) {
+            Map<String, Supplier<String>> readers) {
         ScrollColumn columnPanel = new ScrollColumn();
+        int column = valueColumn(fieldNames(category));
         for (SettingDefinition definition : SettingsCatalog.definitions()) {
             if (definition.category() == category) {
                 columnPanel.addComponent(fieldRow(definition, form, readers, column));
@@ -969,9 +985,7 @@ final class NewGameDialog {
                 graphics.setBackgroundColor(TerminalView.NORMAL_MENU_BG_COLOR);
                 graphics.putString(0, 0, alignedLabel(label, valueColumn));
                 int x = valueColumn;
-                // At least 5 cells of bar; the full 40 when the terminal has room (70 columns).
-                int barWidth = Math.min(SLIDER_BAR_WIDTH,
-                        Math.max(5, graphics.getSize().getColumns() - valueColumn - 7));
+                int barWidth = sliderBarWidth(graphics.getSize().getColumns(), valueColumn);
                 int filled = component.max == 0 ? 0
                         : (int) Math.round(component.value * barWidth
                                 / (double) SettingsCatalog.MAX_TERRAIN_PERCENT);
@@ -988,14 +1002,20 @@ final class NewGameDialog {
         }
     }
 
-    /** The 100 % stacked bar: water, field and mountain widths of the terrain distribution. */
+    /**
+     * The 100 % stacked bar: water, field and mountain widths of the terrain distribution, spanning
+     * the full Water/Mountain slider row (#755).
+     */
     static final class StackedBar extends AbstractComponent<StackedBar> {
         private final TerminalPalette palette;
+        private final int valueColumn;
         private int waterPercent;
         private int mountainPercent;
 
-        StackedBar(TerminalPalette palette, int waterPercent, int mountainPercent) {
+        StackedBar(TerminalPalette palette, int valueColumn, int waterPercent,
+                int mountainPercent) {
             this.palette = palette;
+            this.valueColumn = valueColumn;
             this.waterPercent = waterPercent;
             this.mountainPercent = mountainPercent;
         }
@@ -1014,12 +1034,12 @@ final class NewGameDialog {
         private final class Renderer implements ComponentRenderer<StackedBar> {
             @Override
             public TerminalSize getPreferredSize(StackedBar component) {
-                return new TerminalSize(40, 1);
+                return new TerminalSize(valueColumn + SLIDER_BAR_WIDTH + 7, 1);
             }
 
             @Override
             public void drawComponent(TextGUIGraphics graphics, StackedBar component) {
-                int width = graphics.getSize().getColumns();
+                int width = stackedBarWidth(graphics.getSize().getColumns(), valueColumn);
                 if (width < 3) {
                     return;
                 }
@@ -1075,7 +1095,6 @@ final class NewGameDialog {
                 if (sample == null) {
                     return;
                 }
-                int xOffset = Math.max(0, (graphics.getSize().getColumns() - sample.columns()) / 2);
                 for (int row = 0; row < (sample.rows() + 1) / 2; row++) {
                     int topRow = row * 2;
                     int bottomRow = Math.min(topRow + 1, sample.rows() - 1);
@@ -1084,7 +1103,7 @@ final class NewGameDialog {
                                 terrainColor(palette, sample.cell(column, topRow)));
                         graphics.setBackgroundColor(
                                 terrainColor(palette, sample.cell(column, bottomRow)));
-                        graphics.setCharacter(xOffset + column, row, '▀');
+                        graphics.setCharacter(column, row, '▀');
                     }
                 }
                 graphics.setBackgroundColor(TerminalView.NORMAL_MENU_BG_COLOR);
