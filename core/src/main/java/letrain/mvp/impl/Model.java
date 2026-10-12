@@ -486,10 +486,12 @@ public class Model implements letrain.mvp.Model {
      * thresholds, which keeps its historical look.
      *
      * <p>
-     * The clock origin ({@code time.startDay} / {@code time.startTime}, S2b) is restored here from
-     * the loaded settings: the savegame's {@code elapsedTicks} came with the JSON and keeps
-     * pointing at the same instant, so a loaded game never jumps back to its creation time. Old
-     * savegames without the keys keep the default origin (day 1, 08:00) and load exactly as before.
+     * The running clock is re-synced from the loaded settings (#761): only the keys the section
+     * actually carries are applied, so a savegame played with another day length or latitude keeps
+     * them even when the local {@code letrain.cfg} differs. Savegames without those keys keep the
+     * clock wired from the cfg/defaults, exactly as before. The counter ({@code elapsedTicks}) is
+     * never touched; the origin ({@code time.startDay} / {@code time.startTime}, S2b) is
+     * re-anchored so the loaded game continues at the saved instant.
      */
     private void applySavedSettings() {
         if (economyManager == null) {
@@ -497,10 +499,26 @@ public class Model implements letrain.mvp.Model {
         }
         if (loadedSettings != null && !loadedSettings.isEmpty()) {
             economyManager.applyConfig(loadedSettings);
+            syncClockFromSavedSettings();
         } else {
             economyManager.fallBackToLegacyTerrain();
         }
         gameClock.setStartTime(clockOrigin());
+    }
+
+    /**
+     * Pushes the savegame's clock settings into the running clock (which the constructor had wired
+     * from the local cfg): day length and latitude, each only when the savegame carries its key so
+     * a section without them keeps the historical cfg/defaults fallback. The origin is re-anchored
+     * unconditionally by the caller, like in S2b.
+     */
+    private void syncClockFromSavedSettings() {
+        if (loadedSettings.containsKey("time.dayDurationSeconds")) {
+            gameClock.setDayDurationSeconds(economyManager.getDayDurationSeconds());
+        }
+        if (loadedSettings.containsKey("world.latitude")) {
+            gameClock.setLatitude(economyManager.getLatitude());
+        }
     }
 
     /**

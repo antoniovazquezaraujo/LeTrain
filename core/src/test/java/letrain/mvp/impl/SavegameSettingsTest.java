@@ -140,6 +140,64 @@ class SavegameSettingsTest {
     }
 
     @Test
+    @DisplayName("the load re-syncs the clock day length and latitude from the savegame (#761)")
+    void roundTrip_restoresClockDayLengthAndLatitude() {
+        Model model = Model.newGame(123,
+                Map.of("time.dayDurationSeconds", "720", "world.latitude", "10.0"));
+        // 3 game hours at 720 s/day: 10 ticks per game minute.
+        for (int i = 0; i < 3 * 60 * 10; i++) {
+            model.getGameClock().tick();
+        }
+        GameTime saved = model.getGameClock().now();
+
+        Model loaded = saves.fromBytes(saves.toBytes(model));
+
+        assertNotNull(loaded);
+        assertEquals(new GameTime(1, 11, 0), saved, "08:00 plus three game hours");
+        assertEquals(saved, loaded.getGameClock().now(),
+                "the load keeps the saved instant, it does not jump");
+        assertEquals(10.0, loaded.getGameClock().getLatitude(), 0.001,
+                "the saved latitude reaches the running clock");
+
+        // 14400 more ticks add exactly one game day only with the restored 720 s scale (the
+        // cfg/default 1440 would advance half a day).
+        for (int i = 0; i < 720 * GameClock.TICKS_PER_SECOND; i++) {
+            loaded.getGameClock().tick();
+        }
+
+        assertEquals(new GameTime(2, 11, 0), loaded.getGameClock().now(),
+                "the loaded clock keeps ticking at the saved 720 s day length");
+    }
+
+    @Test
+    @DisplayName("a savegame without the clock keys keeps the cfg/defaults clock (#761 legacy)")
+    void oldSavegame_withoutClockKeys_keepsCfgClock() throws Exception {
+        Model model = new Model(123);
+        for (int i = 0; i < 12 * 60 * GameClock.TICKS_PER_SECOND; i++) {
+            model.getGameClock().tick();
+        }
+        GameTime saved = model.getGameClock().now();
+        GameTime target = new GameTime(1, 21, 0);
+
+        // Emulate a savegame whose settings section carries no clock keys (pre-settings saves).
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode tree = (ObjectNode) mapper.readTree(saves.toBytes(model));
+        ObjectNode settings = (ObjectNode) tree.path("settings");
+        settings.remove("time.dayDurationSeconds");
+        settings.remove("world.latitude");
+        byte[] oldSave = mapper.writeValueAsBytes(tree);
+
+        Model loaded = saves.load(new ByteArrayInputStream(oldSave)).orElseThrow();
+
+        assertEquals(saved, loaded.getGameClock().now(),
+                "without the keys the load keeps the clock wired from the cfg/defaults");
+        assertEquals(model.getGameClock().getLatitude(), loaded.getGameClock().getLatitude(), 0.001,
+                "the latitude is not touched without the key");
+        assertEquals(model.getGameClock().ticksUntil(target),
+                loaded.getGameClock().ticksUntil(target), "the day scale is not touched either");
+    }
+
+    @Test
     @DisplayName("a savegame without the settings section keeps its legacy thresholds (old saves)")
     void oldSavegame_keepsLegacyLook() throws Exception {
         Model model = new Model(123);

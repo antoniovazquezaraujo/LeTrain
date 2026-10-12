@@ -61,7 +61,11 @@ elegida en cada punto:
 5. **Serialización**: contador `elapsedTicks` (long) en `Model`; `GameTime` se deriva. Los guardados
    antiguos cargan con el valor por defecto (08:00, Día 1) sin romperse. Desde S2b el origen
    (`time.startDay`/`time.startTime`) viaja en la sección `settings` del savegame y del escenario;
-   `Model.newGame` lo aplica al reloj antes del primer tick.
+   `Model.newGame` lo aplica al reloj antes del primer tick. **#761**: al cargar, el reloj en marcha
+   se re-sincroniza también con `time.dayDurationSeconds` y `world.latitude` de esa sección (solo
+   las claves que la sección traiga), de modo que una partida jugada con otra escala o latitud no
+   hereda las del `letrain.cfg` local; sin esas claves se mantiene el fallback a cfg/defaults y el
+   contador `elapsedTicks` nunca se toca.
 6. Los **eventos de tiempo** (cambio de hora, día/noche, horarios) se despachan vía
    `SimulationScheduler`; nada de lógica nueva en bucles periódicos.
 7. **`WAIT n` se mantiene en segundos de simulación** para no romper escenarios existentes. Los
