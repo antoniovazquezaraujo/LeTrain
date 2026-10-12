@@ -119,7 +119,7 @@ class TerminalPresenterSettingsTest {
     }
 
     @Test
-    @DisplayName("'New game with these values…' confirms and opens the New Game form prefilled")
+    @DisplayName("'New game' confirms and opens the New Game form prefilled (#767)")
     void newGameShortcut_prefillsAndConfirms() {
         presenter.beginStartup();
         presenter.startNewGame(Map.of("seed", "5"));

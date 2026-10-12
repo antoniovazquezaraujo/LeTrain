@@ -20,11 +20,12 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Issue #764 (S3b): the pure pieces of the in-game Settings dialog. The field states, the footer
- * wrapping at 70 columns, the REAPPLY confirmation set, the state-mark column and the rejection
- * message are functions of the catalogue and the terminal width, so they are pinned here without
- * opening a terminal.
+ * wrapping, the REAPPLY confirmation set, the state-mark column and the rejection message are
+ * functions of the catalogue and the terminal width, so they are pinned here without opening a
+ * terminal. Issue #767 removes the inline reasons and the white legend entry, shortens the new-game
+ * button and takes the terrain block (pinned in {@code NewGameDialogTest}).
  */
-@DisplayName("In-game Settings dialog (#764)")
+@DisplayName("In-game Settings dialog (#764, polish #767)")
 class SettingsDialogTest {
 
     @Test
@@ -47,19 +48,20 @@ class SettingsDialogTest {
     }
 
     @Test
-    @DisplayName("the scenario lock wins over the catalogue state and brings its reason (#764)")
+    @DisplayName("the scenario lock wins over the catalogue state, with no colour of its own (#764/#767)")
     void should_LockScenarioKeys() {
         Set<String> scenario = Set.of("startingBalance");
         assertEquals(SettingsDialog.FieldState.SCENARIO,
                 SettingsDialog.fieldState(
                         SettingsCatalog.definition("startingBalance").orElseThrow(), scenario),
-                "a scenario-fixed key is grey even if the catalogue says LIVE");
-        assertEquals(SettingsApplyResult.DEFINED_BY_SCENARIO,
-                SettingsDialog.FieldState.SCENARIO.reason());
-        assertEquals(SettingsApplyResult.REQUIRES_NEW_GAME,
-                SettingsDialog.FieldState.NEW_GAME.reason());
-        assertEquals("", SettingsDialog.FieldState.LIVE.reason());
-        assertEquals("", SettingsDialog.FieldState.REAPPLY.reason());
+                "a scenario-fixed key is locked even if the catalogue says LIVE");
+        assertEquals(TerminalView.MENU_DISABLED_FG_COLOR,
+                SettingsDialog.FieldState.SCENARIO.color(),
+                "scenario fields render disabled, without their own colour");
+        assertEquals(
+                List.of(SettingsDialog.FieldState.LIVE, SettingsDialog.FieldState.REAPPLY,
+                        SettingsDialog.FieldState.NEW_GAME),
+                SettingsDialog.legendStates(), "the white legend entry is gone (#767)");
     }
 
     @Test
@@ -76,23 +78,27 @@ class SettingsDialogTest {
     @Test
     @DisplayName("70x20 fits the five buttons in two rows (order kept); 120x30 in one (#764)")
     void should_WrapTheFooter() {
+        assertEquals("New game", SettingsText.NEW_GAME, "short label since #767");
+
         List<List<SettingsDialog.ActionButton>> narrow = SettingsDialog.footerRows(70);
-        assertEquals(2, narrow.size());
+        assertEquals(1, narrow.size(), "the short label makes the five buttons fit in one row");
+        assertEquals(SettingsDialog.ACTIONS, narrow.get(0));
+
+        List<List<SettingsDialog.ActionButton>> tiny = SettingsDialog.footerRows(50);
+        assertEquals(2, tiny.size(), "still wraps keeping the order");
         assertEquals(
                 List.of(SettingsDialog.APPLY_ID, SettingsDialog.RESTORE_ID,
                         SettingsDialog.NEW_GAME_ID),
-                narrow.get(0).stream().map(SettingsDialog.ActionButton::id).toList());
+                tiny.get(0).stream().map(SettingsDialog.ActionButton::id).toList());
         assertEquals(List.of(SettingsDialog.SAVE_DEFAULTS_ID, SettingsDialog.CLOSE_ID),
-                narrow.get(1).stream().map(SettingsDialog.ActionButton::id).toList());
-        for (List<SettingsDialog.ActionButton> row : narrow) {
+                tiny.get(1).stream().map(SettingsDialog.ActionButton::id).toList());
+        for (List<SettingsDialog.ActionButton> row : tiny) {
             int width = row.stream().mapToInt(button -> button.label().length() + 4).sum()
                     + row.size() - 1;
-            assertTrue(width <= 70, "row too wide for 70 columns: " + width);
+            assertTrue(width <= 50, "row too wide for 50 columns: " + width);
         }
 
-        List<List<SettingsDialog.ActionButton>> wide = SettingsDialog.footerRows(120);
-        assertEquals(1, wide.size());
-        assertEquals(SettingsDialog.ACTIONS, wide.get(0));
+        assertEquals(1, SettingsDialog.footerRows(120).size());
     }
 
     @Test

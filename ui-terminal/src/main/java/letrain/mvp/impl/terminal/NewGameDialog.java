@@ -362,58 +362,30 @@ final class NewGameDialog {
         Panel content = new Panel(new BorderLayout());
 
         // --- Terrain tab: seed, sliders, bar and preview (only here since #749) -----
-        final int column = valueColumn(List.of(NewGameText.SEED_LABEL, NewGameText.WATER_LABEL,
-                NewGameText.MOUNTAIN_LABEL));
+        final TerrainControls terrainControls = new TerrainControls(form.seed(),
+                form.waterPercent(), form.mountainPercent(), palette, screen.getTerminalSize());
         final int[] seed = {form.seed()};
-        Panel seedHost = new Panel(new LinearLayout(Direction.VERTICAL));
-        Panel seedRow = new Panel(rowLayout());
-        seedRow.addComponent(new Label(alignedLabel(NewGameText.SEED_LABEL, column)));
-        ValidatingTextBox seedBox = new ValidatingTextBox(
-                SettingsCatalog.definition(NewGameForm.SEED_KEY).orElseThrow(),
-                String.valueOf(seed[0]), column);
-        seedBox.setPreferredSize(new TerminalSize(SEED_BOX_WIDTH, 1));
-        seedBox.setTooltipHost(seedHost);
-        seedRow.addComponent(seedBox);
-        seedHost.addComponent(seedRow);
 
-        PercentSlider water =
-                new PercentSlider(NewGameText.WATER_LABEL, column, form.waterPercent(), () -> {
-                });
-        PercentSlider mountain = new PercentSlider(NewGameText.MOUNTAIN_LABEL, column,
-                form.mountainPercent(), () -> {
-                });
-        StackedBar bar =
-                new StackedBar(palette, column, form.waterPercent(), form.mountainPercent());
-
-        // The preview updates on every slider/seed change: same noise, thresholds and mapping as
-        // the world generator.
-        final TerrainPreviewPanel previewPanel = new TerrainPreviewPanel(palette);
-        final PreviewPlan plan = previewPlan(screen.getTerminalSize().getColumns(),
-                screen.getTerminalSize().getRows());
-
-        Runnable recalibrate = () -> {
-            bar.setPercentages(form.waterPercent(), form.mountainPercent());
-            if (plan != null) {
-                previewPanel.setGrid(TerrainPreview.sample(seed[0], form.waterPercent(),
-                        form.mountainPercent(), plan.columns(), plan.sampleRows()));
-            }
-        };
+        Runnable recalibrate = () -> terrainControls.setValues(seed[0], form.waterPercent(),
+                form.mountainPercent());
 
         Runnable onSliderChange = () -> {
-            int newWater = water.value();
-            int newMountain = mountain.value();
+            int newWater = terrainControls.water().value();
+            int newMountain = terrainControls.mountain().value();
             form.setWaterPercent(newWater);
             form.setMountainPercent(newMountain);
-            water.setMaxAndValue(SettingsCatalog.MAX_TERRAIN_PERCENT - form.mountainPercent(),
+            terrainControls.water().setMaxAndValue(
+                    SettingsCatalog.MAX_TERRAIN_PERCENT - form.mountainPercent(),
                     form.waterPercent());
-            mountain.setMaxAndValue(SettingsCatalog.MAX_TERRAIN_PERCENT - form.waterPercent(),
+            terrainControls.mountain().setMaxAndValue(
+                    SettingsCatalog.MAX_TERRAIN_PERCENT - form.waterPercent(),
                     form.mountainPercent());
             recalibrate.run();
             window.invalidate();
         };
-        water.setOnChange(onSliderChange);
-        mountain.setOnChange(onSliderChange);
-        seedBox.setTextChangeListener((text, ignored) -> {
+        terrainControls.water().setOnChange(onSliderChange);
+        terrainControls.mountain().setOnChange(onSliderChange);
+        terrainControls.seedBox().setTextChangeListener((text, ignored) -> {
             // Fired by typing: keep the preview on the last valid seed.
             try {
                 seed[0] = Integer.parseInt(text.trim());
@@ -425,17 +397,7 @@ final class NewGameDialog {
         });
 
         ScrollColumn terrain = new ScrollColumn();
-        terrain.addComponent(seedHost);
-        terrain.addComponent(water);
-        terrain.addComponent(mountain);
-        terrain.addComponent(singleRowComponent(bar));
-        // Blank line between the components and the map (or its no-preview notice, #757).
-        terrain.addComponent(new EmptySpace(new TerminalSize(1, 1)));
-        if (plan != null) {
-            terrain.addComponent(previewPanel);
-        } else {
-            terrain.addComponent(new Label(NewGameText.NO_PREVIEW));
-        }
+        terrainControls.addTo(terrain);
 
         // --- Sections ----------------------------------------------------------------------
         final List<SettingCategory> tabs = List.of(SettingCategory.TERRAIN, SettingCategory.WORLD,
@@ -469,12 +431,12 @@ final class NewGameDialog {
         // --- Footer and window -------------------------------------------------------------
         Runnable startAction = () -> {
             try {
-                form.setSeed(seedBox.getText());
+                form.setSeed(terrainControls.seedBox().getText());
                 for (Map.Entry<String, Supplier<String>> entry : readers.entrySet()) {
                     form.setValue(entry.getKey(), entry.getValue().get());
                 }
-                form.setWaterPercent(water.value());
-                form.setMountainPercent(mountain.value());
+                form.setWaterPercent(terrainControls.water().value());
+                form.setMountainPercent(terrainControls.mountain().value());
                 result[0] = form.toSettings();
                 window.close();
             } catch (IllegalArgumentException e) {
@@ -568,6 +530,94 @@ final class NewGameDialog {
         Panel panel = new Panel(new BorderLayout());
         panel.addComponent(component, BorderLayout.Location.CENTER);
         return panel;
+    }
+
+    /**
+     * The terrain controls shared by New Game and the in-game Settings dialog (#767): seed row,
+     * water/mountain sliders, the 100 % stacked bar and the adaptive preview (or its no-preview
+     * notice). New Game wires the callbacks; Settings adds the same block read-only with the
+     * running world's values.
+     */
+    static final class TerrainControls {
+
+        private final Panel seedHost;
+        private final ValidatingTextBox seedBox;
+        private final PercentSlider water;
+        private final PercentSlider mountain;
+        private final StackedBar bar;
+        private final Panel barRow;
+        private final EmptySpace gap;
+        private final TerrainPreviewPanel previewPanel;
+        private final Label noPreview;
+        private final PreviewPlan plan;
+
+        TerrainControls(int seed, int waterPercent, int mountainPercent, TerminalPalette palette,
+                TerminalSize screen) {
+            int column = valueColumn(List.of(NewGameText.SEED_LABEL, NewGameText.WATER_LABEL,
+                    NewGameText.MOUNTAIN_LABEL));
+            seedHost = new Panel(new LinearLayout(Direction.VERTICAL));
+            Panel seedRow = new Panel(rowLayout());
+            seedRow.addComponent(new Label(alignedLabel(NewGameText.SEED_LABEL, column)));
+            seedBox = new ValidatingTextBox(
+                    SettingsCatalog.definition(NewGameForm.SEED_KEY).orElseThrow(),
+                    String.valueOf(seed), column);
+            seedBox.setPreferredSize(new TerminalSize(SEED_BOX_WIDTH, 1));
+            seedBox.setTooltipHost(seedHost);
+            seedRow.addComponent(seedBox);
+            seedHost.addComponent(seedRow);
+
+            water = new PercentSlider(NewGameText.WATER_LABEL, column, waterPercent, () -> {
+            });
+            mountain =
+                    new PercentSlider(NewGameText.MOUNTAIN_LABEL, column, mountainPercent, () -> {
+                    });
+            bar = new StackedBar(palette, column, waterPercent, mountainPercent);
+            barRow = singleRowComponent(bar);
+            gap = new EmptySpace(new TerminalSize(1, 1));
+            previewPanel = new TerrainPreviewPanel(palette);
+            noPreview = new Label(NewGameText.NO_PREVIEW);
+            plan = previewPlan(screen.getColumns(), screen.getRows());
+            setValues(seed, waterPercent, mountainPercent);
+        }
+
+        /** Adds the block rows, in order, to a section column: seed, water, mountain, bar, map. */
+        void addTo(ScrollColumn column) {
+            column.addComponent(seedHost);
+            column.addComponent(water);
+            column.addComponent(mountain);
+            column.addComponent(barRow);
+            // Blank line between the components and the map (or its notice, #757).
+            column.addComponent(gap);
+            column.addComponent(plan != null ? previewPanel : noPreview);
+        }
+
+        /** Repaints the bar and the preview (same noise/thresholds as the world generator). */
+        void setValues(int seed, int waterPercent, int mountainPercent) {
+            bar.setPercentages(waterPercent, mountainPercent);
+            if (plan != null) {
+                previewPanel.setGrid(TerrainPreview.sample(seed, waterPercent, mountainPercent,
+                        plan.columns(), plan.sampleRows()));
+            }
+        }
+
+        /** Read-only mode for the Settings dialog: same look, out of the focus cycle (#767). */
+        void setEnabled(boolean enabled) {
+            seedBox.setEnabled(enabled);
+            water.setEnabled(enabled);
+            mountain.setEnabled(enabled);
+        }
+
+        ValidatingTextBox seedBox() {
+            return seedBox;
+        }
+
+        PercentSlider water() {
+            return water;
+        }
+
+        PercentSlider mountain() {
+            return mountain;
+        }
     }
 
     /** Button with its Alt mnemonic highlighted, the same style as the editor footer. */

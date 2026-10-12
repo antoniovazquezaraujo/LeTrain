@@ -36,6 +36,7 @@ import letrain.settings.SettingDefinition;
 import letrain.settings.SettingValueType;
 import letrain.settings.SettingsApplyResult;
 import letrain.settings.SettingsCatalog;
+import letrain.visitor.terminal.TerminalPalette;
 
 /**
  * 2D in-game Settings dialog (S3b, #764; concept §5.2/D9/D10), opened from File → Settings while a
@@ -46,13 +47,18 @@ import letrain.settings.SettingsCatalog;
  *
  * <p>
  * Every field carries its apply-state mark: green {@code ●} for LIVE, yellow {@code ●} for REAPPLY
- * (both editable), red {@code ●} for NEW_GAME and white {@code ●} for scenario-locked keys (both
- * disabled with their reason appended). The legend under the tabs repeats the meanings.
+ * (both editable) and red {@code ●} for NEW_GAME (disabled). Scenario-locked keys stay disabled
+ * without a colour of their own. Since #767 there is no inline reason text and the small colour
+ * legend lives in the footer zone, under the buttons.
+ *
+ * <p>
+ * The Terrain page shows the shared New Game terrain block (seed, water/mountain sliders, the
+ * three-colour bar and the preview) with the running world's parameters, read-only.
  *
  * <p>
  * Actions: <b>Apply</b> sends the editable values to {@link SettingsPort#apply} (confirming first
  * when any REAPPLY field changed, #764) and lists the rejections without closing; <b>Restore</b>
- * resets the form to the current values; <b>New game with these values…</b> closes and returns
+ * resets the form to the current values; <b>New game</b> closes and returns
  * {@link Action.StartGame} so the client opens the New Game form prefilled; <b>Save as defaults</b>
  * confirms and writes {@code letrain.cfg}; <b>Close</b> (or Esc) returns {@link Action.Close}.
  */
@@ -60,9 +66,9 @@ final class SettingsDialog {
 
     /** Rows the tab bar takes. */
     static final int TAB_ROWS = 1;
-    /** Rows the legend under the tabs takes. */
+    /** Rows the footer legend takes (moved to the footer in #767). */
     static final int LEGEND_ROWS = 1;
-    /** Blank row between the legend and the first field of every section (#754 convention). */
+    /** Blank row between the tabs and the first field of every section (#754 convention). */
     static final int SECTION_TOP_ROWS = 1;
     /** Columns the state glyph and its trailing space take at the left of every row (#764). */
     static final int STATE_COLUMNS = 2;
@@ -79,18 +85,18 @@ final class SettingsDialog {
 
     /** Field states the dialog shows: the catalogue's apply state plus the scenario lock (#764). */
     enum FieldState {
-        LIVE("●", TextColor.ANSI.GREEN, ""), REAPPLY("●", TextColor.ANSI.YELLOW, ""), NEW_GAME("●",
-                TextColor.ANSI.RED, SettingsApplyResult.REQUIRES_NEW_GAME), SCENARIO("●",
-                        TextColor.ANSI.WHITE, SettingsApplyResult.DEFINED_BY_SCENARIO);
+        LIVE("●", TextColor.ANSI.GREEN), REAPPLY("●", TextColor.ANSI.YELLOW), NEW_GAME("●",
+                TextColor.ANSI.RED),
+        // Scenario-locked fields are rare (scenario games only) and stay disabled without a colour
+        // of their own: no legend entry, the plain insensitive tone (#767).
+        SCENARIO("●", TerminalView.MENU_DISABLED_FG_COLOR);
 
         private final String glyph;
         private final TextColor color;
-        private final String reason;
 
-        FieldState(String glyph, TextColor color, String reason) {
+        FieldState(String glyph, TextColor color) {
             this.glyph = glyph;
             this.color = color;
-            this.reason = reason;
         }
 
         String glyph() {
@@ -101,14 +107,14 @@ final class SettingsDialog {
             return color;
         }
 
-        /** Reason appended to the row while the field is disabled ({@code ""} when editable). */
-        String reason() {
-            return reason;
-        }
-
         boolean editable() {
             return this == LIVE || this == REAPPLY;
         }
+    }
+
+    /** Legend entries, in order: the scenario lock has no colour of its own any more (#767). */
+    static List<FieldState> legendStates() {
+        return List.of(FieldState.LIVE, FieldState.REAPPLY, FieldState.NEW_GAME);
     }
 
     /** Apply state shown for one field: the scenario lock wins over the catalogue state (D10). */
@@ -225,9 +231,13 @@ final class SettingsDialog {
         final List<SettingCategory> tabs = List.of(SettingCategory.TERRAIN, SettingCategory.WORLD,
                 SettingCategory.ECONOMY, SettingCategory.CONSTRUCTION, SettingCategory.UI);
         Map<SettingCategory, Panel> sections = new EnumMap<>(SettingCategory.class);
+        sections.put(SettingCategory.TERRAIN,
+                terrainSection(baseline, TerminalPalette.detect(), screen.getTerminalSize()));
         for (SettingCategory category : tabs) {
-            sections.put(category,
-                    buildSection(category, baseline, scenarioKeys, readers, writers, editable));
+            if (category != SettingCategory.TERRAIN) {
+                sections.put(category,
+                        buildSection(category, baseline, scenarioKeys, readers, writers, editable));
+            }
         }
 
         Panel tabBar = new Panel(new LinearLayout(Direction.HORIZONTAL));
@@ -249,7 +259,6 @@ final class SettingsDialog {
         }
         Panel top = new Panel(new LinearLayout(Direction.VERTICAL));
         top.addComponent(tabBar);
-        top.addComponent(legendPanel());
 
         Label feedback = new Label("");
 
@@ -310,6 +319,8 @@ final class SettingsDialog {
             }
             footer.addComponent(row);
         }
+        // The colour legend lives in the footer zone since #767; feedback closes the screen.
+        footer.addComponent(legendPanel());
         footer.addComponent(feedback);
 
         window.addWindowListener(new WindowListenerAdapter() {
@@ -382,7 +393,6 @@ final class SettingsDialog {
         addLegend(legend, FieldState.LIVE, SettingsText.LEGEND_LIVE);
         addLegend(legend, FieldState.REAPPLY, SettingsText.LEGEND_REAPPLY);
         addLegend(legend, FieldState.NEW_GAME, SettingsText.LEGEND_NEW_GAME);
-        addLegend(legend, FieldState.SCENARIO, SettingsText.LEGEND_SCENARIO);
         return legend;
     }
 
@@ -425,7 +435,7 @@ final class SettingsDialog {
         return columnPanel;
     }
 
-    /** One field row: state glyph, {@code Name:}, widget (+ unit) and the lock reason if any. */
+    /** One field row: state glyph, {@code Name:}, widget and unit; no inline reason since #767. */
     private static Panel fieldRow(SettingDefinition definition, String value,
             Set<String> scenarioKeys, Map<String, Supplier<String>> readers,
             Map<String, Consumer<String>> writers, Map<String, Boolean> editable, int column) {
@@ -462,13 +472,35 @@ final class SettingsDialog {
             }
             textBox.setTooltipHost(row);
         }
-        if (!state.editable()) {
-            Label reason = new Label("  (" + state.reason() + ")");
-            reason.setForegroundColor(TerminalView.MENU_DISABLED_FG_COLOR);
-            line.addComponent(reason);
-        }
         row.addComponent(line);
         return row;
+    }
+
+    /**
+     * Terrain page: the New Game terrain block (seed, water/mountain sliders, three-colour bar and
+     * preview) with the running world's parameters, read-only (#767).
+     */
+    private static Panel terrainSection(Map<String, String> baseline, TerminalPalette palette,
+            TerminalSize screen) {
+        NewGameDialog.TerrainControls controls =
+                new NewGameDialog.TerrainControls(parseInt(baseline.get("seed"), 0),
+                        parseInt(baseline.get("terrain.waterPercent"),
+                                SettingsCatalog.DEFAULT_WATER_PERCENT),
+                        parseInt(baseline.get("terrain.mountainPercent"),
+                                SettingsCatalog.DEFAULT_MOUNTAIN_PERCENT),
+                        palette, screen);
+        controls.setEnabled(false);
+        NewGameDialog.ScrollColumn column = new NewGameDialog.ScrollColumn();
+        controls.addTo(column);
+        return column;
+    }
+
+    private static int parseInt(String text, int fallback) {
+        try {
+            return Integer.parseInt(text.trim());
+        } catch (RuntimeException e) {
+            return fallback;
+        }
     }
 
     private static boolean confirm(MultiWindowTextGUI gui, String title, String message) {

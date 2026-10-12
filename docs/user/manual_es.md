@@ -34,8 +34,9 @@ El juego se puede controlar tanto en su versión 2D como en la 3D mediante el te
 
 #### Diálogo Settings (2D)
 - **File → Settings** lo abre con una partida en curso (en portada sale deshabilitado con *no game in progress*; el cliente 3D espera a su rebanada de paridad). Usa las mismas convenciones que el diálogo de Nueva Partida: pestañas por página, valores alineados, Enter/Tab con tooltip de rango.
-- Cada fila lleva su estado: verde **●** *live* y amarillo **●** *reapply* son editables (si cambia un *reapply*, Apply pide confirmación); rojo **●** *requires a new game* y blanco **●** *defined by scenario* quedan bloqueados y muestran su motivo. Una leyenda pequeña bajo las pestañas recuerda los significados.
-- **Apply** envía los valores editables a la partida (los inválidos, los de partida nueva y los fijados por escenario se listan con su motivo y el diálogo no se cierra). **Restore** devuelve los valores actuales. **New game with these values…** confirma y abre el formulario de Nueva Partida pre-rellenado con los valores del formulario. **Save as defaults** los escribe en `letrain.cfg`. **Close** (o Esc) sale.
+- Cada fila lleva su estado: verde **●** *live* y amarillo **●** *reapply* son editables (si cambia un *reapply*, Apply pide confirmación); rojo **●** *requires a new game* queda bloqueado. Los valores fijados por escenario (raros, solo en partidas de escenario) también salen deshabilitados. Una leyenda pequeña de colores al pie de la pantalla recuerda los significados.
+- La pestaña **Terrain** muestra el bloque de terreno de Nueva Partida (semilla, sliders de Agua/Montaña, la barra de tres colores y el mapa) con los parámetros actuales del mundo, en read-only.
+- **Apply** envía los valores editables a la partida (los inválidos, los de partida nueva y los fijados por escenario se listan con su motivo y el diálogo no se cierra). **Restore** devuelve los valores actuales. **New game** confirma y abre el formulario de Nueva Partida pre-rellenado con los valores del formulario. **Save as defaults** los escribe en `letrain.cfg`. **Close** (o Esc) sale.
 - **Teclas**: **Alt+A/R/N/S/C** para las acciones, **Alt+T/G/E/B/U** para las pestañas, **Tab** recorre los campos de la página activa y el pie.
 
 ### Navegación y Vistas

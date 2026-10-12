@@ -15,15 +15,17 @@ public final class SettingsText {
     /** Action buttons, in display order. */
     public static final String APPLY = "Apply";
     public static final String RESTORE = "Restore";
-    public static final String NEW_GAME = "New game with these values…";
+    public static final String NEW_GAME = "New game";
     public static final String SAVE_DEFAULTS = "Save as defaults";
     public static final String CLOSE = "Close";
 
-    /** Legend labels of the four field states (#764); the glyph is drawn by the client. */
+    /**
+     * Legend labels of the coloured field states (the scenario lock has no colour of its own since
+     * #767); the glyph is drawn by the client.
+     */
     public static final String LEGEND_LIVE = "live";
     public static final String LEGEND_REAPPLY = "reapply";
     public static final String LEGEND_NEW_GAME = "requires a new game";
-    public static final String LEGEND_SCENARIO = "defined by scenario";
 
     /** Confirmation shown before applying settings that need a reapply (🟡). */
     public static final String REAPPLY_TITLE = "Reapply settings";
