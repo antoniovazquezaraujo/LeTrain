@@ -2258,18 +2258,81 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
      */
     @Override
     public void onNewGame() {
+        Map<String, String> currentSettings =
+                model.getEconomyManager() != null ? model.getEconomyManager().effectiveConfig()
+                        : Map.of();
+        onNewGame(currentSettings);
+    }
+
+    /**
+     * New Game flow with explicit prefill (used by New and by the Settings dialog's "New game with
+     * these values…", S3b): confirms the discard when a game is running, opens the dialog and
+     * starts the chosen world.
+     */
+    void onNewGame(Map<String, String> prefill) {
         if (gameStarted && !view.confirm(letrain.mvp.NewGameText.CONFIRM_TITLE,
                 letrain.mvp.NewGameText.CONFIRM_MESSAGE)) {
             return;
         }
-        Map<String, String> currentSettings =
-                model.getEconomyManager() != null ? model.getEconomyManager().effectiveConfig()
-                        : Map.of();
-        Map<String, String> settings = view.showNewGameDialog(currentSettings);
+        Map<String, String> settings = view.showNewGameDialog(prefill);
         if (settings == null || settings.isEmpty()) {
             return;
         }
         startNewGame(settings);
+    }
+
+    /**
+     * File → Settings (S3b, #764): opens the in-game dialog with the current effective values (plus
+     * the world seed), the scenario-locked keys and a port that applies settings to the running
+     * game and writes {@code letrain.cfg} defaults (D4). Choosing "New game with these values…"
+     * closes the dialog and re-enters the New Game flow with the form prefilled.
+     */
+    @Override
+    public void onSettings() {
+        if (model.getEconomyManager() == null) {
+            return;
+        }
+        Map<String, String> current =
+                new java.util.LinkedHashMap<>(model.getEconomyManager().effectiveConfig());
+        current.put(letrain.settings.NewGameForm.SEED_KEY, String.valueOf(model.getSeed()));
+        SettingsDialog.Action action = view.showSettingsDialog(current,
+                model.getScenarioSettingKeys(), new SettingsDialog.SettingsPort() {
+                    @Override
+                    public letrain.settings.SettingsApplyResult apply(Map<String, String> values) {
+                        return model.applyLiveSettings(values);
+                    }
+
+                    @Override
+                    public String saveDefaults(Map<String, String> values) {
+                        return saveSettingsAsDefaults(values);
+                    }
+                });
+        if (action instanceof SettingsDialog.Action.StartGame startGame) {
+            onNewGame(startGame.settings());
+        }
+    }
+
+    /**
+     * Writes the form values into the game's {@code letrain.cfg} (D4); when the game found no file
+     * it creates one in the working directory. Returns {@code null} on success or the failure
+     * message the dialog shows.
+     */
+    String saveSettingsAsDefaults(Map<String, String> values) {
+        File target = model.getEconomyManager().getConfigFile();
+        if (target == null) {
+            target = new File("letrain.cfg");
+        }
+        return writeDefaults(target, values);
+    }
+
+    /** Writes the values into {@code target}; {@code null} on success or the failure message. */
+    static String writeDefaults(File target, Map<String, String> values) {
+        try {
+            letrain.settings.ConfigFileWriter.writeDefaults(target, values);
+            return null;
+        } catch (IOException e) {
+            return e.getMessage();
+        }
     }
 
     /**

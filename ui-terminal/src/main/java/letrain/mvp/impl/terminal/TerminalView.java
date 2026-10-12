@@ -34,6 +34,7 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import letrain.map.Page;
 import letrain.map.Point;
@@ -834,6 +835,16 @@ public class TerminalView implements letrain.mvp.View {
         return NewGameDialog.show(screen, currentSettings);
     }
 
+    /**
+     * In-game Settings dialog (S3b): same form conventions as the New Game dialog plus the apply
+     * states and the Apply/Restore/new-game/save-defaults actions. The presenter supplies the
+     * current effective values, the scenario-locked keys and the port the actions call.
+     */
+    public SettingsDialog.Action showSettingsDialog(Map<String, String> currentSettings,
+            Set<String> scenarioKeys, SettingsDialog.SettingsPort port) {
+        return SettingsDialog.show(screen, currentSettings, scenarioKeys, port);
+    }
+
     /** Simple yes/no confirmation (used before discarding a game in progress, #417 pending). */
     @Override
     public boolean confirm(String title, String message) {
@@ -1576,9 +1587,9 @@ public class TerminalView implements letrain.mvp.View {
     /**
      * File menu ({@code Esc} in both clients), built from the shared {@link FileMenuText} rows so
      * the 2D terminal and the 3D HUD read the same words in the same order. New opens the New Game
-     * dialog; at the boot menu (no game yet) Save is disabled with its reason (D8); Settings stays
-     * visible but disabled until its slice; Load/Save open their dialogs; Quit ends the game. Esc
-     * closes the menu again (owner decision D11).
+     * dialog; at the boot menu (no game yet) Save and Settings are disabled with their reason (D8);
+     * Settings opens the in-game settings dialog (S3b); Load/Save open their dialogs; Quit ends the
+     * game. Esc closes the menu again (owner decision D11).
      */
     @Override
     public void showFileMenu() {
@@ -1628,6 +1639,10 @@ public class TerminalView implements letrain.mvp.View {
                     window.close();
                 };
             case SETTINGS:
+                return () -> {
+                    window.close();
+                    gameViewListener.onSettings();
+                };
             default:
                 return () -> {
                 };

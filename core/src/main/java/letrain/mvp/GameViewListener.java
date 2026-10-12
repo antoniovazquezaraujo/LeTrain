@@ -10,6 +10,12 @@ public interface GameViewListener {
     void onNewGame();
 
     /**
+     * Opens the in-game Settings dialog (S3b, 2D): File → Settings. Clients without it (3D until
+     * S4) keep the no-op default.
+     */
+    default void onSettings() {}
+
+    /**
      * True while a game is running (started from New or loaded). The File menu disables {@code
      * Save} at the boot menu until then (D8); clients without a boot menu keep the default.
      */
