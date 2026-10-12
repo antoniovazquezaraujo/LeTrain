@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import letrain.time.GameTime;
 
 /**
  * The single settings catalogue (concept §1): key, display name, type, range/unit, default and
@@ -45,6 +46,11 @@ public final class SettingsCatalog {
                     SettingValueType.DECIMAL, "°", -90.0, 90.0, "40.0", SettingApplyState.REAPPLY),
             new SettingDefinition("time.dayDurationSeconds", SettingCategory.WORLD, "Day duration",
                     SettingValueType.INTEGER, "s", 60.0, 86400.0, "1440", SettingApplyState.LIVE),
+            new SettingDefinition("time.startDay", SettingCategory.WORLD, "Start day",
+                    SettingValueType.INTEGER, null, 1.0, 366.0, "1", SettingApplyState.NEW_GAME),
+            new SettingDefinition("time.startTime", SettingCategory.WORLD, "Start time",
+                    SettingValueType.TIME_OF_DAY, null, null, null, "08:00",
+                    SettingApplyState.NEW_GAME),
             new SettingDefinition("map.VIEW_RADIUS", SettingCategory.WORLD, "View radius",
                     SettingValueType.INTEGER, "cells", 5.0, null, "15", SettingApplyState.REAPPLY),
 
@@ -203,6 +209,8 @@ public final class SettingsCatalog {
                 return String.valueOf(parseInteger(def, trimmed));
             case DECIMAL:
                 return parseDecimal(def, trimmed);
+            case TIME_OF_DAY:
+                return GameTime.formatTimeOfDay(GameTime.parseMinuteOfDay(trimmed));
             default:
                 throw new IllegalStateException("Unhandled setting type: " + def.type());
         }

@@ -75,6 +75,38 @@ class ModelNewGameTest {
     }
 
     @Test
+    @DisplayName("the start day and time reach the clock, normalised (S2b)")
+    void newGame_appliesClockStart() {
+        Model model = Model.newGame(7, Map.of("time.startDay", "300", "time.startTime", "6:30"));
+
+        assertEquals(new letrain.time.GameTime(300, 6, 30), model.getGameClock().now());
+        assertEquals(0, model.getGameClock().elapsedTicks(),
+                "a new game starts with the counter at zero");
+        assertEquals(new letrain.time.GameTime(300, 6, 30), model.getGameClock().startTime());
+        assertEquals("300", model.getEconomyManager().effectiveConfig().get("time.startDay"));
+        assertEquals("06:30", model.getEconomyManager().effectiveConfig().get("time.startTime"));
+    }
+
+    @Test
+    @DisplayName("the defaults keep the ADR-022 origin: day 1 at 08:00 (S2b regression)")
+    void newGame_keepsDefaultClockOrigin() {
+        Model model = Model.newGame(42, Map.of());
+
+        assertEquals(new letrain.time.GameTime(1, 8, 0), model.getGameClock().now());
+        assertEquals("1", model.getEconomyManager().effectiveConfig().get("time.startDay"));
+        assertEquals("08:00", model.getEconomyManager().effectiveConfig().get("time.startTime"));
+    }
+
+    @Test
+    @DisplayName("an invalid start time is rejected before any world is built (S2b)")
+    void newGame_rejectsInvalidStartTime() {
+        assertThrows(IllegalArgumentException.class,
+                () -> Model.newGame(1, Map.of("time.startTime", "25:00")));
+        assertThrows(IllegalArgumentException.class,
+                () -> Model.newGame(1, Map.of("time.startDay", "0")));
+    }
+
+    @Test
     @DisplayName("invalid settings are rejected before any world is built")
     void newGame_rejectsInvalidSettings() {
         assertThrows(IllegalArgumentException.class, () -> Model.newGame(1,

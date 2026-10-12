@@ -8,19 +8,19 @@ import letrain.time.GameTime;
 import letrain.time.SolarModel;
 
 /**
- * Tick-driven clock starting at 08:00 of day 1 (ADR-022). One real second is
- * {@link GameClock#TICKS_PER_SECOND} ticks; with the default 1440-second day each tick advances
- * three game seconds.
+ * Tick-driven clock starting at 08:00 of day 1 by default (ADR-022); since S2b the start instant
+ * (day + minute of day) is configurable for a new game, while the defaults keep the historical
+ * behaviour. One real second is {@link GameClock#TICKS_PER_SECOND} ticks; with the default
+ * 1440-second day each tick advances three game seconds.
  */
 public class SimpleGameClock implements GameClock {
-
-    private static final int START_MINUTE_OF_DAY = 8 * 60;
-    private static final int MINUTES_PER_DAY = 24 * 60;
 
     private final List<GameClockListener> listeners = new CopyOnWriteArrayList<>();
     private long elapsedTicks;
     private int dayDurationSeconds = DEFAULT_DAY_DURATION_SECONDS;
     private double latitude = SolarModel.DEFAULT_LATITUDE;
+    private int startDay = DEFAULT_START_DAY;
+    private int startMinuteOfDay = DEFAULT_START_MINUTE_OF_DAY;
     private GameTime last;
     private boolean lastNight;
 
@@ -49,12 +49,16 @@ public class SimpleGameClock implements GameClock {
         if (time == null) {
             return;
         }
-        double minutesFromStart = (time.day() - 1) * (double) MINUTES_PER_DAY + time.minuteOfDay()
-                - START_MINUTE_OF_DAY;
+        double minutesFromStart = (time.day() - startDay) * (double) MINUTES_PER_DAY
+                + time.minuteOfDay() - startMinuteOfDay;
         double ticksPerMinute = dayDurationSeconds * TICKS_PER_SECOND / (double) MINUTES_PER_DAY;
         long ticks = Math.round(minutesFromStart * ticksPerMinute);
         if (ticks < 0) {
-            ticks += Math.round(MINUTES_PER_DAY * ticksPerMinute);
+            // Instants before the origin roll forward day by day until they reach it, so the
+            // clock never goes back past its start instant (one day for the day 1, 08:00 default,
+            // like before S2b).
+            long ticksPerDay = Math.round(MINUTES_PER_DAY * ticksPerMinute);
+            ticks += ((-ticks + ticksPerDay - 1) / ticksPerDay) * ticksPerDay;
         }
         elapsedTicks = Math.max(0, ticks);
         notifyChanges();
@@ -62,7 +66,7 @@ public class SimpleGameClock implements GameClock {
 
     @Override
     public GameTime now() {
-        double totalMinutes = START_MINUTE_OF_DAY
+        double totalMinutes = startMinuteOfDay + (startDay - 1) * (double) MINUTES_PER_DAY
                 + elapsedTicks * (double) MINUTES_PER_DAY / (dayDurationSeconds * TICKS_PER_SECOND);
         int day = 1 + (int) (totalMinutes / MINUTES_PER_DAY);
         int minuteOfDay = (int) (totalMinutes % MINUTES_PER_DAY);
@@ -98,12 +102,27 @@ public class SimpleGameClock implements GameClock {
     }
 
     @Override
+    public void setStartTime(GameTime startTime) {
+        if (startTime == null) {
+            return;
+        }
+        startDay = startTime.day();
+        startMinuteOfDay = startTime.minuteOfDay();
+        startOver();
+    }
+
+    @Override
+    public GameTime startTime() {
+        return new GameTime(startDay, startMinuteOfDay / 60, startMinuteOfDay % 60);
+    }
+
+    @Override
     public long ticksUntil(GameTime time) {
         if (time == null) {
             return 0;
         }
-        double minutesFromStart = (time.day() - 1) * (double) MINUTES_PER_DAY + time.minuteOfDay()
-                - START_MINUTE_OF_DAY;
+        double minutesFromStart = (time.day() - startDay) * (double) MINUTES_PER_DAY
+                + time.minuteOfDay() - startMinuteOfDay;
         double ticksPerMinute = dayDurationSeconds * TICKS_PER_SECOND / (double) MINUTES_PER_DAY;
         // ceil so the target tick is the first one whose displayed minute is the requested one
         // (never earlier); the tiny epsilon absorbs floating-point noise on exact multiples.
@@ -146,6 +165,11 @@ public class SimpleGameClock implements GameClock {
         startOver();
     }
 
+    /**
+     * Recomputes the derived state (last notified instant and night flag) from the current origin
+     * and counter, without firing events: constructor, {@code setElapsedTicks} and start changes
+     * are silent by design.
+     */
     private void startOver() {
         last = now();
         lastNight = isNight();

@@ -30,6 +30,16 @@ public interface EconomyManager {
      */
     double getLatitude();
 
+    /**
+     * Creation-time start day of the game clock ({@code time.startDay}, S2b): 1..366, default 1.
+     * {@code Model.newGame} applies it before the first tick; loading a savegame restores its own
+     * origin and never moves the running clock.
+     */
+    int getStartDay();
+
+    /** Creation-time start minute of day of the game clock ({@code time.startTime}), 0..1439. */
+    int getStartMinuteOfDay();
+
     float getCost(ExpenseType type);
 
     void spend(ExpenseType type);
