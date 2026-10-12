@@ -12,6 +12,7 @@ Bienvenido a la documentación técnica de **LeTrain**. Esta wiki está diseñad
 - [[architecture/PresenterSymmetryProposal|Propuesta de Simetría en Presentadores y Vistas]]
 - [[architecture/TrainMovementManagerStudy|Estudio de Relación Train y TrainMovementManager]]
 - [[architecture/ClassIndex|Índice de Clases (generado automáticamente)]]
+- [[systems/SettingsApply|Aplicación de Ajustes en partida (S3a: apply-by-state, escenario y defaults)]]
 
 ## 🛤️ Infraestructura Ferroviaria
 - [[infrastructure/TrackTypes|Jerarquía de Vías (Forks, Puentes, Túneles, TrackComponent)]]

@@ -31,6 +31,13 @@ public interface EconomyManager {
     double getLatitude();
 
     /**
+     * The {@code letrain.cfg} this manager reads (working directory first, then next to the app),
+     * or {@code null} when neither exists. The settings dialog uses it as the target of "save as
+     * defaults" (D4, S3a).
+     */
+    java.io.File getConfigFile();
+
+    /**
      * Creation-time start day of the game clock ({@code time.startDay}, S2b): 1..366, default 1.
      * {@code Model.newGame} applies it before the first tick; loading a savegame restores its own
      * origin and never moves the running clock.

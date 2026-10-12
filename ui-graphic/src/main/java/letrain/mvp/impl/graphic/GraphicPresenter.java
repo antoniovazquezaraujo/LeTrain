@@ -996,9 +996,10 @@ public class GraphicPresenter extends ApplicationAdapter
                     letrain.command.ScenarioFile.parse(text);
             // Apply the scenario's settings (configuration section) to the fresh world BEFORE any
             // terrain generation, so the scenario reproduces the same terrain and rules regardless
-            // of the local letrain.cfg.
+            // of the local letrain.cfg; the model remembers the keys as scenario-locked (S3a/D10)
+            // and wires the clock with them.
             letrain.mvp.impl.Model fresh = new letrain.mvp.impl.Model(scenario.seed());
-            fresh.getEconomyManager().applyConfig(scenario.configuration());
+            fresh.applyScenarioConfiguration(scenario.configuration());
             applyLoadedModel(fresh, file);
             // Constructor libre: building the scenario costs nothing (ADR-020).
             model.getEconomyManager().setFreeConstruction(true);
