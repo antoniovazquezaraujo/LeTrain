@@ -121,4 +121,21 @@ class TerminalPresenterScenarioEditorTest {
         assertEquals(99.5f, presenter.getModel().getEconomyManager().getWaterThreshold(), 0.001f);
         assertEquals(199.5f, presenter.getModel().getEconomyManager().getRockThreshold(), 0.001f);
     }
+
+    @Test
+    @DisplayName("onPlayScenarioText remembers the configuration keys as scenario-locked (S3a)")
+    void playText_recordsScenarioLock() {
+        Model model = new Model(1);
+        TerminalPresenter presenter = presenterWith(model);
+        String text = "# LeTrain scenario v1\n" + "seed 1\n" + "configuration {\n"
+                + "time.dayDurationSeconds=720\n" + "world.latitude=10.0\n" + "}\n" + "on build {\n"
+                + "go 0,0; face e; write 3;\n" + "}\n";
+
+        presenter.onPlayScenarioText(text);
+
+        assertEquals(java.util.Set.of("time.dayDurationSeconds", "world.latitude"),
+                presenter.getModel().getScenarioSettingKeys());
+        assertEquals(720, presenter.getModel().getEconomyManager().getDayDurationSeconds());
+        assertEquals(10.0, presenter.getModel().getGameClock().getLatitude(), 0.001);
+    }
 }

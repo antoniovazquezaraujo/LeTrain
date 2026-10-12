@@ -385,6 +385,28 @@ public interface Model {
 
     public EconomyManager getEconomyManager();
 
+    /**
+     * Applies catalogue settings to the running game (S3a, concept §5.2): LIVE/REAPPLY keys reach
+     * the game (the clock re-syncs day length/latitude, and a day-length change keeps the displayed
+     * instant); NEW_GAME and scenario-fixed keys come back rejected with their reason and are never
+     * applied.
+     *
+     * @param settings catalogue keys to apply; unknown keys are rejected too
+     * @return applied keys and rejections with reason, for the settings dialog
+     */
+    letrain.settings.SettingsApplyResult applyLiveSettings(java.util.Map<String, String> settings);
+
+    /**
+     * Applies a scenario's {@code configuration { }} when a world is rebuilt from it and remembers
+     * its keys (D10), so the settings UI shows them locked with "defined by scenario".
+     */
+    void applyScenarioConfiguration(java.util.Map<String, String> configuration);
+
+    /**
+     * Catalogue keys the current scenario fixes (D10); empty when the game has no scenario lock.
+     */
+    java.util.Set<String> getScenarioSettingKeys();
+
 
     void setMark(String name, letrain.map.Point pos);
 

@@ -517,6 +517,13 @@ public class EconomyManager implements letrain.economy.EconomyManager {
         return latitude;
     }
 
+    /** The {@code letrain.cfg} actually read, or null when none exists (D4 target, S3a). */
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Override
+    public File getConfigFile() {
+        return locateConfigFile();
+    }
+
     /** Creation-time start day of the clock ({@code time.startDay}, S2b): 1..366, default 1. */
     @Override
     public int getStartDay() {
@@ -535,7 +542,7 @@ public class EconomyManager implements letrain.economy.EconomyManager {
 
     @Override
     public void reloadConfig() {
-        File configFile = findConfigFile();
+        File configFile = locateConfigFile();
         if (configFile == null) {
             return;
         }
@@ -554,7 +561,7 @@ public class EconomyManager implements letrain.economy.EconomyManager {
      * to the application and its ancestors. This makes the packaged default work no matter where
      * the launcher is started from.
      */
-    static File findConfigFile() {
+    private static File locateConfigFile() {
         java.util.List<File> dirs = new java.util.ArrayList<>();
         dirs.add(new File("."));
         File dir = jarDirectory();

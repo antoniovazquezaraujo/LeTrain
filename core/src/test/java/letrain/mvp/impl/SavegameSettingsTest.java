@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.ByteArrayInputStream;
 import java.util.Map;
 import letrain.ground.TerrainCalibrator;
+import letrain.settings.SettingsApplyResult;
 import letrain.settings.SettingsCatalog;
 import letrain.time.GameClock;
 import letrain.time.GameTime;
@@ -222,5 +223,45 @@ class SavegameSettingsTest {
         assertEquals(200f, loaded.getEconomyManager().getRockThreshold(), 0.001f);
         assertArrayEquals(terrainSignature(model), terrainSignature(loaded),
                 "an old savegame must keep its historical look");
+    }
+
+    @Test
+    @DisplayName("scenario-fixed keys travel in the settings section and survive a load (S3a)")
+    void roundTrip_keepsScenarioLock() throws Exception {
+        Model model = new Model(123);
+        Map<String, String> scenario = new java.util.LinkedHashMap<>();
+        scenario.put("time.dayDurationSeconds", "720");
+        scenario.put("world.latitude", "10.0");
+        model.applyScenarioConfiguration(scenario);
+
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode tree = (ObjectNode) mapper.readTree(saves.toBytes(model));
+        assertEquals("time.dayDurationSeconds,world.latitude",
+                tree.path("settings").path("scenario.keys").asText(),
+                "the lock lives inside the settings section, not as its own JSON block");
+
+        Model loaded = saves.fromBytes(saves.toBytes(model));
+
+        assertNotNull(loaded);
+        assertEquals(
+                new java.util.LinkedHashSet<>(
+                        java.util.List.of("time.dayDurationSeconds", "world.latitude")),
+                loaded.getScenarioSettingKeys());
+        SettingsApplyResult result =
+                loaded.applyLiveSettings(Map.of("time.dayDurationSeconds", "900"));
+        assertEquals(SettingsApplyResult.DEFINED_BY_SCENARIO,
+                result.rejections().get("time.dayDurationSeconds"),
+                "the lock still refuses live changes after the round-trip");
+    }
+
+    @Test
+    @DisplayName("a savegame without the lock entry loads unlocked (legacy, S3a)")
+    void oldSavegame_withoutLock_isUnlocked() {
+        Model loaded = saves.fromBytes(saves.toBytes(new Model(123)));
+
+        assertNotNull(loaded);
+        assertTrue(loaded.getScenarioSettingKeys().isEmpty());
+        assertFalse(loaded.applyLiveSettings(Map.of("startingBalance", "10")).hasRejections(),
+                "a plain game has no scenario lock");
     }
 }
