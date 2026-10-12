@@ -33,8 +33,7 @@ public final class NewGameText {
     public static final String INVALID_TITLE = "Invalid setting";
 
     /** Shown on the terrain section when the terminal cannot fit a preview (< 80x24). */
-    public static final String NO_PREVIEW =
-            "No preview (needs 80x24+): target and measured are shown above.";
+    public static final String NO_PREVIEW = "No preview at this size (needs 80x24+).";
 
     /** Target line of the terrain block; always visible, preview or not. */
     public static String targetLine(int waterPercent, int mountainPercent) {

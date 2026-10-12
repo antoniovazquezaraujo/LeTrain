@@ -16,7 +16,6 @@ import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Stream;
 import letrain.ground.TerrainPreview;
 import letrain.mvp.NewGameText;
 import letrain.settings.SettingApplyState;
@@ -35,14 +34,19 @@ import org.junit.jupiter.api.Test;
  * terminal. Issue #749 polishes them: square preview, single scrolling column, hotkeys and the
  * brown mountain. Issue #751 drops every range hint, aligns the whole dialog on one value column
  * and rejects invalid commits with a range tooltip. Issue #754 halves the preview, adds the blank
- * row under the tabs and removes the seed button (and Alt+N).
+ * row under the tabs and removes the seed button (and Alt+N). Issue #755 gives every page its own
+ * value column, flushes the preview left, removes the target/measured line, stretches the stacked
+ * bar to the slider row and switches the tabs to letter hotkeys.
  */
-@DisplayName("New Game dialog layout (#746, polish #749/#754, field format #751)")
+@DisplayName("New Game dialog layout (#746, polish #749/#754/#755, field format #751)")
 class NewGameDialogTest {
 
     private static final List<String> FIELD_KEYS =
             List.of("terrain.waterPercent", "world.latitude", "map.VIEW_RADIUS", "startingBalance",
                     "delay.NORMAL_TRACK", "ui.highlightBlockedTracks");
+    private static final List<String> TERRAIN_NAMES =
+            List.of(NewGameText.SEED_LABEL, NewGameText.WATER_LABEL, NewGameText.MOUNTAIN_LABEL);
+    private static final int TERRAIN_COLUMN = NewGameDialog.valueColumn(TERRAIN_NAMES);
 
     @Test
     @DisplayName("120x30: the preview samples a 22x22 square (11 text rows), a quarter of the area")
@@ -97,7 +101,7 @@ class NewGameDialogTest {
     }
 
     @Test
-    @DisplayName("below 80x24 there is no preview (target/measured still shown)")
+    @DisplayName("below 80x24 there is no preview (sliders and the bar stay)")
     void should_PlanNoPreviewBelowThreshold() {
         int[][] tooSmall = {{79, 24}, {80, 23}, {40, 12}, {0, 0}, {70, 20}};
         for (int[] size : tooSmall) {
@@ -140,27 +144,48 @@ class NewGameDialogTest {
     }
 
     @Test
-    @DisplayName("every value starts after the widest field name of the whole dialog (#751)")
-    void should_AlignTheValueColumn() {
-        int column = NewGameDialog.fieldValueColumn();
-        String widest = Stream
-                .concat(SettingsCatalog.definitions().stream().map(SettingDefinition::displayName),
-                        Stream.of(NewGameText.SEED_LABEL, NewGameText.WATER_LABEL,
-                                NewGameText.MOUNTAIN_LABEL))
-                .max(Comparator.comparingInt(String::length)).orElseThrow();
+    @DisplayName("each page aligns its values after its own widest name (#755)")
+    void should_AlignTheValueColumnPerPage() {
+        for (SettingCategory category : SettingCategory.values()) {
+            if (category == SettingCategory.TERRAIN) {
+                continue; // the Terrain page shows its own labels (Water %, Mountain %)
+            }
+            List<String> names = NewGameDialog.fieldNames(category);
+            int column = NewGameDialog.valueColumn(names);
+            String widest =
+                    names.stream().max(Comparator.comparingInt(String::length)).orElseThrow();
 
-        assertEquals(widest.length() + 2, column, "widest name + ':' + one space");
-        assertEquals(widest + ": ", NewGameDialog.alignedLabel(widest, column),
-                "the widest name keeps a single space before the value");
-        for (String name : List.of(NewGameText.SEED_LABEL, NewGameText.WATER_LABEL,
-                NewGameText.MOUNTAIN_LABEL, "Starting balance", widest)) {
-            String aligned = NewGameDialog.alignedLabel(name, column);
-            assertEquals(column, aligned.length(), name + " must end at the value column");
-            assertTrue(aligned.startsWith(name + ":"), name + " keeps the colon glued");
-            assertTrue(aligned.endsWith(" "), name + " pads between colon and value");
+            assertEquals(widest.length() + 2, column, category + ": widest name + ':' + space");
+            assertEquals(widest + ": ", NewGameDialog.alignedLabel(widest, column),
+                    "the widest name keeps a single space before the value");
+            for (String name : names) {
+                String aligned = NewGameDialog.alignedLabel(name, column);
+                assertEquals(column, aligned.length(), name + " must end at the value column");
+                assertTrue(aligned.startsWith(name + ":"), name + " keeps the colon glued");
+                assertTrue(aligned.endsWith(" "), name + " pads between colon and value");
+            }
         }
-        assertEquals("Starting balance:" + " ".repeat(column - 17),
-                NewGameDialog.alignedLabel("Starting balance", column));
+
+        // Terrain keeps its own, much closer column: Seed, Water % and Mountain % at 12 (#755).
+        assertEquals(12, TERRAIN_COLUMN);
+        assertEquals("Seed:" + " ".repeat(7),
+                NewGameDialog.alignedLabel(NewGameText.SEED_LABEL, TERRAIN_COLUMN));
+        assertTrue(
+                TERRAIN_COLUMN < NewGameDialog
+                        .valueColumn(NewGameDialog.fieldNames(SettingCategory.UI)),
+                "the old global 26-cell column is gone");
+    }
+
+    @Test
+    @DisplayName("the stacked bar spans the full slider row: 59 cells at 70 columns (#755)")
+    void should_SpanTheSliderRow() {
+        assertEquals(40, NewGameDialog.sliderBarWidth(70, TERRAIN_COLUMN));
+        assertEquals(59, NewGameDialog.stackedBarWidth(70, TERRAIN_COLUMN));
+        assertEquals(59, NewGameDialog.stackedBarWidth(120, TERRAIN_COLUMN));
+        assertEquals(59, NewGameDialog.stackedBarWidth(200, TERRAIN_COLUMN));
+        // Narrow terminals shrink the slider bar and the stacked bar follows it exactly.
+        assertEquals(30, NewGameDialog.sliderBarWidth(49, TERRAIN_COLUMN));
+        assertEquals(49, NewGameDialog.stackedBarWidth(49, TERRAIN_COLUMN));
     }
 
     @Test
@@ -201,7 +226,7 @@ class NewGameDialogTest {
     @Test
     @DisplayName("an invalid commit reverts, keeps the focus and opens the tooltip (#751)")
     void should_RevertInvalidCommitsWithATooltip() {
-        int column = NewGameDialog.fieldValueColumn();
+        int column = TERRAIN_COLUMN;
         NewGameDialog.ValidatingTextBox box = new NewGameDialog.ValidatingTextBox(
                 SettingsCatalog.definition("terrain.waterPercent").orElseThrow(), "25", column);
         Panel host = new Panel(new LinearLayout(Direction.VERTICAL));
@@ -230,7 +255,7 @@ class NewGameDialogTest {
     @Test
     @DisplayName("the seed box only commits whole numbers; its tooltip says so (#751)")
     void should_RejectNonIntegerSeeds() {
-        int column = NewGameDialog.fieldValueColumn();
+        int column = TERRAIN_COLUMN;
         NewGameDialog.ValidatingTextBox box = new NewGameDialog.ValidatingTextBox(
                 SettingsCatalog.definition("seed").orElseThrow(), "777", column);
         Panel host = new Panel(new LinearLayout(Direction.VERTICAL));
@@ -307,30 +332,27 @@ class NewGameDialogTest {
     }
 
     @Test
-    @DisplayName("Alt+1..5 pick the tabs in order; other keys do not (#749)")
+    @DisplayName("Alt+T/G/E/C/U pick the tabs by their letter; digits do not (#755)")
     void should_MapTabHotkeys() {
         List<SettingCategory> tabs = List.of(SettingCategory.TERRAIN, SettingCategory.WORLD,
                 SettingCategory.ECONOMY, SettingCategory.CONSTRUCTION, SettingCategory.UI);
 
-        assertEquals(SettingCategory.TERRAIN, NewGameDialog.tabHotkey('1', tabs).orElseThrow());
-        assertEquals(SettingCategory.WORLD, NewGameDialog.tabHotkey('2', tabs).orElseThrow());
-        assertEquals(SettingCategory.ECONOMY, NewGameDialog.tabHotkey('3', tabs).orElseThrow());
+        assertEquals(SettingCategory.TERRAIN, NewGameDialog.tabHotkey('t', tabs).orElseThrow());
+        assertEquals(SettingCategory.WORLD, NewGameDialog.tabHotkey('g', tabs).orElseThrow());
+        assertEquals(SettingCategory.ECONOMY, NewGameDialog.tabHotkey('e', tabs).orElseThrow());
         assertEquals(SettingCategory.CONSTRUCTION,
-                NewGameDialog.tabHotkey('4', tabs).orElseThrow());
-        assertEquals(SettingCategory.UI, NewGameDialog.tabHotkey('5', tabs).orElseThrow());
-        assertTrue(NewGameDialog.tabHotkey('6', tabs).isEmpty(), "past the last tab");
-        assertTrue(NewGameDialog.tabHotkey('0', tabs).isEmpty(), "no tab for 0");
-        assertTrue(NewGameDialog.tabHotkey('t', tabs).isEmpty(),
-                "tabs are numeric: letters stay free for the actions");
-    }
+                NewGameDialog.tabHotkey('c', tabs).orElseThrow());
+        assertEquals(SettingCategory.UI, NewGameDialog.tabHotkey('u', tabs).orElseThrow());
+        assertEquals(SettingCategory.TERRAIN, NewGameDialog.tabHotkey('T', tabs).orElseThrow(),
+                "letters are case-insensitive");
+        assertTrue(NewGameDialog.tabHotkey('1', tabs).isEmpty(), "the number shortcuts are gone");
+        assertTrue(NewGameDialog.tabHotkey('s', tabs).isEmpty(),
+                "S starts the game: it is not a tab");
 
-    @Test
-    @DisplayName("the footer hint lists the Alt keys and no Alt+N anymore (#754)")
-    void should_AdvertiseTheAltKeys() {
-        assertEquals("Alt+1-5 · Alt+S · Alt+C", NewGameDialog.HOTKEY_HINT);
-        assertTrue(NewGameDialog.HOTKEY_HINT.contains("Alt+S"), "Start stays advertised");
-        assertTrue(NewGameDialog.HOTKEY_HINT.contains("Alt+C"), "Cancel stays advertised");
-        assertFalse(NewGameDialog.HOTKEY_HINT.contains("Alt+N"), "the seed button is gone");
+        assertEquals('T', NewGameDialog.tabLetter(SettingCategory.TERRAIN));
+        assertEquals('G', NewGameDialog.tabLetter(SettingCategory.WORLD));
+        assertEquals('C', NewGameDialog.tabLetter(SettingCategory.CONSTRUCTION));
+        assertEquals('U', NewGameDialog.tabLetter(SettingCategory.UI));
     }
 
     private static String label(String key) {
