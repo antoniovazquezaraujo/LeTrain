@@ -132,7 +132,7 @@ class NewGameFormTest {
     @Test
     @DisplayName("the sections map world to Game and keep the catalogue grouping")
     void should_ExposeSectionNames() {
-        assertEquals(List.of("Terrain", "Game", "Economy", "Construction", "UI"), java.util.Arrays
+        assertEquals(List.of("Terrain", "Game", "Economy", "Build", "UI"), java.util.Arrays
                 .stream(SettingCategory.values()).map(SettingCategory::displayName).toList());
         assertEquals(SettingCategory.WORLD,
                 SettingsCatalog.definition("world.latitude").orElseThrow().category());

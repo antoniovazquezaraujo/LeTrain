@@ -123,6 +123,8 @@ public class TerminalView implements letrain.mvp.View {
     static final TextColor MENU_DISABLED_FG_COLOR = new TextColor.RGB(0x80, 0x80, 0x80);
     static final TextColor SELECTED_BG_COLOR = ANSI.BLUE;
     static final TextColor SHORTCUT_COLOR = ANSI.GREEN_BRIGHT;
+    /** Accent of the Alt mnemonic letters (footer buttons, dialog tabs): the editor-footer red. */
+    static final TextColor MNEMONIC_COLOR = ANSI.RED_BRIGHT;
 
     public TerminalView(GameViewListener gameViewListener) {
         this.gameViewListener = gameViewListener;
@@ -1414,7 +1416,7 @@ public class TerminalView implements letrain.mvp.View {
                 if (!component.isEnabled()) {
                     graphics.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.BLACK);
                 } else {
-                    graphics.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT);
+                    graphics.setForegroundColor(MNEMONIC_COLOR);
                 }
                 int at = indexOfIgnoreCase(label, mnemonic);
                 if (at >= 0) {

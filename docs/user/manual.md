@@ -22,12 +22,12 @@ The game can be controlled via the keyboard in both its 2D and 3D versions. Belo
 - Console command **`new game;`** opens the same New Game dialog from the CLI.
 
 #### New Game dialog (2D)
-- The **Terrain** tab opens first and keeps every terrain control: the seed, the **Water %**/**Mountain %** sliders, the **stacked bar** (as wide as the slider row) and the **preview**. The other tabs (**Game**, **Economy**, **Construction**, **UI**) show the settings catalogue only.
+- The **Terrain** tab opens first and keeps every terrain control: the seed, the **Water %**/**Mountain %** sliders, the **stacked bar** (as wide as the slider row) and the **preview**. The other tabs (**Game**, **Economy**, **Build**, **UI**) show the settings catalogue only.
 - **Seed**: a random seed is drawn when the dialog opens. It stays editable and copyable.
 - **Terrain**: the rule is *water + mountain ≤ 95 %*: moving one slider clamps the other, so there is always at least 5 % of field. The 100 % **stacked bar** shows the water / field / mountain split.
 - **Preview**: an adaptive **square** terrain sampler (same noise and calibrated thresholds as the world generator) drawn with half blocks, so the world keeps its 1:1 cell shape; the mountain is the game brown. It sits at the left edge and appears from **80×24**, growing with the terminal (16×16 cells at 80×24, 22×22 at 120×30: about a quarter of the section area, so it never takes over the dialog); below 80×24 the sliders and the bar stay.
-- **Sections**: one **scrolling column** per tab, one field per row as `Name: value` (plus its unit; checkboxes for on/off options). Each page aligns its values after its own widest name (the Terrain values sit close to their labels), so the left gap is gone. No range hints on the rows: confirming an invalid value (**Enter**/Tab) keeps the previous one and opens a small box with the allowed range (`Allowed: 0..95`, `Minimum: 0`, `Maximum: 12`). **Start** builds the world with those values; **Cancel**/Esc leaves everything as it was.
-- **Keys**: **Alt+T/G/E/C/U** switch tabs by their letter, **Alt+S** starts and **Esc** cancels.
+- **Sections**: one **scrolling column** per tab, one field per row as `Name: value` (plus its unit; checkboxes for on/off options). Each page aligns its values after its own widest name (the Terrain values sit close to their labels), so the left gap is gone. A focused field is armed: typing replaces the whole value (moving the caret cancels that, Backspace clears it). No range hints on the rows: confirming an invalid value (**Enter**/Tab) keeps the previous one and opens a small box with the allowed range (`Allowed: 0..95`, `Minimum: 0`, `Maximum: 12`). **Start** builds the world with those values; **Cancel**/Esc leaves everything as it was.
+- **Keys**: **Alt+T/G/E/B/U** switch tabs by their letter (also **Ctrl+Tab**/**Ctrl+Shift+Tab** to cycle), **Alt+S** starts and **Alt+C**/**Esc** cancels. The dialog has a black background.
 
 ### Navigation and Views
 - **Arrow Keys (or h, j, k, l)**: Move the cursor freely or follow a track (Vim-style navigation).

@@ -2,7 +2,7 @@ package letrain.settings;
 
 /** Form section a setting belongs to (concept §3). */
 public enum SettingCategory {
-    TERRAIN("Terrain"), WORLD("Game"), ECONOMY("Economy"), CONSTRUCTION("Construction"), UI("UI");
+    TERRAIN("Terrain"), WORLD("Game"), ECONOMY("Economy"), CONSTRUCTION("Build"), UI("UI");
 
     private final String displayName;
 

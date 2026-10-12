@@ -7,15 +7,24 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
+import com.googlecode.lanterna.graphics.PropertyTheme;
+import com.googlecode.lanterna.graphics.Theme;
+import com.googlecode.lanterna.graphics.ThemeDefinition;
+import com.googlecode.lanterna.gui2.Button;
+import com.googlecode.lanterna.gui2.CheckBox;
 import com.googlecode.lanterna.gui2.Direction;
 import com.googlecode.lanterna.gui2.Interactable;
+import com.googlecode.lanterna.gui2.Label;
 import com.googlecode.lanterna.gui2.LinearLayout;
 import com.googlecode.lanterna.gui2.Panel;
+import com.googlecode.lanterna.gui2.TextBox;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Properties;
 import letrain.ground.TerrainPreview;
 import letrain.mvp.NewGameText;
 import letrain.settings.SettingApplyState;
@@ -36,9 +45,11 @@ import org.junit.jupiter.api.Test;
  * and rejects invalid commits with a range tooltip. Issue #754 halves the preview, adds the blank
  * row under the tabs and removes the seed button (and Alt+N). Issue #755 gives every page its own
  * value column, flushes the preview left, removes the target/measured line, stretches the stacked
- * bar to the slider row and switches the tabs to letter hotkeys.
+ * bar to the slider row and switches the tabs to letter hotkeys. Issue #757 integrates the tab
+ * mnemonics, renames Construction to Build, adds the left margin/map gap, replaces the value on the
+ * first keystroke after focus and paints the dialog with a black theme.
  */
-@DisplayName("New Game dialog layout (#746, polish #749/#754/#755, field format #751)")
+@DisplayName("New Game dialog layout (#746, polish #749/#754/#755/#757, field format #751)")
 class NewGameDialogTest {
 
     private static final List<String> FIELD_KEYS =
@@ -91,9 +102,24 @@ class NewGameDialogTest {
     }
 
     @Test
-    @DisplayName("every section starts one blank row below the tab bar (#754)")
+    @DisplayName("a field row puts its widget exactly on the page column, with no hidden gap (#757)")
+    void should_AlignTheWidgetOnTheColumn() {
+        assertEquals(0, NewGameDialog.rowLayout().getSpacing());
+        Panel row = new Panel(NewGameDialog.rowLayout());
+        row.addComponent(
+                new Label(NewGameDialog.alignedLabel(NewGameText.SEED_LABEL, TERRAIN_COLUMN)));
+        row.addComponent(new TextBox(new TerminalSize(10, 1), "7"));
+        row.getLayoutManager().doLayout(new TerminalSize(40, 1), row.getChildrenList());
+
+        assertEquals(TERRAIN_COLUMN, row.getChildrenList().get(1).getPosition().getColumn(),
+                "Lanterna's default 1-column gap must not shift the values");
+    }
+
+    @Test
+    @DisplayName("every section starts one blank row and one empty column inside (#754/#757)")
     void should_ReserveABlankRowUnderTheTabs() {
         assertEquals(1, NewGameDialog.SECTION_TOP_ROWS);
+        assertEquals(1, NewGameDialog.LEFT_MARGIN_COLUMNS, "content floats one column right");
         assertEquals(24 - NewGameDialog.TAB_ROWS - NewGameDialog.FOOTER_ROWS - 1,
                 NewGameDialog.sectionRows(24));
         assertEquals(30 - NewGameDialog.TAB_ROWS - NewGameDialog.FOOTER_ROWS - 1,
@@ -332,7 +358,7 @@ class NewGameDialogTest {
     }
 
     @Test
-    @DisplayName("Alt+T/G/E/C/U pick the tabs by their letter; digits do not (#755)")
+    @DisplayName("Alt+T/G/E/B/U pick the tabs; C is Cancel again (#755, Build #757)")
     void should_MapTabHotkeys() {
         List<SettingCategory> tabs = List.of(SettingCategory.TERRAIN, SettingCategory.WORLD,
                 SettingCategory.ECONOMY, SettingCategory.CONSTRUCTION, SettingCategory.UI);
@@ -341,18 +367,85 @@ class NewGameDialogTest {
         assertEquals(SettingCategory.WORLD, NewGameDialog.tabHotkey('g', tabs).orElseThrow());
         assertEquals(SettingCategory.ECONOMY, NewGameDialog.tabHotkey('e', tabs).orElseThrow());
         assertEquals(SettingCategory.CONSTRUCTION,
-                NewGameDialog.tabHotkey('c', tabs).orElseThrow());
+                NewGameDialog.tabHotkey('b', tabs).orElseThrow());
         assertEquals(SettingCategory.UI, NewGameDialog.tabHotkey('u', tabs).orElseThrow());
         assertEquals(SettingCategory.TERRAIN, NewGameDialog.tabHotkey('T', tabs).orElseThrow(),
                 "letters are case-insensitive");
         assertTrue(NewGameDialog.tabHotkey('1', tabs).isEmpty(), "the number shortcuts are gone");
+        assertTrue(NewGameDialog.tabHotkey('c', tabs).isEmpty(),
+                "C cancels the dialog: Build took B");
         assertTrue(NewGameDialog.tabHotkey('s', tabs).isEmpty(),
                 "S starts the game: it is not a tab");
 
         assertEquals('T', NewGameDialog.tabLetter(SettingCategory.TERRAIN));
         assertEquals('G', NewGameDialog.tabLetter(SettingCategory.WORLD));
-        assertEquals('C', NewGameDialog.tabLetter(SettingCategory.CONSTRUCTION));
+        assertEquals('B', NewGameDialog.tabLetter(SettingCategory.CONSTRUCTION));
         assertEquals('U', NewGameDialog.tabLetter(SettingCategory.UI));
+        assertEquals("Build", SettingCategory.CONSTRUCTION.displayName());
+    }
+
+    @Test
+    @DisplayName("Ctrl+Tab cycles the tabs forward and backward, wrapping around (#757)")
+    void should_CycleTabs() {
+        List<SettingCategory> tabs = List.of(SettingCategory.TERRAIN, SettingCategory.WORLD,
+                SettingCategory.ECONOMY, SettingCategory.CONSTRUCTION, SettingCategory.UI);
+
+        assertEquals(SettingCategory.WORLD,
+                NewGameDialog.cycleTab(SettingCategory.TERRAIN, tabs, false));
+        assertEquals(SettingCategory.UI,
+                NewGameDialog.cycleTab(SettingCategory.TERRAIN, tabs, true),
+                "reverse wraps to the last tab");
+        assertEquals(SettingCategory.TERRAIN,
+                NewGameDialog.cycleTab(SettingCategory.UI, tabs, false), "forward wraps");
+        assertEquals(SettingCategory.CONSTRUCTION,
+                NewGameDialog.cycleTab(SettingCategory.UI, tabs, true));
+    }
+
+    @Test
+    @DisplayName("the first keystroke after taking focus replaces the whole value (#757)")
+    void should_ReplaceTheValueOnFirstKeystroke() {
+        NewGameDialog.ValidatingTextBox box = new NewGameDialog.ValidatingTextBox(
+                SettingsCatalog.definition("terrain.waterPercent").orElseThrow(), "25",
+                TERRAIN_COLUMN);
+
+        box.afterEnterFocus(Interactable.FocusChangeDirection.TELEPORT, null);
+        assertEquals(Interactable.Result.HANDLED,
+                box.handleKeyStroke(new KeyStroke('7', false, false)));
+        assertEquals("7", box.getText(), "the first printable character replaces the value");
+        box.handleKeyStroke(new KeyStroke('4', false, false));
+        assertEquals("74", box.getText(), "the next characters append normally");
+
+        // A caret movement cancels the emulated selection without erasing anything.
+        box.afterEnterFocus(Interactable.FocusChangeDirection.TELEPORT, null);
+        box.handleKeyStroke(new KeyStroke(KeyType.End));
+        box.handleKeyStroke(new KeyStroke('9', false, false));
+        assertEquals("749", box.getText(), "End keeps the value and the digit appends");
+
+        // Backspace while armed clears the field.
+        box.afterEnterFocus(Interactable.FocusChangeDirection.TELEPORT, null);
+        box.handleKeyStroke(new KeyStroke(KeyType.Backspace));
+        assertEquals("", box.getText());
+    }
+
+    @Test
+    @DisplayName("the dialog theme is white-on-black in every definition (#757)")
+    void should_BuildADarkTheme() {
+        Theme dark = NewGameDialog.darkTheme(new PropertyTheme(new Properties()));
+        for (Class<?> clazz : List.of(Label.class, TextBox.class, CheckBox.class, Button.class,
+                Panel.class)) {
+            ThemeDefinition definition = dark.getDefinition(clazz);
+            assertEquals(TerminalView.NORMAL_MENU_FG_COLOR, definition.getNormal().getForeground(),
+                    clazz.getSimpleName() + " normal foreground");
+            assertEquals(TerminalView.NORMAL_MENU_BG_COLOR, definition.getNormal().getBackground(),
+                    clazz.getSimpleName() + " normal background");
+            assertEquals(TerminalView.SELECTED_BG_COLOR, definition.getActive().getBackground(),
+                    clazz.getSimpleName() + " focus background");
+            assertEquals(TerminalView.MENU_DISABLED_FG_COLOR,
+                    definition.getInsensitive().getForeground(),
+                    clazz.getSimpleName() + " disabled foreground");
+        }
+        assertEquals(TerminalView.NORMAL_MENU_BG_COLOR,
+                dark.getDefaultDefinition().getNormal().getBackground(), "window backdrop");
     }
 
     private static String label(String key) {
