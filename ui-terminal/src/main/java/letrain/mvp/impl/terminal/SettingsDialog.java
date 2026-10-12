@@ -36,6 +36,8 @@ import letrain.settings.SettingDefinition;
 import letrain.settings.SettingValueType;
 import letrain.settings.SettingsApplyResult;
 import letrain.settings.SettingsCatalog;
+import letrain.time.GameClock;
+import letrain.time.GameTime;
 import letrain.visitor.terminal.TerminalPalette;
 
 /**
@@ -53,7 +55,12 @@ import letrain.visitor.terminal.TerminalPalette;
  *
  * <p>
  * The Terrain page shows the shared New Game terrain block (seed, water/mountain sliders, the
- * three-colour bar and the preview) with the running world's parameters, read-only.
+ * three-colour bar and the preview) with the running world's parameters, read-only. The Game page
+ * adds the live clock fields <b>Current day</b> and <b>Current time</b> below {@code Start
+ * day}/{@code Start time} (#769): they show {@link SettingsPort#now()}, validate against the game
+ * origin and the HH:MM range, and jump the clock through {@link SettingsPort#setTime} on Apply
+ * (with the reapply confirmation and its clock-jump warning). They are not catalogue settings and
+ * never join the values maps.
  *
  * <p>
  * Actions: <b>Apply</b> sends the editable values to {@link SettingsPort#apply} (confirming first
@@ -188,6 +195,105 @@ final class SettingsDialog {
         return changed;
     }
 
+    /** The game's origin read from the Start day/time the Game tab shows (#769). */
+    static GameTime gameStart(Map<String, String> baseline) {
+        int day = GameClock.DEFAULT_START_DAY;
+        try {
+            day = Math.max(1, Integer.parseInt(baseline.getOrDefault("time.startDay", "").trim()));
+        } catch (RuntimeException ignored) {
+            day = GameClock.DEFAULT_START_DAY;
+        }
+        int minute;
+        try {
+            minute = GameTime.parseMinuteOfDay(baseline.get("time.startTime"));
+        } catch (IllegalArgumentException ignored) {
+            minute = GameClock.DEFAULT_START_MINUTE_OF_DAY;
+        }
+        return GameTime.ofMinuteOfDay(day, minute);
+    }
+
+    /**
+     * Normalised Current day text, or {@code null} when it is not a whole number ≥ 1 or the pair
+     * (day, current time) falls before the game start (#769). When the time box is invalid its own
+     * field reports the error, so the day is accepted.
+     */
+    static String normalizeDayTarget(String dayText, String timeText, GameTime start) {
+        int day;
+        try {
+            day = Integer.parseInt(dayText.trim());
+        } catch (RuntimeException e) {
+            return null;
+        }
+        if (day < 1) {
+            return null;
+        }
+        Integer minute = parseTimeOrNull(timeText);
+        if (minute == null) {
+            return String.valueOf(day);
+        }
+        return GameTime.ofMinuteOfDay(day, minute).compareTo(start) < 0 ? null
+                : String.valueOf(day);
+    }
+
+    /**
+     * Normalised Current time text ({@code HH:MM}), or {@code null} when malformed/out of range or
+     * the pair (current day, time) falls before the game start (#769).
+     */
+    static String normalizeTimeTarget(String dayText, String timeText, GameTime start) {
+        Integer minute = parseTimeOrNull(timeText);
+        if (minute == null) {
+            return null;
+        }
+        Integer day = parseDayOrNull(dayText);
+        if (day != null && GameTime.ofMinuteOfDay(day, minute).compareTo(start) < 0) {
+            return null;
+        }
+        return GameTime.formatTimeOfDay(minute);
+    }
+
+    /** Tooltip of the Current day field: the minimum or the game-start guard (#769). */
+    static String dayTooltip(String dayText, String timeText, GameTime start) {
+        Integer day = parseDayOrNull(dayText);
+        Integer minute = parseTimeOrNull(timeText);
+        if (day != null && day >= 1 && minute != null
+                && GameTime.ofMinuteOfDay(day, minute).compareTo(start) < 0) {
+            return SettingsText.CLOCK_NOT_BEFORE_START;
+        }
+        return SettingsText.CLOCK_DAY_TOOLTIP;
+    }
+
+    /** Tooltip of the Current time field: the range or the game-start guard (#769). */
+    static String timeTooltip(String dayText, String timeText, GameTime start) {
+        Integer minute = parseTimeOrNull(timeText);
+        Integer day = parseDayOrNull(dayText);
+        if (minute != null && day != null && day >= 1
+                && GameTime.ofMinuteOfDay(day, minute).compareTo(start) < 0) {
+            return SettingsText.CLOCK_NOT_BEFORE_START;
+        }
+        return SettingsText.CLOCK_TIME_TOOLTIP;
+    }
+
+    /** True when the target differs from the snapshot (live clock changed, #769). */
+    static boolean clockChanged(GameTime snapshot, GameTime target) {
+        return !target.equals(snapshot);
+    }
+
+    private static Integer parseTimeOrNull(String text) {
+        try {
+            return GameTime.parseMinuteOfDay(text);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private static Integer parseDayOrNull(String text) {
+        try {
+            return Integer.parseInt(text.trim());
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
     /** What the player chose when the dialog closed. */
     sealed interface Action permits Action.Close, Action.StartGame {
         record Close() implements Action {
@@ -204,6 +310,15 @@ final class SettingsDialog {
 
         /** Writes the values as {@code letrain.cfg} defaults; {@code null} on success. */
         String saveDefaults(Map<String, String> values);
+
+        /** Running clock instant: snapshot and live value of the Current day/time fields (#769). */
+        letrain.time.GameTime now();
+
+        /**
+         * Jumps the running clock to the target (#769). Deterministic: at most one hour and one day
+         * event fire; the sun/season follow the new day and {@code at/every} recompute.
+         */
+        void setTime(letrain.time.GameTime target);
     }
 
     /**
@@ -228,6 +343,10 @@ final class SettingsDialog {
         Panel root = new Panel(new BorderLayout());
         Panel content = new Panel(new BorderLayout());
 
+        final GameTime openedAt = port.now();
+        final ClockFields[] clockFields = new ClockFields[1];
+        final GameTime[] clockSnapshot = {openedAt};
+
         final List<SettingCategory> tabs = List.of(SettingCategory.TERRAIN, SettingCategory.WORLD,
                 SettingCategory.ECONOMY, SettingCategory.CONSTRUCTION, SettingCategory.UI);
         Map<SettingCategory, Panel> sections = new EnumMap<>(SettingCategory.class);
@@ -235,8 +354,8 @@ final class SettingsDialog {
                 terrainSection(baseline, TerminalPalette.detect(), screen.getTerminalSize()));
         for (SettingCategory category : tabs) {
             if (category != SettingCategory.TERRAIN) {
-                sections.put(category,
-                        buildSection(category, baseline, scenarioKeys, readers, writers, editable));
+                sections.put(category, buildSection(category, baseline, scenarioKeys, readers,
+                        writers, editable, openedAt, clockFields));
             }
         }
 
@@ -266,10 +385,30 @@ final class SettingsDialog {
         Supplier<Map<String, String>> allValues = () -> collect(readers, editable, false);
 
         Runnable applyAction = () -> {
+            // The live clock fields validate on Apply too (#769): an invalid one shows its
+            // tooltip and reverts, and nothing is applied.
+            boolean dayOk = clockFields[0].dayBox().commit();
+            boolean timeOk = clockFields[0].timeBox().commit();
+            if (!dayOk || !timeOk) {
+                window.invalidate();
+                return;
+            }
             Map<String, String> values = editableValues.get();
-            List<String> reapply = changedReapplyKeys(baseline, values);
+            GameTime target = GameTime.ofMinuteOfDay(
+                    Integer.parseInt(clockFields[0].dayBox().getText().trim()),
+                    GameTime.parseMinuteOfDay(clockFields[0].timeBox().getText()));
+            boolean clockJump = clockChanged(clockSnapshot[0], target);
+            List<String> reapply = new ArrayList<>(changedReapplyKeys(baseline, values));
+            if (clockJump) {
+                if (target.day() != clockSnapshot[0].day()) {
+                    reapply.add(SettingsText.CURRENT_DAY);
+                }
+                if (target.minuteOfDay() != clockSnapshot[0].minuteOfDay()) {
+                    reapply.add(SettingsText.CURRENT_TIME);
+                }
+            }
             if (!reapply.isEmpty() && !confirm(gui, SettingsText.REAPPLY_TITLE,
-                    SettingsText.reapplyMessage(reapply))) {
+                    SettingsText.reapplyMessage(reapply, clockJump))) {
                 return;
             }
             SettingsApplyResult outcome = port.apply(values);
@@ -278,13 +417,19 @@ final class SettingsDialog {
                 message(gui, SettingsText.REJECTED_TITLE,
                         SettingsText.rejectedMessage(outcome.rejections()));
             } else {
+                if (clockJump) {
+                    port.setTime(target);
+                }
                 baseline.putAll(values);
+                refreshClock(clockFields[0], clockSnapshot, port);
                 feedback.setText(SettingsText.APPLIED);
             }
             window.invalidate();
         };
         Runnable restoreAction = () -> {
             writers.forEach((key, writer) -> writer.accept(baseline.get(key)));
+            // Restore also snaps the live clock fields to the running instant (#769).
+            refreshClock(clockFields[0], clockSnapshot, port);
             feedback.setText(SettingsText.RESTORED);
             window.invalidate();
         };
@@ -419,20 +564,93 @@ final class SettingsDialog {
         window.invalidate();
     }
 
-    /** One catalogue page: {@code ● Name: value} rows with their state marks (#764). */
+    /**
+     * One catalogue page: {@code ● Name: value} rows with their state marks (#764). The Game page
+     * adds the two live clock fields (#769) right below {@code Start time}; they live in
+     * {@code clockOut} instead of the catalogue maps so they never leak to the values.
+     */
     private static NewGameDialog.ScrollColumn buildSection(SettingCategory category,
             Map<String, String> baseline, Set<String> scenarioKeys,
             Map<String, Supplier<String>> readers, Map<String, Consumer<String>> writers,
-            Map<String, Boolean> editable) {
+            Map<String, Boolean> editable, GameTime now, ClockFields[] clockOut) {
         NewGameDialog.ScrollColumn columnPanel = new NewGameDialog.ScrollColumn();
         int column = valueColumn(NewGameDialog.fieldNames(category));
         for (SettingDefinition definition : SettingsCatalog.definitions()) {
             if (definition.category() == category) {
                 columnPanel.addComponent(fieldRow(definition, baseline.get(definition.key()),
                         scenarioKeys, readers, writers, editable, column));
+                if (definition.key().equals("time.startTime")) {
+                    clockOut[0] = addClockRows(columnPanel, column, now, gameStart(baseline));
+                }
             }
         }
         return columnPanel;
+    }
+
+    /**
+     * The two yellow live clock rows (#769), below {@code Start day}/{@code Start time}: Current
+     * day and Current time, editable, validated against the game origin.
+     */
+    static ClockFields addClockRows(NewGameDialog.ScrollColumn column, int columnWidth,
+            GameTime now, GameTime start) {
+        NewGameDialog.ValidatingTextBox[] boxes = new NewGameDialog.ValidatingTextBox[2];
+        boxes[0] = new NewGameDialog.ValidatingTextBox(String.valueOf(now.day()), columnWidth,
+                text -> normalizeDayTarget(text, boxes[1].getText(), start),
+                () -> dayTooltip(boxes[0].getText(), boxes[1].getText(), start));
+        boxes[1] = new NewGameDialog.ValidatingTextBox(GameTime.formatTimeOfDay(now.minuteOfDay()),
+                columnWidth, text -> normalizeTimeTarget(boxes[0].getText(), text, start),
+                () -> timeTooltip(boxes[0].getText(), boxes[1].getText(), start));
+        column.addComponent(clockFieldRow(SettingsText.CURRENT_DAY, boxes[0], columnWidth));
+        column.addComponent(clockFieldRow(SettingsText.CURRENT_TIME, boxes[1], columnWidth));
+        return new ClockFields(boxes[0], boxes[1]);
+    }
+
+    /** One read-write clock row: yellow glyph, aligned label, box and its tooltip host (#769). */
+    private static Panel clockFieldRow(String label, NewGameDialog.ValidatingTextBox box,
+            int columnWidth) {
+        Panel row = new Panel(new LinearLayout(Direction.VERTICAL));
+        Panel line = new Panel(NewGameDialog.rowLayout());
+        Label glyph = new Label(FieldState.REAPPLY.glyph() + " ");
+        glyph.setForegroundColor(FieldState.REAPPLY.color());
+        line.addComponent(glyph);
+        line.addComponent(new Label(alignedLabel(label, columnWidth)));
+        line.addComponent(box);
+        box.setTooltipHost(row);
+        row.addComponent(line);
+        return row;
+    }
+
+    /** Snaps the live clock fields and the snapshot to the running instant (#769). */
+    private static void refreshClock(ClockFields fields, GameTime[] snapshot, SettingsPort port) {
+        GameTime current = port.now();
+        snapshot[0] = current;
+        fields.setValues(current);
+    }
+
+    /** The live clock fields, kept in their own holder so they never join the catalogue maps. */
+    static final class ClockFields {
+
+        private final NewGameDialog.ValidatingTextBox dayBox;
+        private final NewGameDialog.ValidatingTextBox timeBox;
+
+        ClockFields(NewGameDialog.ValidatingTextBox dayBox,
+                NewGameDialog.ValidatingTextBox timeBox) {
+            this.dayBox = dayBox;
+            this.timeBox = timeBox;
+        }
+
+        NewGameDialog.ValidatingTextBox dayBox() {
+            return dayBox;
+        }
+
+        NewGameDialog.ValidatingTextBox timeBox() {
+            return timeBox;
+        }
+
+        void setValues(GameTime time) {
+            dayBox.setText(String.valueOf(time.day()));
+            timeBox.setText(GameTime.formatTimeOfDay(time.minuteOfDay()));
+        }
     }
 
     /** One field row: state glyph, {@code Name:}, widget and unit; no inline reason since #767. */
