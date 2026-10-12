@@ -3,6 +3,12 @@ package letrain.mvp.impl.terminal;
 import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
+import com.googlecode.lanterna.graphics.DefaultMutableThemeStyle;
+import com.googlecode.lanterna.graphics.DelegatingTheme;
+import com.googlecode.lanterna.graphics.DelegatingThemeDefinition;
+import com.googlecode.lanterna.graphics.Theme;
+import com.googlecode.lanterna.graphics.ThemeDefinition;
+import com.googlecode.lanterna.graphics.ThemeStyle;
 import com.googlecode.lanterna.gui2.AbstractComponent;
 import com.googlecode.lanterna.gui2.AbstractInteractableComponent;
 import com.googlecode.lanterna.gui2.BasicWindow;
@@ -11,7 +17,6 @@ import com.googlecode.lanterna.gui2.Button;
 import com.googlecode.lanterna.gui2.CheckBox;
 import com.googlecode.lanterna.gui2.Component;
 import com.googlecode.lanterna.gui2.ComponentRenderer;
-import com.googlecode.lanterna.gui2.Container;
 import com.googlecode.lanterna.gui2.Direction;
 import com.googlecode.lanterna.gui2.EmptySpace;
 import com.googlecode.lanterna.gui2.Interactable;
@@ -57,20 +62,23 @@ import letrain.visitor.terminal.TerminalPalette;
  * {@link TerrainPreview} with the same calibrated thresholds the world generator uses (#755 removed
  * the target/measured line). The terrain controls live only in this tab: they are no longer pinned
  * above every section (#749).</li>
- * <li><b>Sections</b>: Game, Economy, Construction and UI read
- * {@link SettingsCatalog#definitions()} as a single scrolling column of {@code Name: value} rows
- * (the 3-field grid felt cramped, #749; no range hints, #751; each page aligns its values after its
- * own widest name, #755).</li>
+ * <li><b>Sections</b>: Game, Economy, Build and UI read {@link SettingsCatalog#definitions()} as a
+ * single scrolling column of {@code Name: value} rows (the 3-field grid felt cramped, #749; no
+ * range hints, #751; each page aligns its values after its own widest name and keeps one empty
+ * column on the left, #755/#757).</li>
  * <li><b>Start</b> validates the whole form and returns the settings map to the presenter, which
- * builds the world via {@code Model.newGame}. <b>Esc</b> cancels (the Cancel button keeps no
- * mnemonic). <b>Alt+T/G/E/C/U</b> switch tabs and <b>Alt+S</b> starts (the old dialog advertised no
- * keys and answered none, #749; letter hotkeys #755; the seed is drawn once at open, #754).</li>
+ * builds the world via {@code Model.newGame}. <b>Esc</b> or <b>Alt+C</b> cancels (the Cancel button
+ * regained its mnemonic when Construction became Build, #757). <b>Alt+T/G/E/B/U</b> switch tabs,
+ * <b>Ctrl+Tab</b>/<b>Ctrl+Shift+Tab</b> cycle them and <b>Alt+S</b> starts; the tab bar is out of
+ * the focus cycle, so <b>Tab</b> walks the active page's fields plus Start/Cancel only (#757;
+ * letter hotkeys #755; the seed is drawn once at open, #754).</li>
  * </ul>
  *
  * <p>
  * The layout is a pure function of the terminal size ({@link #previewPlan(int, int)} and
  * {@link #revealOffset(int, int, int, int, int)}), so the adaptive behaviour is testable without a
- * terminal.
+ * terminal. The window runs on a black-background theme (#757) and text fields replace their value
+ * on the first keystroke after taking focus (#757).
  */
 final class NewGameDialog {
 
@@ -84,11 +92,14 @@ final class NewGameDialog {
     static final int FOOTER_ROWS = 1;
     /** Blank row between the tab bar and the first field of every section (#754). */
     static final int SECTION_TOP_ROWS = 1;
+    /** Empty column on the left of every page body, so the content floats a bit (#757). */
+    static final int LEFT_MARGIN_COLUMNS = 1;
     /**
      * Rows the terrain controls above the preview take inside the Terrain tab: seed, water,
-     * mountain and the 100 % bar (the target/measured line is gone, #755).
+     * mountain, the 100 % bar and the blank row before the map (the target/measured line is gone,
+     * #755; the map gap is #757).
      */
-    static final int TERRAIN_CHROME_ROWS = 4;
+    static final int TERRAIN_CHROME_ROWS = 5;
 
     /** Rows one tooltip box takes when a commit is rejected: top border, text, bottom border. */
     static final int TOOLTIP_ROWS = 3;
@@ -145,11 +156,6 @@ final class NewGameDialog {
     }
 
     /**
-     * Segment widths {@code [water, field, mountain]} of the 100 % stacked bar (draw order), so
-     * every segment totals exactly {@code width} cells (largest remainder: no segment vanishes
-     * while it has cells to claim).
-     */
-    /**
      * Width of a slider bar when the value column starts at {@code valueColumn}: the full
      * {@link #SLIDER_BAR_WIDTH} when it fits, down to 5 cells in narrow terminals. The closing
      * {@code "] 100%"} span takes 7 cells after the bar.
@@ -166,6 +172,11 @@ final class NewGameDialog {
         return Math.min(columns, valueColumn + sliderBarWidth(columns, valueColumn) + 7);
     }
 
+    /**
+     * Segment widths {@code [water, field, mountain]} of the 100 % stacked bar (draw order), so
+     * every segment totals exactly {@code width} cells (largest remainder: no segment vanishes
+     * while it has cells to claim).
+     */
     static int[] stackedBarWidths(int waterPercent, int mountainPercent, int width) {
         int[] parts =
                 {waterPercent, Math.max(0, 100 - waterPercent - mountainPercent), mountainPercent};
@@ -295,13 +306,13 @@ final class NewGameDialog {
         return Math.max(0, Math.min(maxOffset, candidate));
     }
 
-    /** Letter of the Alt shortcut of a tab: the first letter of its name ({@code T/G/E/C/U}). */
+    /** Letter of the Alt shortcut of a tab: the first letter of its name ({@code T/G/E/B/U}). */
     static char tabLetter(SettingCategory category) {
         return Character.toUpperCase(category.displayName().charAt(0));
     }
 
     /**
-     * Tab selected by an Alt access key: its letter ({@code T/G/E/C/U}, case-insensitive), empty
+     * Tab selected by an Alt access key: its letter ({@code T/G/E/B/U}, case-insensitive), empty
      * for any other key (#755).
      */
     static Optional<SettingCategory> tabHotkey(char key, List<SettingCategory> tabs) {
@@ -315,12 +326,27 @@ final class NewGameDialog {
     }
 
     /**
+     * Tab that follows (or precedes, when {@code reverse}) {@code active} in the tab order,
+     * wrapping around. Pure maths for the Ctrl+Tab / Ctrl+Shift+Tab cycle (#757).
+     */
+    static SettingCategory cycleTab(SettingCategory active, List<SettingCategory> tabs,
+            boolean reverse) {
+        int index = tabs.indexOf(active);
+        if (index < 0) {
+            return tabs.get(0);
+        }
+        int step = reverse ? -1 : 1;
+        return tabs.get(Math.floorMod(index + step, tabs.size()));
+    }
+
+    /**
      * Opens the modal dialog and returns the validated settings, or {@code null} when the player
      * cancels (Esc/Cancel).
      */
     static Map<String, String> show(Screen screen, Map<String, String> currentSettings) {
         NewGameForm form = NewGameForm.forNewGame(currentSettings);
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+        gui.setTheme(darkTheme(gui.getTheme()));
         TerminalPalette palette = TerminalPalette.detect();
         BasicWindow window = new BasicWindow();
         window.setHints(List.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
@@ -337,7 +363,7 @@ final class NewGameDialog {
                 NewGameText.MOUNTAIN_LABEL));
         final int[] seed = {form.seed()};
         Panel seedHost = new Panel(new LinearLayout(Direction.VERTICAL));
-        Panel seedRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
+        Panel seedRow = new Panel(rowLayout());
         seedRow.addComponent(new Label(alignedLabel(NewGameText.SEED_LABEL, column)));
         ValidatingTextBox seedBox = new ValidatingTextBox(
                 SettingsCatalog.definition(NewGameForm.SEED_KEY).orElseThrow(),
@@ -400,6 +426,8 @@ final class NewGameDialog {
         terrain.addComponent(water);
         terrain.addComponent(mountain);
         terrain.addComponent(singleRowComponent(bar));
+        // Blank line between the components and the map (or its no-preview notice, #757).
+        terrain.addComponent(new EmptySpace(new TerminalSize(1, 1)));
         if (plan != null) {
             terrain.addComponent(previewPanel);
         } else {
@@ -420,7 +448,13 @@ final class NewGameDialog {
         Panel tabBar = new Panel(new LinearLayout(Direction.HORIZONTAL));
         final SettingCategory[] active = {SettingCategory.TERRAIN};
         for (SettingCategory category : tabs) {
-            Button button = new Button(category.displayName());
+            // Tab buttons stay out of the focus cycle (#757): Alt+letter and Ctrl+Tab reach them.
+            Button button = new Button(category.displayName()) {
+                @Override
+                public boolean isFocusable() {
+                    return false;
+                }
+            };
             button.setRenderer(tabRenderer(category, active));
             button.addListener(triggered -> {
                 active[0] = category;
@@ -428,7 +462,6 @@ final class NewGameDialog {
             });
             tabBar.addComponent(button);
         }
-        showSection(content, sections, active[0], window);
 
         // --- Footer and window -------------------------------------------------------------
         Runnable startAction = () -> {
@@ -450,13 +483,22 @@ final class NewGameDialog {
 
         Panel footer = new Panel(new LinearLayout(Direction.HORIZONTAL));
         footer.addComponent(mnemonicButton(NewGameText.START, 'S', startAction));
-        // Cancel keeps no mnemonic: C belongs to the Construction tab (#755).
-        footer.addComponent(new Button(NewGameText.CANCEL, window::close));
+        // Build freed the C: Cancel gets its mnemonic (and Alt+C) back (#757).
+        footer.addComponent(mnemonicButton(NewGameText.CANCEL, 'C', window::close));
 
-        // Alt access keys: tabs by their letter, Start by S (Cancel keeps Esc only, #755).
+        // Ctrl+Tab cycles the tabs and Alt+letter jumps to one; Start keeps Alt+S and Cancel
+        // Alt+C (Esc works too). Handled here, before the focused widget sees the stroke (#757).
         window.addWindowListener(new WindowListenerAdapter() {
             @Override
             public void onInput(Window w, KeyStroke keyStroke, AtomicBoolean deliverEvent) {
+                if (keyStroke.isCtrlDown() && (keyStroke.getKeyType() == KeyType.Tab
+                        || keyStroke.getKeyType() == KeyType.ReverseTab)) {
+                    active[0] =
+                            cycleTab(active[0], tabs, keyStroke.getKeyType() == KeyType.ReverseTab);
+                    showSection(content, sections, active[0], window);
+                    deliverEvent.set(false);
+                    return;
+                }
                 if (!keyStroke.isAltDown() || keyStroke.getCharacter() == null) {
                     return;
                 }
@@ -469,6 +511,9 @@ final class NewGameDialog {
                 } else if (key == 's') {
                     startAction.run();
                     deliverEvent.set(false);
+                } else if (key == 'c') {
+                    window.close();
+                    deliverEvent.set(false);
                 }
             }
         });
@@ -478,30 +523,41 @@ final class NewGameDialog {
         root.addComponent(footer, BorderLayout.Location.BOTTOM);
 
         window.setComponent(root);
+        showSection(content, sections, active[0], window); // sets the initial focus on the page
         recalibrate.run();
         gui.addWindowAndWait(window);
         return result[0];
     }
 
+
+
     /**
      * Swaps the active section into the content area; the tab bar repaints its active style. Every
-     * section keeps a blank row under the tabs (#754).
+     * section keeps a blank row under the tabs (#754), one empty column on the left (#757) and,
+     * once the window is up, hands the focus to its first field (the previous page is gone).
      */
     private static void showSection(Panel content, Map<SettingCategory, Panel> sections,
             SettingCategory active, BasicWindow window) {
         content.removeAllComponents();
         content.addComponent(new EmptySpace(new TerminalSize(1, SECTION_TOP_ROWS)),
                 BorderLayout.Location.TOP);
+        content.addComponent(new EmptySpace(new TerminalSize(LEFT_MARGIN_COLUMNS, 1)),
+                BorderLayout.Location.LEFT);
         Panel section = sections.get(active);
         content.addComponent(section, BorderLayout.Location.CENTER);
-        // If the focus lived inside the section just swapped out, hand it to the new section's
-        // first field: keys must not keep editing a widget that is no longer on screen.
-        Interactable focused = window.getFocusedInteractable();
-        if (focused != null && window.getComponent() instanceof Container root
-                && !focused.isInside(root)) {
+        if (window.getComponent() != null) {
             window.setFocusedInteractable(section.nextFocus(null));
         }
         window.invalidate();
+    }
+
+    /**
+     * Horizontal row layout without Lanterna's default 1-column gap, so the value really lands on
+     * the page's value column right after the padded {@code Name:} label (#757). The footer and the
+     * tab bar keep their gap.
+     */
+    static LinearLayout rowLayout() {
+        return new LinearLayout(Direction.HORIZONTAL).setSpacing(0);
     }
 
     /** Wraps a 1-row component so a BorderLayout stretches it to the available width. */
@@ -519,14 +575,15 @@ final class NewGameDialog {
     }
 
     /**
-     * `< T Terrain >` tabs: the active one is reversed, the Alt letter stays highlighted (#755).
+     * `< Terrain >` tabs: the active one is reversed, and the Alt mnemonic letter lives inside the
+     * name (its first letter) highlighted like the footer buttons (#757).
      */
     private static InteractableRenderer<Button> tabRenderer(SettingCategory category,
             SettingCategory[] active) {
         return new InteractableRenderer<Button>() {
             @Override
             public TerminalSize getPreferredSize(Button component) {
-                return new TerminalSize(component.getLabel().length() + 7, 1);
+                return new TerminalSize(component.getLabel().length() + 4, 1);
             }
 
             @Override
@@ -540,14 +597,15 @@ final class NewGameDialog {
                 } else {
                     graphics.applyThemeStyle(component.getThemeDefinition().getNormal());
                 }
-                graphics.putString(0, 0,
-                        "< " + tabLetter(category) + " " + component.getLabel() + " >");
+                String label = component.getLabel();
+                graphics.putString(0, 0, "< " + label + " >");
                 if (isActive) {
                     graphics.enableModifiers(com.googlecode.lanterna.SGR.BOLD);
                 } else {
-                    graphics.setForegroundColor(TerminalView.SHORTCUT_COLOR);
+                    graphics.setForegroundColor(TerminalView.MNEMONIC_COLOR);
                 }
-                graphics.putString(2, 0, String.valueOf(tabLetter(category)));
+                // The mnemonic is the first letter, already inside the name: repaint it on top.
+                graphics.putString(2, 0, label.substring(0, 1));
                 graphics.disableModifiers(com.googlecode.lanterna.SGR.BOLD);
             }
 
@@ -582,7 +640,7 @@ final class NewGameDialog {
     private static Panel fieldRow(SettingDefinition definition, NewGameForm form,
             Map<String, Supplier<String>> readers, int column) {
         Panel row = new Panel(new LinearLayout(Direction.VERTICAL));
-        Panel line = new Panel(new LinearLayout(Direction.HORIZONTAL));
+        Panel line = new Panel(rowLayout());
         line.addComponent(new Label(alignedLabel(definition.displayName(), column)));
         if (definition.type() == SettingValueType.BOOLEAN) {
             CheckBox checkBox =
@@ -608,13 +666,16 @@ final class NewGameDialog {
      * Text box that commits with Enter/Tab: a valid value updates the field, an invalid one is
      * discarded (the previous value comes back, the focus stays) and a tooltip with the allowed
      * range opens next to the field (#751). It also scrolls its column when it takes focus
-     * (Tab/arrow form navigation).
+     * (Tab/arrow form navigation) and emulates select-on-focus (#757): the first printable
+     * character (or Backspace) after entering the field replaces the whole value; caret movements
+     * cancel that "selection" without erasing anything.
      */
     static final class ValidatingTextBox extends TextBox {
 
         private final SettingDefinition definition;
         private final int valueColumn;
         private String lastValid;
+        private boolean armed;
         private Panel tooltipHost;
         private Panel tooltipLine;
 
@@ -633,12 +694,34 @@ final class NewGameDialog {
         @Override
         protected void afterEnterFocus(Interactable.FocusChangeDirection direction,
                 Interactable previouslyInFocus) {
+            armed = true; // the value reads as selected: the next keystroke replaces it (#757)
             revealInColumn(this);
         }
 
         @Override
         public Result handleKeyStroke(KeyStroke keyStroke) {
             KeyType keyType = keyStroke.getKeyType();
+            if (armed && !keyStroke.isCtrlDown() && !keyStroke.isAltDown()) {
+                if (keyType == KeyType.Character && keyStroke.getCharacter() != null
+                        && !Character.isISOControl(keyStroke.getCharacter())) {
+                    setText(String.valueOf(keyStroke.getCharacter()));
+                    setCaretPosition(getText().length());
+                    armed = false;
+                    return Result.HANDLED;
+                }
+                if (keyType == KeyType.Backspace) {
+                    setText("");
+                    armed = false;
+                    return Result.HANDLED;
+                }
+                if (keyType == KeyType.ArrowLeft || keyType == KeyType.ArrowRight
+                        || keyType == KeyType.ArrowUp || keyType == KeyType.ArrowDown
+                        || keyType == KeyType.Home || keyType == KeyType.End
+                        || keyType == KeyType.PageUp || keyType == KeyType.PageDown
+                        || keyType == KeyType.MouseEvent) {
+                    armed = false; // moving the caret cancels the replacement, nothing is erased
+                }
+            }
             if (keyType == KeyType.Enter || keyType == KeyType.Tab
                     || keyType == KeyType.ReverseTab) {
                 if (!commit()) {
@@ -674,7 +757,7 @@ final class NewGameDialog {
                 return;
             }
             if (tooltipLine == null) {
-                tooltipLine = new Panel(new LinearLayout(Direction.HORIZONTAL));
+                tooltipLine = new Panel(rowLayout());
                 tooltipLine.addComponent(new EmptySpace(new TerminalSize(valueColumn, 1)));
                 tooltipLine.addComponent(new TooltipBox(allowedRange(definition)));
                 tooltipHost.addComponent(tooltipLine);
@@ -1109,6 +1192,67 @@ final class NewGameDialog {
                 graphics.setBackgroundColor(TerminalView.NORMAL_MENU_BG_COLOR);
             }
         }
+    }
+
+    /**
+     * Dark theme for the whole dialog (#757): the base Lanterna theme paints panels black-on-white,
+     * which is what made the dialog look bright. Every definition keeps its SGRs but swaps to the
+     * 2D client's menu palette: white on black, white on the selected blue when focused and grey on
+     * black when disabled.
+     */
+    static Theme darkTheme(Theme base) {
+        return new DelegatingTheme(base) {
+            @Override
+            public ThemeDefinition getDefaultDefinition() {
+                return darkDefinition(super.getDefaultDefinition());
+            }
+
+            @Override
+            public ThemeDefinition getDefinition(Class<?> clazz) {
+                return darkDefinition(super.getDefinition(clazz));
+            }
+        };
+    }
+
+    private static ThemeDefinition darkDefinition(ThemeDefinition definition) {
+        return new DelegatingThemeDefinition(definition) {
+            @Override
+            public ThemeStyle getNormal() {
+                return restyled(super.getNormal(), TerminalView.NORMAL_MENU_FG_COLOR,
+                        TerminalView.NORMAL_MENU_BG_COLOR);
+            }
+
+            @Override
+            public ThemeStyle getPreLight() {
+                return restyled(super.getPreLight(), TerminalView.NORMAL_MENU_FG_COLOR,
+                        TerminalView.NORMAL_MENU_BG_COLOR);
+            }
+
+            @Override
+            public ThemeStyle getSelected() {
+                return restyled(super.getSelected(), TerminalView.NORMAL_MENU_FG_COLOR,
+                        TerminalView.SELECTED_BG_COLOR);
+            }
+
+            @Override
+            public ThemeStyle getActive() {
+                return restyled(super.getActive(), TerminalView.NORMAL_MENU_FG_COLOR,
+                        TerminalView.SELECTED_BG_COLOR);
+            }
+
+            @Override
+            public ThemeStyle getInsensitive() {
+                return restyled(super.getInsensitive(), TerminalView.MENU_DISABLED_FG_COLOR,
+                        TerminalView.NORMAL_MENU_BG_COLOR);
+            }
+        };
+    }
+
+    /** Copy of {@code style} with the dialog's dark colours; SGRs (bold...) are preserved. */
+    private static ThemeStyle restyled(ThemeStyle style, TextColor foreground,
+            TextColor background) {
+        return new DefaultMutableThemeStyle(style).setForeground(foreground)
+                .setBackground(background);
     }
 
     private NewGameDialog() {}
