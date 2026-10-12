@@ -725,7 +725,8 @@ final class NewGameDialog {
      */
     static final class ValidatingTextBox extends TextBox {
 
-        private final SettingDefinition definition;
+        private final java.util.function.Function<String, String> normalizer;
+        private final Supplier<String> tooltipText;
         private final int valueColumn;
         private String lastValid;
         private boolean armed;
@@ -733,8 +734,21 @@ final class NewGameDialog {
         private Panel tooltipLine;
 
         ValidatingTextBox(SettingDefinition definition, String value, int valueColumn) {
+            this(value, valueColumn, text -> normalizeCommit(definition, text),
+                    () -> allowedRange(definition));
+        }
+
+        /**
+         * Text box with a custom validator (S3b live clock fields, #769): the normalizer returns
+         * the accepted text or {@code null}, and the supplier names the allowed value in the
+         * tooltip.
+         */
+        ValidatingTextBox(String value, int valueColumn,
+                java.util.function.Function<String, String> normalizer,
+                Supplier<String> tooltipText) {
             super(new TerminalSize(FIELD_WIDTH, 1), value);
-            this.definition = definition;
+            this.normalizer = normalizer;
+            this.tooltipText = tooltipText;
             this.valueColumn = valueColumn;
             this.lastValid = value;
         }
@@ -791,7 +805,7 @@ final class NewGameDialog {
          * @return {@code true} when the value was accepted
          */
         boolean commit() {
-            String normalized = normalizeCommit(definition, getText());
+            String normalized = normalizer.apply(getText());
             if (normalized != null) {
                 lastValid = normalized;
                 if (!normalized.equals(getText())) {
@@ -812,7 +826,7 @@ final class NewGameDialog {
             if (tooltipLine == null) {
                 tooltipLine = new Panel(rowLayout());
                 tooltipLine.addComponent(new EmptySpace(new TerminalSize(valueColumn, 1)));
-                tooltipLine.addComponent(new TooltipBox(allowedRange(definition)));
+                tooltipLine.addComponent(new TooltipBox(tooltipText.get()));
                 tooltipHost.addComponent(tooltipLine);
             }
             tooltipHost.invalidate();

@@ -2,7 +2,9 @@ package letrain.mvp.impl.terminal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.LinkedHashMap;
@@ -15,6 +17,8 @@ import letrain.settings.SettingCategory;
 import letrain.settings.SettingDefinition;
 import letrain.settings.SettingsApplyResult;
 import letrain.settings.SettingsCatalog;
+import letrain.time.GameClock;
+import letrain.time.GameTime;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -144,6 +148,90 @@ class SettingsDialogTest {
         assertEquals(Map.of("startingBalance", "10", "seed", "7"),
                 SettingsDialog.collect(readers, editable, false),
                 "the new-game prefill keeps the disabled fields too");
+    }
+
+    @Test
+    @DisplayName("the live clock fields validate range and the game-start guard (#769)")
+    void should_ValidateClockTargets() {
+        GameTime start = GameTime.ofMinuteOfDay(2, 10 * 60); // D2 10:00
+
+        assertEquals("5", SettingsDialog.normalizeDayTarget("5", "12:30", start));
+        assertEquals("2", SettingsDialog.normalizeDayTarget(" 2 ", "10:00", start),
+                "the exact start instant is allowed");
+        assertNull(SettingsDialog.normalizeDayTarget("1", "12:30", start),
+                "day before the start day");
+        assertNull(SettingsDialog.normalizeDayTarget("0", "12:30", start), "day must be ≥ 1");
+        assertNull(SettingsDialog.normalizeDayTarget("abc", "12:30", start));
+        assertNull(SettingsDialog.normalizeDayTarget("2", "09:59", start),
+                "same day, before the start time");
+        assertEquals("2", SettingsDialog.normalizeDayTarget("2", "bad", start),
+                "an invalid sibling does not block the day (the time field reports it)");
+
+        assertEquals("12:30", SettingsDialog.normalizeTimeTarget("5", "12:30", start));
+        assertEquals("10:00", SettingsDialog.normalizeTimeTarget(" 2 ", "10:00", start));
+        assertEquals("07:05", SettingsDialog.normalizeTimeTarget("5", "7:05", start),
+                "H:MM normalises to HH:MM");
+        assertNull(SettingsDialog.normalizeTimeTarget("5", "24:00", start));
+        assertNull(SettingsDialog.normalizeTimeTarget("5", "12:60", start));
+        assertNull(SettingsDialog.normalizeTimeTarget("5", "abc", start));
+        assertNull(SettingsDialog.normalizeTimeTarget("2", "09:00", start),
+                "earlier than the game start");
+    }
+
+    @Test
+    @DisplayName("the clock tooltips name the range or the start guard (#769)")
+    void should_TipTheClockFields() {
+        GameTime start = GameTime.ofMinuteOfDay(2, 10 * 60);
+
+        assertEquals(SettingsText.CLOCK_DAY_TOOLTIP,
+                SettingsDialog.dayTooltip("0", "12:00", start));
+        assertEquals(SettingsText.CLOCK_NOT_BEFORE_START,
+                SettingsDialog.dayTooltip("1", "12:00", start));
+        assertEquals(SettingsText.CLOCK_TIME_TOOLTIP,
+                SettingsDialog.timeTooltip("5", "25:00", start));
+        assertEquals(SettingsText.CLOCK_NOT_BEFORE_START,
+                SettingsDialog.timeTooltip("2", "09:00", start));
+    }
+
+    @Test
+    @DisplayName("the game start comes from the Start day/time the tab shows (#769)")
+    void should_ReadTheGameStart() {
+        assertEquals(GameTime.ofMinuteOfDay(3, 7 * 60 + 30),
+                SettingsDialog.gameStart(Map.of("time.startDay", "3", "time.startTime", "07:30")));
+        assertEquals(
+                GameTime.ofMinuteOfDay(GameClock.DEFAULT_START_DAY,
+                        GameClock.DEFAULT_START_MINUTE_OF_DAY),
+                SettingsDialog.gameStart(Map.of()), "the catalogue defaults when the map is empty");
+    }
+
+    @Test
+    @DisplayName("clockChanged compares the target with the snapshot (#769)")
+    void should_DetectClockChanges() {
+        GameTime snapshot = GameTime.ofMinuteOfDay(1, 8 * 60);
+
+        assertFalse(SettingsDialog.clockChanged(snapshot, GameTime.ofMinuteOfDay(1, 8 * 60)));
+        assertTrue(SettingsDialog.clockChanged(snapshot, GameTime.ofMinuteOfDay(1, 8 * 60 + 1)));
+        assertTrue(SettingsDialog.clockChanged(snapshot, GameTime.ofMinuteOfDay(2, 8 * 60)));
+    }
+
+    @Test
+    @DisplayName("the reapply message warns about the clock jump only when it jumps (#769)")
+    void should_WarnAboutTheClockJump() {
+        String plain = SettingsText.reapplyMessage(List.of("world.latitude"), false);
+        assertFalse(plain.contains("clock will jump"));
+
+        String jump = SettingsText.reapplyMessage(List.of("Current day"), true);
+        assertTrue(jump.contains("clock will jump"));
+        assertTrue(jump.contains("sun and seasons follow"));
+    }
+
+    @Test
+    @DisplayName("Current day/time are live clock controls, not catalogue fields (#769)")
+    void should_KeepTheClockOutOfTheCatalogue() {
+        for (SettingDefinition definition : SettingsCatalog.definitions()) {
+            assertNotEquals(SettingsText.CURRENT_DAY, definition.displayName(), definition.key());
+            assertNotEquals(SettingsText.CURRENT_TIME, definition.displayName(), definition.key());
+        }
     }
 
     @Test
