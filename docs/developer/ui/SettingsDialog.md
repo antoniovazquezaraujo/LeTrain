@@ -62,29 +62,6 @@ el **preview** debajo, con los parámetros actuales del mundo y todo en **read-o
 (`setEnabled(false)`: mismo aspecto, fuera del ciclo de foco). Los campos de terreno del catálogo
 (seed/water/mountain) ya no se listan como filas; su estado NEW_GAME queda implícito en el bloque.
 
-### Pestaña Game: reloj en marcha (#769)
-
-Debajo de `Start day`/`Start time`, la pestaña Game añade **`Current day`** y **`Current time`**,
-dos campos 🟡 REAPPLY **editables** que no son ajustes del catálogo:
-
-- Muestran el reloj en marcha: snapshot al abrir (`SettingsPort.now()`) y **snapshot refrescado
-  tras Apply y tras Restore** (`refreshClock()`), tanto en las cajas como en la referencia de
-  comparación.
-- **Validación** (`normalizeDayTarget()` / `normalizeTimeTarget()`, tooltip al confirmar/salir):
-  día entero ≥ 1; `HH:MM` en `00:00..23:59` (`GameTime.parseMinuteOfDay`, `H:MM` se normaliza);
-  y el par (día, hora) **no puede ser anterior al origen** de la partida (`gameStart()`, leído de
-  los `Start day`/`Start time` que muestra la pestaña). Tooltips: `Minimum: 1`,
-  `Allowed: 00:00..23:59` y `Allowed: not before the game start`.
-- **Apply**: valida ambos campos (si alguno es inválido, revierte y muestra su tooltip sin aplicar
-  nada); si el objetivo cambió, entra en la confirmación 🟡 con el aviso extra de salto de reloj
-  (`reapplyMessage(keys, clockJump)`) y, tras un Apply sin rechazos, ejecuta
-  `SettingsPort.setTime(target)` → `GameClock.setTime(GameTime)` (salto determinista: como mucho
-  un evento de hora + uno de día; el sol/estación siguen el día nuevo y los `at/every` se
-  recalculan).
-- **Aislamiento**: viven en un `ClockFields` aparte y no se registran en `readers`, así que no
-  entran en `collect()`: no aparecen en `effectiveConfig`, ni en el savegame `settings`, ni en el
-  pre-relleno de `New game`, ni en `Save as defaults`.
-
 ## Acciones y confirmaciones
 
 - **Apply**: envía solo los campos editables. Si algún REAPPLY cambió respecto al baseline

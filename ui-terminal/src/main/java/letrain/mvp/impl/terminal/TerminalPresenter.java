@@ -2306,16 +2306,6 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     public String saveDefaults(Map<String, String> values) {
                         return saveSettingsAsDefaults(values);
                     }
-
-                    @Override
-                    public letrain.time.GameTime now() {
-                        return model.getGameClock().now();
-                    }
-
-                    @Override
-                    public void setTime(letrain.time.GameTime target) {
-                        model.getGameClock().setTime(target);
-                    }
                 });
         if (action instanceof SettingsDialog.Action.StartGame startGame) {
             onNewGame(startGame.settings());

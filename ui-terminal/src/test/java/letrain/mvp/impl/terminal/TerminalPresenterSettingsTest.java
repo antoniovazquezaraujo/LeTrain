@@ -21,10 +21,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import letrain.audio.AudioController;
 import letrain.map.Point;
-import letrain.mvp.SettingsText;
 import letrain.mvp.impl.Model;
 import letrain.settings.SettingsApplyResult;
-import letrain.time.GameTime;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -118,27 +116,6 @@ class TerminalPresenterSettingsTest {
         presenter.getModel().applyScenarioConfiguration(Map.of("startingBalance", "55"));
         assertEquals(SettingsApplyResult.DEFINED_BY_SCENARIO,
                 port.apply(Map.of("startingBalance", "60")).rejections().get("startingBalance"));
-    }
-
-    @Test
-    @DisplayName("the port drives the live clock and no clock key leaks into the settings (#769)")
-    void clockPort_jumpsTheClockAndDoesNotLeak() {
-        presenter.beginStartup();
-        presenter.startNewGame(Map.of("seed", "5"));
-        stopNewAudioController();
-
-        AtomicReference<Map<String, String>> current = new AtomicReference<>();
-        SettingsDialog.SettingsPort port = capturePort(current, new AtomicReference<>());
-
-        assertFalse(current.get().containsKey(SettingsText.CURRENT_DAY),
-                "the live clock is not a catalogue value");
-        assertFalse(current.get().containsKey(SettingsText.CURRENT_TIME),
-                "the live clock is not a catalogue value");
-
-        GameTime target = GameTime.ofMinuteOfDay(4, 12 * 60 + 30);
-        port.setTime(target);
-        assertEquals(target, port.now(), "the port reads back the jumped clock");
-        assertEquals(target, presenter.getModel().getGameClock().now());
     }
 
     @Test

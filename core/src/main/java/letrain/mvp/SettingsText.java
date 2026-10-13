@@ -30,25 +30,10 @@ public final class SettingsText {
     /** Confirmation shown before applying settings that need a reapply (🟡). */
     public static final String REAPPLY_TITLE = "Reapply settings";
 
-    public static String reapplyMessage(java.util.List<String> keys, boolean clockJump) {
-        StringBuilder text = new StringBuilder("These settings need a reapply: ")
-                .append(String.join(", ", keys));
-        if (clockJump) {
-            text.append("\nThe clock will jump: the sun and seasons follow the new day and the")
-                    .append(" at/every triggers are recalculated.");
-        }
-        text.append("\nApply them to the running game?");
-        return text.toString();
+    public static String reapplyMessage(java.util.List<String> keys) {
+        return "These settings need a reapply: " + String.join(", ", keys)
+                + "\nApply them to the running game?";
     }
-
-    /** Live clock fields of the Game tab (#769): not catalogue settings. */
-    public static final String CURRENT_DAY = "Current day";
-    public static final String CURRENT_TIME = "Current time";
-
-    /** Tooltips of the live clock fields (#769). */
-    public static final String CLOCK_DAY_TOOLTIP = "Minimum: 1";
-    public static final String CLOCK_TIME_TOOLTIP = "Allowed: 00:00..23:59";
-    public static final String CLOCK_NOT_BEFORE_START = "Allowed: not before the game start";
 
     /** Confirmation shown before writing the form values into {@code letrain.cfg} (D4). */
     public static final String SAVE_DEFAULTS_TITLE = "Save as defaults";
