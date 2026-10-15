@@ -34,9 +34,9 @@ public class CameraController {
     private static final float MIN_ORBIT_DISTANCE = 3f;
     private static final float MAX_ORBIT_DISTANCE = 40f;
     /**
-     * Altura de la cámara ORBIT al máximo acercamiento. Permite encuadres a ras de suelo (mirando
-     * a la locomotora para explorar la escena y sacar fotos), pero queda por encima de vía y
-     * balasto, de modo que la cámara nunca atraviesa el terreno.
+     * Altura de la cámara ORBIT al máximo acercamiento. Permite encuadres a ras de suelo (mirando a
+     * la locomotora para explorar la escena y sacar fotos), pero queda por encima de vía y balasto,
+     * de modo que la cámara nunca atraviesa el terreno.
      */
     private static final float MIN_ORBIT_HEIGHT = 0.6f;
     /** Altura de la cámara ORBIT al máximo alejamiento; preserva el feel clásico (28 m). */
