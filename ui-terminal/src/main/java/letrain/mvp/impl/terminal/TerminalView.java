@@ -233,9 +233,9 @@ public class TerminalView implements letrain.mvp.View {
 
     /**
      * Screen lines of the <b>fallback</b> cover, vertically centred for a terminal of {@code rows}
-     * rows: game title and the legacy ASCII train. Used only when the terminal is too small for the
-     * coloured art (issue #771); every content line is padded to the width of the train art, so
-     * painting the block at a single left offset keeps the art aligned (centring each line on its
+     * rows: game title and the legacy ASCII train. Used only on dumb terminals, where the coloured
+     * art is not available (issue #771); every content line is padded to the width of the train art,
+     * so painting the block at a single left offset keeps the art aligned (centring each line on its
      * own would shear the train). Package-visible and static so a test can pin the cover without a
      * real terminal.
      */
@@ -269,22 +269,24 @@ public class TerminalView implements letrain.mvp.View {
     }
 
     /**
-     * Paints the cover full-screen and refreshes; called by {@link #paint()} while visible. With a
-     * terminal of at least {@link CoverArt#COLUMNS}×{@link CoverArt#ROWS} it draws the coloured
-     * braille art carrying the slant {@code LeTrain} logo; below that size it falls back to the
-     * legacy ASCII train (issue #771). A terminal small enough for neither still gets the title
-     * alone. There is no "press any key" text in 2D (owner decision): any key still continues.
+     * Decision seam of the 2D cover (issue #771): the coloured braille art is used on any terminal
+     * that is not dumb. Only {@link TerminalPalette.Depth#ANSI_16} (which is where {@code TERM=dumb}
+     * or an absent/blank {@code TERM} lands) falls back to the legacy ASCII train. Size no longer
+     * matters: a smaller terminal crops the colour art (owner decision, 16-oct). Package-visible and
+     * static so the policy can be pinned without a real terminal; it delegates to
+     * {@link CoverArtPainter#useColourArt(TerminalPalette)} so both stay one decision.
      */
-    /**
-     * Size policy of the 2D cover (issue #771): the coloured braille art is used when the terminal
-     * is at least {@link CoverArt#COLUMNS}×{@link CoverArt#ROWS}; below that the legacy ASCII
-     * fallback is painted. Package-visible and static so the policy can be pinned without a real
-     * terminal; it delegates to {@link CoverArtPainter#fits(int, int)} so both stay one decision.
-     */
-    static boolean usesColourCover(int columns, int rows) {
-        return CoverArtPainter.fits(columns, rows);
+    static boolean usesColourCover(TerminalPalette palette) {
+        return CoverArtPainter.useColourArt(palette);
     }
 
+    /**
+     * Paints the cover full-screen and refreshes; called by {@link #paint()} while visible. The
+     * coloured braille art carrying the slant {@code LeTrain} logo is painted always, centred and
+     * cropped when the terminal is smaller than the artwork. The legacy ASCII train is reserved for
+     * dumb terminals ({@link #usesColourCover(TerminalPalette)}). There is no "press any key" text
+     * in 2D (owner decision): any key still continues.
+     */
     private void paintCover() {
         if (screen == null) {
             return;
@@ -295,10 +297,10 @@ public class TerminalView implements letrain.mvp.View {
             tg.setBackgroundColor(NORMAL_MENU_BG_COLOR);
             tg.setForegroundColor(NORMAL_MENU_FG_COLOR);
             tg.fillRectangle(TerminalPosition.TOP_LEFT_CORNER, size, ' ');
-            if (usesColourCover(size.getColumns(), size.getRows())) {
-                if (coverPalette == null) {
-                    coverPalette = TerminalPalette.detect();
-                }
+            if (coverPalette == null) {
+                coverPalette = TerminalPalette.detect();
+            }
+            if (usesColourCover(coverPalette)) {
                 CoverArtPainter.paint(tg, CoverArt.load(), coverPalette, size);
             } else {
                 paintAsciiCover(tg, size);
@@ -311,7 +313,7 @@ public class TerminalView implements letrain.mvp.View {
         }
     }
 
-    /** Legacy ASCII cover used when the terminal cannot fit the coloured art. */
+    /** Legacy ASCII cover used only on dumb terminals (no colour depth). */
     private void paintAsciiCover(TextGraphics tg, TerminalSize size) {
         String[] lines = coverScreenLines(size.getRows());
         int blockWidth = 0;

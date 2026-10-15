@@ -5,8 +5,8 @@ import java.util.List;
 /**
  * Title cover (splash screen) shared by both clients (issue #743). The game starts on this cover
  * and continues into the world on any key. The 2D terminal paints the coloured braille art
- * ({@link CoverArt}, issue #771) and only falls back to {@link #ASCII_ART} when the terminal is too
- * small for it; there is no any-key prompt text in 2D. The 3D client renders {@link #TITLE} and
+ * ({@link CoverArt}, issue #771) and only falls back to {@link #ASCII_ART} on dumb terminals (no
+ * colour depth); there is no any-key prompt text in 2D. The 3D client renders {@link #TITLE} and
  * {@link #PROMPT} as text.
  *
  * <p>
@@ -23,7 +23,7 @@ public final class CoverText {
 
     /**
      * Legacy ASCII art of the 2D cover: a small train carrying the game name. Kept as the fallback
-     * for terminals smaller than {@link CoverArt#COLUMNS}×{@link CoverArt#ROWS}.
+     * for dumb terminals only (no colour depth).
      */
     public static final List<String> ASCII_ART = List.of("              *   *   *",
             "            *   *   *   *", "      ________________________",

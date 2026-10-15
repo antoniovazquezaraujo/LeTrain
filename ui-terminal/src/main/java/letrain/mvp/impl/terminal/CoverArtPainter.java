@@ -20,6 +20,12 @@ import letrain.utils.ValidationUtils;
  * (or black), and a cell with no background uses its foreground (or black). In the bundled art the
  * no-background cells are all the solid braille block {@code U+28FF}, so fg == bg still paints a
  * filled cell.
+ *
+ * <p>
+ * Size is no longer a reason to drop the artwork (owner decision, 16-oct): the picture is always
+ * drawn, centred, and symmetrically cropped when the terminal is smaller than
+ * {@link CoverArt#COLUMNS}×{@link CoverArt#ROWS}. The legacy ASCII cover is reserved for dumb
+ * terminals ({@link #useColourArt(TerminalPalette)}).
  */
 final class CoverArtPainter {
 
@@ -29,29 +35,47 @@ final class CoverArtPainter {
     private CoverArtPainter() {}
 
     /**
-     * Whether a terminal of this size can show the whole art without cropping it. Below
-     * {@link CoverArt#COLUMNS}×{@link CoverArt#ROWS} the caller must fall back to the legacy ASCII
-     * art.
+     * Whether the coloured art should be painted instead of the legacy ASCII cover. The ASCII cover
+     * is a last resort for dumb terminals, i.e. those detected as
+     * {@link TerminalPalette.Depth#ANSI_16}.
      */
-    static boolean fits(int columns, int rows) {
-        return columns >= CoverArt.COLUMNS && rows >= CoverArt.ROWS;
+    static boolean useColourArt(TerminalPalette palette) {
+        ValidationUtils.requireNonNull(palette, "palette must not be null");
+        return palette.depth() != TerminalPalette.Depth.ANSI_16;
     }
 
     /**
-     * Draws the art centred on {@code size}; every cell is painted, so the artwork keeps its exact
-     * shape (no per-line shearing).
+     * Offset of a centred extent of {@code artExtent} inside a screen extent of {@code screenExtent}
+     * (floor division, so cropping a picture that does not fit is symmetric and may be negative).
+     */
+    static int centredOffset(int screenExtent, int artExtent) {
+        return Math.floorDiv(screenExtent - artExtent, 2);
+    }
+
+    /**
+     * Draws the art centred on {@code size}. Every cell is painted, so the artwork keeps its exact
+     * shape (no per-line shearing); cells that fall outside the screen after centring are skipped
+     * (never asked of Lanterna with negative coordinates).
      */
     static void paint(TextGraphics tg, CoverArt art, TerminalPalette palette, TerminalSize size) {
         ValidationUtils.requireNonNull(tg, "tg must not be null");
         ValidationUtils.requireNonNull(art, "art must not be null");
         ValidationUtils.requireNonNull(palette, "palette must not be null");
         ValidationUtils.requireNonNull(size, "size must not be null");
-        int startColumn = Math.max(0, (size.getColumns() - art.width()) / 2);
-        int startRow = Math.max(0, (size.getRows() - art.height()) / 2);
-        for (int y = 0; y < art.height() && startRow + y < size.getRows(); y++) {
+        int startColumn = centredOffset(size.getColumns(), art.width());
+        int startRow = centredOffset(size.getRows(), art.height());
+        for (int y = 0; y < art.height(); y++) {
+            int screenRow = startRow + y;
+            if (screenRow < 0 || screenRow >= size.getRows()) {
+                continue;
+            }
             List<Cell> row = art.row(y);
-            for (int x = 0; x < row.size() && startColumn + x < size.getColumns(); x++) {
-                tg.setCharacter(startColumn + x, startRow + y, character(row.get(x), palette));
+            for (int x = 0; x < row.size(); x++) {
+                int screenColumn = startColumn + x;
+                if (screenColumn < 0 || screenColumn >= size.getColumns()) {
+                    continue;
+                }
+                tg.setCharacter(screenColumn, screenRow, character(row.get(x), palette));
             }
         }
     }

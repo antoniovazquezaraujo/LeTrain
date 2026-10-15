@@ -34,10 +34,10 @@ public final class CoverArt {
     /** Classpath resource bundled by {@code core} with the owner-approved braille cover. */
     public static final String RESOURCE = "/letrain/cover/cover_u44.data";
 
-    /** Number of terminal columns the art needs to fit untrimmed. */
+    /** Natural width of the art in terminal columns; a narrower terminal crops it symmetrically. */
     public static final int COLUMNS = 160;
 
-    /** Number of terminal rows the art needs to fit untrimmed. */
+    /** Natural height of the art in terminal rows; a shorter terminal crops it symmetrically. */
     public static final int ROWS = 44;
 
     /** Characters per cell record: {@code cp4hex} + {@code fg6hex} + {@code bg6hex}. */

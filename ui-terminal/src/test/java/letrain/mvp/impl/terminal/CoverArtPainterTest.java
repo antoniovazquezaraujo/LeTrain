@@ -4,12 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextCharacter;
@@ -21,9 +19,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Issue #771: painting the coloured braille cover. {@link CoverArtPainter#fits(int, int)} gates the
- * new art against the legacy fallback and {@link CoverArtPainter#character} is the pure
- * colour-fallback step, so both run without a real terminal.
+ * Issue #771: painting the coloured braille cover. {@link CoverArtPainter#useColourArt} gates the
+ * new art against the legacy ASCII cover (dumb terminals only) and
+ * {@link CoverArtPainter#character} is the pure colour-fallback step, so both run without a real
+ * terminal.
  */
 @DisplayName("Coloured cover painting (#771)")
 class CoverArtPainterTest {
@@ -32,25 +31,20 @@ class CoverArtPainterTest {
             new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
 
     @Test
-    @DisplayName("the coloured art needs a terminal of at least 160x44")
-    void should_RequireTheArtSize() {
-        assertTrue(CoverArtPainter.fits(CoverArt.COLUMNS, CoverArt.ROWS));
-        assertTrue(CoverArtPainter.fits(200, 60));
-        assertFalse(CoverArtPainter.fits(CoverArt.COLUMNS - 1, CoverArt.ROWS));
-        assertFalse(CoverArtPainter.fits(CoverArt.COLUMNS, CoverArt.ROWS - 1));
-        assertFalse(CoverArtPainter.fits(80, 24));
+    @DisplayName("only dumb terminals (ANSI_16) drop the colour art")
+    void should_OnlyFallBackOnDumbTerminals() {
+        assertTrue(CoverArtPainter.useColourArt(new TerminalPalette(TerminalPalette.Depth.TRUECOLOR)),
+                "truecolour keeps the colour art");
+        assertTrue(CoverArtPainter.useColourArt(new TerminalPalette(TerminalPalette.Depth.INDEXED_256)),
+                "256 colours keep the colour art");
+        assertFalse(CoverArtPainter.useColourArt(new TerminalPalette(TerminalPalette.Depth.ANSI_16)),
+                "a dumb 16-colour terminal falls back to the ASCII train");
     }
 
     @Test
-    @DisplayName("the size policy is exclusive on both axes at the 160x44 boundary")
-    void should_CheckBothBoundariesIndependently() {
-        // 160 and 44 are inclusive; one column/row short on either axis falls back.
-        assertTrue(CoverArtPainter.fits(160, 44));
-        assertTrue(CoverArtPainter.fits(161, 44));
-        assertTrue(CoverArtPainter.fits(160, 45));
-        assertFalse(CoverArtPainter.fits(159, 44));
-        assertFalse(CoverArtPainter.fits(160, 43));
-        assertFalse(CoverArtPainter.fits(159, 43));
+    @DisplayName("the dumb-terminal decision rejects a null palette")
+    void should_RejectNullPalette() {
+        assertThrows(NullPointerException.class, () -> CoverArtPainter.useColourArt(null));
     }
 
     @Test
@@ -137,19 +131,38 @@ class CoverArtPainterTest {
     }
 
     @Test
-    @DisplayName("a terminal smaller than the art is clipped, never an exception")
-    void should_ClipWhenSmaller() {
+    @DisplayName("a terminal smaller than the art is cropped symmetrically, never negative coords")
+    void should_CropSymmetricallyWhenSmaller() {
         CoverArt art = CoverArt.parse(List.of("0041ff0000------" + "0042------0000ff",
                 "0043ff0000------" + "0044------0000ff"));
         TextGraphics tg = mock(TextGraphics.class);
 
         CoverArtPainter.paint(tg, art, TRUECOLOR, new TerminalSize(1, 1));
 
-        // Only the top-left cell survives the clip; nothing is asked to be drawn off-screen.
+        // 2x2 art in 1x1 -> offset floorDiv(1 - 2, 2) = -1 on both axes: only the last cell
+        // survives, at the origin. Nothing off-screen is ever asked of Lanterna.
         verify(tg).setCharacter(eq(0), eq(0),
-                eq(CoverArtPainter.character(art.row(0).get(0), TRUECOLOR)));
-        verify(tg, never()).setCharacter(eq(1), anyInt(), any());
-        verify(tg, never()).setCharacter(anyInt(), eq(1), any());
+                eq(CoverArtPainter.character(art.row(1).get(1), TRUECOLOR)));
+        verifyNoMoreInteractions(tg);
+    }
+
+    @Test
+    @DisplayName("cropping drops the leading columns/rows and keeps the rest in bounds")
+    void should_DropLeadingCellsWhenCropped() {
+        CoverArt art = CoverArt.parse(List.of("0041ff0000------" + "0042ff0000------"
+                + "0043ff0000------" + "0044ff0000------"));
+        TextGraphics tg = mock(TextGraphics.class);
+
+        CoverArtPainter.paint(tg, art, TRUECOLOR, new TerminalSize(3, 1));
+
+        // 4 columns in 3 -> offset floorDiv(3 - 4, 2) = -1: column 0 is dropped, 1..3 fill 0..2.
+        verify(tg).setCharacter(eq(0), eq(0),
+                eq(CoverArtPainter.character(art.row(0).get(1), TRUECOLOR)));
+        verify(tg).setCharacter(eq(1), eq(0),
+                eq(CoverArtPainter.character(art.row(0).get(2), TRUECOLOR)));
+        verify(tg).setCharacter(eq(2), eq(0),
+                eq(CoverArtPainter.character(art.row(0).get(3), TRUECOLOR)));
+        verifyNoMoreInteractions(tg);
     }
 
     @Test
