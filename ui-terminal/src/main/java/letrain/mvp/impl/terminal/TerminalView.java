@@ -275,6 +275,16 @@ public class TerminalView implements letrain.mvp.View {
      * legacy ASCII train (issue #771). A terminal small enough for neither still gets the title
      * alone. There is no "press any key" text in 2D (owner decision): any key still continues.
      */
+    /**
+     * Size policy of the 2D cover (issue #771): the coloured braille art is used when the terminal
+     * is at least {@link CoverArt#COLUMNS}×{@link CoverArt#ROWS}; below that the legacy ASCII
+     * fallback is painted. Package-visible and static so the policy can be pinned without a real
+     * terminal; it delegates to {@link CoverArtPainter#fits(int, int)} so both stay one decision.
+     */
+    static boolean usesColourCover(int columns, int rows) {
+        return CoverArtPainter.fits(columns, rows);
+    }
+
     private void paintCover() {
         if (screen == null) {
             return;
@@ -285,7 +295,7 @@ public class TerminalView implements letrain.mvp.View {
             tg.setBackgroundColor(NORMAL_MENU_BG_COLOR);
             tg.setForegroundColor(NORMAL_MENU_FG_COLOR);
             tg.fillRectangle(TerminalPosition.TOP_LEFT_CORNER, size, ' ');
-            if (CoverArtPainter.fits(size.getColumns(), size.getRows())) {
+            if (usesColourCover(size.getColumns(), size.getRows())) {
                 if (coverPalette == null) {
                     coverPalette = TerminalPalette.detect();
                 }
