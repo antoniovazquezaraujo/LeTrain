@@ -33,6 +33,14 @@ public class CameraController {
     /** Rango de distancia de la cámara ORBIT (zoom). */
     private static final float MIN_ORBIT_DISTANCE = 3f;
     private static final float MAX_ORBIT_DISTANCE = 40f;
+    /**
+     * Altura de la cámara ORBIT al máximo acercamiento. Permite encuadres a ras de suelo (mirando
+     * a la locomotora para explorar la escena y sacar fotos), pero queda por encima de vía y
+     * balasto, de modo que la cámara nunca atraviesa el terreno.
+     */
+    private static final float MIN_ORBIT_HEIGHT = 0.6f;
+    /** Altura de la cámara ORBIT al máximo alejamiento; preserva el feel clásico (28 m). */
+    private static final float MAX_ORBIT_HEIGHT = MAX_ORBIT_DISTANCE * 0.7f;
     /** Ángulo de la cámara ORBIT lejos del suelo (grados por debajo de la horizontal). */
     private static final float ORBIT_PITCH_FAR_DEG = 35f;
     /** Por debajo de esta fracción de zoom la cámara se endereza hasta mirar al frente. */
@@ -300,15 +308,18 @@ public class CameraController {
         float angleRad = cameraAngle * MathUtils.degreesToRadians;
         float camX = camTarget.x + cameraDistance * MathUtils.sin(angleRad);
         float camZ = camTarget.z + cameraDistance * MathUtils.cos(angleRad);
-        float camY = Math.max(2.0f, cameraDistance * 0.7f);
+
+        // La altura interpola con la fracción de zoom: a ras de suelo al máximo acercamiento y el
+        // encuadre elevado de siempre al alejar.
+        float zoom = MathUtils.clamp(
+                (cameraDistance - MIN_ORBIT_DISTANCE) / (MAX_ORBIT_DISTANCE - MIN_ORBIT_DISTANCE),
+                0f, 1f);
+        float camY = MathUtils.lerp(MIN_ORBIT_HEIGHT, MAX_ORBIT_HEIGHT, zoom);
 
         cam.position.set(camX, camY, camZ);
 
         // Cerca del suelo la cámara se endereza: al mínimo zoom mira al frente (y se ve el cielo),
         // recuperando el ángulo de siempre a partir de ORBIT_FLATTEN_ZOOM.
-        float zoom = MathUtils.clamp(
-                (cameraDistance - MIN_ORBIT_DISTANCE) / (MAX_ORBIT_DISTANCE - MIN_ORBIT_DISTANCE),
-                0f, 1f);
         float t = MathUtils.clamp(zoom / ORBIT_FLATTEN_ZOOM, 0f, 1f);
         float eased = t * t * (3f - 2f * t);
         double pitch = Math.toRadians(ORBIT_PITCH_FAR_DEG * eased);

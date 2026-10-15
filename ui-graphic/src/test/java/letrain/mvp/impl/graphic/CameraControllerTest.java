@@ -225,6 +225,39 @@ class CameraControllerTest {
     }
 
     @Test
+    @DisplayName("orbit zoom: the camera drops to ground level at maximum zoom-in")
+    void should_ReachGroundLevel_When_ZoomedAllTheWayIn() {
+        PerspectiveCamera cam = cameraController.init(800, 600);
+        cameraController.setMode(CameraController.CameraMode.ORBIT);
+
+        // zoom all the way in (minimum orbit distance)
+        cameraController.zoomStep(-1000f);
+        for (int i = 0; i < 300; i++) {
+            cameraController.update(1f);
+        }
+
+        // The camera sits at ground level (still above rail/ballast) and looks straight ahead
+        assertEquals(0.6f, cam.position.y, 0.02f, "should reach ground level at max zoom-in");
+        assertEquals(0f, cam.direction.y, 0.02f, "should look straight ahead at the ground");
+    }
+
+    @Test
+    @DisplayName("orbit zoom: the classic elevated height is preserved at maximum zoom-out")
+    void should_KeepClassicHeight_When_ZoomedAllTheWayOut() {
+        PerspectiveCamera cam = cameraController.init(800, 600);
+        cameraController.setMode(CameraController.CameraMode.ORBIT);
+
+        // zoom all the way out (maximum orbit distance)
+        cameraController.zoomStep(1000f);
+        for (int i = 0; i < 600; i++) {
+            cameraController.update(1f);
+        }
+
+        // Far away the camera keeps the historical 0.7 * maxDistance (28 m) height
+        assertEquals(28f, cam.position.y, 0.1f, "should preserve the classic far height");
+    }
+
+    @Test
     @DisplayName("the controller exposes the ground target it orbits (terrain materialization)")
     void should_ExposeGroundTarget() {
         cameraController.init(800, 600);
