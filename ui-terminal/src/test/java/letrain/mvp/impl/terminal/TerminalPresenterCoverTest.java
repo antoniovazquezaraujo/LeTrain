@@ -128,7 +128,6 @@ class TerminalPresenterCoverTest {
         presenter.start();
 
         verify(view, never()).setCoverVisible(true);
-        assertFalse(presenter.isCoverActive(),
-                "the world must start without waiting on the cover");
+        assertFalse(presenter.isCoverActive(), "the world must start without waiting on the cover");
     }
 }

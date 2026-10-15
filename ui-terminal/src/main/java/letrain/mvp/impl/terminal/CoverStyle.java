@@ -21,7 +21,9 @@ enum CoverStyle {
     /** Dots only: visible glyphs in colour over the terminal's default background. */
     DOTS;
 
-    /** Style for the detected terminal: {@link #DOTS} on dumb terminals, {@link #COLOUR} otherwise. */
+    /**
+     * Style for the detected terminal: {@link #DOTS} on dumb terminals, {@link #COLOUR} otherwise.
+     */
     static CoverStyle forPalette(TerminalPalette palette) {
         ValidationUtils.requireNonNull(palette, "palette must not be null");
         return palette.depth() == TerminalPalette.Depth.ANSI_16 ? DOTS : COLOUR;

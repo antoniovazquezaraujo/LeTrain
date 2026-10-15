@@ -46,8 +46,9 @@ final class CoverArtPainter {
     private CoverArtPainter() {}
 
     /**
-     * Offset of a centred extent of {@code artExtent} inside a screen extent of {@code screenExtent}
-     * (floor division, so cropping a picture that does not fit is symmetric and may be negative).
+     * Offset of a centred extent of {@code artExtent} inside a screen extent of
+     * {@code screenExtent} (floor division, so cropping a picture that does not fit is symmetric
+     * and may be negative).
      */
     static int centredOffset(int screenExtent, int artExtent) {
         return Math.floorDiv(screenExtent - artExtent, 2);
@@ -100,8 +101,7 @@ final class CoverArtPainter {
         ValidationUtils.requireNonNull(cell, "cell must not be null");
         ValidationUtils.requireNonNull(palette, "palette must not be null");
         ValidationUtils.requireNonNull(style, "style must not be null");
-        int fg = cell.fgRgb() != null ? cell.fgRgb()
-                : cell.bgRgb() != null ? cell.bgRgb() : BLACK;
+        int fg = cell.fgRgb() != null ? cell.fgRgb() : cell.bgRgb() != null ? cell.bgRgb() : BLACK;
         if (style == CoverStyle.DOTS) {
             if (!isVisible(cell)) {
                 return null;
@@ -109,8 +109,7 @@ final class CoverArtPainter {
             return TextCharacter.fromCharacter((char) cell.codePoint(), palette.colorOf(fg),
                     TextColor.ANSI.DEFAULT)[0];
         }
-        int bg = cell.bgRgb() != null ? cell.bgRgb()
-                : cell.fgRgb() != null ? cell.fgRgb() : BLACK;
+        int bg = cell.bgRgb() != null ? cell.bgRgb() : cell.fgRgb() != null ? cell.fgRgb() : BLACK;
         return TextCharacter.fromCharacter((char) cell.codePoint(), palette.colorOf(fg),
                 palette.colorOf(bg))[0];
     }

@@ -16,9 +16,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Issue #771: the coloured braille cover asset bundled by {@code core}. The parser turns the
- * fixed 16-character cells back into codepoints plus optional RGB colours; it is pure, so it runs
- * without a terminal.
+ * Issue #771: the coloured braille cover asset bundled by {@code core}. The parser turns the fixed
+ * 16-character cells back into codepoints plus optional RGB colours; it is pure, so it runs without
+ * a terminal.
  */
 @DisplayName("Cover art asset (#771)")
 class CoverArtTest {
@@ -61,8 +61,10 @@ class CoverArtTest {
         assertTrue(flat.stream().anyMatch(c -> c.codePoint() == 'S' && c.fgRgb() != null),
                 "the subtitle letters must be in the art");
         // The white "plate" (blank glyph over a white background) opens the picture.
-        assertTrue(flat.stream().anyMatch(c -> c.codePoint() == 0x2800 && c.bgRgb() == 0xFFFFFF
-                && c.fgRgb() == null), "the white plate must be in the art");
+        assertTrue(
+                flat.stream().anyMatch(
+                        c -> c.codePoint() == 0x2800 && c.bgRgb() == 0xFFFFFF && c.fgRgb() == null),
+                "the white plate must be in the art");
         // The no-background cells are the solid braille block.
         assertTrue(flat.stream().anyMatch(c -> c.codePoint() == 0x28FF && c.bgRgb() == null),
                 "the solid braille blocks must be in the art");
@@ -96,7 +98,8 @@ class CoverArtTest {
     @Test
     @DisplayName("width follows the widest row, so an uneven file still renders")
     void should_UseTheWidestRow() {
-        CoverArt art = CoverArt.parse(List.of("2800------ffffff", "2800------ffffff2800------ffffff"));
+        CoverArt art =
+                CoverArt.parse(List.of("2800------ffffff", "2800------ffffff2800------ffffff"));
 
         assertEquals(2, art.height());
         assertEquals(2, art.width());
@@ -162,8 +165,8 @@ class CoverArtTest {
     @Test
     @DisplayName("braille, ASCII and the space codepoint are all accepted")
     void should_AcceptPrintableCodepoints() {
-        CoverArt art = CoverArt.parse(List.of("2800------ffffff" + "28ff------ffffff"
-                + "0041------ffffff" + "0020------ffffff"));
+        CoverArt art = CoverArt.parse(List.of(
+                "2800------ffffff" + "28ff------ffffff" + "0041------ffffff" + "0020------ffffff"));
 
         assertEquals(0x2800, art.row(0).get(0).codePoint(), "braille blank");
         assertEquals(0x28FF, art.row(0).get(1).codePoint(), "braille solid");
@@ -175,8 +178,7 @@ class CoverArtTest {
     @DisplayName("a cell rejects a negative codepoint and out-of-range RGB values")
     void should_RestrictCellRanges() {
         assertThrows(IllegalArgumentException.class, () -> new CoverArt.Cell(-1, null, 0xFFFFFF));
-        assertThrows(IllegalArgumentException.class,
-                () -> new CoverArt.Cell('A', 0x1000000, null));
+        assertThrows(IllegalArgumentException.class, () -> new CoverArt.Cell('A', 0x1000000, null));
         assertThrows(IllegalArgumentException.class, () -> new CoverArt.Cell('A', null, -1));
     }
 

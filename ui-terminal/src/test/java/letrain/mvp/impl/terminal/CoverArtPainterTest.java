@@ -130,10 +130,10 @@ class CoverArtPainterTest {
         CoverArtPainter.paint(tg, art, TRUECOLOR, new TerminalSize(6, 3), CoverStyle.COLOUR);
 
         // 2 columns in 6 -> start at 2; 1 row in 3 -> start at 1.
-        verify(tg).setCharacter(eq(2), eq(1), eq(CoverArtPainter.character(art.row(0).get(0),
-                TRUECOLOR, CoverStyle.COLOUR)));
-        verify(tg).setCharacter(eq(3), eq(1), eq(CoverArtPainter.character(art.row(0).get(1),
-                TRUECOLOR, CoverStyle.COLOUR)));
+        verify(tg).setCharacter(eq(2), eq(1),
+                eq(CoverArtPainter.character(art.row(0).get(0), TRUECOLOR, CoverStyle.COLOUR)));
+        verify(tg).setCharacter(eq(3), eq(1),
+                eq(CoverArtPainter.character(art.row(0).get(1), TRUECOLOR, CoverStyle.COLOUR)));
     }
 
     @Test
@@ -174,27 +174,27 @@ class CoverArtPainterTest {
 
         // 2x2 art in 1x1 -> offset floorDiv(1 - 2, 2) = -1 on both axes: only the last cell
         // survives, at the origin. Nothing off-screen is ever asked of Lanterna.
-        verify(tg).setCharacter(eq(0), eq(0), eq(CoverArtPainter.character(art.row(1).get(1),
-                TRUECOLOR, CoverStyle.COLOUR)));
+        verify(tg).setCharacter(eq(0), eq(0),
+                eq(CoverArtPainter.character(art.row(1).get(1), TRUECOLOR, CoverStyle.COLOUR)));
         verifyNoMoreInteractions(tg);
     }
 
     @Test
     @DisplayName("cropping drops the leading columns/rows and keeps the rest in bounds")
     void should_DropLeadingCellsWhenCropped() {
-        CoverArt art = CoverArt.parse(List.of("0041ff0000------" + "0042ff0000------"
-                + "0043ff0000------" + "0044ff0000------"));
+        CoverArt art = CoverArt.parse(List.of(
+                "0041ff0000------" + "0042ff0000------" + "0043ff0000------" + "0044ff0000------"));
         TextGraphics tg = mock(TextGraphics.class);
 
         CoverArtPainter.paint(tg, art, TRUECOLOR, new TerminalSize(3, 1), CoverStyle.COLOUR);
 
         // 4 columns in 3 -> offset floorDiv(3 - 4, 2) = -1: column 0 is dropped, 1..3 fill 0..2.
-        verify(tg).setCharacter(eq(0), eq(0), eq(CoverArtPainter.character(art.row(0).get(1),
-                TRUECOLOR, CoverStyle.COLOUR)));
-        verify(tg).setCharacter(eq(1), eq(0), eq(CoverArtPainter.character(art.row(0).get(2),
-                TRUECOLOR, CoverStyle.COLOUR)));
-        verify(tg).setCharacter(eq(2), eq(0), eq(CoverArtPainter.character(art.row(0).get(3),
-                TRUECOLOR, CoverStyle.COLOUR)));
+        verify(tg).setCharacter(eq(0), eq(0),
+                eq(CoverArtPainter.character(art.row(0).get(1), TRUECOLOR, CoverStyle.COLOUR)));
+        verify(tg).setCharacter(eq(1), eq(0),
+                eq(CoverArtPainter.character(art.row(0).get(2), TRUECOLOR, CoverStyle.COLOUR)));
+        verify(tg).setCharacter(eq(2), eq(0),
+                eq(CoverArtPainter.character(art.row(0).get(3), TRUECOLOR, CoverStyle.COLOUR)));
         verifyNoMoreInteractions(tg);
     }
 
@@ -207,8 +207,8 @@ class CoverArtPainterTest {
 
         CoverArtPainter.paint(tg, art, TRUECOLOR, new TerminalSize(2, 1), CoverStyle.DOTS);
 
-        verify(tg).setCharacter(eq(1), eq(0), eq(CoverArtPainter.character(art.row(0).get(1),
-                TRUECOLOR, CoverStyle.DOTS)));
+        verify(tg).setCharacter(eq(1), eq(0),
+                eq(CoverArtPainter.character(art.row(0).get(1), TRUECOLOR, CoverStyle.DOTS)));
         verify(tg, never()).setCharacter(eq(0), anyInt(), any());
         verifyNoMoreInteractions(tg);
     }
@@ -232,11 +232,10 @@ class CoverArtPainterTest {
                 () -> CoverArtPainter.paint(tg, art, TRUECOLOR, size, null));
         assertThrows(NullPointerException.class,
                 () -> CoverArtPainter.character(null, TRUECOLOR, CoverStyle.COLOUR));
-        assertThrows(NullPointerException.class,
-                () -> CoverArtPainter.character(new CoverArt.Cell(' ', null, null), null,
-                        CoverStyle.COLOUR));
-        assertThrows(NullPointerException.class,
-                () -> CoverArtPainter.character(new CoverArt.Cell(' ', null, null), TRUECOLOR, null));
+        assertThrows(NullPointerException.class, () -> CoverArtPainter
+                .character(new CoverArt.Cell(' ', null, null), null, CoverStyle.COLOUR));
+        assertThrows(NullPointerException.class, () -> CoverArtPainter
+                .character(new CoverArt.Cell(' ', null, null), TRUECOLOR, null));
     }
 
     @Test
@@ -246,8 +245,7 @@ class CoverArtPainterTest {
         assertEquals(1, CoverArtPainter.centredOffset(4, 1),
                 "odd slack keeps the extra on the right");
         assertEquals(0, CoverArtPainter.centredOffset(2, 2), "exact fit adds no offset");
-        assertEquals(-1, CoverArtPainter.centredOffset(1, 2),
-                "an art wider than the screen crops");
+        assertEquals(-1, CoverArtPainter.centredOffset(1, 2), "an art wider than the screen crops");
         assertEquals(-1, CoverArtPainter.centredOffset(3, 4),
                 "4 in 3 leaves one cell off each side");
     }
@@ -272,10 +270,10 @@ class CoverArtPainterTest {
         CoverArtPainter.paint(tg, art, TRUECOLOR, new TerminalSize(6, 3), CoverStyle.DOTS);
 
         // 2 columns in 6 -> start at 2; 1 row in 3 -> start at 1, same as the colour panel.
-        verify(tg).setCharacter(eq(2), eq(1), eq(CoverArtPainter.character(art.row(0).get(0),
-                TRUECOLOR, CoverStyle.DOTS)));
-        verify(tg).setCharacter(eq(3), eq(1), eq(CoverArtPainter.character(art.row(0).get(1),
-                TRUECOLOR, CoverStyle.DOTS)));
+        verify(tg).setCharacter(eq(2), eq(1),
+                eq(CoverArtPainter.character(art.row(0).get(0), TRUECOLOR, CoverStyle.DOTS)));
+        verify(tg).setCharacter(eq(3), eq(1),
+                eq(CoverArtPainter.character(art.row(0).get(1), TRUECOLOR, CoverStyle.DOTS)));
     }
 
     @Test
@@ -288,8 +286,8 @@ class CoverArtPainterTest {
         CoverArtPainter.paint(tg, art, TRUECOLOR, new TerminalSize(1, 1), CoverStyle.DOTS);
 
         // 2x2 art in 1x1 -> offset -1 on both axes: only the last cell survives at the origin.
-        verify(tg).setCharacter(eq(0), eq(0), eq(CoverArtPainter.character(art.row(1).get(1),
-                TRUECOLOR, CoverStyle.DOTS)));
+        verify(tg).setCharacter(eq(0), eq(0),
+                eq(CoverArtPainter.character(art.row(1).get(1), TRUECOLOR, CoverStyle.DOTS)));
         verifyNoMoreInteractions(tg);
     }
 
@@ -321,17 +319,16 @@ class CoverArtPainterTest {
     @DisplayName("dots style paints exactly the visible cells of the bundled art (7040 - blanks)")
     void should_PaintTheVisibleBundledCellsInDotsStyle() {
         CoverArt art = CoverArt.load();
-        long visible = art.rows().stream().flatMap(List::stream)
-                .filter(CoverArtPainter::isVisible).count();
+        long visible = art.rows().stream().flatMap(List::stream).filter(CoverArtPainter::isVisible)
+                .count();
         TextGraphics tg = mock(TextGraphics.class);
 
-        CoverArtPainter.paint(tg, art, TRUECOLOR,
-                new TerminalSize(CoverArt.COLUMNS, CoverArt.ROWS), CoverStyle.DOTS);
+        CoverArtPainter.paint(tg, art, TRUECOLOR, new TerminalSize(CoverArt.COLUMNS, CoverArt.ROWS),
+                CoverStyle.DOTS);
 
         // At the exact art size the offset is 0, so every visible cell is in-bounds and painted
         // once, while the blanks (the logo plate) are skipped.
-        verify(tg, times((int) visible)).setCharacter(anyInt(), anyInt(),
-                any(TextCharacter.class));
+        verify(tg, times((int) visible)).setCharacter(anyInt(), anyInt(), any(TextCharacter.class));
         assertTrue(visible > 0 && visible < (long) art.width() * art.height(),
                 "the asset must carry blank cells for the dots style to skip");
     }

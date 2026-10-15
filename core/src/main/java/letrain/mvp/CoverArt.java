@@ -52,7 +52,9 @@ public final class CoverArt {
     /** Colour field meaning "this cell has no colour here" (the renderer then falls back). */
     static final String NO_COLOR = "------";
 
-    /** One cell of the cover: a Unicode codepoint and optional RGB fg/bg ({@code null} = absent). */
+    /**
+     * One cell of the cover: a Unicode codepoint and optional RGB fg/bg ({@code null} = absent).
+     */
     public record Cell(int codePoint, Integer fgRgb, Integer bgRgb) {
         public Cell {
             ValidationUtils.require(codePoint >= 0, "codePoint must not be negative");
@@ -92,8 +94,8 @@ public final class CoverArt {
     private static CoverArt readResource() {
         try (InputStream in = CoverArt.class.getResourceAsStream(RESOURCE)) {
             if (in == null) {
-                throw new IllegalStateException("cover art resource not found on the classpath: "
-                        + RESOURCE);
+                throw new IllegalStateException(
+                        "cover art resource not found on the classpath: " + RESOURCE);
             }
             return parse(new InputStreamReader(in, StandardCharsets.UTF_8));
         } catch (IOException e) {
@@ -142,8 +144,9 @@ public final class CoverArt {
         try {
             codePoint = Integer.parseInt(raw.substring(0, CODE_POINT_CHARS), 16);
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("bad codepoint in cover cell " + lineNumber + ":"
-                    + column + " ('" + raw + "')", e);
+            throw new IllegalArgumentException(
+                    "bad codepoint in cover cell " + lineNumber + ":" + column + " ('" + raw + "')",
+                    e);
         }
         return new Cell(codePoint,
                 parseColor(raw.substring(CODE_POINT_CHARS, CODE_POINT_CHARS + COLOR_CHARS),
@@ -159,8 +162,9 @@ public final class CoverArt {
         try {
             return Integer.parseInt(field, 16);
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("bad colour in cover cell " + lineNumber + ":"
-                    + column + " ('" + field + "')", e);
+            throw new IllegalArgumentException(
+                    "bad colour in cover cell " + lineNumber + ":" + column + " ('" + field + "')",
+                    e);
         }
     }
 
