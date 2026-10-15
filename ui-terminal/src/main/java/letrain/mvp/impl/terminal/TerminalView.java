@@ -39,7 +39,6 @@ import java.util.concurrent.TimeUnit;
 import letrain.map.Page;
 import letrain.map.Point;
 import letrain.mvp.CoverArt;
-import letrain.mvp.CoverText;
 import letrain.mvp.EditorText;
 import letrain.mvp.FileMenuText;
 import letrain.mvp.GameViewListener;
@@ -232,60 +231,21 @@ public class TerminalView implements letrain.mvp.View {
     }
 
     /**
-     * Screen lines of the <b>fallback</b> cover, vertically centred for a terminal of {@code rows}
-     * rows: game title and the legacy ASCII train. Used only on dumb terminals, where the coloured
-     * art is not available (issue #771); every content line is padded to the width of the train art,
-     * so painting the block at a single left offset keeps the art aligned (centring each line on its
-     * own would shear the train). Package-visible and static so a test can pin the cover without a
-     * real terminal.
+     * Style the 2D cover is painted with (issue #771): full colour on real-colour terminals, dots
+     * over the terminal background on dumb 16-colour terminals. Package-visible and static so the
+     * selection can be pinned without a real terminal; it delegates to
+     * {@link CoverStyle#forPalette(TerminalPalette)} so both stay one decision.
      */
-    static String[] coverScreenLines(int rows) {
-        int width = CoverText.ASCII_ART.stream().mapToInt(String::length).max().orElse(0);
-        java.util.List<String> content = new java.util.ArrayList<>();
-        content.add(centerPad(CoverText.TITLE, width));
-        content.add("");
-        for (String artLine : CoverText.ASCII_ART) {
-            content.add(padRight(artLine, width));
-        }
-        String[] lines = new String[Math.max(0, rows)];
-        java.util.Arrays.fill(lines, "");
-        int start = Math.max(0, (rows - content.size()) / 2);
-        for (int i = 0; i < content.size() && start + i < rows; i++) {
-            lines[start + i] = content.get(i);
-        }
-        return lines;
-    }
-
-    /** Pads {@code line} with spaces on both sides until it is {@code width} columns wide. */
-    private static String centerPad(String line, int width) {
-        int padding = Math.max(0, width - line.length());
-        int left = padding / 2;
-        return padRight(" ".repeat(left) + line, width);
-    }
-
-    /** Pads {@code line} with spaces on the right until it is {@code width} columns wide. */
-    private static String padRight(String line, int width) {
-        return line + " ".repeat(Math.max(0, width - line.length()));
-    }
-
-    /**
-     * Decision seam of the 2D cover (issue #771): the coloured braille art is used on any terminal
-     * that is not dumb. Only {@link TerminalPalette.Depth#ANSI_16} (which is where {@code TERM=dumb}
-     * or an absent/blank {@code TERM} lands) falls back to the legacy ASCII train. Size no longer
-     * matters: a smaller terminal crops the colour art (owner decision, 16-oct). Package-visible and
-     * static so the policy can be pinned without a real terminal; it delegates to
-     * {@link CoverArtPainter#useColourArt(TerminalPalette)} so both stay one decision.
-     */
-    static boolean usesColourCover(TerminalPalette palette) {
-        return CoverArtPainter.useColourArt(palette);
+    static CoverStyle coverStyle(TerminalPalette palette) {
+        return CoverStyle.forPalette(palette);
     }
 
     /**
      * Paints the cover full-screen and refreshes; called by {@link #paint()} while visible. The
      * coloured braille art carrying the slant {@code LeTrain} logo is painted always, centred and
-     * cropped when the terminal is smaller than the artwork. The legacy ASCII train is reserved for
-     * dumb terminals ({@link #usesColourCover(TerminalPalette)}). There is no "press any key" text
-     * in 2D (owner decision): any key still continues.
+     * cropped when the terminal is smaller than the artwork; dumb terminals get the dots-only style
+     * ({@link #coverStyle(TerminalPalette)}). There is no "press any key" text in 2D (owner
+     * decision): any key still continues.
      */
     private void paintCover() {
         if (screen == null) {
@@ -300,31 +260,12 @@ public class TerminalView implements letrain.mvp.View {
             if (coverPalette == null) {
                 coverPalette = TerminalPalette.detect();
             }
-            if (usesColourCover(coverPalette)) {
-                CoverArtPainter.paint(tg, CoverArt.load(), coverPalette, size);
-            } else {
-                paintAsciiCover(tg, size);
-            }
+            CoverArtPainter.paint(tg, CoverArt.load(), coverPalette, size, coverStyle(coverPalette));
             this.screen.refresh();
             Thread.yield();
         } catch (IOException e) {
             log.error("Error refreshing the cover, window might be closed", e);
             setEndOfGame(true);
-        }
-    }
-
-    /** Legacy ASCII cover used only on dumb terminals (no colour depth). */
-    private void paintAsciiCover(TextGraphics tg, TerminalSize size) {
-        String[] lines = coverScreenLines(size.getRows());
-        int blockWidth = 0;
-        for (String line : lines) {
-            blockWidth = Math.max(blockWidth, line.length());
-        }
-        int startX = Math.max(0, (size.getColumns() - blockWidth) / 2);
-        for (int y = 0; y < lines.length; y++) {
-            if (!lines[y].isBlank()) {
-                tg.putString(startX, y, lines[y]);
-            }
         }
     }
 

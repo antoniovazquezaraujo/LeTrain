@@ -164,19 +164,22 @@ palabras no pueden divergir entre clientes:
 
 - **Portada 3D** (`CoverText`): `TITLE` y `PROMPT`. La 3D monta una `Table` opaca a pantalla
   completa en `Gdx3DHud.showCover()` con ambas cadenas (sin cambios hasta S4).
-- **Portada 2D**: usa el **arte braille a color** (issue #771) **siempre**; el tamaño del terminal
-  ya no decide nada, si el arte es mayor se centra y se recorta en simétrico (el usuario baja el
-  zoom si quiere verla entera). Solo los terminales **dumb** (`TerminalPalette.Depth.ANSI_16`, donde
-  caen `TERM=dumb`, vacío o ausente) usan el arte ASCII antiguo (`CoverText.ASCII_ART`) con el
-  título. Los datos viven en `core` (`CoverArt`, recurso `/letrain/cover/cover_u44.data`) y el
-  pintado Lanterna + la traducción de profundidad, en `ui-terminal`
-  (`letrain.mvp.impl.terminal.CoverArtPainter`), así que `core` sigue sin conocer Lanterna.
-  `CoverArtPainter.useColourArt(palette)` (expuesto en tests por `TerminalView.usesColourCover`)
-  decide aislado y testeable qué arte se pinta. **No hay texto de "pulsa una tecla" en 2D**
-  (decisión del dueño): cualquier tecla continúa igual que antes.
+- **Portada 2D**: usa el **arte braille** (issue #771) **siempre**; el tamaño del terminal no
+  decide nada: si el arte es mayor se centra y se recorta en simétrico (el usuario baja el zoom si
+  quiere verla entera). El **estilo** sí depende de la profundidad de color (`CoverStyle`, decidido
+  por `CoverStyle.forPalette`, expuesto en tests por `TerminalView.coverStyle`):
+  `TRUECOLOR`/`INDEXED_256` pintan el **panel completo** (glifo + fondo + primer plano); los
+  terminales **dumb** (`TerminalPalette.Depth.ANSI_16`, donde caen `TERM=dumb`, vacío o ausente)
+  pintan **solo puntos**: los glifos braille/ASCII visibles en color sobre el fondo por defecto del
+  terminal, y las celdas en blanco (`0020`/`2800`) no se pintan (así la "placa" del rótulo deja
+  huecos limpios). Desaparece la portada ASCII antigua. Los datos viven en `core` (`CoverArt`,
+  recurso `/letrain/cover/cover_u44.data`) y el pintado Lanterna + la traducción de profundidad, en
+  `ui-terminal` (`letrain.mvp.impl.terminal.CoverArtPainter`), así que `core` sigue sin conocer
+  Lanterna. **No hay texto de "pulsa una tecla" en 2D** (decisión del dueño): cualquier tecla
+  continúa igual que antes.
 - **Recorte centrado**: `CoverArtPainter.paint` sitúa el arte con `centredOffset` (división entera
   hacia abajo, luego el offset puede ser negativo) y **salta** las celdas que caen fuera de la
-  pantalla, sin pasar coordenadas negativas a Lanterna.
+  pantalla, sin pasar coordenadas negativas a Lanterna (aplica a ambos estilos).
 - **Formato del asset**: 44 líneas de celdas de 16 caracteres fijos, `cp4hex` (codepoint: braille
   U+2800–U+28FF, ASCII del rótulo/subtítulo o `0020`) `+ fg6hex|------ + bg6hex|------`. `------`
   significa "sin color" y el render aplica el fallback del ANSI de referencia: sin `fg` se usa el
