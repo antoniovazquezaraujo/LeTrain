@@ -52,17 +52,17 @@ class TrainSynthesizerTest {
 
     @ParameterizedTest(name = "{0} -> {1}")
     @CsvSource({"auto, AUTO", "material, MATERIAL", "legacy, LEGACY", "AuTo, AUTO",
-            "' material ', MATERIAL", "bogus, LEGACY"})
+            "' material ', MATERIAL", "bogus, AUTO"})
     @DisplayName("parses letrain.audio.trainSound values")
     void should_ParseSoundMode_When_PropertyValueProvided(String value, SoundMode expected) {
         assertEquals(expected, TrainSynthesizer.resolveModeFromProperty(value));
     }
 
     @Test
-    @DisplayName("defaults to LEGACY when the property is missing or blank")
-    void should_DefaultToLegacy_When_PropertyMissing() {
-        assertEquals(SoundMode.LEGACY, TrainSynthesizer.resolveModeFromProperty(null));
-        assertEquals(SoundMode.LEGACY, TrainSynthesizer.resolveModeFromProperty("   "));
+    @DisplayName("defaults to AUTO when the property is missing or blank (PR D)")
+    void should_DefaultToAuto_When_PropertyMissing() {
+        assertEquals(SoundMode.AUTO, TrainSynthesizer.resolveModeFromProperty(null));
+        assertEquals(SoundMode.AUTO, TrainSynthesizer.resolveModeFromProperty("   "));
     }
 
     @Test
