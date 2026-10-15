@@ -4,8 +4,10 @@ import java.util.List;
 
 /**
  * Title cover (splash screen) shared by both clients (issue #743). The game starts on this cover
- * and continues into the world on any key. The 2D terminal paints {@link #ASCII_ART} under the
- * title; the 3D client renders {@link #TITLE} and {@link #PROMPT} as text.
+ * and continues into the world on any key. The 2D terminal paints the coloured braille art
+ * ({@link CoverArt}, issue #771) and only falls back to {@link #ASCII_ART} when the terminal is too
+ * small for it; there is no any-key prompt text in 2D. The 3D client renders {@link #TITLE} and
+ * {@link #PROMPT} as text.
  *
  * <p>
  * Headless runs, {@code letrain-check} and direct scenario launches skip the cover; they never
@@ -16,10 +18,13 @@ public final class CoverText {
     /** Game title shown on the cover in both clients. */
     public static final String TITLE = "LeTrain";
 
-    /** Hint under the art: any key starts the game. */
+    /** Hint under the art: any key starts the game (3D client only; the 2D cover has no text). */
     public static final String PROMPT = "Press any key to continue";
 
-    /** ASCII art of the 2D cover: a small train carrying the game name. */
+    /**
+     * Legacy ASCII art of the 2D cover: a small train carrying the game name. Kept as the fallback
+     * for terminals smaller than {@link CoverArt#COLUMNS}×{@link CoverArt#ROWS}.
+     */
     public static final List<String> ASCII_ART = List.of("              *   *   *",
             "            *   *   *   *", "      ________________________",
             "     |  LeTrain  Express      |_______", "     |_______________________|       |",

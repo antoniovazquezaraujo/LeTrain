@@ -13,7 +13,7 @@ Welcome to the official **LeTrain** manual. Here you will find everything you ne
 The game can be controlled via the keyboard in both its 2D and 3D versions. Below are the main keys and modes:
 
 ### Title cover, File menu and New Game
-- The game opens with a simple **title cover** (a small train drawn in ASCII in the 2D terminal, text in the 3D view). Press **any key** to continue to the **File menu**: the 2D game no longer auto-starts a world, so **New** or **Load** is what starts your railway.
+- The game opens with a **title cover** (in the 2D terminal, a full-colour braille picture of the train shown when the terminal is at least 160×44; a small ASCII train on smaller terminals; text in the 3D view). There is no "press any key" hint in the 2D terminal: just press **any key** to continue to the **File menu** — the 2D game no longer auto-starts a world, so **New** or **Load** is what starts your railway.
 - Press **Esc** to open the **File** menu, with the same words in 2D and 3D: **New**, **Load**, **Save**, **Settings** and **Quit**. **Esc** closes the menu again and **Quit** leaves the game.
   - **New** (2D) opens the **New Game** dialog: seed, terrain proportions and the catalogue sections (see below). It is the way to start a game from the boot menu. With a game in progress it asks for confirmation first (the full Save/Discard/Cancel flow arrives later); the unsaved game is discarded.
   - **Save** is disabled with the reason *no game in progress* until a game is running.

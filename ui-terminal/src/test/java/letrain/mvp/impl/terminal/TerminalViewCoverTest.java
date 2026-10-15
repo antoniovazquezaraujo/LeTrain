@@ -1,6 +1,7 @@
 package letrain.mvp.impl.terminal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import letrain.mvp.CoverText;
@@ -8,15 +9,16 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Issue #743: the 2D cover layout. Pure helper, so it runs without a terminal: the title sits above
- * the train art and the any-key prompt closes the cover.
+ * Issue #743/#771: the 2D cover layout. Pure helper, so it runs without a terminal: the title sits
+ * above the legacy train art used when the coloured braille cover does not fit. There is no
+ * "press any key" text in 2D (owner decision); any key still continues.
  */
 @DisplayName("2D cover screen lines")
 class TerminalViewCoverTest {
 
     private static final int ROWS = 24;
-    /** First content row: (24 - 13 content lines) / 2. */
-    private static final int START = 5;
+    /** Content is title + blank + art (11 lines); first row is (24 - 11) / 2. */
+    private static final int START = 6;
 
     @Test
     @DisplayName("the cover is vertically centred and keeps the shared order")
@@ -31,8 +33,18 @@ class TerminalViewCoverTest {
             assertEquals(CoverText.ASCII_ART.get(i), lines[START + 2 + i].stripTrailing(),
                     "art line " + i);
         }
-        assertEquals(CoverText.PROMPT, lines[START + 2 + CoverText.ASCII_ART.size() + 1].strip());
         assertTrue(lines[0].isEmpty(), "24 rows leave room above the title");
+    }
+
+    @Test
+    @DisplayName("2D shows no 'press any key' hint anymore")
+    void should_NotShowThePrompt() {
+        String[] lines = TerminalView.coverScreenLines(ROWS);
+
+        for (String line : lines) {
+            assertFalse(line.contains(CoverText.PROMPT),
+                    "the 2D cover must not carry the any-key prompt: '" + line + "'");
+        }
     }
 
     @Test
