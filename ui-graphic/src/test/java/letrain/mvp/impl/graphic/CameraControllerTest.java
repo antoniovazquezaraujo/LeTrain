@@ -1,10 +1,12 @@
 package letrain.mvp.impl.graphic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.badlogic.gdx.graphics.PerspectiveCamera;
+import com.badlogic.gdx.math.MathUtils;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.mvp.impl.Model;
@@ -255,6 +257,66 @@ class CameraControllerTest {
 
         // Far away the camera keeps the historical 0.7 * maxDistance (28 m) height
         assertEquals(28f, cam.position.y, 0.1f, "should preserve the classic far height");
+    }
+
+    @Test
+    @DisplayName("orbit zoom: height follows the ground-to-classic lerp across the whole zoom range")
+    void should_FollowHeightLerp_When_ZoomedToIntermediateDistances() {
+        // Arrange
+        PerspectiveCamera cam = cameraController.init(800, 600);
+        cameraController.setMode(CameraController.CameraMode.ORBIT);
+
+        // Act: settle at the closest zoom, then climb to the farthest in equal steps
+        cameraController.zoomStep(-1000f);
+        updateFrames(300);
+        float previous = cam.position.y;
+
+        // Assert: the closest zoom already sits at ground level, and every intermediate step keeps
+        // the camera inside the band while following the zoom lerp monotonically upwards.
+        assertEquals(0.6f, previous, 0.02f, "minimum zoom must start at ground level");
+        for (int i = 0; i < 10; i++) {
+            cameraController.zoomStep(3.7f);
+            updateFrames(300);
+
+            float y = cam.position.y;
+            float expected = MathUtils.lerp(0.6f, 28f, cameraController.getZoomFactor());
+
+            assertFalse(Float.isNaN(y), "height must never become NaN at step " + i);
+            assertTrue(y >= 0.6f - 0.02f, "height " + y + " fell below ground level");
+            assertTrue(y <= 28f + 0.02f, "height " + y + " exceeded the classic far height");
+            assertEquals(expected, y, 0.02f, "height must track the zoom lerp at step " + i);
+            assertTrue(y > previous - 1e-3f, "height must not decrease while zooming out");
+            previous = y;
+        }
+        assertTrue(previous > 27f, "zooming all the way out must reach the classic height");
+    }
+
+    @Test
+    @DisplayName("orbit zoom: random zoom steps keep the camera inside [0.6, 28] with no NaN")
+    void should_StayWithinHeightBand_When_ZoomingRandomly() {
+        // Arrange
+        PerspectiveCamera cam = cameraController.init(800, 600);
+        cameraController.setMode(CameraController.CameraMode.ORBIT);
+        java.util.Random random = new java.util.Random(2026L);
+
+        // Act & Assert: many random zoom steps, each settled, must never break the safety band.
+        for (int i = 0; i < 200; i++) {
+            cameraController.zoomStep(random.nextFloat() * 200f - 100f);
+            updateFrames(200);
+
+            float y = cam.position.y;
+            assertFalse(Float.isNaN(y), "height must never be NaN at iteration " + i);
+            assertFalse(Float.isInfinite(y), "height must never be infinite at iteration " + i);
+            assertTrue(y >= 0.6f - 0.02f && y <= 28f + 0.02f,
+                    "height " + y + " left [0.6, 28] at iteration " + i);
+            assertFalse(Float.isNaN(cam.direction.y), "direction.y must never be NaN");
+        }
+    }
+
+    private void updateFrames(int frames) {
+        for (int i = 0; i < frames; i++) {
+            cameraController.update(1f);
+        }
     }
 
     @Test
