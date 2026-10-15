@@ -2,9 +2,13 @@ package letrain.mvp.impl.terminal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.googlecode.lanterna.TerminalSize;
@@ -35,6 +39,18 @@ class CoverArtPainterTest {
         assertFalse(CoverArtPainter.fits(CoverArt.COLUMNS - 1, CoverArt.ROWS));
         assertFalse(CoverArtPainter.fits(CoverArt.COLUMNS, CoverArt.ROWS - 1));
         assertFalse(CoverArtPainter.fits(80, 24));
+    }
+
+    @Test
+    @DisplayName("the size policy is exclusive on both axes at the 160x44 boundary")
+    void should_CheckBothBoundariesIndependently() {
+        // 160 and 44 are inclusive; one column/row short on either axis falls back.
+        assertTrue(CoverArtPainter.fits(160, 44));
+        assertTrue(CoverArtPainter.fits(161, 44));
+        assertTrue(CoverArtPainter.fits(160, 45));
+        assertFalse(CoverArtPainter.fits(159, 44));
+        assertFalse(CoverArtPainter.fits(160, 43));
+        assertFalse(CoverArtPainter.fits(159, 43));
     }
 
     @Test
@@ -91,5 +107,65 @@ class CoverArtPainterTest {
                 TRUECOLOR)));
         verify(tg).setCharacter(eq(3), eq(1), eq(CoverArtPainter.character(art.row(0).get(1),
                 TRUECOLOR)));
+    }
+
+    @Test
+    @DisplayName("centring floors (size - art) / 2 on both axes, offsetting the first cell")
+    void should_CentreWithExactOffsets() {
+        // 1x1 art in a 4x4 terminal -> (4 - 1) / 2 = 1 on each axis.
+        CoverArt art = CoverArt.parse(List.of("0041ff0000------"));
+        TextGraphics tg = mock(TextGraphics.class);
+
+        CoverArtPainter.paint(tg, art, TRUECOLOR, new TerminalSize(4, 4));
+
+        verify(tg).setCharacter(eq(1), eq(1),
+                eq(CoverArtPainter.character(art.row(0).get(0), TRUECOLOR)));
+    }
+
+    @Test
+    @DisplayName("the art is drawn from the top-left corner when the terminal is exactly its size")
+    void should_StartAtOriginWhenItJustFits() {
+        CoverArt art = CoverArt.parse(List.of("0041ff0000------" + "0042------0000ff"));
+        TextGraphics tg = mock(TextGraphics.class);
+
+        CoverArtPainter.paint(tg, art, TRUECOLOR, new TerminalSize(2, 1));
+
+        verify(tg).setCharacter(eq(0), eq(0),
+                eq(CoverArtPainter.character(art.row(0).get(0), TRUECOLOR)));
+        verify(tg).setCharacter(eq(1), eq(0),
+                eq(CoverArtPainter.character(art.row(0).get(1), TRUECOLOR)));
+    }
+
+    @Test
+    @DisplayName("a terminal smaller than the art is clipped, never an exception")
+    void should_ClipWhenSmaller() {
+        CoverArt art = CoverArt.parse(List.of("0041ff0000------" + "0042------0000ff",
+                "0043ff0000------" + "0044------0000ff"));
+        TextGraphics tg = mock(TextGraphics.class);
+
+        CoverArtPainter.paint(tg, art, TRUECOLOR, new TerminalSize(1, 1));
+
+        // Only the top-left cell survives the clip; nothing is asked to be drawn off-screen.
+        verify(tg).setCharacter(eq(0), eq(0),
+                eq(CoverArtPainter.character(art.row(0).get(0), TRUECOLOR)));
+        verify(tg, never()).setCharacter(eq(1), anyInt(), any());
+        verify(tg, never()).setCharacter(anyInt(), eq(1), any());
+    }
+
+    @Test
+    @DisplayName("painting rejects null collaborators instead of failing deeper")
+    void should_RejectNullArguments() {
+        TextGraphics tg = mock(TextGraphics.class);
+        CoverArt art = CoverArt.parse(List.of("0041ff0000------"));
+        TerminalSize size = new TerminalSize(4, 4);
+
+        assertThrows(NullPointerException.class,
+                () -> CoverArtPainter.paint(null, art, TRUECOLOR, size));
+        assertThrows(NullPointerException.class,
+                () -> CoverArtPainter.paint(tg, null, TRUECOLOR, size));
+        assertThrows(NullPointerException.class,
+                () -> CoverArtPainter.paint(tg, art, null, size));
+        assertThrows(NullPointerException.class,
+                () -> CoverArtPainter.paint(tg, art, TRUECOLOR, null));
     }
 }

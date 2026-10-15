@@ -3,11 +3,14 @@ package letrain.mvp.impl.terminal;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import letrain.audio.AudioController;
+import letrain.map.Point;
 import letrain.mvp.impl.Model;
 import letrain.mvp.input.InputEvent;
 import letrain.mvp.input.KeyType;
@@ -86,5 +89,46 @@ class TerminalPresenterCoverTest {
 
         assertFalse(presenter.isCoverActive());
         verify(view, never()).showFileMenu();
+    }
+
+    @Test
+    @DisplayName("dismissing the cover always hands the screen back to the game")
+    void dismissCover_hidesTheCover() {
+        presenter.showCover();
+
+        presenter.dismissCover();
+
+        assertFalse(presenter.isCoverActive());
+        verify(view).setCoverVisible(false);
+    }
+
+    /** Stubs a view whose very first key read ends the game, so {@code start()} returns at once. */
+    private void stubImmediateExit() {
+        when(view.readKey()).thenReturn(null);
+        when(view.isEndOfGame(any())).thenReturn(true);
+        when(view.getScrollOffset()).thenReturn(new Point(0, 0));
+    }
+
+    @Test
+    @DisplayName("the default boot shows the cover before the world")
+    void coverEnabled_showsTheCover() {
+        stubImmediateExit();
+
+        presenter.start();
+
+        verify(view).setCoverVisible(true);
+    }
+
+    @Test
+    @DisplayName("a headless or direct-scenario run (cover disabled) never paints the cover")
+    void coverDisabled_neverShowsTheCover() {
+        presenter.setCoverEnabled(false);
+        stubImmediateExit();
+
+        presenter.start();
+
+        verify(view, never()).setCoverVisible(true);
+        assertFalse(presenter.isCoverActive(),
+                "the world must start without waiting on the cover");
     }
 }

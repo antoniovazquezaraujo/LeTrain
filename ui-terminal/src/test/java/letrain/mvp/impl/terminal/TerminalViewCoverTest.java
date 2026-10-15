@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import letrain.mvp.CoverArt;
 import letrain.mvp.CoverText;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,18 @@ class TerminalViewCoverTest {
     private static final int ROWS = 24;
     /** Content is title + blank + art (11 lines); first row is (24 - 11) / 2. */
     private static final int START = 6;
+
+    @Test
+    @DisplayName("the coloured art is chosen from 160x44, the ASCII fallback below it")
+    void should_ChooseTheArtBySize() {
+        assertTrue(TerminalView.usesColourCover(CoverArt.COLUMNS, CoverArt.ROWS),
+                "the exact art size must show the colour cover");
+        assertFalse(TerminalView.usesColourCover(CoverArt.COLUMNS - 1, CoverArt.ROWS),
+                "one column short falls back to the ASCII train");
+        assertFalse(TerminalView.usesColourCover(CoverArt.COLUMNS, CoverArt.ROWS - 1),
+                "one row short falls back to the ASCII train");
+        assertFalse(TerminalView.usesColourCover(80, 24), "a classic 80x24 terminal uses ASCII");
+    }
 
     @Test
     @DisplayName("the cover is vertically centred and keeps the shared order")
