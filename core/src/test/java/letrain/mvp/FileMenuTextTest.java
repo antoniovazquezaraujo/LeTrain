@@ -15,8 +15,9 @@ import org.junit.jupiter.api.Test;
  * Issue #743/#746: the File menu is defined once for both clients. The structure, the words and the
  * states must not drift apart between the 2D terminal and the 3D HUD. Since S2 the 2D menu is
  * contextual: at the boot menu (no game) New works and Save/Settings are disabled (D8); in-game
- * Settings opens the S3b dialog (#764); the 3D client keeps New/Settings disabled with the parity
- * reason until S4.
+ * Settings opens the S3b dialog (#764). Since S4 (#777) the 3D menu matches: New opens the 3D New
+ * Game dialog, Save follows the game state and Settings stays disabled with the parity reason until
+ * S4b.
  */
 @DisplayName("File menu wording and states (#743/#746, settings #764)")
 class FileMenuTextTest {
@@ -65,19 +66,34 @@ class FileMenuTextTest {
     void should_ShowTheLockReasons() {
         assertEquals("no game in progress", terminalItems(false).get(3).disabledReason());
         assertEquals(FileMenuText.PARITY_LOCK_REASON,
-                FileMenuText.items(MenuState.graphic()).get(3).disabledReason());
+                FileMenuText.items(MenuState.graphic(true)).get(3).disabledReason());
     }
 
     @Test
-    @DisplayName("3D keeps New and Settings disabled with the parity reason until S4")
-    void should_Keep3DParityLocks() {
-        List<Item> items = FileMenuText.items(MenuState.graphic());
+    @DisplayName("3D in-game: New opens the dialog and Save works; Settings waits for S4b")
+    void should_Define3DInGameStates() {
+        List<Item> items = FileMenuText.items(MenuState.graphic(true));
 
-        assertFalse(items.get(0).enabled(), "New waits for the 3D parity slice");
-        assertFalse(items.get(3).enabled(), "Settings waits for the 3D parity slice");
-        assertEquals(FileMenuText.PARITY_LOCK_REASON, items.get(0).disabledReason());
+        assertTrue(items.get(0).enabled(), "New opens the 3D New Game dialog since S4 (#777)");
+        assertTrue(items.get(1).enabled(), "Load works from the File menu");
+        assertTrue(items.get(2).enabled(), "Save works while a game is running");
+        assertFalse(items.get(3).enabled(), "Settings waits for the S4b slice");
         assertEquals(FileMenuText.PARITY_LOCK_REASON, items.get(3).disabledReason());
-        assertTrue(items.get(2).enabled(), "Save still works in 3D");
+        assertTrue(items.get(4).enabled(), "Quit replaces the old direct Esc exit");
+    }
+
+    @Test
+    @DisplayName("3D boot menu (no game): New/Load/Quit work and Save is disabled; Settings blocked")
+    void should_Define3DBootStates() {
+        List<Item> items = FileMenuText.items(MenuState.graphic(false));
+
+        assertTrue(items.get(0).enabled(), "New starts the first game (S4, #777)");
+        assertTrue(items.get(1).enabled(), "Load can start the first game too");
+        assertFalse(items.get(2).enabled(), "there is no game to save yet (D8)");
+        assertEquals("no game in progress", items.get(2).disabledReason());
+        assertFalse(items.get(3).enabled(), "Settings waits for the S4b slice");
+        assertEquals(FileMenuText.PARITY_LOCK_REASON, items.get(3).disabledReason());
+        assertTrue(items.get(4).enabled(), "Quit works without a game");
     }
 
     @Test
@@ -91,7 +107,7 @@ class FileMenuTextTest {
         assertEquals("Settings (no game in progress)", FileMenuText.displayLabel(items.get(3)));
         assertEquals("Quit", FileMenuText.displayLabel(items.get(4)));
 
-        assertEquals("New (3D parity slice)",
-                FileMenuText.displayLabel(FileMenuText.items(MenuState.graphic()).get(0)));
+        assertEquals("Settings (3D parity slice)",
+                FileMenuText.displayLabel(FileMenuText.items(MenuState.graphic(false)).get(3)));
     }
 }

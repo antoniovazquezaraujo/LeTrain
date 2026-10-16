@@ -102,5 +102,6 @@ el **preview** debajo, con los parámetros actuales del mundo y todo en **read-o
 
 ## Pendiente (otras rebanadas)
 
-- **S4**: paridad 3D del diálogo (el menú 3D sigue bloqueado con `3D parity slice`).
+- **S4b (#778)**: diálogo Settings 3D (el menú 3D mantiene `Settings` bloqueado con
+  `3D parity slice` hasta entonces; S4a #777 ya habilitó `New`).
 - **#417**: flujo completo Guardar/Descartar/Cancelar.

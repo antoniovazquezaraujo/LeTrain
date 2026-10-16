@@ -18,6 +18,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.badlogic.gdx.scenes.scene2d.ui.Slider;
 import com.badlogic.gdx.scenes.scene2d.ui.SplitPane;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
@@ -26,12 +27,15 @@ import com.badlogic.gdx.scenes.scene2d.ui.Tree;
 import com.badlogic.gdx.scenes.scene2d.ui.WidgetGroup;
 import com.badlogic.gdx.scenes.scene2d.ui.Window;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener.ChangeEvent;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Random;
 import java.util.function.Consumer;
 import letrain.itinerary.Punctuality;
 import letrain.mvp.EditorText;
@@ -39,6 +43,9 @@ import letrain.mvp.FileMenuText;
 import letrain.mvp.MenuText;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameModeMenuOption;
+import letrain.mvp.NewGameText;
+import letrain.settings.NewGameForm;
+import letrain.settings.SettingsCatalog;
 import letrain.utils.FontManager;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
@@ -118,7 +125,8 @@ public class Gdx3DHud {
 
     private Window ideWindow;
     private boolean fileMenuOpen;
-    private boolean rebuildDialogOpen;
+    private boolean confirmDialogOpen;
+    private boolean newGameDialogOpen;
     private Table coverTable;
 
     /** Cover capture bundled with the game (copying-core resources onto the classpath). */
@@ -371,6 +379,14 @@ public class Gdx3DHud {
         textFieldStyle.cursor = skin.newDrawable("white", Color.WHITE);
         textFieldStyle.selection = skin.newDrawable("white", Color.BLUE);
         skin.add("default", textFieldStyle);
+
+        // Slider style for the New Game dialog terrain proportions (S4, #777). The code-built skin
+        // has no slider yet; the track/knob reuse the "white" pixel with the dialog accent colour.
+        Slider.SliderStyle sliderStyle = new Slider.SliderStyle();
+        sliderStyle.background = skin.newDrawable("white", new Color(0.2f, 0.2f, 0.2f, 1f));
+        sliderStyle.knob = skin.newDrawable("white", new Color(0.29f, 0.65f, 1f, 1f));
+        sliderStyle.knobBefore = skin.newDrawable("white", new Color(0.29f, 0.65f, 1f, 0.45f));
+        skin.add("default-horizontal", sliderStyle);
 
         // ScrollPane Style
         ScrollPane.ScrollPaneStyle scrollPaneStyle = new ScrollPane.ScrollPaneStyle();
@@ -984,8 +1000,13 @@ public class Gdx3DHud {
      * File menu ({@code Esc} in both clients), built from the shared {@link FileMenuText} rows:
      * New/Load/Save/Settings/Quit. Locked rows stay visible but disabled with their reason next to
      * the label; Esc closes the menu again (owner decision D11).
+     *
+     * @param hasGame whether a game is running ({@link GraphicPresenter#hasActiveGame()}): the boot
+     *        menu (false) disables {@code Save} and, on Esc, returns to the title cover
+     * @param onDismissed run when the menu is closed with Esc (not when a row acts): the boot flow
+     *        uses it to show the cover again (D8, #777)
      */
-    public void showFileMenu() {
+    public void showFileMenu(boolean hasGame, Runnable onDismissed) {
         if (fileMenuOpen) {
             return;
         }
@@ -1005,18 +1026,28 @@ public class Gdx3DHud {
                     new com.badlogic.gdx.scenes.scene2d.ui.Dialog(FileMenuText.TITLE,
                             skin.get("dialog", Window.WindowStyle.class));
 
+            // close just hides the menu (a row acted); dismiss also notifies the boot flow when the
+            // player leaves the menu with Esc and still has no game (D8, #777).
             final Runnable close = () -> {
                 fileMenuOpen = false;
                 blocker.remove();
                 dialog.hide(null);
             };
+            final Runnable dismiss = () -> {
+                close.run();
+                if (onDismissed != null) {
+                    onDismissed.run();
+                }
+            };
 
             // One row per shared item, in the shared order. Locked rows are non-focusable and
             // keep their label greyed out, with the lock reason coming from the shared wording.
-            // 3D keeps New/Settings disabled with the parity reason until S4.
+            // Since S4 (#777) New is enabled and opens the 3D New Game dialog; Settings stays
+            // disabled with the parity reason until S4b.
             final List<TextButton> focusable = new ArrayList<>();
             final java.util.Map<TextButton, Runnable> actions = new java.util.HashMap<>();
-            for (FileMenuText.Item item : FileMenuText.items(FileMenuText.MenuState.graphic())) {
+            for (FileMenuText.Item item : FileMenuText
+                    .items(FileMenuText.MenuState.graphic(hasGame))) {
                 final TextButton button = new TextButton(fileMenuButtonText(item), skin);
                 final Runnable action = fileMenuAction(item, close);
                 if (item.enabled()) {
@@ -1070,7 +1101,7 @@ public class Gdx3DHud {
                         return true;
                     }
                     if (keycode == Input.Keys.ESCAPE) {
-                        close.run();
+                        dismiss.run();
                         return true;
                     }
                     return true;
@@ -1112,6 +1143,11 @@ public class Gdx3DHud {
     /** Action of one File menu row; locked rows stay disabled and never run it. */
     private Runnable fileMenuAction(FileMenuText.Item item, Runnable close) {
         switch (item.command()) {
+            case NEW:
+                return () -> {
+                    close.run();
+                    view.onNewGame();
+                };
             case LOAD:
                 return () -> {
                     close.run();
@@ -1124,7 +1160,6 @@ public class Gdx3DHud {
                 };
             case QUIT:
                 return () -> Gdx.app.exit();
-            case NEW:
             case SETTINGS:
             default:
                 return () -> {
@@ -1134,14 +1169,25 @@ public class Gdx3DHud {
 
     /**
      * Confirmation before {@code Rebuild world}: the replay replaces the current world, so the
-     * player must agree first (issue #740). Same keyboard navigation as the exit menu (Tab/arrows
-     * move the focus, Enter/Space activate, Esc cancels).
+     * player must agree first (issue #740).
      */
     private void confirmRebuildWorld(Runnable onConfirm) {
-        if (rebuildDialogOpen) {
+        showConfirmDialog(EditorText.REBUILD_CONFIRM_TITLE, EditorText.REBUILD_CONFIRM_MESSAGE,
+                EditorText.REBUILD_WORLD, onConfirm);
+    }
+
+    /**
+     * Modal yes/no confirmation, reused by {@code Rebuild world} (#740) and the New Game discard
+     * confirmation (S4, #777). Same keyboard navigation as the File menu (Tab/arrows move the
+     * focus, Enter/Space activate the focused button, Esc cancels); the dialog swallows the rest of
+     * the keys while open. The confirm action only runs when the player agrees.
+     */
+    public void showConfirmDialog(String title, String messageText, String confirmLabel,
+            Runnable onConfirm) {
+        if (confirmDialogOpen) {
             return;
         }
-        rebuildDialogOpen = true;
+        confirmDialogOpen = true;
         Gdx.app.postRunnable(() -> {
             final Actor blocker = new Actor();
             blocker.setBounds(0, 0, stage.getWidth(), stage.getHeight());
@@ -1154,11 +1200,11 @@ public class Gdx3DHud {
             });
 
             final com.badlogic.gdx.scenes.scene2d.ui.Dialog dialog =
-                    new com.badlogic.gdx.scenes.scene2d.ui.Dialog(EditorText.REBUILD_CONFIRM_TITLE,
+                    new com.badlogic.gdx.scenes.scene2d.ui.Dialog(title,
                             skin.get("dialog", Window.WindowStyle.class)) {
                         @Override
                         protected void result(Object object) {
-                            rebuildDialogOpen = false;
+                            confirmDialogOpen = false;
                             blocker.remove();
                             if (Boolean.TRUE.equals(object)) {
                                 onConfirm.run();
@@ -1166,14 +1212,14 @@ public class Gdx3DHud {
                         }
                     };
 
-            Label message = new Label(EditorText.REBUILD_CONFIRM_MESSAGE, skin, "medium");
+            Label message = new Label(messageText, skin, "medium");
             message.setWrap(true);
             dialog.getContentTable().pad(10, 48, 24, 48).add(message).width(560f);
 
-            TextButton rebuildButton = new TextButton(EditorText.REBUILD_WORLD, skin);
+            TextButton confirmButton = new TextButton(confirmLabel, skin);
             TextButton cancelButton = new TextButton("Cancel", skin);
             dialog.getButtonTable().defaults().space(24).minWidth(140).minHeight(50);
-            dialog.button(rebuildButton, Boolean.TRUE);
+            dialog.button(confirmButton, Boolean.TRUE);
             dialog.button(cancelButton, Boolean.FALSE);
 
             // Keyboard navigation: Tab/arrows move the focus between the buttons, Enter/Space
@@ -1181,8 +1227,8 @@ public class Gdx3DHud {
             // rest of the keys while open.
             final Runnable paintFocus = () -> {
                 Actor focused = stage.getKeyboardFocus();
-                rebuildButton.getLabel()
-                        .setColor(focused == rebuildButton ? Color.CYAN : Color.WHITE);
+                confirmButton.getLabel()
+                        .setColor(focused == confirmButton ? Color.CYAN : Color.WHITE);
                 cancelButton.getLabel()
                         .setColor(focused == cancelButton ? Color.CYAN : Color.WHITE);
             };
@@ -1193,13 +1239,13 @@ public class Gdx3DHud {
                             || keycode == Input.Keys.LEFT) {
                         Actor focused = stage.getKeyboardFocus();
                         stage.setKeyboardFocus(
-                                focused == rebuildButton ? cancelButton : rebuildButton);
+                                focused == confirmButton ? cancelButton : confirmButton);
                         paintFocus.run();
                         return true;
                     }
                     if (keycode == Input.Keys.ENTER || keycode == Input.Keys.NUMPAD_ENTER
                             || keycode == Input.Keys.SPACE) {
-                        activate(stage.getKeyboardFocus() == rebuildButton);
+                        activate(stage.getKeyboardFocus() == confirmButton);
                         return true;
                     }
                     if (keycode == Input.Keys.ESCAPE) {
@@ -1215,7 +1261,7 @@ public class Gdx3DHud {
                 }
 
                 private void activate(boolean confirmed) {
-                    rebuildDialogOpen = false;
+                    confirmDialogOpen = false;
                     blocker.remove();
                     dialog.hide(null);
                     if (confirmed) {
@@ -1223,7 +1269,7 @@ public class Gdx3DHud {
                     }
                 }
             };
-            rebuildButton.addListener(navigation);
+            confirmButton.addListener(navigation);
             cancelButton.addListener(navigation);
 
             // Reserve enough top padding so the title fits inside the title bar (Window sizes
@@ -1237,8 +1283,236 @@ public class Gdx3DHud {
 
             stage.addActor(blocker);
             stage.addActor(dialog);
-            stage.setKeyboardFocus(rebuildButton);
+            stage.setKeyboardFocus(confirmButton);
             paintFocus.run();
+        });
+    }
+
+    /**
+     * New Game dialog (S4, #777): the 3D counterpart of the 2D dialog, V1 slice with the seed and
+     * the two terrain proportions (Settings tabs and the catalog preview arrive in S4b/S4c). The
+     * form owns the catalogue rules; {@code Start} validates through
+     * {@link NewGameForm#toSettings()} and, on failure, shows the catalogue message inline without
+     * closing. Tab/arrows move the focus, left/right move the focused slider, Enter/Space activate
+     * the focused button and Esc cancels (2D parity).
+     *
+     * @param form the prefilled form (seed + terrain) owned by the presenter
+     * @param onStart receives the validated settings when the player starts
+     * @param onCancel run when the dialog is cancelled
+     */
+    public void showNewGameDialog(NewGameForm form, Consumer<Map<String, String>> onStart,
+            Runnable onCancel) {
+        if (newGameDialogOpen) {
+            return;
+        }
+        newGameDialogOpen = true;
+        Gdx.app.postRunnable(() -> {
+            final Actor blocker = new Actor();
+            blocker.setBounds(0, 0, stage.getWidth(), stage.getHeight());
+            blocker.addListener(new InputListener() {
+                @Override
+                public boolean touchDown(InputEvent event, float x, float y, int pointer,
+                        int button) {
+                    return true;
+                }
+            });
+
+            final com.badlogic.gdx.scenes.scene2d.ui.Dialog dialog =
+                    new com.badlogic.gdx.scenes.scene2d.ui.Dialog(NewGameText.TITLE,
+                            skin.get("dialog", Window.WindowStyle.class));
+
+            final TextField seedField = new TextField(form.value(NewGameForm.SEED_KEY), skin);
+            // The dialog owns Tab/arrow navigation, so the field must not consume Tab itself.
+            seedField.setFocusTraversal(false);
+            seedField.setTextFieldListener((field, c) -> form.setSeed(field.getText()));
+            final TextButton newSeedButton = new TextButton(NewGameText.NEW_SEED, skin);
+
+            final Slider waterSlider =
+                    new Slider(0, SettingsCatalog.MAX_TERRAIN_PERCENT, 1, false, skin);
+            final Slider mountainSlider =
+                    new Slider(0, SettingsCatalog.MAX_TERRAIN_PERCENT, 1, false, skin);
+            waterSlider.setValue(form.waterPercent());
+            mountainSlider.setValue(form.mountainPercent());
+            final Label waterValue = new Label(form.waterPercent() + " %", skin, "small");
+            final Label mountainValue = new Label(form.mountainPercent() + " %", skin, "small");
+
+            final Label validation = new Label("", skin, "small");
+            validation.setColor(new Color(1f, 0.4f, 0.4f, 1f));
+            validation.setWrap(true);
+
+            newSeedButton.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    int seed = NewGameForm.nextSeed(new Random());
+                    form.setSeed(String.valueOf(seed));
+                    seedField.setText(String.valueOf(seed));
+                }
+            });
+            waterSlider.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    form.setWaterPercent((int) waterSlider.getValue());
+                    waterValue.setText(form.waterPercent() + " %");
+                    // The cross-field rule may have clamped the mountain side: refresh it too.
+                    mountainSlider.setValue(form.mountainPercent());
+                    mountainValue.setText(form.mountainPercent() + " %");
+                }
+            });
+            mountainSlider.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    form.setMountainPercent((int) mountainSlider.getValue());
+                    mountainValue.setText(form.mountainPercent() + " %");
+                    waterSlider.setValue(form.waterPercent());
+                    waterValue.setText(form.waterPercent() + " %");
+                }
+            });
+
+            Table content = dialog.getContentTable();
+            content.pad(24, 48, 8, 48);
+            content.defaults().space(12);
+            content.add(new Label(NewGameText.SEED_LABEL, skin, "small")).left();
+            content.add(seedField).width(240f).height(38f);
+            content.add(newSeedButton).width(120f).height(38f);
+            content.row();
+            content.add(new Label(NewGameText.WATER_LABEL, skin, "small")).left();
+            content.add(waterSlider).width(280f);
+            content.add(waterValue).width(80f).left();
+            content.row();
+            content.add(new Label(NewGameText.MOUNTAIN_LABEL, skin, "small")).left();
+            content.add(mountainSlider).width(280f);
+            content.add(mountainValue).width(80f).left();
+            content.row();
+            content.add(validation).colspan(3).width(520f).left();
+
+            final TextButton startButton = new TextButton(NewGameText.START, skin);
+            final TextButton cancelButton = new TextButton(NewGameText.CANCEL, skin);
+            dialog.getButtonTable().defaults().space(24).minWidth(140).minHeight(50);
+            // Plain table cells, not Dialog.button(...): that path auto-hides on click, which would
+            // close the dialog even when Start must show a validation message and stay open.
+            dialog.getButtonTable().add(startButton);
+            dialog.getButtonTable().add(cancelButton);
+
+            final List<Actor> focusable = List.of(seedField, newSeedButton, waterSlider,
+                    mountainSlider, startButton, cancelButton);
+
+            final Runnable finish = () -> {
+                newGameDialogOpen = false;
+                blocker.remove();
+                dialog.hide(null);
+            };
+            final Runnable start = () -> {
+                try {
+                    Map<String, String> settings = form.toSettings();
+                    finish.run();
+                    if (onStart != null) {
+                        onStart.accept(settings);
+                    }
+                } catch (IllegalArgumentException e) {
+                    // The catalogue message is what the player reads under the form.
+                    validation.setText(e.getMessage());
+                }
+            };
+            final Runnable cancel = () -> {
+                finish.run();
+                if (onCancel != null) {
+                    onCancel.run();
+                }
+            };
+            startButton.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    start.run();
+                }
+            });
+            cancelButton.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    cancel.run();
+                }
+            });
+
+            InputListener navigation = new InputListener() {
+                @Override
+                public boolean keyDown(InputEvent event, int keycode) {
+                    Actor focused = stage.getKeyboardFocus();
+                    if ((keycode == Input.Keys.LEFT || keycode == Input.Keys.RIGHT)
+                            && focused instanceof Slider) {
+                        Slider slider = (Slider) focused;
+                        float step = keycode == Input.Keys.LEFT ? -slider.getStepSize()
+                                : slider.getStepSize();
+                        slider.setValue(
+                                com.badlogic.gdx.math.MathUtils.clamp(slider.getValue() + step,
+                                        slider.getMinValue(), slider.getMaxValue()));
+                        return true;
+                    }
+                    if (keycode == Input.Keys.TAB || keycode == Input.Keys.UP
+                            || keycode == Input.Keys.DOWN || keycode == Input.Keys.LEFT
+                            || keycode == Input.Keys.RIGHT) {
+                        int index = focusable.indexOf(focused);
+                        int step =
+                                (keycode == Input.Keys.UP || keycode == Input.Keys.LEFT) ? -1 : 1;
+                        int next = Math.floorMod(index + step, focusable.size());
+                        stage.setKeyboardFocus(focusable.get(next));
+                        return true;
+                    }
+                    if (keycode == Input.Keys.ENTER || keycode == Input.Keys.NUMPAD_ENTER) {
+                        if (focused == startButton) {
+                            start.run();
+                            return true;
+                        }
+                        if (focused == cancelButton) {
+                            cancel.run();
+                            return true;
+                        }
+                        if (focused == newSeedButton) {
+                            newSeedButton.fire(new ChangeEvent());
+                            return true;
+                        }
+                        return false;
+                    }
+                    if (keycode == Input.Keys.SPACE) {
+                        if (focused == startButton) {
+                            start.run();
+                            return true;
+                        }
+                        if (focused == cancelButton) {
+                            cancel.run();
+                            return true;
+                        }
+                        if (focused == newSeedButton) {
+                            newSeedButton.fire(new ChangeEvent());
+                            return true;
+                        }
+                        // In the seed field a space is a character; let it type.
+                        return false;
+                    }
+                    if (keycode == Input.Keys.ESCAPE) {
+                        cancel.run();
+                        return true;
+                    }
+                    return false;
+                }
+
+                @Override
+                public boolean keyTyped(InputEvent event, char character) {
+                    // Never swallow: the seed field must receive its typed characters.
+                    return false;
+                }
+            };
+            dialog.addListener(navigation);
+
+            dialog.padTop(46);
+            dialog.pack();
+            dialog.setWidth(Math.max(dialog.getWidth(), 640f));
+            dialog.setHeight(Math.max(dialog.getHeight(), 420f));
+            dialog.setPosition((stage.getWidth() - dialog.getWidth()) / 2,
+                    (stage.getHeight() - dialog.getHeight()) / 2);
+
+            stage.addActor(blocker);
+            stage.addActor(dialog);
+            stage.setKeyboardFocus(seedField);
+            seedField.setCursorPosition(seedField.getText().length());
         });
     }
 
@@ -2090,6 +2364,15 @@ public class Gdx3DHud {
 
     public void showFileDialog(String title, com.kotcrab.vis.ui.widget.file.FileChooser.Mode mode,
             String defaultText, String[] extensions, Consumer<String> onResult) {
+        showFileDialog(title, mode, defaultText, extensions, onResult, null);
+    }
+
+    /**
+     * @param onCancel run when the player closes the chooser without picking a file (used by the
+     *        boot Load so it returns to the cover instead of leaving an empty world, S4 #777)
+     */
+    public void showFileDialog(String title, com.kotcrab.vis.ui.widget.file.FileChooser.Mode mode,
+            String defaultText, String[] extensions, Consumer<String> onResult, Runnable onCancel) {
         Gdx.app.postRunnable(() -> {
             if (!com.kotcrab.vis.ui.VisUI.isLoaded()) {
                 com.kotcrab.vis.ui.VisUI.load();
@@ -2154,6 +2437,13 @@ public class Gdx3DHud {
                         com.badlogic.gdx.utils.Array<com.badlogic.gdx.files.FileHandle> files) {
                     if (files.size > 0) {
                         onResult.accept(files.get(0).file().getAbsolutePath());
+                    }
+                }
+
+                @Override
+                public void canceled() {
+                    if (onCancel != null) {
+                        onCancel.run();
                     }
                 }
             });

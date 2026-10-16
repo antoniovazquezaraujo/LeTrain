@@ -677,7 +677,8 @@ public class Gdx3DInputHandler implements InputProcessor {
                 new letrain.command.TurtleBuilder(model, trackMaker),
                 (title, msg) -> view.showMessage(title, msg), () -> view.onExitGame(),
                 steps -> view.undo(steps), steps -> view.redo(steps),
-                file -> view.onExportScenario(file), file -> view.onImportScenario(file), false);
+                file -> view.onExportScenario(file), file -> view.onImportScenario(file),
+                () -> view.onNewGame(), false);
 
         if (error != null) {
             model.setCommandError(letrain.command.SyntaxMessages.shorten(error));
