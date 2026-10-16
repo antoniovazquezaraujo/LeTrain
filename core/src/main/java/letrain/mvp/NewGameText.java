@@ -3,7 +3,7 @@ package letrain.mvp;
 /**
  * Shared wording of the New Game flow (2D dialog today, 3D parity in S4). Both clients must read
  * the same words so the 2D terminal and the 3D HUD cannot drift apart (same convention as
- * {@link FileMenuText}, {@link CoverText} and {@link EditorText}).
+ * {@link FileMenuText} and {@link EditorText}).
  */
 public final class NewGameText {
 

@@ -157,13 +157,11 @@ Diferencias intencionales (tecnología, no información):
 - La línea de consola y los hints 3D no hacen wrap: se recortan (el hint con elipsis) en lugar de
   crecer en varias líneas.
 
-## Portada y menú File: paridad 2D/3D (#743, arte 2D #771)
+## Portada y menú File: paridad 2D/3D (#743, arte 2D #771, captura 3D #775)
 
 La portada y el menú File también nacen de fuentes compartidas en `core`, de modo que las
 palabras no pueden divergir entre clientes:
 
-- **Portada 3D** (`CoverText`): `TITLE` y `PROMPT`. La 3D monta una `Table` opaca a pantalla
-  completa en `Gdx3DHud.showCover()` con ambas cadenas (sin cambios hasta S4).
 - **Portada 2D**: usa el **arte braille** (issue #771) **siempre**; el tamaño del terminal no
   decide nada: si el arte es mayor se centra y se recorta en simétrico (el usuario baja el zoom si
   quiere verla entera). El **estilo** sí depende de la profundidad de color (`CoverStyle`, decidido
@@ -177,6 +175,13 @@ palabras no pueden divergir entre clientes:
   `ui-terminal` (`letrain.mvp.impl.terminal.CoverArtPainter`), así que `core` sigue sin conocer
   Lanterna. **No hay texto de "pulsa una tecla" en 2D** (decisión del dueño): cualquier tecla
   continúa igual que antes.
+- **Portada 3D**: `Gdx3DHud.showCover()` pinta la captura del tren de letras
+  (`letrain/cover/cover_3d.png`, issue #775) a pantalla completa en modo *cover* —fondo negro
+  debajo, escala `max(anchoP/imgAncho, altoP/imgAlto)`, centrada, el sobrante del eje mayor se sale
+  de pantalla, sin deformar y sin barras (`coverScale`/`coverOffset`, estáticos puros testeables sin
+  GL)—. Tampoco muestra texto (decisión del dueño: la imagen ya rotula LeTrain), y al quedar sin
+  uso en ningún cliente se eliminaron las constantes `CoverText` (`TITLE`/`PROMPT`). Si falta el
+  recurso, la portada degrada al fondo negro; la textura se libera en `dispose()`.
 - **Recorte centrado**: `CoverArtPainter.paint` sitúa el arte con `centredOffset` (división entera
   hacia abajo, luego el offset puede ser negativo) y **salta** las celdas que caen fuera de la
   pantalla, sin pasar coordenadas negativas a Lanterna (aplica a ambos estilos).
