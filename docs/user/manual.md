@@ -17,7 +17,7 @@ The game can be controlled via the keyboard in both its 2D and 3D versions. Belo
 - Press **Esc** to open the **File** menu, with the same words in 2D and 3D: **New**, **Load**, **Save**, **Settings** and **Quit**. **Esc** closes the menu again and **Quit** leaves the game. At the boot menu, **Esc** goes back to the title cover.
   - **New** opens the **New Game** dialog: in 2D, seed, terrain proportions and the catalogue sections (see below); in 3D (V1), the seed and the terrain proportions. It is the way to start a game from the boot menu. With a game in progress it asks for confirmation first (the full Save/Discard/Cancel flow arrives later); the unsaved game is discarded.
   - **Save** is disabled with the reason *no game in progress* until a game is running.
-  - **Settings** is visible but still disabled until its slice; in the 3D client **Settings** is disabled with *3D parity slice* for now.
+  - **Settings** opens the in-game **Settings** dialog in both clients while a game is running; at the boot menu it is disabled with *no game in progress*.
 - The in-game **LeTrain Editor** no longer has `Save`/`Load` buttons: they live in the File menu. The console commands `save;`/`load;` still work.
 - Console command **`new game;`** opens the same New Game dialog from the CLI in both clients.
 
@@ -30,12 +30,12 @@ The game can be controlled via the keyboard in both its 2D and 3D versions. Belo
 - **Game tab**: besides the world settings it sets the clock origin of the new game: **Start day** (1..366, default 1) and **Start time** (`HH:MM`, default 08:00, accepted as `H:MM` or `HH:MM` and normalised to zero-padded `HH:MM` on confirm). They only apply when the world is created: a loaded game always continues at its saved date and time.
 - **Keys**: **Alt+T/G/E/B/U** switch tabs by their letter (also **Ctrl+Tab**/**Ctrl+Shift+Tab** to cycle), **Alt+S** starts and **Alt+C**/**Esc** cancels. The dialog has a black background.
 
-#### Settings dialog (2D)
-- **File → Settings** opens it while a game is running (disabled with *no game in progress* at the boot menu; the 3D client waits for its 3D parity slice). It uses the same form conventions as the New Game dialog: tabs by page, aligned values, Enter/Tab commits with a range tooltip.
-- Every row carries its state: green **●** *live* and yellow **●** *reapply* are editable (applying a changed *reapply* asks for confirmation first); red **●** *requires a new game* stays locked. Scenario-locked values (rare, scenario games only) render disabled too. A small colour legend at the bottom of the screen repeats the meanings.
-- The **Terrain** tab shows the New Game terrain block (seed, Water/Mountain sliders, the three-colour bar and the map) with the running world's parameters, read-only.
+#### Settings dialog (2D and 3D)
+- **File → Settings** opens it in both clients while a game is running (disabled with *no game in progress* at the boot menu). In 2D it uses the same form conventions as the New Game dialog: tabs by page, aligned values, Enter/Tab commits with a range tooltip. In 3D a category selector shows one page at a time, with the same words and actions.
+- Every row carries its state: green **●** *live* and yellow **●** *reapply* are editable (applying a changed *reapply* asks for confirmation first); red **●** *requires a new game* stays locked. Scenario-locked values (rare, scenario games only) render disabled too. A small colour legend at the bottom repeats the meanings.
+- The **Terrain** page shows the running world's terrain parameters, read-only: in 2D the New Game terrain block (seed, Water/Mountain sliders, the three-colour bar and the map); in 3D the Seed, Water and Mountain fields.
 - **Apply** sends the editable values to the running game (invalid, new-game-only and scenario-locked values are listed with their reason and the dialog stays open). **Restore** puts the current values back. **New game** confirms and opens the New Game form prefilled with the form values. **Save as defaults** writes them into `letrain.cfg`. **Close** (or Esc) leaves.
-- **Keys**: **Alt+A/R/N/S/C** for the actions, **Alt+T/G/E/B/U** for the tabs, **Tab** walks the fields of the active page and the footer.
+- **Keys**: in 2D **Alt+A/R/N/S/C** for the actions and **Alt+T/G/E/B/U** for the tabs; in 3D **Tab**/arrows walk the fields of the active page and the buttons, **Enter**/**Space** activate a focused button and **Esc** closes. Both: **Tab** walks the fields of the active page and the footer.
 
 ### Navigation and Views
 - **Arrow Keys (or h, j, k, l)**: Move the cursor freely or follow a track (Vim-style navigation).

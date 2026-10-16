@@ -32,10 +32,12 @@ import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.function.Consumer;
 import letrain.itinerary.Punctuality;
 import letrain.mvp.EditorText;
@@ -44,7 +46,12 @@ import letrain.mvp.MenuText;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameModeMenuOption;
 import letrain.mvp.NewGameText;
+import letrain.mvp.SettingsText;
 import letrain.settings.NewGameForm;
+import letrain.settings.SettingCategory;
+import letrain.settings.SettingDefinition;
+import letrain.settings.SettingFieldState;
+import letrain.settings.SettingsApplyResult;
 import letrain.settings.SettingsCatalog;
 import letrain.utils.FontManager;
 import letrain.vehicle.rail.impl.Locomotive;
@@ -127,6 +134,7 @@ public class Gdx3DHud {
     private boolean fileMenuOpen;
     private boolean confirmDialogOpen;
     private boolean newGameDialogOpen;
+    private boolean settingsDialogOpen;
     private Table coverTable;
 
     /** Cover capture bundled with the game (copying-core resources onto the classpath). */
@@ -1158,9 +1166,13 @@ public class Gdx3DHud {
                     close.run();
                     view.showSaveDialog();
                 };
+            case SETTINGS:
+                return () -> {
+                    close.run();
+                    view.onSettings();
+                };
             case QUIT:
                 return () -> Gdx.app.exit();
-            case SETTINGS:
             default:
                 return () -> {
                 };
@@ -1184,6 +1196,18 @@ public class Gdx3DHud {
      */
     public void showConfirmDialog(String title, String messageText, String confirmLabel,
             Runnable onConfirm) {
+        showConfirmDialog(title, messageText, confirmLabel, onConfirm, null);
+    }
+
+    /**
+     * Modal yes/no confirmation with an optional cancel callback (S4b, #778): the Settings dialog
+     * uses it to keep the keyboard focus on its own form when the player dismisses the
+     * confirmation. Same keyboard navigation as the File menu (Tab/arrows move the focus,
+     * Enter/Space activate the focused button, Esc cancels); the dialog swallows the rest of the
+     * keys while open. Only one of the two callbacks runs.
+     */
+    public void showConfirmDialog(String title, String messageText, String confirmLabel,
+            Runnable onConfirm, Runnable onCancel) {
         if (confirmDialogOpen) {
             return;
         }
@@ -1265,7 +1289,11 @@ public class Gdx3DHud {
                     blocker.remove();
                     dialog.hide(null);
                     if (confirmed) {
-                        onConfirm.run();
+                        if (onConfirm != null) {
+                            onConfirm.run();
+                        }
+                    } else if (onCancel != null) {
+                        onCancel.run();
                     }
                 }
             };
@@ -1514,6 +1542,352 @@ public class Gdx3DHud {
             stage.setKeyboardFocus(seedField);
             seedField.setCursorPosition(seedField.getText().length());
         });
+    }
+
+    /** Apply-state glyph shared with the 2D Settings dialog (#764). */
+    static final String SETTINGS_GLYPH = "●";
+
+    /** Form sections of the Settings dialog, in the shared order. */
+    private static final List<SettingCategory> SETTINGS_CATEGORIES =
+            List.of(SettingCategory.TERRAIN, SettingCategory.WORLD, SettingCategory.ECONOMY,
+                    SettingCategory.CONSTRUCTION, SettingCategory.UI);
+
+    /** Port the 3D Settings dialog uses to reach the running game; the presenter implements it. */
+    public interface SettingsPort {
+        /** Applies the editable values and reports the rejections (S3a). */
+        SettingsApplyResult apply(Map<String, String> values);
+
+        /** Writes the values as {@code letrain.cfg} defaults; {@code null} on success. */
+        String saveDefaults(Map<String, String> values);
+    }
+
+    /** Form sections the 3D dialog offers, in display order (shared with 2D). */
+    static List<SettingCategory> settingsCategories() {
+        return SETTINGS_CATEGORIES;
+    }
+
+    /** Field state (scenario lock wins over the catalogue state) both clients show (#764). */
+    static SettingFieldState settingsFieldState(SettingDefinition definition,
+            Set<String> scenarioKeys) {
+        return SettingsCatalog.fieldState(definition, scenarioKeys);
+    }
+
+    /** Catalogue label with its unit, e.g. {@code Water (%)}. */
+    static String settingsFieldLabel(SettingDefinition definition) {
+        String unit = definition.unit();
+        return unit == null || unit.isBlank() ? definition.displayName()
+                : definition.displayName() + " (" + unit + ")";
+    }
+
+    /** Colour of the state glyph, mirroring the 2D {@code SettingsDialog.FieldState} palette. */
+    static Color settingsGlyphColor(SettingFieldState state) {
+        switch (state) {
+            case REAPPLY:
+                return Color.YELLOW;
+            case NEW_GAME:
+                return new Color(1f, 0.35f, 0.35f, 1f);
+            case SCENARIO:
+                return Color.GRAY;
+            default:
+                return Color.GREEN;
+        }
+    }
+
+    /** Colour legend under the form; the scenario lock has no colour of its own (#767). */
+    static String settingsLegendMarkup() {
+        return "[GREEN]" + SETTINGS_GLYPH + "[] " + SettingsText.LEGEND_LIVE + "   [YELLOW]"
+                + SETTINGS_GLYPH + "[] " + SettingsText.LEGEND_REAPPLY + "   [RED]" + SETTINGS_GLYPH
+                + "[] " + SettingsText.LEGEND_NEW_GAME;
+    }
+
+    /** Values of the editable fields (LIVE/REAPPLY, scenario lock included) from a form map. */
+    static Map<String, String> editableValues(Map<String, String> form, Set<String> scenarioKeys) {
+        Map<String, String> values = new LinkedHashMap<>();
+        for (SettingDefinition definition : SettingsCatalog.definitions()) {
+            if (form.containsKey(definition.key())
+                    && SettingsCatalog.fieldState(definition, scenarioKeys).editable()) {
+                values.put(definition.key(), form.get(definition.key()));
+            }
+        }
+        return values;
+    }
+
+    /**
+     * In-game Settings dialog (S4b, #778): the 3D counterpart of the 2D {@code SettingsDialog}. A
+     * category selector swaps the visible page; every catalogue field shows the shared apply-state
+     * glyph and is a text field while LIVE/REAPPLY (read-only label otherwise, never editable for
+     * NEW_GAME/scenario). The five actions keep the 2D semantics: Apply collects the editable
+     * values (confirming first when a REAPPLY field changed) and lists the rejections without
+     * closing; Restore resets to the baseline; New game closes and hands the whole form over; Save
+     * as defaults confirms and writes {@code letrain.cfg}; Close/Esc closes.
+     *
+     * @param currentSettings the running game's effective values (Restore baseline)
+     * @param scenarioKeys keys fixed by the scenario's {@code configuration { }} (locked)
+     * @param port applies values and writes defaults
+     * @param onNewGame receives the whole form when the player chooses New game
+     */
+    public void showSettingsDialog(Map<String, String> currentSettings, Set<String> scenarioKeys,
+            SettingsPort port, Consumer<Map<String, String>> onNewGame) {
+        if (settingsDialogOpen) {
+            return;
+        }
+        settingsDialogOpen = true;
+        Gdx.app.postRunnable(() -> {
+            final Actor blocker = new Actor();
+            blocker.setBounds(0, 0, stage.getWidth(), stage.getHeight());
+            blocker.addListener(new InputListener() {
+                @Override
+                public boolean touchDown(InputEvent event, float x, float y, int pointer,
+                        int button) {
+                    return true;
+                }
+            });
+
+            final Map<String, String> baseline = SettingsCatalog.overDefaults(currentSettings);
+            final Map<String, String> form = new LinkedHashMap<>(baseline);
+            final List<TextField> categoryFields = new ArrayList<>();
+            final List<Actor> focusable = new ArrayList<>();
+            final SettingCategory[] active = {SettingCategory.TERRAIN};
+
+            final com.badlogic.gdx.scenes.scene2d.ui.Dialog dialog =
+                    new com.badlogic.gdx.scenes.scene2d.ui.Dialog(SettingsText.TITLE,
+                            skin.get("dialog", Window.WindowStyle.class));
+
+            final Label feedback = new Label("", skin, "small");
+            final Table fieldsTable = new Table();
+            fieldsTable.top().left();
+            final ScrollPane fieldsScroll = new ScrollPane(fieldsTable, skin);
+            fieldsScroll.setFadeScrollBars(false);
+            final Map<SettingCategory, TextButton> categoryButtons = new LinkedHashMap<>();
+            final Table categoryBar = new Table();
+
+            final TextButton applyButton = new TextButton(SettingsText.APPLY, skin);
+            final TextButton restoreButton = new TextButton(SettingsText.RESTORE, skin);
+            final TextButton newGameButton = new TextButton(SettingsText.NEW_GAME, skin);
+            final TextButton saveDefaultsButton = new TextButton(SettingsText.SAVE_DEFAULTS, skin);
+            final TextButton closeButton = new TextButton(SettingsText.CLOSE, skin);
+
+            final Runnable close = () -> {
+                settingsDialogOpen = false;
+                blocker.remove();
+                dialog.hide(null);
+            };
+
+            // Swaps the visible page and refreshes the Tab cycle: the fields of the active page
+            // plus the five footer buttons (the category selector stays out of it, like 2D #757).
+            final Consumer<SettingCategory> showCategory = category -> {
+                active[0] = category;
+                fillSettingsCategory(category, fieldsTable, categoryFields, form, scenarioKeys);
+                for (Map.Entry<SettingCategory, TextButton> entry : categoryButtons.entrySet()) {
+                    entry.getValue().setChecked(entry.getKey() == category);
+                }
+                focusable.clear();
+                focusable.addAll(categoryFields);
+                focusable.addAll(List.of(applyButton, restoreButton, newGameButton,
+                        saveDefaultsButton, closeButton));
+                fieldsScroll.setScrollY(0);
+                if (!categoryFields.isEmpty()) {
+                    stage.setKeyboardFocus(categoryFields.get(0));
+                }
+            };
+            for (SettingCategory category : SETTINGS_CATEGORIES) {
+                final TextButton tab = new TextButton(category.displayName(), skin, "toggle");
+                tab.addListener(new ChangeListener() {
+                    @Override
+                    public void changed(ChangeEvent event, Actor actor) {
+                        showCategory.accept(category);
+                    }
+                });
+                categoryButtons.put(category, tab);
+                categoryBar.add(tab).pad(4);
+            }
+
+            final Runnable applyAction = () -> {
+                Map<String, String> values = editableValues(form, scenarioKeys);
+                List<String> reapply = SettingsCatalog.changedReapplyKeys(baseline, values);
+                if (!reapply.isEmpty()) {
+                    Actor restoreFocus = stage.getKeyboardFocus();
+                    showConfirmDialog(SettingsText.REAPPLY_TITLE,
+                            SettingsText.reapplyMessage(reapply), SettingsText.APPLY, () -> {
+                                applyValues(port, baseline, feedback, values);
+                                stage.setKeyboardFocus(restoreFocus);
+                            }, () -> stage.setKeyboardFocus(restoreFocus));
+                } else {
+                    applyValues(port, baseline, feedback, values);
+                }
+            };
+            final Runnable restoreAction = () -> {
+                form.clear();
+                form.putAll(baseline);
+                showCategory.accept(active[0]);
+                feedback.setText(SettingsText.RESTORED);
+            };
+            final Runnable newGameAction = () -> {
+                Map<String, String> values = new LinkedHashMap<>(form);
+                close.run();
+                if (onNewGame != null) {
+                    onNewGame.accept(values);
+                }
+            };
+            final Runnable saveDefaultsAction = () -> {
+                Actor restoreFocus = stage.getKeyboardFocus();
+                showConfirmDialog(SettingsText.SAVE_DEFAULTS_TITLE,
+                        SettingsText.SAVE_DEFAULTS_CONFIRM, SettingsText.SAVE_DEFAULTS, () -> {
+                            String error = port.saveDefaults(new LinkedHashMap<>(form));
+                            feedback.setText(error == null ? SettingsText.SAVED_DEFAULTS
+                                    : SettingsText.SAVE_DEFAULTS_FAILED + error);
+                            stage.setKeyboardFocus(restoreFocus);
+                        }, () -> stage.setKeyboardFocus(restoreFocus));
+            };
+
+            applyButton.addListener(fireAction(applyAction));
+            restoreButton.addListener(fireAction(restoreAction));
+            newGameButton.addListener(fireAction(newGameAction));
+            saveDefaultsButton.addListener(fireAction(saveDefaultsAction));
+            closeButton.addListener(fireAction(close));
+
+            Table content = dialog.getContentTable();
+            content.pad(24, 40, 10, 40);
+            content.defaults().space(10);
+            content.add(categoryBar).left().row();
+            content.add(fieldsScroll).width(660f).height(340f).row();
+            content.add(new Label(settingsLegendMarkup(), skin, "small")).left().row();
+            content.add(feedback).left().row();
+
+            Table buttons = dialog.getButtonTable();
+            buttons.defaults().space(14).minWidth(150).minHeight(48);
+            buttons.add(applyButton);
+            buttons.add(restoreButton);
+            buttons.add(newGameButton);
+            buttons.add(saveDefaultsButton);
+            buttons.add(closeButton);
+
+            // Keyboard: Tab/arrows walk the active page's fields and the five buttons, Enter/Space
+            // activate a focused button, Esc closes. Text fields keep the left/right arrows for the
+            // caret and the space for typing.
+            dialog.addListener(new InputListener() {
+                @Override
+                public boolean keyDown(InputEvent event, int keycode) {
+                    Actor focused = stage.getKeyboardFocus();
+                    if (keycode == Input.Keys.TAB || keycode == Input.Keys.UP
+                            || keycode == Input.Keys.DOWN) {
+                        navigateSettingsFocus(keycode == Input.Keys.UP ? -1 : 1, focusable);
+                        return true;
+                    }
+                    if ((keycode == Input.Keys.LEFT || keycode == Input.Keys.RIGHT)
+                            && !(focused instanceof TextField)) {
+                        navigateSettingsFocus(keycode == Input.Keys.LEFT ? -1 : 1, focusable);
+                        return true;
+                    }
+                    if (keycode == Input.Keys.ENTER || keycode == Input.Keys.NUMPAD_ENTER
+                            || keycode == Input.Keys.SPACE) {
+                        if (focused instanceof TextButton) {
+                            ((TextButton) focused).fire(new ChangeEvent());
+                            return true;
+                        }
+                        return false;
+                    }
+                    if (keycode == Input.Keys.ESCAPE) {
+                        close.run();
+                        return true;
+                    }
+                    return false;
+                }
+
+                @Override
+                public boolean keyTyped(InputEvent event, char character) {
+                    // Never swallow: the active text fields must receive their characters.
+                    return false;
+                }
+            });
+
+            dialog.padTop(46);
+            dialog.pack();
+            dialog.setWidth(Math.max(dialog.getWidth(), 760f));
+            dialog.setHeight(Math.max(dialog.getHeight(), 620f));
+            dialog.setPosition((stage.getWidth() - dialog.getWidth()) / 2,
+                    (stage.getHeight() - dialog.getHeight()) / 2);
+
+            stage.addActor(blocker);
+            stage.addActor(dialog);
+            showCategory.accept(SettingCategory.TERRAIN);
+        });
+    }
+
+    /**
+     * Applies the collected values: rejections go to the message panel, success to the feedback.
+     */
+    private void applyValues(SettingsPort port, Map<String, String> baseline, Label feedback,
+            Map<String, String> values) {
+        SettingsApplyResult outcome = port.apply(values);
+        if (outcome.hasRejections()) {
+            feedback.setText("");
+            showMessage(SettingsText.REJECTED_TITLE,
+                    SettingsText.rejectedMessage(outcome.rejections()));
+        } else {
+            baseline.putAll(values);
+            feedback.setText(SettingsText.APPLIED);
+        }
+    }
+
+    /** Moves the keyboard focus through the active page, wrapping around. */
+    private void navigateSettingsFocus(int step, List<Actor> focusable) {
+        if (focusable.isEmpty()) {
+            return;
+        }
+        int index = focusable.indexOf(stage.getKeyboardFocus());
+        int next = index < 0 ? 0 : Math.floorMod(index + step, focusable.size());
+        stage.setKeyboardFocus(focusable.get(next));
+    }
+
+    /** Fills the page with one row per catalogue field of {@code category}, in catalogue order. */
+    private void fillSettingsCategory(SettingCategory category, Table fieldsTable,
+            List<TextField> categoryFields, Map<String, String> form, Set<String> scenarioKeys) {
+        fieldsTable.clear();
+        categoryFields.clear();
+        for (SettingDefinition definition : SettingsCatalog.definitions()) {
+            if (definition.category() == category) {
+                fieldsTable.add(settingsFieldRow(definition, scenarioKeys, form, categoryFields))
+                        .growX().left().padBottom(6).row();
+            }
+        }
+    }
+
+    /** One field row: state glyph, label with unit and a text field or a read-only value label. */
+    private Table settingsFieldRow(SettingDefinition definition, Set<String> scenarioKeys,
+            Map<String, String> form, List<TextField> categoryFields) {
+        SettingFieldState state = SettingsCatalog.fieldState(definition, scenarioKeys);
+        Table row = new Table();
+        row.left();
+        row.defaults().space(8);
+        Label glyph = new Label(SETTINGS_GLYPH, skin, "default");
+        glyph.setColor(settingsGlyphColor(state));
+        row.add(glyph).width(24f);
+        row.add(new Label(settingsFieldLabel(definition), skin, "default")).width(280f).left();
+        String value = form.getOrDefault(definition.key(), "");
+        if (state.editable()) {
+            TextField field = new TextField(value, skin);
+            field.setFocusTraversal(false);
+            // Keep the working form in sync so switching categories never loses an edit.
+            field.setTextFieldListener((f, c) -> form.put(definition.key(), f.getText()));
+            row.add(field).width(240f).height(34f);
+            categoryFields.add(field);
+        } else {
+            Label valueLabel = new Label(value, skin, "default");
+            valueLabel.setColor(Color.LIGHT_GRAY);
+            row.add(valueLabel).width(240f).left();
+        }
+        return row;
+    }
+
+    /** One button listener that fires its action. */
+    private static ChangeListener fireAction(Runnable action) {
+        return new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                action.run();
+            }
+        };
     }
 
     /**

@@ -19,7 +19,7 @@ El juego se puede controlar tanto en su versión 2D como en la 3D mediante el te
 - Pulsa **Esc** para abrir el menú **File**, con las mismas palabras en 2D y 3D: **New**, **Load**, **Save**, **Settings** y **Quit**. **Esc** de nuevo cierra el menú y **Quit** sale del juego. En el menú inicial, **Esc** vuelve a la portada.
   - **New** abre el diálogo de **Nueva Partida**: en 2D, semilla, proporciones de terreno y las secciones del catálogo (ver abajo); en 3D (V1), la semilla y las proporciones de terreno. Es la forma de empezar una partida desde el menú inicial. Con una partida en curso pide confirmación primero (el flujo completo Guardar/Descartar/Cancelar llegará más adelante); la partida sin guardar se descarta.
   - **Save** aparece deshabilitado con el motivo *no game in progress* hasta que haya partida.
-  - **Settings** sigue visible pero deshabilitado hasta su rebanada; en el cliente 3D **Settings** está deshabilitado con *3D parity slice* por ahora.
+  - **Settings** abre el diálogo **Settings** en partida en ambos clientes; en el menú inicial sale deshabilitado con *no game in progress*.
 - El **LeTrain Editor** ya no tiene botones `Save`/`Load`: viven en el menú File. Los comandos de consola `save;`/`load;` siguen funcionando.
 - El comando de consola **`new game;`** abre el mismo diálogo de Nueva Partida desde la CLI en ambos clientes.
 
@@ -32,12 +32,12 @@ El juego se puede controlar tanto en su versión 2D como en la 3D mediante el te
 - **Pestaña Game**: además de los ajustes del mundo fija el origen del reloj de la nueva partida: **Start day** (1..366, por defecto 1) y **Start time** (`HH:MM`, por defecto 08:00; se acepta `H:MM` o `HH:MM` y se normaliza a `HH:MM` con el cero delante al confirmar). Solo se aplican al crear el mundo: una partida cargada continúa siempre en su fecha y hora guardadas.
 - **Teclas**: **Alt+T/G/E/B/U** cambian de pestaña por su letra (también **Ctrl+Tab**/**Ctrl+Shift+Tab** para ciclar), **Alt+S** arranca y **Alt+C**/**Esc** cancela. El diálogo tiene fondo negro.
 
-#### Diálogo Settings (2D)
-- **File → Settings** lo abre con una partida en curso (en portada sale deshabilitado con *no game in progress*; el cliente 3D espera a su rebanada de paridad). Usa las mismas convenciones que el diálogo de Nueva Partida: pestañas por página, valores alineados, Enter/Tab con tooltip de rango.
-- Cada fila lleva su estado: verde **●** *live* y amarillo **●** *reapply* son editables (si cambia un *reapply*, Apply pide confirmación); rojo **●** *requires a new game* queda bloqueado. Los valores fijados por escenario (raros, solo en partidas de escenario) también salen deshabilitados. Una leyenda pequeña de colores al pie de la pantalla recuerda los significados.
-- La pestaña **Terrain** muestra el bloque de terreno de Nueva Partida (semilla, sliders de Agua/Montaña, la barra de tres colores y el mapa) con los parámetros actuales del mundo, en read-only.
+#### Diálogo Settings (2D y 3D)
+- **File → Settings** lo abre en ambos clientes con una partida en curso (en portada sale deshabilitado con *no game in progress*). En 2D usa las mismas convenciones que el diálogo de Nueva Partida: pestañas por página, valores alineados, Enter/Tab con tooltip de rango. En 3D un selector de categorías muestra una página a la vez, con las mismas palabras y acciones.
+- Cada fila lleva su estado: verde **●** *live* y amarillo **●** *reapply* son editables (si cambia un *reapply*, Apply pide confirmación); rojo **●** *requires a new game* queda bloqueado. Los valores fijados por escenario (raros, solo en partidas de escenario) también salen deshabilitados. Una leyenda pequeña de colores al pie recuerda los significados.
+- La página **Terrain** muestra los parámetros de terreno del mundo en read-only: en 2D el bloque de terreno de Nueva Partida (semilla, sliders de Agua/Montaña, la barra de tres colores y el mapa); en 3D los campos Seed, Water y Mountain.
 - **Apply** envía los valores editables a la partida (los inválidos, los de partida nueva y los fijados por escenario se listan con su motivo y el diálogo no se cierra). **Restore** devuelve los valores actuales. **New game** confirma y abre el formulario de Nueva Partida pre-rellenado con los valores del formulario. **Save as defaults** los escribe en `letrain.cfg`. **Close** (o Esc) sale.
-- **Teclas**: **Alt+A/R/N/S/C** para las acciones, **Alt+T/G/E/B/U** para las pestañas, **Tab** recorre los campos de la página activa y el pie.
+- **Teclas**: en 2D **Alt+A/R/N/S/C** para las acciones y **Alt+T/G/E/B/U** para las pestañas; en 3D **Tab**/flechas recorren los campos de la página activa y los botones, **Enter**/**Espacio** activan un botón enfocado y **Esc** cierra. En ambos: **Tab** recorre los campos de la página activa y el pie.
 
 ### Navegación y Vistas
 - **Flechas de dirección (o h, j, k, l)**: Mover el cursor libremente o seguir una vía (estilo Vim).

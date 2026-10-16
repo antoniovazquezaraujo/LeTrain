@@ -1,19 +1,22 @@
-# Settings en partida (2D) — S3b, issue #764
+# Settings en partida (2D y 3D) — S3b #764, S4b #778
 
-Documentación técnica del diálogo **Settings** del cliente 2D (terminal Lanterna), abierto desde
-**File → Settings** mientras hay una partida en curso (D9/D10, concept §5.2). Es la rebanada S3b
-del arco **New Game + Settings** (#742) y consume las APIs de S3a (aplicación por estado, candado
-de escenario, escritura de `letrain.cfg`).
+Documentación técnica del diálogo **Settings** en partida, abierto desde **File → Settings** mientras
+hay una partida en curso (D9/D10, concept §5.2). Es la rebanada S3b del arco **New Game + Settings**
+(#742) para el cliente 2D (terminal Lanterna) y la S4b (#778) para el 3D (HUD LibGDX); ambas consumen
+las APIs de S3a (aplicación por estado, candado de escenario, escritura de `letrain.cfg`) y las
+mismas palabras (`SettingsText`).
 
 ## Piezas
 
 | Pieza | Módulo | Responsabilidad |
 | :--- | :--- | :--- |
-| `letrain.mvp.impl.terminal.SettingsDialog` | ui-terminal | Diálogo Lanterna: pestañas con estados por campo, acciones y feedback. Reutiliza las piezas del formulario de `NewGameDialog`. |
+| `letrain.mvp.impl.terminal.SettingsDialog` | ui-terminal | Diálogo Lanterna 2D: pestañas con estados por campo, acciones y feedback. Reutiliza las piezas del formulario de `NewGameDialog`. |
+| `Gdx3DHud.showSettingsDialog(...)` | ui-graphic | Diálogo scene2d 3D: selector de categorías, filas por campo con glifo de estado, leyenda y acciones. |
 | `letrain.mvp.SettingsText` | core | Textos compartidos (título, botones, leyenda, confirmaciones, mensajes). |
+| `letrain.settings.SettingFieldState` + `SettingsCatalog.fieldState/overDefaults/changedReapplyKeys` | core | Estado por campo (candado de escenario incluido), baseline y detección de REAPPLY compartidos por 2D y 3D. |
 | `Model.applyLiveSettings(Map)` | core | Aplica LIVE/REAPPLY a la partida y devuelve `SettingsApplyResult(applied, rejections)` (S3a). |
 | `Model.getScenarioSettingKeys()` | core | Claves fijadas por el `configuration { }` del escenario (candado ⚪, D10). |
-| `ConfigFileWriter.writeDefaults(...)` | core | Guarda los valores del formulario en el `letrain.cfg` del juego (D4); lo crea si no existe. |
+| `ConfigFileWriter.writeDefaultsOrMessage(File, Map)` | core | Guarda los valores del formulario en el `letrain.cfg` del juego (D4); lo crea si no existe y devuelve el error como mensaje. |
 | `EconomyManager.effectiveConfig()` | core | Valores efectivos actuales: base de Restore y de la precarga. |
 | `GameViewListener.onSettings()` | core | Puerto File → Settings (los clientes sin diálogo mantienen el no-op). |
 
@@ -89,6 +92,31 @@ el **preview** debajo, con los parámetros actuales del mundo y todo en **read-o
   **Ctrl+Tab**/**Ctrl+Shift+Tab** para ciclarlas; **Tab** recorre solo los campos de la página
   activa más los botones del pie (las pestañas no son focusables, #757).
 
+## Paridad 3D (S4b, #778)
+
+`Gdx3DHud.showSettingsDialog(currentSettings, scenarioKeys, port, onNewGame)` es el espejo 3D
+scene2d del diálogo 2D, con las mismas palabras (`SettingsText`) y la misma semántica:
+
+- **Selector de categorías**: fila de botones (`SettingCategory.displayName()`) que intercambia la
+  página visible (una categoría a la vez: Economía tiene ~15 campos). El contenido va en un
+  `ScrollPane` para que ninguna categoría desborde.
+- **Filas**: una por `SettingDefinition` de la categoría, en orden de catálogo, con el glifo de
+  estado (mismo criterio que 2D, vía `SettingsCatalog.fieldState`), la etiqueta con unidad
+  (`settingsFieldLabel`) y un `TextField` **editable solo en LIVE/REAPPLY**; en NEW_GAME y SCENARIO
+  el valor es una etiqueta de solo lectura (nunca editable).
+- **Leyenda** abajo (`settingsLegendMarkup`, tres entradas, sin escenario) y **línea de feedback**
+  con `SettingsText.APPLIED/RESTORED/SAVED_DEFAULTS/SAVE_DEFAULTS_FAILED`.
+- **Acciones** (`Apply`/`Restore`/`New game`/`Save as defaults`/`Close`): `Apply` recoge los campos
+  editables y confirma los REAPPLY cambiados con `showConfirmDialog` (`REAPPLY_TITLE` +
+  `reapplyMessage`); los rechazos se listan en el panel de mensajes del HUD (`REJECTED_TITLE` +
+  `rejectedMessage`) sin cerrar. `Restore` reescribe el baseline. `New game` cierra y llama a
+  `onNewGame(prefill)`, que mantiene la confirmación de descarte de S4a. `Save as defaults` confirma
+  (`SAVE_DEFAULTS_TITLE/CONFIRM`) y escribe mediante `ConfigFileWriter.writeDefaultsOrMessage`.
+  `Close`/Esc cierra.
+- **Teclado**: Tab/↑/↓ recorren los campos de la página activa y los cinco botones (←/→ se reservan
+  al caret dentro de un `TextField`), Enter/Espacio activan un botón enfocado y Esc cierra. El layout
+  es code-built sobre el skin existente (no añade estilos nuevos).
+
 ## Tests
 
 - `ui-terminal`: `SettingsDialogTest` (estados, prioridad del candado y leyenda de tres entradas,
@@ -97,11 +125,16 @@ el **preview** debajo, con los parámetros actuales del mundo y todo en **read-o
   #767), `TerminalPresenterSettingsTest` (valores efectivos + semilla, port S3a, atajo de nueva
   partida con confirmación y prefill, escritura/error de `letrain.cfg`),
   `TerminalViewFileMenuStateTest` (Settings deshabilitado sin partida y habilitado en partida).
-- `core`: `FileMenuTextTest` (estados del menú 2D/3D), pruebas de S3a para `applyLiveSettings`,
-  `applyScenarioConfiguration`, `getScenarioSettingKeys` y `ConfigFileWriter`.
+- `ui-graphic`: `Gdx3DHudSettingsTest` (categorías, estados/glyph colours, etiqueta con unidad,
+  leyenda y recogida de valores), `GraphicPresenterSettingsTest` (sin economía no abre, valores
+  efectivos + semilla, claves de escenario, delegación del port, escritura y confirmación al
+  reentrar en New game), `Gdx3DHudFileMenuTest` (Settings habilitado en partida).
+- `core`: `FileMenuTextTest` (estados del menú 2D/3D), `SettingsFieldStateTest`
+  (`fieldState`/`overDefaults`/`changedReapplyKeys`), pruebas de S3a para `applyLiveSettings`,
+  `applyScenarioConfiguration`, `getScenarioSettingKeys` y `ConfigFileWriter`
+  (`writeDefaultsOrMessage`).
 
 ## Pendiente (otras rebanadas)
 
-- **S4b (#778)**: diálogo Settings 3D (el menú 3D mantiene `Settings` bloqueado con
-  `3D parity slice` hasta entonces; S4a #777 ya habilitó `New`).
+- **S4c**: pestañas del catálogo, preview y barra del formulario de Nueva Partida 3D.
 - **#417**: flujo completo Guardar/Descartar/Cancelar.

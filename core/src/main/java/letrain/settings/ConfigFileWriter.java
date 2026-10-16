@@ -21,7 +21,26 @@ public final class ConfigFileWriter {
     /** Header added before the keys the target file did not have. */
     static final String APPENDED_HEADER = "# Saved as defaults from the running game";
 
+    /** File the settings dialog writes when the game found no {@code letrain.cfg} (D4). */
+    public static final String DEFAULT_CONFIG_FILENAME = "letrain.cfg";
+
     private ConfigFileWriter() {}
+
+    /**
+     * "Save as defaults" of the in-game Settings dialog (D4, S4b #778): writes {@code values} into
+     * {@code target}, or into {@value #DEFAULT_CONFIG_FILENAME} in the working directory when the
+     * game found no file. Returns {@code null} on success or the failure message the dialog shows,
+     * so both clients share the exact same behaviour.
+     */
+    public static String writeDefaultsOrMessage(File target, Map<String, String> values) {
+        File resolved = target == null ? new File(DEFAULT_CONFIG_FILENAME) : target;
+        try {
+            writeDefaults(resolved, values);
+            return null;
+        } catch (IOException e) {
+            return e.getMessage();
+        }
+    }
 
     /**
      * Writes {@code values} into {@code target}, creating the file when missing. A null or empty

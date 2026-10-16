@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import letrain.time.GameTime;
 
 /**
@@ -178,6 +179,61 @@ public final class SettingsCatalog {
             defaults.put(def.key(), def.defaultValue());
         }
         return defaults;
+    }
+
+    /**
+     * Effective values overlaid on the catalogue defaults: every field ends up with text even when
+     * the running game's configuration is missing one. Shared by both Settings dialogs (S3b, #764).
+     */
+    public static Map<String, String> overDefaults(Map<String, String> values) {
+        Map<String, String> overlaid = new LinkedHashMap<>();
+        for (SettingDefinition definition : DEFINITIONS) {
+            String value = values == null ? null : values.get(definition.key());
+            overlaid.put(definition.key(), value != null ? value : definition.defaultValue());
+        }
+        return overlaid;
+    }
+
+    /**
+     * Apply state the field shows in the in-game Settings dialog (S3b, #764): the scenario lock
+     * wins over the catalogue state (D10), otherwise REAPPLY/NEW_GAME map straight through and
+     * anything else is LIVE.
+     */
+    public static SettingFieldState fieldState(SettingDefinition definition,
+            Set<String> scenarioKeys) {
+        if (scenarioKeys != null && scenarioKeys.contains(definition.key())) {
+            return SettingFieldState.SCENARIO;
+        }
+        switch (definition.applyState()) {
+            case REAPPLY:
+                return SettingFieldState.REAPPLY;
+            case NEW_GAME:
+                return SettingFieldState.NEW_GAME;
+            default:
+                return SettingFieldState.LIVE;
+        }
+    }
+
+    /**
+     * REAPPLY keys whose form text differs from the baseline: Apply asks for a confirmation first
+     * (S3b, #764). Whitespace is ignored and LIVE/NEW_GAME changes never confirm.
+     */
+    public static List<String> changedReapplyKeys(Map<String, String> baseline,
+            Map<String, String> form) {
+        List<String> changed = new java.util.ArrayList<>();
+        for (SettingDefinition definition : DEFINITIONS) {
+            if (definition.applyState() != SettingApplyState.REAPPLY || form == null
+                    || !form.containsKey(definition.key())) {
+                continue;
+            }
+            String before =
+                    baseline == null ? "" : baseline.getOrDefault(definition.key(), "").trim();
+            String after = form.get(definition.key()).trim();
+            if (!before.equals(after)) {
+                changed.add(definition.key());
+            }
+        }
+        return changed;
     }
 
     /**

@@ -216,18 +216,32 @@ palabras no pueden divergir entre clientes:
 - **Menú File** (`FileMenuText`): `items()` define estructura, orden, palabras y estado
   (`enabled` + `disabledReason`) de `New`/`Load`/`Save`/`Settings`/`Quit`, y `displayLabel(item)`
   añade el motivo entre paréntesis mientras la entrada está bloqueada. `MenuState.terminal(hasGame)`
-  y `MenuState.graphic(hasGame)` comparten el patrón contextual: `New` habilitado, `Save` según
-  haya partida (`no game in progress`) y `Load`/`Quit` siempre. La única diferencia es `Settings`:
-  el 2D lo habilita (S3b) y el 3D lo mantiene deshabilitado con *3D parity slice* hasta S4b.
-  `Load`/`Save` abren sus diálogos y `Quit` sustituye al antiguo cierre directo con `Esc`
-  (decisión D11). `Esc` abre el menú (`view.showFileMenu()` en ambos presentadores) y `Esc` de
-  nuevo lo cierra.
+  y `MenuState.graphic(hasGame)` comparten el patrón contextual: `New` habilitado, `Save` y
+  `Settings` según haya partida (`no game in progress`) y `Load`/`Quit` siempre. Desde S4b (#778)
+  ambos clientes habilitan `Settings` en partida y lo deshabilitan en portada con el mismo motivo;
+  ya no hay diferencia entre `terminal(hasGame)` y `graphic(hasGame)`. `Load`/`Save` abren sus
+  diálogos y `Quit` sustituye al antiguo cierre directo con `Esc` (decisión D11). `Esc` abre el
+  menú (`view.showFileMenu()` en ambos presentadores) y `Esc` de nuevo lo cierra.
 - **Diálogo Nueva Partida 3D** (#777, V1): `Gdx3DHud.showNewGameDialog(form, onStart, onCancel)`
   reutiliza `NewGameForm` (semilla + sliders de agua/montaña, con la regla cruzada del catálogo) y
   valida con `form.toSettings()`, mostrando el mensaje del catálogo en línea si falla. El skin
   code-built no tenía `Slider`, así que añade un `Slider.SliderStyle` "default-horizontal" mínimo.
-  Los sliders 2D de `NewGameForm` y la `Settings` del catálogo llegan en rebanadas posteriores
-  (S4b #778 / S4c).
+  Las pestañas del catálogo, el preview y la barra del formulario 3D llegan en S4c.
+- **Diálogo Settings 3D** (#778, `Gdx3DHud.showSettingsDialog`): espejo del 2D con las mismas
+  palabras y semántica. Un selector de categorías (una página a la vez) y, por cada
+  `SettingDefinition`, una fila con el glifo de estado —● verde LIVE, ● amarillo REAPPLY, ● rojo
+  NEW_GAME, ● gris SCENARIO—, la etiqueta con unidad y un `TextField` editable solo en LIVE/REAPPLY
+  (etiqueta de solo lectura en el resto, nunca editable el scenario-locked). Debajo, la leyenda
+  compartida (`SettingsText.LEGEND_*`, sin entrada de escenario, #767) y la línea de feedback
+  (`SettingsText.APPLIED/RESTORED/SAVED_DEFAULTS/SAVE_DEFAULTS_FAILED`). Los cinco botones
+  (`Apply`/`Restore`/`New game`/`Save as defaults`/`Close`) replican el 2D: `Apply` confirma los
+  REAPPLY cambiados (`SettingsCatalog.changedReapplyKeys`) y lista los rechazos en el panel de
+  mensajes sin cerrar; `New game` cierra y llama a `onNewGame(prefill)` (con la confirmación simple
+  de S4a); `Save as defaults` confirma y escribe `letrain.cfg` mediante
+  `ConfigFileWriter.writeDefaultsOrMessage`. El mapeo de estados, el baseline y la detección de
+  REAPPLY viven en core (`SettingsCatalog.fieldState/overDefaults/changedReapplyKeys`,
+  `SettingFieldState`) y los consumen los dos clientes.
+
 - **Editor**: los pies 2D (`TerminalView.editorFooterActions`) y 3D (`Gdx3DHud`) ya no llevan
   `Save`/`Load`: quedan `Export`/`Import`/`Reload from game`/`Apply program`/`Rebuild world`/
   `Close`. Los comandos de consola `save;`/`load;` se mantienen.
