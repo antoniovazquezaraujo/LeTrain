@@ -249,6 +249,26 @@ class NewGameDialogTest {
     }
 
     @Test
+    @DisplayName("the slider row fits inside every realistic terminal width (#780)")
+    void should_FitTheSliderRowInsideTheTerminal() {
+        // The drawn row is the valueColumn-wide label + "[" + the bar + "] " + the 5-glyph value
+        // (" 25 %", "100 %"), i.e. valueColumn + sliderBarWidth + 8 cells. The bar adapts so the
+        // exact-fit budget (columns - valueColumn - 8) never overflows a 40..120 column terminal.
+        for (int columns = 40; columns <= 120; columns++) {
+            int bar = NewGameDialog.sliderBarWidth(columns, TERRAIN_COLUMN);
+            assertTrue(bar >= 5, "columns " + columns + ": the bar never disappears");
+            int row = TERRAIN_COLUMN + 1 + bar + 2 + 5;
+            assertTrue(row <= columns,
+                    "columns " + columns + ": the " + row + "-cell slider row must fit");
+            assertTrue(NewGameDialog.stackedBarWidth(columns, TERRAIN_COLUMN) <= columns,
+                    "columns " + columns + ": the stacked bar never overflows the terminal");
+        }
+        // The exact-fit boundary the owner validated: the narrow bar and the capped stacked bar.
+        assertEquals(31, NewGameDialog.sliderBarWidth(49, TERRAIN_COLUMN));
+        assertEquals(58, NewGameDialog.stackedBarWidth(70, TERRAIN_COLUMN));
+    }
+
+    @Test
     @DisplayName("commit validation rejects out-of-range and malformed values (#751)")
     void should_ValidateCommits() {
         SettingDefinition water = SettingsCatalog.definition("terrain.waterPercent").orElseThrow();

@@ -285,6 +285,56 @@ class Gdx3DHudSettingsTest {
                 "30..35 is below the 70..90 window of scrollY=10: bottom aligns at 30");
     }
 
+    @Test
+    @DisplayName("revealScrollY keeps a rect sitting exactly on a window edge put (#780)")
+    void should_KeepTheRectOnTheWindowEdgePut() {
+        // Content 100 tall, 20-tall viewport, scrollY=30: the window is 50..70 in content coords.
+        // The comparisons are strict, so a rect touching a boundary must not move the scroll.
+        assertEquals(30f, Gdx3DHud.revealScrollY(65f, 5f, 100f, 20f, 30f),
+                "a rect flush with the window top (65..70) keeps the scroll");
+        assertEquals(30f, Gdx3DHud.revealScrollY(50f, 5f, 100f, 20f, 30f),
+                "a rect flush with the window bottom (50..55) keeps the scroll");
+        assertEquals(30f, Gdx3DHud.revealScrollY(50f, 20f, 100f, 20f, 30f),
+                "a rect filling the window exactly (50..70) keeps the scroll");
+    }
+
+    @Test
+    @DisplayName("revealScrollY pins an oversized rect to the window instead of overshooting (#780)")
+    void should_PinAnOversizedRect() {
+        // Content 100, viewport 20, scrollY=30: window 50..70. A 40-tall rect (40..80) overflows
+        // both ends; the reveal prioritises the top, aligning it with the window top.
+        assertEquals(20f, Gdx3DHud.revealScrollY(40f, 40f, 100f, 20f, 30f),
+                "top 80 aligns with the window top: scrollY = 100 - 80");
+        // A rect taller than the viewport but hanging below the window aligns its bottom instead.
+        assertEquals(60f, Gdx3DHud.revealScrollY(20f, 40f, 100f, 20f, 30f),
+                "bottom 20 aligns with the window bottom: scrollY = 100 - 20 - 20");
+    }
+
+    @Test
+    @DisplayName("revealScrollY never scrolls a content shorter than the viewport (#780)")
+    void should_NotScrollShorterContent() {
+        // Content 10 inside a 20-tall viewport: maxY is 0, every rect is already visible.
+        assertEquals(0f, Gdx3DHud.revealScrollY(0f, 5f, 10f, 20f, 0f),
+                "a rect at the bottom of the short content stays put");
+        assertEquals(0f, Gdx3DHud.revealScrollY(5f, 5f, 10f, 20f, 0f),
+                "a rect at the top of the short content stays put");
+    }
+
+    @Test
+    @DisplayName("revealScrollY handles rects on the top and bottom edges of the content (#780)")
+    void should_HandleTheContentEdges() {
+        // Top edge: scrollY=0 shows the 80..100 window, so a rect flush with the content top is
+        // already visible and must not move.
+        assertEquals(0f, Gdx3DHud.revealScrollY(95f, 5f, 100f, 20f, 0f),
+                "95..100 sits exactly in the 80..100 window");
+        // Bottom edge: a rect flush with the content bottom pulls the scroll fully down so its
+        // bottom meets the window bottom (scrollY = contentHeight - viewHeight).
+        assertEquals(80f, Gdx3DHud.revealScrollY(0f, 5f, 100f, 20f, 50f),
+                "0..5 is below the 30..50 window: scrollY = 100 - 20 - 0");
+        assertEquals(80f, Gdx3DHud.revealScrollY(0f, 5f, 100f, 20f, 0f),
+                "0..5 is below the 80..100 window too: same fully-scrolled stop");
+    }
+
     private static void assertTone(VisualPalette.Token token, int rgb) {
         Color color = Gdx3DHud.terrainDayColor(token);
         assertEquals(1f, color.a, "the alpha guard must lift rgb888ToColor's a=0");
