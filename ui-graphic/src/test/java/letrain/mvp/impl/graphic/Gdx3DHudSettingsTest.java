@@ -100,6 +100,23 @@ class Gdx3DHudSettingsTest {
                 "a scenario-locked key is not applied either");
     }
 
+    @Test
+    @DisplayName("editableValues ignores unknown keys, never injects absent ones and does not mutate")
+    void should_NotMutateOrInventEditableValues() {
+        Map<String, String> form = new LinkedHashMap<>();
+        form.put("startingBalance", "10");
+        form.put("totally.unknown.key", "x");
+        Map<String, String> snapshot = new LinkedHashMap<>(form);
+
+        Map<String, String> values = Gdx3DHud.editableValues(form, Set.of());
+
+        assertEquals(Map.of("startingBalance", "10"), values,
+                "a key outside the catalogue never becomes editable");
+        assertFalse(values.containsKey("time.dayDurationSeconds"),
+                "fields absent from the form are not invented");
+        assertEquals(snapshot, form, "the working form is left untouched");
+    }
+
     private static SettingDefinition definition(String key) {
         return SettingsCatalog.definition(key).orElseThrow();
     }

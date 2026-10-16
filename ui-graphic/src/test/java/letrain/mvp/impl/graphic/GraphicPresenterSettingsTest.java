@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import letrain.economy.EconomyManager;
 import letrain.mvp.impl.Model;
 import letrain.settings.NewGameForm;
 import letrain.settings.SettingsApplyResult;
@@ -106,6 +107,22 @@ class GraphicPresenterSettingsTest {
     }
 
     @Test
+    @DisplayName("the seed is overlaid on top of the running game's effective configuration")
+    void settingsDialog_overlaysSeedOnTheEffectiveConfiguration() {
+        Map<String, String> effective = model.getEconomyManager().effectiveConfig();
+
+        presenter.onSettings();
+        DialogArgs args = captureDialog();
+
+        for (Map.Entry<String, String> entry : effective.entrySet()) {
+            assertEquals(entry.getValue(), args.current().get(entry.getKey()),
+                    "effective value of " + entry.getKey() + " must survive the overlay");
+        }
+        assertEquals(String.valueOf(model.getSeed()), args.current().get(NewGameForm.SEED_KEY),
+                "the running world seed is added on top of the effective configuration");
+    }
+
+    @Test
     @DisplayName("the port mirrors S3a: scenario keys come back with their reason")
     void settingsPort_mirrorsApplyStates() {
         model.applyScenarioConfiguration(Map.of("startingBalance", "55"));
@@ -128,6 +145,25 @@ class GraphicPresenterSettingsTest {
         DialogArgs args = captureDialog();
 
         assertEquals("disk full", args.port().saveDefaults(Map.of("seed", "1")));
+    }
+
+    @Test
+    @DisplayName("saveSettingsAsDefaults writes the form into the running game's config file")
+    void saveSettingsAsDefaults_writesToTheConfigFile() throws Exception {
+        Path cfg = Files.createTempFile("s4b-settings", ".cfg");
+        EconomyManager economy = mock(EconomyManager.class);
+        when(economy.getConfigFile()).thenReturn(cfg.toFile());
+        Model configModel = mock(Model.class);
+        when(configModel.getEconomyManager()).thenReturn(economy);
+        setField("model", configModel);
+        doCallRealMethod().when(presenter).saveSettingsAsDefaults(anyMap());
+
+        assertNull(presenter.saveSettingsAsDefaults(Map.of("startingBalance", "12.5")),
+                "a writable config file reports success");
+
+        assertTrue(Files.readString(cfg).contains("startingBalance=12.5"),
+                "the form values land in the running game's letrain.cfg");
+        Files.deleteIfExists(cfg);
     }
 
     @Test
