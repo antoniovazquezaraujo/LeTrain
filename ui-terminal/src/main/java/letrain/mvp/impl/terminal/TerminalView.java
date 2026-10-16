@@ -38,12 +38,13 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import letrain.map.Page;
 import letrain.map.Point;
-import letrain.mvp.CoverText;
+import letrain.mvp.CoverArt;
 import letrain.mvp.EditorText;
 import letrain.mvp.FileMenuText;
 import letrain.mvp.GameViewListener;
 import letrain.mvp.MenuText;
 import letrain.mvp.Model.GameModeMenuOption;
+import letrain.visitor.terminal.TerminalPalette;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,6 +93,9 @@ public class TerminalView implements letrain.mvp.View {
 
     /** True while the title cover is on screen; {@link #paint()} draws it instead of the game. */
     private boolean coverVisible = false;
+
+    /** Terminal colour mode used to degrade the coloured cover art; detected once, lazily. */
+    private TerminalPalette coverPalette;
 
     /**
      * Hand-edited scenario text kept between IDE openings; null means "regenerate from the world".
@@ -227,44 +231,22 @@ public class TerminalView implements letrain.mvp.View {
     }
 
     /**
-     * Screen lines of the cover, vertically centred for a terminal of {@code rows} rows: game
-     * title, train art and the any-key prompt. Every content line is padded to the width of the
-     * train art, so painting the block at a single left offset keeps the art aligned (centring each
-     * line on its own would shear the train). Package-visible and static so a test can pin the
-     * cover without a real terminal.
+     * Style the 2D cover is painted with (issue #771): full colour on real-colour terminals, dots
+     * over the terminal background on dumb 16-colour terminals. Package-visible and static so the
+     * selection can be pinned without a real terminal; it delegates to
+     * {@link CoverStyle#forPalette(TerminalPalette)} so both stay one decision.
      */
-    static String[] coverScreenLines(int rows) {
-        int width = CoverText.ASCII_ART.stream().mapToInt(String::length).max().orElse(0);
-        java.util.List<String> content = new java.util.ArrayList<>();
-        content.add(centerPad(CoverText.TITLE, width));
-        content.add("");
-        for (String artLine : CoverText.ASCII_ART) {
-            content.add(padRight(artLine, width));
-        }
-        content.add("");
-        content.add(centerPad(CoverText.PROMPT, width));
-        String[] lines = new String[Math.max(0, rows)];
-        java.util.Arrays.fill(lines, "");
-        int start = Math.max(0, (rows - content.size()) / 2);
-        for (int i = 0; i < content.size() && start + i < rows; i++) {
-            lines[start + i] = content.get(i);
-        }
-        return lines;
+    static CoverStyle coverStyle(TerminalPalette palette) {
+        return CoverStyle.forPalette(palette);
     }
 
-    /** Pads {@code line} with spaces on both sides until it is {@code width} columns wide. */
-    private static String centerPad(String line, int width) {
-        int padding = Math.max(0, width - line.length());
-        int left = padding / 2;
-        return padRight(" ".repeat(left) + line, width);
-    }
-
-    /** Pads {@code line} with spaces on the right until it is {@code width} columns wide. */
-    private static String padRight(String line, int width) {
-        return line + " ".repeat(Math.max(0, width - line.length()));
-    }
-
-    /** Paints the cover full-screen and refreshes; called by {@link #paint()} while visible. */
+    /**
+     * Paints the cover full-screen and refreshes; called by {@link #paint()} while visible. The
+     * coloured braille art carrying the slant {@code LeTrain} logo is painted always, centred and
+     * cropped when the terminal is smaller than the artwork; dumb terminals get the dots-only style
+     * ({@link #coverStyle(TerminalPalette)}). There is no "press any key" text in 2D (owner
+     * decision): any key still continues.
+     */
     private void paintCover() {
         if (screen == null) {
             return;
@@ -275,17 +257,11 @@ public class TerminalView implements letrain.mvp.View {
             tg.setBackgroundColor(NORMAL_MENU_BG_COLOR);
             tg.setForegroundColor(NORMAL_MENU_FG_COLOR);
             tg.fillRectangle(TerminalPosition.TOP_LEFT_CORNER, size, ' ');
-            String[] lines = coverScreenLines(size.getRows());
-            int blockWidth = 0;
-            for (String line : lines) {
-                blockWidth = Math.max(blockWidth, line.length());
+            if (coverPalette == null) {
+                coverPalette = TerminalPalette.detect();
             }
-            int startX = Math.max(0, (size.getColumns() - blockWidth) / 2);
-            for (int y = 0; y < lines.length; y++) {
-                if (!lines[y].isBlank()) {
-                    tg.putString(startX, y, lines[y]);
-                }
-            }
+            CoverArtPainter.paint(tg, CoverArt.load(), coverPalette, size,
+                    coverStyle(coverPalette));
             this.screen.refresh();
             Thread.yield();
         } catch (IOException e) {

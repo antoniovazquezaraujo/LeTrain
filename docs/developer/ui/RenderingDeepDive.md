@@ -157,15 +157,39 @@ Diferencias intencionales (tecnología, no información):
 - La línea de consola y los hints 3D no hacen wrap: se recortan (el hint con elipsis) en lugar de
   crecer en varias líneas.
 
-## Portada y menú File: paridad 2D/3D (#743)
+## Portada y menú File: paridad 2D/3D (#743, arte 2D #771)
 
 La portada y el menú File también nacen de fuentes compartidas en `core`, de modo que las
 palabras no pueden divergir entre clientes:
 
-- **Portada** (`CoverText`): `TITLE`, `PROMPT` y el arte ASCII (`ASCII_ART`, solo 2D). La 2D la
-  pinta con `TerminalView.coverScreenLines(rows)`/`paintCover()` (helper estático puro, testeable
-  sin terminal); la 3D monta una `Table` opaca a pantalla completa en `Gdx3DHud.showCover()` con
-  el mismo `TITLE`/`PROMPT`.
+- **Portada 3D** (`CoverText`): `TITLE` y `PROMPT`. La 3D monta una `Table` opaca a pantalla
+  completa en `Gdx3DHud.showCover()` con ambas cadenas (sin cambios hasta S4).
+- **Portada 2D**: usa el **arte braille** (issue #771) **siempre**; el tamaño del terminal no
+  decide nada: si el arte es mayor se centra y se recorta en simétrico (el usuario baja el zoom si
+  quiere verla entera). El **estilo** sí depende de la profundidad de color (`CoverStyle`, decidido
+  por `CoverStyle.forPalette`, expuesto en tests por `TerminalView.coverStyle`):
+  `TRUECOLOR`/`INDEXED_256` pintan el **panel completo** (glifo + fondo + primer plano); los
+  terminales **dumb** (`TerminalPalette.Depth.ANSI_16`, donde caen `TERM=dumb`, vacío o ausente)
+  pintan **solo puntos**: los glifos braille/ASCII visibles en color sobre el fondo por defecto del
+  terminal, y las celdas en blanco (`0020`/`2800`) no se pintan (así la "placa" del rótulo deja
+  huecos limpios). Desaparece la portada ASCII antigua. Los datos viven en `core` (`CoverArt`,
+  recurso `/letrain/cover/cover_u44.data`) y el pintado Lanterna + la traducción de profundidad, en
+  `ui-terminal` (`letrain.mvp.impl.terminal.CoverArtPainter`), así que `core` sigue sin conocer
+  Lanterna. **No hay texto de "pulsa una tecla" en 2D** (decisión del dueño): cualquier tecla
+  continúa igual que antes.
+- **Recorte centrado**: `CoverArtPainter.paint` sitúa el arte con `centredOffset` (división entera
+  hacia abajo, luego el offset puede ser negativo) y **salta** las celdas que caen fuera de la
+  pantalla, sin pasar coordenadas negativas a Lanterna (aplica a ambos estilos).
+- **Formato del asset**: 44 líneas de celdas de 16 caracteres fijos, `cp4hex` (codepoint: braille
+  U+2800–U+28FF, ASCII del rótulo/subtítulo o `0020`) `+ fg6hex|------ + bg6hex|------`. `------`
+  significa "sin color" y el render aplica el fallback del ANSI de referencia: sin `fg` se usa el
+  `bg` (o negro) y sin `bg` se usa el `fg` (o negro); las celdas sin fondo del asset son todas el
+  bloque braille sólido U+28FF, así que `fg == bg` sigue pintando una celda llena. Color por celda
+  traducido con `TerminalPalette.colorOf(int)` (TRUECOLOR / INDEXED_256 / ANSI_16).
+- **Procedencia**: el asset se generó en el laboratorio de color
+  (`letrain-lab/demo/alco-color/`, no versionado) a partir del recorte `alco-1.png` del dueño
+  (imagen RENFE 318-008-0); lo versionado es solo el `.data` copiado a
+  `core/src/main/resources/letrain/cover/cover_u44.data`.
 - **Estado de portada**: vive en el presentador (`coverActive`), no en la vista. Cualquier tecla
   continúa; la tecla que despide la portada se consume y **nunca** llega al juego como acción
   (`TerminalPresenter` drena la ráfaga de teclas leídas; `Gdx3DInputHandler` traga el `keyDown` y
