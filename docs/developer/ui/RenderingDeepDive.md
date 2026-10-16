@@ -241,6 +241,29 @@ palabras no pueden divergir entre clientes:
   `ConfigFileWriter.writeDefaultsOrMessage`. El mapeo de estados, el baseline y la detección de
   REAPPLY viven en core (`SettingsCatalog.fieldState/overDefaults/changedReapplyKeys`,
   `SettingFieldState`) y los consumen los dos clientes.
+- **Página Terrain del Settings 3D** (#778): en vez de una lista de campos, monta el bloque de
+  terreno del New Game 2D en modo lectura: semilla (`NewGameText.SEED_LABEL` + `TextField`
+  deshabilitado), sliders de agua/montaña deshabilitados y atenuados (`DISABLED_TINT`) con su
+  `"N %"`, y la barra tricolor del 100 % de `TERRAIN_BAR_WIDTH` (280 px). El reparto de segmentos
+  usa `Gdx3DHud.stackedBarWidths`, copia del algoritmo de restos mayores del 2D, y los colores son
+  los tonos diurnos del mundo 3D (`VisualPalette.color(TERRAIN_WATER/FIELDS/MOUNTAIN, 0.0)`, con el
+  verde del tablero 3D). Bajo la barra, un hueco y el mapa: `TerrainPreview.sample(seed, water,
+  mountain, 88, 88)` pintado en un `Pixmap` a 2x (176x176 px) con filtro `Nearest`. El bloque cabe
+  sin scroll en la zona de campos (660x340) y **nada entra en el ciclo de Tab** (#767): los controles
+  están deshabilitados y `categoryFields` queda vacío. El `close` libera `Pixmap`/`Texture` del
+  preview (`disposeTerrainPreview`), que se recrean al abrir; el mismo `close` corre al elegir
+  New game.
+- **Glifos y teclado del Settings 3D** (#778): el glifo ● (`SETTINGS_GLYPH`) llega a las filas y a
+  la leyenda gracias a que está declarado en `FontManager.EXTRA_CHARS`; FreeType solo rasteriza los
+  caracteres listados y cualquier símbolo ausente se dibuja como `?`. El test guardián
+  `FontManagerTest.testExtraCharsCoverHudGlyphs` falla si el glifo (o cualquier otro símbolo del
+  HUD) desaparece de la lista, con el mensaje "or it renders as '?'". En cuanto al teclado, el
+  diálogo fija **siempre** el foco al abrir y al cambiar de página (`categoryFields.get(0)` o, si la
+  página no tiene campos —Terrain—, el primer botón del footer): con `keyboardFocus == null`,
+  `Stage.keyDown` envía el evento al root y el listener del diálogo no lo oiría, así que Tab/Enter/Esc
+  quedarían muertos. Los botones del footer no tienen caret propio, así que el enfocado se resalta en
+  cian como en el menú File (`paintFooterFocus`), refrescado tras navegar, tras `showCategory` y
+  cuando las confirmaciones (reapply/save defaults) devuelven el foco.
 
 - **Editor**: los pies 2D (`TerminalView.editorFooterActions`) y 3D (`Gdx3DHud`) ya no llevan
   `Save`/`Load`: quedan `Export`/`Import`/`Reload from game`/`Apply program`/`Rebuild world`/

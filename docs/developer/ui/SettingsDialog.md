@@ -65,6 +65,12 @@ el **preview** debajo, con los parámetros actuales del mundo y todo en **read-o
 (`setEnabled(false)`: mismo aspecto, fuera del ciclo de foco). Los campos de terreno del catálogo
 (seed/water/mountain) ya no se listan como filas; su estado NEW_GAME queda implícito en el bloque.
 
+En 3D (#778) la página Terrain reproduce el mismo bloque con widgets scene2d
+(`Gdx3DHud.fillSettingsTerrain`): `TextField` y sliders deshabilitados y atenuados, la barra de
+`TERRAIN_BAR_WIDTH` repartida con `stackedBarWidths` (misma resta mayor que el 2D) y el mapa de
+`TerrainPreview.sample` pintado a 2x en un `Pixmap`/`Texture` que el diálogo libera al cerrar.
+Nada entra en el ciclo de foco, así que el diálogo fija el foco al footer.
+
 ## Acciones y confirmaciones
 
 - **Apply**: envía solo los campos editables. Si algún REAPPLY cambió respecto al baseline

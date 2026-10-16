@@ -1,5 +1,6 @@
 package letrain.mvp.impl.graphic;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -115,6 +116,32 @@ class Gdx3DHudSettingsTest {
         assertFalse(values.containsKey("time.dayDurationSeconds"),
                 "fields absent from the form are not invented");
         assertEquals(snapshot, form, "the working form is left untouched");
+    }
+
+    @Test
+    @DisplayName("the terrain bar always adds up to the requested width, field is the remainder")
+    void should_StackTheTerrainBarToTheFullWidth() {
+        // Draw order: water, field, mountain (mirrors the 2D NewGameDialog cases).
+        assertArrayEquals(new int[] {10, 26, 4}, Gdx3DHud.stackedBarWidths(25, 10, 40));
+        assertArrayEquals(new int[] {0, 40, 0}, Gdx3DHud.stackedBarWidths(0, 0, 40));
+        assertArrayEquals(new int[] {38, 2, 0}, Gdx3DHud.stackedBarWidths(95, 0, 40));
+        // Largest remainder keeps every proportion visible: 33/34/33 over 10 cells.
+        assertArrayEquals(new int[] {3, 4, 3}, Gdx3DHud.stackedBarWidths(33, 33, 10));
+    }
+
+    @Test
+    @DisplayName("the terrain bar segments always total the width and keep a zero segment empty")
+    void should_SumTheTerrainBarSegmentsAndKeepZeroEmpty() {
+        int width = Gdx3DHud.TERRAIN_BAR_WIDTH;
+        int[][] cases = {{25, 10}, {0, 0}, {0, 100}, {50, 0}, {95, 0}, {100, 0}, {33, 33}};
+        for (int[] percent : cases) {
+            int[] cells = Gdx3DHud.stackedBarWidths(percent[0], percent[1], width);
+            assertEquals(3, cells.length, "water/field/mountain");
+            assertEquals(width, cells[0] + cells[1] + cells[2],
+                    "water " + percent[0] + " mountain " + percent[1] + " must fill " + width);
+        }
+        // A zero proportion must claim no cells when the bar still has room elsewhere.
+        assertArrayEquals(new int[] {0, width, 0}, Gdx3DHud.stackedBarWidths(0, 0, width));
     }
 
     private static SettingDefinition definition(String key) {

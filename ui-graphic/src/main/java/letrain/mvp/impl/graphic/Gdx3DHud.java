@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Consumer;
+import letrain.ground.TerrainPreview;
 import letrain.itinerary.Punctuality;
 import letrain.mvp.EditorText;
 import letrain.mvp.FileMenuText;
@@ -47,6 +48,7 @@ import letrain.mvp.Model;
 import letrain.mvp.Model.GameModeMenuOption;
 import letrain.mvp.NewGameText;
 import letrain.mvp.SettingsText;
+import letrain.palette.VisualPalette;
 import letrain.settings.NewGameForm;
 import letrain.settings.SettingCategory;
 import letrain.settings.SettingDefinition;
@@ -66,6 +68,12 @@ public class Gdx3DHud {
      * the terminal's {@code TextColor}s.
      */
     static final Color SELECTED_BG = new Color(0f, 0f, 0.67f, 1f);
+
+    /**
+     * Tint that greys out the read-only Terrain controls (seed field and water/mountain sliders) on
+     * the Settings dialog, so they read as non-editable like the 2D block (#767).
+     */
+    private static final Color DISABLED_TINT = new Color(0.6f, 0.6f, 0.6f, 1f);
     private static final String ENABLED_MARKUP = "[WHITE]";
     private static final String DISABLED_MARKUP = "[GRAY]";
     private static final String HOTKEY_MARKUP = "[GREEN]";
@@ -1552,6 +1560,13 @@ public class Gdx3DHud {
             List.of(SettingCategory.TERRAIN, SettingCategory.WORLD, SettingCategory.ECONOMY,
                     SettingCategory.CONSTRUCTION, SettingCategory.UI);
 
+    /** Sample grid of the Terrain page preview: covers the calibration window, square (#778). */
+    static final int TERRAIN_PREVIEW_CELLS = 88;
+    /** Render scale of one preview cell, in pixels (2x keeps the 1:1 world cells readable). */
+    static final int TERRAIN_PREVIEW_SCALE = 2;
+    /** Width of the three-colour 100 % bar, aligned under the terrain sliders (#778). */
+    static final int TERRAIN_BAR_WIDTH = 280;
+
     /** Port the 3D Settings dialog uses to reach the running game; the presenter implements it. */
     public interface SettingsPort {
         /** Applies the editable values and reports the rejections (S3a). */
@@ -1598,6 +1613,47 @@ public class Gdx3DHud {
         return "[GREEN]" + SETTINGS_GLYPH + "[] " + SettingsText.LEGEND_LIVE + "   [YELLOW]"
                 + SETTINGS_GLYPH + "[] " + SettingsText.LEGEND_REAPPLY + "   [RED]" + SETTINGS_GLYPH
                 + "[] " + SettingsText.LEGEND_NEW_GAME;
+    }
+
+    /**
+     * Segment widths {@code [water, field, mountain]} of the 100 % stacked bar (draw order): the
+     * largest-remainder algorithm is copied verbatim from the 2D {@code NewGameDialog} so both
+     * clients split the bar identically (#778). Every segment totals exactly {@code width} cells.
+     */
+    static int[] stackedBarWidths(int waterPercent, int mountainPercent, int width) {
+        int[] parts =
+                {waterPercent, Math.max(0, 100 - waterPercent - mountainPercent), mountainPercent};
+        int[] cells = new int[3];
+        int[] remainders = new int[3];
+        int used = 0;
+        for (int i = 0; i < 3; i++) {
+            cells[i] = parts[i] * width / 100;
+            remainders[i] = parts[i] * width % 100;
+            used += cells[i];
+        }
+        while (used < width) {
+            int best = 0;
+            for (int i = 1; i < 3; i++) {
+                if (remainders[i] > remainders[best]) {
+                    best = i;
+                }
+            }
+            cells[best]++;
+            remainders[best] = -1;
+            used++;
+        }
+        return cells;
+    }
+
+    /**
+     * Day-tone colour of a terrain segment for the Terrain page bar and preview: the world 3D
+     * palette at ratio 0 (day). Water and mountain match the 2D tones; the field green is the 3D
+     * board green (#778).
+     */
+    static Color terrainDayColor(VisualPalette.Token token) {
+        Color color = new Color();
+        Color.rgb888ToColor(color, new VisualPalette().color(token, 0.0));
+        return color;
     }
 
     /** Values of the editable fields (LIVE/REAPPLY, scenario lock included) from a form map. */
@@ -1648,6 +1704,10 @@ public class Gdx3DHud {
             final List<TextField> categoryFields = new ArrayList<>();
             final List<Actor> focusable = new ArrayList<>();
             final SettingCategory[] active = {SettingCategory.TERRAIN};
+            // Terrain page preview resources, disposed when the page is swapped or the dialog
+            // closes (never touched on the other pages, which leave the lists empty).
+            final List<Pixmap> terrainPixmaps = new ArrayList<>();
+            final List<Texture> terrainTextures = new ArrayList<>();
 
             final com.badlogic.gdx.scenes.scene2d.ui.Dialog dialog =
                     new com.badlogic.gdx.scenes.scene2d.ui.Dialog(SettingsText.TITLE,
@@ -1667,28 +1727,50 @@ public class Gdx3DHud {
             final TextButton saveDefaultsButton = new TextButton(SettingsText.SAVE_DEFAULTS, skin);
             final TextButton closeButton = new TextButton(SettingsText.CLOSE, skin);
 
+            final List<TextButton> footerButtons = List.of(applyButton, restoreButton,
+                    newGameButton, saveDefaultsButton, closeButton);
+            // The footer buttons have no caret of their own, so a focused one is highlighted like
+            // the File menu (cyan label). Refreshed after navigating, after a page swap and when a
+            // confirmation hands the focus back (#778).
+            final Runnable paintFooterFocus = () -> {
+                Actor focused = stage.getKeyboardFocus();
+                for (TextButton button : footerButtons) {
+                    button.getLabel().setColor(focused == button ? Color.CYAN : Color.WHITE);
+                }
+            };
+
             final Runnable close = () -> {
                 settingsDialogOpen = false;
                 blocker.remove();
                 dialog.hide(null);
+                disposeTerrainPreview(terrainPixmaps, terrainTextures);
             };
 
             // Swaps the visible page and refreshes the Tab cycle: the fields of the active page
             // plus the five footer buttons (the category selector stays out of it, like 2D #757).
+            // The Terrain page is the 2D read-only block (map, sliders, bar), not a field list.
             final Consumer<SettingCategory> showCategory = category -> {
                 active[0] = category;
-                fillSettingsCategory(category, fieldsTable, categoryFields, form, scenarioKeys);
+                disposeTerrainPreview(terrainPixmaps, terrainTextures);
+                if (category == SettingCategory.TERRAIN) {
+                    fillSettingsTerrain(fieldsTable, categoryFields, form, terrainPixmaps,
+                            terrainTextures);
+                } else {
+                    fillSettingsCategory(category, fieldsTable, categoryFields, form, scenarioKeys);
+                }
                 for (Map.Entry<SettingCategory, TextButton> entry : categoryButtons.entrySet()) {
                     entry.getValue().setChecked(entry.getKey() == category);
                 }
                 focusable.clear();
                 focusable.addAll(categoryFields);
-                focusable.addAll(List.of(applyButton, restoreButton, newGameButton,
-                        saveDefaultsButton, closeButton));
+                focusable.addAll(footerButtons);
                 fieldsScroll.setScrollY(0);
-                if (!categoryFields.isEmpty()) {
-                    stage.setKeyboardFocus(categoryFields.get(0));
-                }
+                // Always pin the focus: with a null focus Stage sends keyDown to the root and this
+                // dialog never hears it, so on a field-less page (Terrain) Tab/Enter/Esc would be
+                // dead (#778). The footer always contributes five buttons.
+                stage.setKeyboardFocus(
+                        categoryFields.isEmpty() ? focusable.get(0) : categoryFields.get(0));
+                paintFooterFocus.run();
             };
             for (SettingCategory category : SETTINGS_CATEGORIES) {
                 final TextButton tab = new TextButton(category.displayName(), skin, "toggle");
@@ -1721,7 +1803,11 @@ public class Gdx3DHud {
                             SettingsText.reapplyMessage(reapply), SettingsText.APPLY, () -> {
                                 applyValues(port, baseline, feedback, values);
                                 stage.setKeyboardFocus(restoreFocus);
-                            }, () -> stage.setKeyboardFocus(restoreFocus));
+                                paintFooterFocus.run();
+                            }, () -> {
+                                stage.setKeyboardFocus(restoreFocus);
+                                paintFooterFocus.run();
+                            });
                 } else {
                     applyValues(port, baseline, feedback, values);
                 }
@@ -1747,7 +1833,11 @@ public class Gdx3DHud {
                             feedback.setText(error == null ? SettingsText.SAVED_DEFAULTS
                                     : SettingsText.SAVE_DEFAULTS_FAILED + error);
                             stage.setKeyboardFocus(restoreFocus);
-                        }, () -> stage.setKeyboardFocus(restoreFocus));
+                            paintFooterFocus.run();
+                        }, () -> {
+                            stage.setKeyboardFocus(restoreFocus);
+                            paintFooterFocus.run();
+                        });
             };
 
             applyButton.addListener(fireAction(applyAction));
@@ -1782,11 +1872,13 @@ public class Gdx3DHud {
                     if (keycode == Input.Keys.TAB || keycode == Input.Keys.UP
                             || keycode == Input.Keys.DOWN) {
                         navigateSettingsFocus(keycode == Input.Keys.UP ? -1 : 1, focusable);
+                        paintFooterFocus.run();
                         return true;
                     }
                     if ((keycode == Input.Keys.LEFT || keycode == Input.Keys.RIGHT)
                             && !(focused instanceof TextField)) {
                         navigateSettingsFocus(keycode == Input.Keys.LEFT ? -1 : 1, focusable);
+                        paintFooterFocus.run();
                         return true;
                     }
                     if (keycode == Input.Keys.ENTER || keycode == Input.Keys.NUMPAD_ENTER
@@ -1860,6 +1952,149 @@ public class Gdx3DHud {
                 fieldsTable.add(settingsFieldRow(definition, scenarioKeys, form, categoryFields))
                         .growX().left().padBottom(6).row();
             }
+        }
+    }
+
+    /**
+     * Terrain page (#778): the 2D New Game terrain block (seed, water/mountain sliders,
+     * three-colour 100 % bar and the map preview) with the running world's parameters, read-only.
+     * Nothing here enters the Tab cycle (#767): the controls are disabled and
+     * {@code categoryFields} stays empty, so the dialog pins the focus to the footer instead.
+     */
+    private void fillSettingsTerrain(Table fieldsTable, List<TextField> categoryFields,
+            Map<String, String> form, List<Pixmap> pixmaps, List<Texture> textures) {
+        fieldsTable.clear();
+        categoryFields.clear();
+
+        int seed = parseIntOr(form.get(NewGameForm.SEED_KEY), 0);
+        int water =
+                parseIntOr(form.get(NewGameForm.WATER_KEY), SettingsCatalog.DEFAULT_WATER_PERCENT);
+        int mountain = parseIntOr(form.get(NewGameForm.MOUNTAIN_KEY),
+                SettingsCatalog.DEFAULT_MOUNTAIN_PERCENT);
+
+        final float labelWidth = 90f;
+        final float valueWidth = 64f;
+
+        Table block = new Table();
+        block.top().left();
+        block.defaults().space(6);
+
+        // Seed: read-only text field, greyed out and out of the focus cycle (#767).
+        Table seedRow = new Table();
+        seedRow.left();
+        seedRow.add(new Label(NewGameText.SEED_LABEL, skin, "small")).width(labelWidth).left();
+        TextField seedField = new TextField(String.valueOf(seed), skin);
+        seedField.setDisabled(true);
+        seedField.setFocusTraversal(false);
+        seedField.setColor(DISABLED_TINT);
+        seedRow.add(seedField).width(TERRAIN_BAR_WIDTH).height(32f).left();
+        block.add(seedRow).left().row();
+
+        block.add(terrainSliderRow(NewGameText.WATER_LABEL, water, labelWidth, valueWidth)).left()
+                .row();
+        block.add(terrainSliderRow(NewGameText.MOUNTAIN_LABEL, mountain, labelWidth, valueWidth))
+                .left().row();
+
+        // Three-colour 100 % bar, aligned under the sliders (same split as the 2D dialog).
+        int[] segments = stackedBarWidths(water, mountain, TERRAIN_BAR_WIDTH);
+        Table bar = new Table();
+        bar.add(terrainColorImage(VisualPalette.Token.TERRAIN_WATER)).width(segments[0])
+                .height(18f);
+        bar.add(terrainColorImage(VisualPalette.Token.TERRAIN_FIELDS)).width(segments[1])
+                .height(18f);
+        bar.add(terrainColorImage(VisualPalette.Token.TERRAIN_MOUNTAIN)).width(segments[2])
+                .height(18f);
+        block.add(bar).left().padLeft(labelWidth).row();
+
+        // Blank gap, then the map preview from the same sampler as the 2D section.
+        block.add().height(8f).row();
+        block.add(terrainPreviewImage(seed, water, mountain, pixmaps, textures)).left()
+                .padLeft(labelWidth).row();
+
+        fieldsTable.add(block).growX().left().top();
+    }
+
+    /** One disabled terrain slider row: label, slider and its percentage, greyed out (#767). */
+    private Table terrainSliderRow(String label, int percent, float labelWidth, float valueWidth) {
+        Table row = new Table();
+        row.left();
+        Slider slider = new Slider(0, SettingsCatalog.MAX_TERRAIN_PERCENT, 1, false, skin);
+        slider.setValue(percent);
+        slider.setDisabled(true);
+        slider.setColor(DISABLED_TINT);
+        row.add(new Label(label, skin, "small")).width(labelWidth).left();
+        row.add(slider).width(TERRAIN_BAR_WIDTH);
+        Label value = new Label(percent + " %", skin, "small");
+        value.setColor(Color.LIGHT_GRAY);
+        row.add(value).width(valueWidth).left();
+        return row;
+    }
+
+    /** One bar segment: the shared "white" pixel tinted with the world's day tone (#778). */
+    private Image terrainColorImage(VisualPalette.Token token) {
+        return new Image(skin.newDrawable("white", terrainDayColor(token)));
+    }
+
+    /**
+     * Map preview of the Terrain page: a square sample of the calibration window (as in 2D) painted
+     * with the world's day tones and rendered at {@value #TERRAIN_PREVIEW_SCALE}px per cell with a
+     * nearest filter. The Pixmap and Texture are handed to {@code pixmaps}/{@code textures} so the
+     * caller disposes them when the page is swapped or the dialog closes.
+     */
+    private Image terrainPreviewImage(int seed, int water, int mountain, List<Pixmap> pixmaps,
+            List<Texture> textures) {
+        int cells = TERRAIN_PREVIEW_CELLS;
+        int scale = TERRAIN_PREVIEW_SCALE;
+        int pixels = cells * scale;
+        TerrainPreview.Grid grid = TerrainPreview.sample(seed, water, mountain, cells, cells);
+        Color waterColor = terrainDayColor(VisualPalette.Token.TERRAIN_WATER);
+        Color fieldsColor = terrainDayColor(VisualPalette.Token.TERRAIN_FIELDS);
+        Color mountainColor = terrainDayColor(VisualPalette.Token.TERRAIN_MOUNTAIN);
+
+        Pixmap pixmap = new Pixmap(pixels, pixels, Pixmap.Format.RGBA8888);
+        for (int row = 0; row < cells; row++) {
+            for (int column = 0; column < cells; column++) {
+                pixmap.setColor(terrainCellColor(grid.cell(column, row), waterColor, fieldsColor,
+                        mountainColor));
+                pixmap.fillRectangle(column * scale, row * scale, scale, scale);
+            }
+        }
+        Texture texture = new Texture(pixmap);
+        texture.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+        pixmaps.add(pixmap);
+        textures.add(texture);
+        return new Image(new TextureRegionDrawable(new TextureRegion(texture)));
+    }
+
+    /** Cell colour of the preview: sea blue, board green or the shared mountain brown. */
+    private static Color terrainCellColor(int terrain, Color water, Color fields, Color mountain) {
+        if (terrain == TerrainPreview.WATER) {
+            return water;
+        }
+        if (terrain == TerrainPreview.ROCK) {
+            return mountain;
+        }
+        return fields;
+    }
+
+    /** Frees the preview resources of the Terrain page and empties the lists (idempotent). */
+    private static void disposeTerrainPreview(List<Pixmap> pixmaps, List<Texture> textures) {
+        for (Texture texture : textures) {
+            texture.dispose();
+        }
+        textures.clear();
+        for (Pixmap pixmap : pixmaps) {
+            pixmap.dispose();
+        }
+        pixmaps.clear();
+    }
+
+    /** Parses an integer, falling back on malformed or absent text (mirrors the 2D dialog). */
+    private static int parseIntOr(String text, int fallback) {
+        try {
+            return Integer.parseInt(text.trim());
+        } catch (RuntimeException e) {
+            return fallback;
         }
     }
 
