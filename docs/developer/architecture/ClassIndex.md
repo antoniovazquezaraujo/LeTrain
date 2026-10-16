@@ -107,7 +107,6 @@
 - [[letrain.map.impl.SimpleRouter|SimpleRouter]] (core)
 
 ## letrain.mvp
-- [[letrain.mvp.CoverText|CoverText]] (core)
 - [[letrain.mvp.EditorText|EditorText]] (core)
 - [[letrain.mvp.FileMenuText|FileMenuText]] (core)
 - [[letrain.mvp.GameViewListener|GameViewListener]] (core)

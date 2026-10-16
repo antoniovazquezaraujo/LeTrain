@@ -157,18 +157,44 @@ Diferencias intencionales (tecnología, no información):
 - La línea de consola y los hints 3D no hacen wrap: se recortan (el hint con elipsis) en lugar de
   crecer en varias líneas.
 
-## Portada y menú File: paridad 2D/3D (#743)
+## Portada y menú File: paridad 2D/3D (#743, arte 2D #771, captura 3D #775)
 
 La portada y el menú File también nacen de fuentes compartidas en `core`, de modo que las
 palabras no pueden divergir entre clientes:
 
-- **Portada** (`CoverText`): la 2D pinta el arte ASCII (`ASCII_ART`) bajo `TITLE`/`PROMPT` con
-  `TerminalView.coverScreenLines(rows)`/`paintCover()` (helper estático puro, testeable sin
-  terminal). La 3D **no muestra texto**: desde #775 `Gdx3DHud.showCover()` pinta la captura del
-  tren de letras (`letrain/cover/cover_3d.png`) a pantalla completa en modo *cover* —fondo negro
+- **Portada 2D**: usa el **arte braille** (issue #771) **siempre**; el tamaño del terminal no
+  decide nada: si el arte es mayor se centra y se recorta en simétrico (el usuario baja el zoom si
+  quiere verla entera). El **estilo** sí depende de la profundidad de color (`CoverStyle`, decidido
+  por `CoverStyle.forPalette`, expuesto en tests por `TerminalView.coverStyle`):
+  `TRUECOLOR`/`INDEXED_256` pintan el **panel completo** (glifo + fondo + primer plano); los
+  terminales **dumb** (`TerminalPalette.Depth.ANSI_16`, donde caen `TERM=dumb`, vacío o ausente)
+  pintan **solo puntos**: los glifos braille/ASCII visibles en color sobre el fondo por defecto del
+  terminal, y las celdas en blanco (`0020`/`2800`) no se pintan (así la "placa" del rótulo deja
+  huecos limpios). Desaparece la portada ASCII antigua. Los datos viven en `core` (`CoverArt`,
+  recurso `/letrain/cover/cover_u44.data`) y el pintado Lanterna + la traducción de profundidad, en
+  `ui-terminal` (`letrain.mvp.impl.terminal.CoverArtPainter`), así que `core` sigue sin conocer
+  Lanterna. **No hay texto de "pulsa una tecla" en 2D** (decisión del dueño): cualquier tecla
+  continúa igual que antes.
+- **Portada 3D**: `Gdx3DHud.showCover()` pinta la captura del tren de letras
+  (`letrain/cover/cover_3d.png`, issue #775) a pantalla completa en modo *cover* —fondo negro
   debajo, escala `max(anchoP/imgAncho, altoP/imgAlto)`, centrada, el sobrante del eje mayor se sale
   de pantalla, sin deformar y sin barras (`coverScale`/`coverOffset`, estáticos puros testeables sin
-  GL)—. Si falta el recurso, la portada degrada al fondo negro; la textura se libera en `dispose()`.
+  GL)—. Tampoco muestra texto (decisión del dueño: la imagen ya rotula LeTrain), y al quedar sin
+  uso en ningún cliente se eliminaron las constantes `CoverText` (`TITLE`/`PROMPT`). Si falta el
+  recurso, la portada degrada al fondo negro; la textura se libera en `dispose()`.
+- **Recorte centrado**: `CoverArtPainter.paint` sitúa el arte con `centredOffset` (división entera
+  hacia abajo, luego el offset puede ser negativo) y **salta** las celdas que caen fuera de la
+  pantalla, sin pasar coordenadas negativas a Lanterna (aplica a ambos estilos).
+- **Formato del asset**: 44 líneas de celdas de 16 caracteres fijos, `cp4hex` (codepoint: braille
+  U+2800–U+28FF, ASCII del rótulo/subtítulo o `0020`) `+ fg6hex|------ + bg6hex|------`. `------`
+  significa "sin color" y el render aplica el fallback del ANSI de referencia: sin `fg` se usa el
+  `bg` (o negro) y sin `bg` se usa el `fg` (o negro); las celdas sin fondo del asset son todas el
+  bloque braille sólido U+28FF, así que `fg == bg` sigue pintando una celda llena. Color por celda
+  traducido con `TerminalPalette.colorOf(int)` (TRUECOLOR / INDEXED_256 / ANSI_16).
+- **Procedencia**: el asset se generó en el laboratorio de color
+  (`letrain-lab/demo/alco-color/`, no versionado) a partir del recorte `alco-1.png` del dueño
+  (imagen RENFE 318-008-0); lo versionado es solo el `.data` copiado a
+  `core/src/main/resources/letrain/cover/cover_u44.data`.
 - **Estado de portada**: vive en el presentador (`coverActive`), no en la vista. Cualquier tecla
   continúa; la tecla que despide la portada se consume y **nunca** llega al juego como acción
   (`TerminalPresenter` drena la ráfaga de teclas leídas; `Gdx3DInputHandler` traga el `keyDown` y
