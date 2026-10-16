@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.badlogic.gdx.scenes.scene2d.Group;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -209,6 +211,64 @@ class Gdx3DHudSettingsTest {
                 "wraps forward");
         assertEquals(SettingCategory.UI, Gdx3DHud.settingsCycleTab(SettingCategory.TERRAIN, true),
                 "wraps backwards");
+    }
+
+    @Test
+    @DisplayName("Ctrl+Tab walks the full ring and a round trip lands back on the start (#780)")
+    void should_RoundTripTheTabCycle() {
+        for (SettingCategory start : Gdx3DHud.settingsCategories()) {
+            SettingCategory forward = Gdx3DHud.settingsCycleTab(start, false);
+            assertEquals(start, Gdx3DHud.settingsCycleTab(forward, true),
+                    "forward then backward must return to " + start);
+        }
+        // Five forward steps from any category close the ring (one already pinned above).
+        SettingCategory cursor = SettingCategory.ECONOMY;
+        for (int i = 0; i < Gdx3DHud.settingsCategories().size(); i++) {
+            cursor = Gdx3DHud.settingsCycleTab(cursor, false);
+        }
+        assertEquals(SettingCategory.ECONOMY, cursor, "a full forward lap returns to the start");
+    }
+
+    @Test
+    @DisplayName("an unknown active category cycles to the first tab, never crashes (#780)")
+    void should_FallBackToTheFirstTabForAnUnknownCategory() {
+        assertEquals(SettingCategory.TERRAIN, Gdx3DHud.settingsCycleTab(null, false));
+        assertEquals(SettingCategory.TERRAIN, Gdx3DHud.settingsCycleTab(null, true));
+    }
+
+    @Test
+    @DisplayName("the tab hotkey only matches its five letters, any other key is empty (#780)")
+    void should_IgnoreNonTabHotkeys() {
+        assertEquals(SettingCategory.TERRAIN, Gdx3DHud.settingsTabHotkey('T').orElseThrow());
+        // The action letters never select a tab.
+        for (char letter : new char[] {'A', 'R', 'N', 'S', 'C', 'X', '1', ' ', '-', 0}) {
+            assertTrue(Gdx3DHud.settingsTabHotkey(letter).isEmpty(),
+                    "'" + letter + "' must not resolve to a tab");
+        }
+    }
+
+    @Test
+    @DisplayName("revealInScroll only maps actors inside the scroll pane (guard, #780)")
+    void should_OnlyRevealActorsInsideTheScrollPane() {
+        // Arrange: a scroll pane stand-in with a nested field, and a sibling footer actor.
+        Group scrollPane = new Group();
+        Group fieldsTable = new Group();
+        Actor nestedField = new Actor();
+        Actor footerButton = new Actor();
+        fieldsTable.addActor(nestedField);
+        scrollPane.addActor(fieldsTable);
+
+        // Act/Assert: nested actors are revealable, anything else is skipped.
+        assertTrue(Gdx3DHud.isInsideScroll(nestedField, scrollPane),
+                "a nested field lives inside the pane");
+        assertTrue(Gdx3DHud.isInsideScroll(fieldsTable, scrollPane),
+                "a direct child is inside the pane");
+        assertFalse(Gdx3DHud.isInsideScroll(footerButton, scrollPane),
+                "a footer button is NOT a descendant: localToAscendantCoordinates would throw");
+        assertTrue(Gdx3DHud.isInsideScroll(scrollPane, scrollPane),
+                "libGDX counts an actor as its own descendant (harmless: maps to 0,0)");
+        assertFalse(Gdx3DHud.isInsideScroll(null, scrollPane));
+        assertFalse(Gdx3DHud.isInsideScroll(nestedField, null));
     }
 
     private static void assertTone(VisualPalette.Token token, int rgb) {

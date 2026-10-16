@@ -1752,7 +1752,7 @@ public class Gdx3DHud {
      * wrapping around. Pure maths for the Ctrl+Tab / Ctrl+Shift+Tab cycle (#780).
      */
     static SettingCategory settingsCycleTab(SettingCategory active, boolean reverse) {
-        int index = SETTINGS_CATEGORIES.indexOf(active);
+        int index = active == null ? -1 : SETTINGS_CATEGORIES.indexOf(active);
         if (index < 0) {
             return SETTINGS_CATEGORIES.get(0);
         }
@@ -2232,12 +2232,25 @@ public class Gdx3DHud {
     }
 
     /**
+     * True when {@code focused} really lives inside {@code container}, so the ScrollPane can map
+     * its coordinates. A footer button belongs to the dialog's button table, not to the scroll
+     * pane, and {@link Actor#localToAscendantCoordinates} throws {@code IllegalArgumentException}
+     * for a non-descendant (libGDX 1.14.2): the guard keeps Tab onto the five footer buttons from
+     * scrolling — or crashing — the page. Package-visible to pin it headlessly (S4b feedback,
+     * #780).
+     */
+    static boolean isInsideScroll(Actor focused, Actor container) {
+        return focused != null && container != null && focused.isDescendantOf(container);
+    }
+
+    /**
      * Scrolls {@code fieldsScroll} just enough to reveal {@code focused}, using the ScrollPane's
      * actor-relative coordinates (libGDX 1.14.2). Shared by focus navigation and the confirmation
-     * callbacks that hand the focus back (S4b feedback, #780).
+     * callbacks that hand the focus back (S4b feedback, #780). A focused actor outside the pane
+     * (e.g. a footer button) is skipped: it cannot be mapped into the pane's space.
      */
     private static void revealInScroll(Actor focused, ScrollPane fieldsScroll) {
-        if (focused == null || fieldsScroll == null) {
+        if (!isInsideScroll(focused, fieldsScroll)) {
             return;
         }
         com.badlogic.gdx.math.Vector2 p = focused.localToAscendantCoordinates(fieldsScroll,
