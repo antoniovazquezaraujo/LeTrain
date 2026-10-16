@@ -22,7 +22,7 @@ The game can be controlled via the keyboard in both its 2D and 3D versions. Belo
 - Console command **`new game;`** opens the same New Game dialog from the CLI in both clients.
 
 #### New Game dialog (2D and 3D V1)
-- In 2D, the **Terrain** tab opens first and keeps every terrain control: the seed, the **Water %**/**Mountain %** sliders, the **stacked bar** (as wide as the slider row) and the **preview**. The other tabs (**Game**, **Economy**, **Build**, **UI**) show the settings catalogue only. In 3D (V1) the dialog offers the seed and the two terrain sliders; the catalogue tabs and the preview arrive with later slices.
+- In 2D, the **Terrain** tab opens first and keeps every terrain control: the seed, the **Water**/**Mountain** sliders, the **stacked bar** (as wide as the slider row) and the **preview**. The other tabs (**Game**, **Economy**, **Build**, **UI**) show the settings catalogue only. In 3D (V1) the dialog offers the seed and the two terrain sliders; the catalogue tabs and the preview arrive with later slices.
 - **Seed**: a random seed is drawn when the dialog opens. It stays editable and copyable.
 - **Terrain**: the rule is *water + mountain ≤ 95 %*: moving one slider clamps the other, so there is always at least 5 % of field. The 100 % **stacked bar** shows the water / field / mountain split.
 - **Preview**: an adaptive **square** terrain sampler (same noise and calibrated thresholds as the world generator) drawn with half blocks, so the world keeps its 1:1 cell shape; the mountain is the game brown. It sits at the left edge and appears from **80×24**, growing with the terminal (16×16 cells at 80×24, 22×22 at 120×30: about a quarter of the section area, so it never takes over the dialog); below 80×24 the sliders and the bar stay.

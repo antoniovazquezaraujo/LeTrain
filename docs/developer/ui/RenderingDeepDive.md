@@ -306,9 +306,24 @@ palabras no pueden divergir entre clientes:
   resaltada en verde en el label (`settingsHotkeyLabel`, mismo markup que el `mnemonicRenderer` 2D),
   **Ctrl+Tab**/**Ctrl+Shift+Tab** cicla las categorías (`settingsCycleTab`) sin disparar la
   navegación normal, y `navigateSettingsFocus` hace scroll automático al campo enfocado
-  (`revealInScroll`, `ScrollPane.scrollTo` con coordenadas del actor) al navegar y al recuperar el
-  foco tras una confirmación. El **menú File** y el **diálogo de confirmación** usan el mismo swap de
-  estilo "focused" para su foco (fondo, no color de texto).
+  (`revealInScroll`, matemática propia de ventana sobre `revealScrollY`) al navegar y al recuperar
+  el foco tras una confirmación. El **menú File** y el **diálogo de confirmación** usan el mismo swap
+  de estilo "focused" para su foco (fondo, no color de texto).
+- **Feedback ronda 5 del Settings/Nueva Partida 3D (#780)**: cuatro correcciones de teclado y
+  layout. (1) La rama ENTER/SPACE debe comprobar `instanceof CheckBox` **antes** de
+  `instanceof TextButton`, porque en libGDX 1.14.2 `CheckBox extends TextButton`: con el orden
+  anterior el checkbox entraba por la rama del botón, que solo dispara un `ChangeEvent` (el
+  `ChangeListener` de sync) y nunca alternaba, dejando muerto su *branch*. (2) **Shift+Tab** navega
+  hacia atrás en los tres ciclos (menú File, Nueva Partida y Settings); el confirm (dos botones) ya
+  intercambiaba en ambos sentidos. (3) `focusAndSelect` hace `selectAll()` en los `TextField` al
+  recibir el foco por la navegación propia (libGDX solo selecciona desde `TextField.next()`, que no
+  usamos), paridad con el select-on-focus del 2D (#757). (4) El reveal propio (`revealScrollY`):
+  `ScrollPane.scrollTo` de 1.14.2 clampa `[y + height, y + actorArea.height]` tras el `maxY - y`,
+  desfasado en una altura de viewport, así que al subir dejaba el campo justo fuera; ahora el
+  scrollY se calcula en coordenadas del contenido. Además, la página **Terrain** ya pinta el glifo
+  de estado (● rojo NEW_GAME, gris si un escenario lo fija) en sus tres filas —seed, Water,
+  Mountain— con columna de 24 px (`GLYPH_COLUMN_WIDTH`) como el resto de páginas, y las etiquetas
+  2D/3D de los sliders pierden el `%` del nombre (vive solo tras el valor, "25 %").
 
 - **Editor**: los pies 2D (`TerminalView.editorFooterActions`) y 3D (`Gdx3DHud`) ya no llevan
   `Save`/`Load`: quedan `Export`/`Import`/`Reload from game`/`Apply program`/`Rebuild world`/

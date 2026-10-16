@@ -158,7 +158,7 @@ final class NewGameDialog {
     /**
      * Width of a slider bar when the value column starts at {@code valueColumn}: the full
      * {@link #SLIDER_BAR_WIDTH} when it fits, down to 5 cells in narrow terminals. The closing
-     * {@code "] 100%"} span takes 7 cells after the bar.
+     * {@code "] 100 %"} value span takes 7 cells after the bar.
      */
     static int sliderBarWidth(int columns, int valueColumn) {
         return Math.min(SLIDER_BAR_WIDTH, Math.max(5, columns - valueColumn - 7));
@@ -166,7 +166,7 @@ final class NewGameDialog {
 
     /**
      * Width of the 100 % stacked bar: the full Water/Mountain row, from the left edge to the end of
-     * the slider percentage ({@code valueColumn + bar + 7}; 59 cells at 70 columns, #755).
+     * the slider percentage ({@code valueColumn + bar + 7}; 57 cells at 70 columns, #755).
      */
     static int stackedBarWidth(int columns, int valueColumn) {
         return Math.min(columns, valueColumn + sliderBarWidth(columns, valueColumn) + 7);
@@ -1133,7 +1133,7 @@ final class NewGameDialog {
                 graphics.putString(x + 1 + filled, 0, "-".repeat(barWidth - filled));
                 graphics.setForegroundColor(labelColor);
                 graphics.putString(x + 1 + barWidth, 0,
-                        "] " + String.format("%3d%%", component.value));
+                        "] " + String.format("%3d %%", component.value));
             }
         }
     }
