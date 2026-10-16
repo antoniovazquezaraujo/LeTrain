@@ -1692,9 +1692,19 @@ public class Gdx3DHud {
             };
             for (SettingCategory category : SETTINGS_CATEGORIES) {
                 final TextButton tab = new TextButton(category.displayName(), skin, "toggle");
-                tab.addListener(new ChangeListener() {
+                // ClickListener (not ChangeListener): showCategory re-syncs every tab's checked
+                // state, so reacting to ChangeEvent would ping-pong the programmatic setChecked
+                // back into this listener and recurse until StackOverflowError (#778). The
+                // selector is mouse-only (tabs stay out of the Tab cycle), so clicks are enough.
+                tab.addListener(new ClickListener() {
                     @Override
-                    public void changed(ChangeEvent event, Actor actor) {
+                    public void clicked(InputEvent event, float x, float y) {
+                        if (active[0] == category) {
+                            // Re-clicking the active tab must not refill/reset scroll: keep it
+                            // checked without re-triggering showCategory.
+                            tab.setChecked(true);
+                            return;
+                        }
                         showCategory.accept(category);
                     }
                 });
