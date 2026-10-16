@@ -2,15 +2,19 @@ package letrain.mvp.impl.graphic;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Cell;
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
@@ -19,16 +23,17 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.ui.TextField;
 import com.badlogic.gdx.scenes.scene2d.ui.Tree;
+import com.badlogic.gdx.scenes.scene2d.ui.WidgetGroup;
 import com.badlogic.gdx.scenes.scene2d.ui.Window;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
 import letrain.itinerary.Punctuality;
-import letrain.mvp.CoverText;
 import letrain.mvp.EditorText;
 import letrain.mvp.FileMenuText;
 import letrain.mvp.MenuText;
@@ -115,6 +120,17 @@ public class Gdx3DHud {
     private boolean fileMenuOpen;
     private boolean rebuildDialogOpen;
     private Table coverTable;
+
+    /** Cover capture bundled with the game (copying-core resources onto the classpath). */
+    static final String COVER_IMAGE_PATH = "letrain/cover/cover_3d.png";
+
+    /**
+     * Texture behind the 3D title cover; null when the cover is hidden or the capture is missing.
+     */
+    private Texture coverTexture;
+
+    /** Full-screen image of the title cover; null when there is no capture to paint. */
+    private Image coverImage;
 
     private Window messageWindow;
     private ScrollPane messageScroll;
@@ -860,7 +876,13 @@ public class Gdx3DHud {
         return desc;
     }
 
-    /** Full-screen title cover: shown at startup, any key continues (issue #743). */
+    /**
+     * Full-screen title cover: shown at startup, any key continues (issue #743). Since #775 it
+     * paints the capture of the letter-train on a black backdrop, edge to edge in {@code cover}
+     * mode (no text, no letterboxing: the overflow of the longer axis is cropped off screen). If
+     * the capture is missing the cover degrades to the plain black backdrop so startup never
+     * breaks.
+     */
     public void showCover() {
         if (coverTable != null) {
             return;
@@ -868,13 +890,75 @@ public class Gdx3DHud {
         coverTable = new Table();
         coverTable.setFillParent(true);
         coverTable.setBackground(skin.newDrawable("white", new Color(0f, 0f, 0f, 1f)));
-        Label title = new Label(CoverText.TITLE, skin, "large");
-        title.setAlignment(com.badlogic.gdx.utils.Align.center);
-        Label prompt = new Label(CoverText.PROMPT, skin, "medium");
-        prompt.setAlignment(com.badlogic.gdx.utils.Align.center);
-        coverTable.add(title).row();
-        coverTable.add(prompt).padTop(48f);
+
+        coverTexture = openCoverTexture();
+        if (coverTexture != null) {
+            coverImage = new Image(new TextureRegionDrawable(new TextureRegion(coverTexture)));
+            // A plain WidgetGroup does not clip its children, so the image can spill past the
+            // screen edges; the Table only stretches the layer to the stage size.
+            WidgetGroup coverLayer = new WidgetGroup();
+            coverLayer.setFillParent(true);
+            coverLayer.addActor(coverImage);
+            coverTable.add(coverLayer).grow();
+            layoutCoverImage(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        } else {
+            Gdx.app.error("LeTrain", "3D cover capture not found: " + COVER_IMAGE_PATH);
+        }
         stage.addActor(coverTable);
+    }
+
+    /**
+     * Loads the bundled cover capture, or {@code null} if it is missing in this build. Kept apart
+     * so the many headless tests of the HUD do not need a real texture.
+     */
+    private static Texture openCoverTexture() {
+        FileHandle file = Gdx.files.internal(COVER_IMAGE_PATH);
+        if (!file.exists()) {
+            return null;
+        }
+        Texture texture = new Texture(file);
+        texture.setFilter(TextureFilter.Linear, TextureFilter.Linear);
+        return texture;
+    }
+
+    /**
+     * Sizes and centres the cover image in {@code cover} mode: it fills the screen on both axes and
+     * the overflow of the longer axis is simply off screen. Re-run from {@link #resize(int, int)}
+     * so the cover follows a window resize.
+     */
+    private void layoutCoverImage(int screenWidth, int screenHeight) {
+        if (coverImage == null || coverTexture == null) {
+            return;
+        }
+        int imageWidth = coverTexture.getWidth();
+        int imageHeight = coverTexture.getHeight();
+        float scale = coverScale(imageWidth, imageHeight, screenWidth, screenHeight);
+        float width = imageWidth * scale;
+        float height = imageHeight * scale;
+        coverImage.setSize(width, height);
+        coverImage.setPosition(coverOffset(width, screenWidth), coverOffset(height, screenHeight));
+    }
+
+    /**
+     * Scale that makes an {@code imageWidth x imageHeight} picture cover a {@code screenWidth x
+     * screenHeight} screen without deforming it: the larger of the two axis ratios, so the other
+     * axis overflows. Returns {@code 1f} for degenerate sizes (zero/negative) to avoid division by
+     * zero or a {@code NaN}; package-visible and static so a test can pin it without a GL context.
+     */
+    static float coverScale(int imageWidth, int imageHeight, int screenWidth, int screenHeight) {
+        if (imageWidth <= 0 || imageHeight <= 0 || screenWidth <= 0 || screenHeight <= 0) {
+            return 1f;
+        }
+        return Math.max((float) screenWidth / imageWidth, (float) screenHeight / imageHeight);
+    }
+
+    /**
+     * Centring offset for one axis in {@code cover} mode: half of what is left after scaling. It is
+     * always {@code <= 0} (the scaled picture is at least as big as the screen); package-visible
+     * and static so a test can pin it without a GL context.
+     */
+    static float coverOffset(float scaledSize, int screenSize) {
+        return (screenSize - scaledSize) / 2f;
     }
 
     /** Removes the title cover; the game behind becomes visible and playable. */
@@ -884,6 +968,11 @@ public class Gdx3DHud {
         }
         coverTable.remove();
         coverTable = null;
+        coverImage = null;
+        if (coverTexture != null) {
+            coverTexture.dispose();
+            coverTexture = null;
+        }
     }
 
     /** True while the title cover is on screen. */
@@ -2083,9 +2172,15 @@ public class Gdx3DHud {
 
     public void resize(int width, int height) {
         stage.getViewport().update(width, height, true);
+        // The cover is painted outside the stage's layout, so it must follow the window itself.
+        layoutCoverImage(width, height);
     }
 
     public void dispose() {
+        if (coverTexture != null) {
+            coverTexture.dispose();
+            coverTexture = null;
+        }
         if (stage != null) {
             stage.dispose();
         }

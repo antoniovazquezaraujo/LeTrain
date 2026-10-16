@@ -15,7 +15,7 @@ Bienvenido al manual oficial de **LeTrain**. Aquí encontrarás todo lo que nece
 El juego se puede controlar tanto en su versión 2D como en la 3D mediante el teclado. A continuación, las teclas y modos principales:
 
 ### Portada, menú File y Nueva Partida
-- El juego abre con una **portada** sencilla (un tren dibujado en ASCII en la terminal 2D, texto en la vista 3D). Pulsa **cualquier tecla** para pasar al **menú File**: el juego 2D ya no arranca el mundo solo, así que **New** o **Load** son lo que inicia tu red ferroviaria.
+- El juego abre con una **portada** sencilla: la terminal 2D dibuja un pequeño tren en ASCII y la vista 3D pinta a pantalla completa una imagen del tren de letras, sin texto en pantalla. Pulsa **cualquier tecla** para pasar al **menú File**: el juego 2D ya no arranca el mundo solo, así que **New** o **Load** son lo que inicia tu red ferroviaria.
 - Pulsa **Esc** para abrir el menú **File**, con las mismas palabras en 2D y 3D: **New**, **Load**, **Save**, **Settings** y **Quit**. **Esc** de nuevo cierra el menú y **Quit** sale del juego.
   - **New** (2D) abre el diálogo de **Nueva Partida**: semilla, proporciones de terreno y las secciones del catálogo (ver abajo). Es la forma de empezar una partida desde el menú inicial. Con una partida en curso pide confirmación primero (el flujo completo Guardar/Descartar/Cancelar llegará más adelante); la partida sin guardar se descarta.
   - **Save** aparece deshabilitado con el motivo *no game in progress* hasta que haya partida.

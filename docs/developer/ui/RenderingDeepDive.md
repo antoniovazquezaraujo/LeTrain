@@ -162,10 +162,13 @@ Diferencias intencionales (tecnología, no información):
 La portada y el menú File también nacen de fuentes compartidas en `core`, de modo que las
 palabras no pueden divergir entre clientes:
 
-- **Portada** (`CoverText`): `TITLE`, `PROMPT` y el arte ASCII (`ASCII_ART`, solo 2D). La 2D la
-  pinta con `TerminalView.coverScreenLines(rows)`/`paintCover()` (helper estático puro, testeable
-  sin terminal); la 3D monta una `Table` opaca a pantalla completa en `Gdx3DHud.showCover()` con
-  el mismo `TITLE`/`PROMPT`.
+- **Portada** (`CoverText`): la 2D pinta el arte ASCII (`ASCII_ART`) bajo `TITLE`/`PROMPT` con
+  `TerminalView.coverScreenLines(rows)`/`paintCover()` (helper estático puro, testeable sin
+  terminal). La 3D **no muestra texto**: desde #775 `Gdx3DHud.showCover()` pinta la captura del
+  tren de letras (`letrain/cover/cover_3d.png`) a pantalla completa en modo *cover* —fondo negro
+  debajo, escala `max(anchoP/imgAncho, altoP/imgAlto)`, centrada, el sobrante del eje mayor se sale
+  de pantalla, sin deformar y sin barras (`coverScale`/`coverOffset`, estáticos puros testeables sin
+  GL)—. Si falta el recurso, la portada degrada al fondo negro; la textura se libera en `dispose()`.
 - **Estado de portada**: vive en el presentador (`coverActive`), no en la vista. Cualquier tecla
   continúa; la tecla que despide la portada se consume y **nunca** llega al juego como acción
   (`TerminalPresenter` drena la ráfaga de teclas leídas; `Gdx3DInputHandler` traga el `keyDown` y
