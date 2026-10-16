@@ -18,6 +18,7 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import letrain.mvp.input.InputEvent;
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import letrain.map.Point;
 import letrain.mvp.Model.GameModeMenuOption;
@@ -171,6 +172,14 @@ public class GraphicPresenter extends ApplicationAdapter
     private boolean coverActive = false;
     private boolean coverEnabled = true;
 
+    /**
+     * Interactive boot (D8, #777): mirrors {@link letrain.mvp.impl.terminal.TerminalPresenter}.
+     * False while the 3D client sits on the cover/File menu before a game started; New/Load set it
+     * true. {@code setCoverEnabled(false)} leaves it true, so a headless/direct-scenario run keeps
+     * the world without a boot.
+     */
+    private boolean gameStarted = true;
+
     public GraphicPresenter(letrain.mvp.Model model) {
         this(model, null);
     }
@@ -294,7 +303,10 @@ public class GraphicPresenter extends ApplicationAdapter
         Gdx.input.setInputProcessor(multiplexer);
 
         // Cover first: the world waits behind the title until the player presses any key.
+        // Dismissing the cover enters the interactive boot File menu instead of auto-starting the
+        // world (D8).
         if (coverEnabled) {
+            gameStarted = false;
             showCover();
         }
 
@@ -334,6 +346,14 @@ public class GraphicPresenter extends ApplicationAdapter
         return coverActive;
     }
 
+    /**
+     * True once New/Load started a game; the boot File menu disables Save until then (D8, #777).
+     */
+    @Override
+    public boolean hasActiveGame() {
+        return gameStarted;
+    }
+
     /** Shows the cover; {@code create()} calls this unless the cover was disabled. */
     public void showCover() {
         coverActive = true;
@@ -342,8 +362,19 @@ public class GraphicPresenter extends ApplicationAdapter
         }
     }
 
-    /** Dismisses the cover (any key continues) and hands the screen back to the game. */
+    /**
+     * Dismisses the cover (any key continues). During the interactive boot (no game yet) it then
+     * opens the File menu, exactly like the 2D {@code startupMenuStep} (D8, #777).
+     */
     public void dismissCover() {
+        endCover();
+        if (!gameStarted) {
+            showFileMenu();
+        }
+    }
+
+    /** Ends the title cover without re-entering the boot menu (also used when a game starts). */
+    private void endCover() {
         coverActive = false;
         if (hud != null) {
             hud.hideCover();
@@ -780,7 +811,75 @@ public class GraphicPresenter extends ApplicationAdapter
 
     @Override
     public void onNewGame() {
-        // Not used in 3D view (handled by presenter/model directly).
+        Map<String, String> currentSettings =
+                model.getEconomyManager() != null ? model.getEconomyManager().effectiveConfig()
+                        : Map.of();
+        onNewGame(currentSettings);
+    }
+
+    /**
+     * New Game flow with explicit prefill (File → New and the console {@code new game;}, D1). With
+     * a game in progress it first confirms the discard; at boot (no game yet) it opens the dialog
+     * straight away (S4, #777).
+     */
+    void onNewGame(Map<String, String> prefill) {
+        if (gameStarted) {
+            if (hud == null) {
+                return;
+            }
+            hud.showConfirmDialog(letrain.mvp.NewGameText.CONFIRM_TITLE,
+                    letrain.mvp.NewGameText.CONFIRM_MESSAGE, letrain.mvp.NewGameText.START,
+                    () -> openNewGameDialog(prefill));
+            return;
+        }
+        openNewGameDialog(prefill);
+    }
+
+    /** Opens the 3D New Game dialog with a form prefilled from the effective configuration. */
+    private void openNewGameDialog(Map<String, String> prefill) {
+        if (hud == null) {
+            return;
+        }
+        letrain.settings.NewGameForm form =
+                letrain.settings.NewGameForm.forNewGame(prefill, new java.util.Random());
+        hud.showNewGameDialog(form, this::startNewGame, this::onBootFlowCancelled);
+    }
+
+    /** A boot flow (New/Load) was cancelled: with no game yet the cover comes back (D8, #777). */
+    void onBootFlowCancelled() {
+        returnToCoverIfBooting();
+    }
+
+    /** Esc on the File menu during the boot returns to the cover; in-game it does nothing (D8). */
+    void onFileMenuDismissed() {
+        returnToCoverIfBooting();
+    }
+
+    private void returnToCoverIfBooting() {
+        if (!gameStarted && !coverActive) {
+            showCover();
+        }
+    }
+
+    /**
+     * Builds a fresh world from the dialog settings (S2) and swaps it in, reusing
+     * {@link #applyLoadedModel} so the camera, HUD, input handler and journal rebind exactly like a
+     * load (S4, #777). The seed text goes through the shared
+     * {@link letrain.settings.NewGameForm#resolveSeed(String)}.
+     */
+    void startNewGame(Map<String, String> settings) {
+        int seed = letrain.settings.NewGameForm
+                .resolveSeed(settings.get(letrain.settings.NewGameForm.SEED_KEY));
+        letrain.mvp.impl.Model fresh = letrain.mvp.impl.Model.newGame(seed, settings);
+        applyLoadedModel(fresh, null);
+        gameStarted = true;
+        endCover();
+        model.setMode(letrain.mvp.Model.GameMode.RAILS);
+        letrain.map.Point center = model.getCursor().getPosition();
+        model.getGroundMap().renderBlock(center.getX() - getCols() / 2,
+                center.getY() - getRows() / 2, getCols(), getRows());
+        log.info("New game started (seed {})", seed);
+        showMessage(letrain.mvp.NewGameText.TITLE, letrain.mvp.NewGameText.startedMessage(seed));
     }
 
     @Override
@@ -1074,7 +1173,7 @@ public class GraphicPresenter extends ApplicationAdapter
         });
     }
 
-    private void applyLoadedModel(letrain.mvp.impl.Model loadedModel, File file) {
+    void applyLoadedModel(letrain.mvp.impl.Model loadedModel, File file) {
         int helpLevel = this.model != null ? this.model.getHelpLevel() : HudHelp.FULL;
         this.model = ValidationUtils.requireNonNull(loadedModel, "loadedModel");
         // The message sink is wired only after the new HUD exists: setUserMessageSink flushes the
@@ -1151,6 +1250,9 @@ public class GraphicPresenter extends ApplicationAdapter
         letrain.mvp.impl.Model loadedModel = maybeModel.get();
         try {
             applyLoadedModel(loadedModel, file);
+            // A successful load starts a game too: end the boot flow (S4, #777).
+            gameStarted = true;
+            endCover();
         } catch (Exception e) {
             log.error("Critical error updating model reference after loading game from {}",
                     file != null ? file.getAbsolutePath() : "<null>", e);
@@ -1300,8 +1402,9 @@ public class GraphicPresenter extends ApplicationAdapter
 
     @Override
     public void showLoadDialog() {
+        boolean booting = !gameStarted;
         hud.showFileDialog("Load Game", com.kotcrab.vis.ui.widget.file.FileChooser.Mode.OPEN,
-                DEFAULT_SAVEGAME_FILENAME, (text) -> {
+                DEFAULT_SAVEGAME_FILENAME, new String[] {"json"}, (text) -> {
                     if (text != null && !text.trim().isEmpty()) {
                         File file = new File(text);
                         log.info("Loading game from {}", file.getAbsolutePath());
@@ -1310,6 +1413,12 @@ public class GraphicPresenter extends ApplicationAdapter
                         } else {
                             log.warn("Savegame file not found: {}", text);
                         }
+                    }
+                }, () -> {
+                    // Boot Load cancelled: return to the cover instead of leaving an empty world
+                    // (2D parity, S4 #777).
+                    if (booting) {
+                        onBootFlowCancelled();
                     }
                 });
     }
@@ -1329,11 +1438,15 @@ public class GraphicPresenter extends ApplicationAdapter
         hud.showIDE();
     }
 
-    /** Opens the File menu (Esc): shared wording/structure with the 2D terminal (issue #743). */
+    /**
+     * Opens the File menu (Esc): shared wording/structure with the 2D terminal (issue #743). The 3D
+     * client reaches it from the interactive boot too (cover dismissed, no game yet); Esc there
+     * returns to the cover (D8, #777).
+     */
     @Override
     public void showFileMenu() {
         if (hud != null) {
-            hud.showFileMenu();
+            hud.showFileMenu(hasActiveGame(), this::onFileMenuDismissed);
         }
     }
 

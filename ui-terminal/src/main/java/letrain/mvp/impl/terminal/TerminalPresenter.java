@@ -2355,15 +2355,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     /**
      * Resolves the form's seed text; {@code random} (or a missing/invalid value) draws a fresh one.
+     * Delegates to the shared {@link letrain.settings.NewGameForm#resolveSeed(String)} so the 2D
+     * terminal and the 3D client start the same world for the same text (S4, #777).
      */
     static int resolveSeed(String seedText) {
-        String normalized =
-                letrain.settings.SettingsCatalog.validate(letrain.settings.NewGameForm.SEED_KEY,
-                        seedText == null || seedText.isBlank() ? "random" : seedText);
-        if (normalized.equals("random")) {
-            return letrain.settings.NewGameForm.nextSeed(new java.util.Random());
-        }
-        return Integer.parseInt(normalized);
+        return letrain.settings.NewGameForm.resolveSeed(seedText);
     }
 
     /** True once New/Load started a game; the boot File menu disables Save until then (D8). */

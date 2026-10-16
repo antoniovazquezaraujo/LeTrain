@@ -141,11 +141,15 @@ Los acentos propios (mnemónicos, slider, barra, preview y tooltip) siguen pint�
   anterior + tooltip, colores del terreno, atajos por letra, ciclo Ctrl+Tab, reemplazo al teclear y
   tema oscuro), `TerminalPaletteTest` (incluye el modo del terminal expuesto),
   `TerminalPresenterNewGameTest` (portada → menú → partida, confirmación, cancelar, consola).
-- `ui-graphic`: `Gdx3DHudFileMenuTest` fija los motivos de bloqueo 3D («3D parity slice»).
+- `ui-graphic`: `Gdx3DHudFileMenuTest` fija las palabras/estados del menú 3D (New habilitado,
+  Settings con «3D parity slice»), `GraphicPresenterBootTest` el arranque interactivo (portada →
+  menú → partida, cancelación a portada).
 
 ## Pendiente (otras rebanadas)
 
 - **S3**: diálogo Settings en partida con estados 🟢/🟡/🔴 y «empezar nueva partida con estos
   valores».
-- **S4**: paridad 3D (mismo formulario y preview gráfico).
+- **S4**: paridad 3D. S4a (#777) ya trae el arranque interactivo y el diálogo de Nueva Partida V1
+  (semilla + sliders de terreno y validación en línea); S4b (#778) traerá el diálogo Settings 3D y
+  S4c las pestañas del catálogo, el preview y la barra.
 - **#417**: flujo completo Guardar/Descartar/Cancelar en lugar de la confirmación simple.

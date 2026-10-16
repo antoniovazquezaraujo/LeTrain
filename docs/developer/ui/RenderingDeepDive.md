@@ -157,7 +157,7 @@ Diferencias intencionales (tecnología, no información):
 - La línea de consola y los hints 3D no hacen wrap: se recortan (el hint con elipsis) en lugar de
   crecer en varias líneas.
 
-## Portada y menú File: paridad 2D/3D (#743, arte 2D #771, captura 3D #775)
+## Portada y menú File: paridad 2D/3D (#743, arte 2D #771, captura 3D #775, boot 3D #777)
 
 La portada y el menú File también nacen de fuentes compartidas en `core`, de modo que las
 palabras no pueden divergir entre clientes:
@@ -199,14 +199,35 @@ palabras no pueden divergir entre clientes:
   continúa; la tecla que despide la portada se consume y **nunca** llega al juego como acción
   (`TerminalPresenter` drena la ráfaga de teclas leídas; `Gdx3DInputHandler` traga el `keyDown` y
   su `keyTyped`). `setCoverEnabled(false)` la salta en contextos headless/lanzamiento directo de
-  escenario; `letrain-check` ni siquiera arranca un presentador.
+  escenario (deja `gameStarted = true`, así no hay boot); `letrain-check` ni siquiera arranca un
+  presentador.
+- **Arranque interactivo 3D** (#777, D8): el 3D sigue el mismo flujo que el 2D. `create()` marca
+  `gameStarted = false` al mostrar la portada si el cover está habilitado; al despedirla con
+  cualquier tecla, `dismissCover()` abre el **menú File** en vez de entregar el mundo (equivale al
+  `startupMenuStep()` 2D). `hasActiveGame()` refleja `gameStarted`, así que el menú de boot
+  deshabilita `Save`. El `Esc` del menú durante el boot devuelve a la portada
+  (`onFileMenuDismissed`); en partida no hace nada. `New`/`Load` arrancan partida: `New` abre el
+  diálogo de Nueva Partida (`Gdx3DHud.showNewGameDialog`) y `startNewGame` reutiliza la maquinaria
+  de `applyLoadedModel` (cámara/HUD/input/journal) marcando `gameStarted = true` y ocultando la
+  portada; cancelar el diálogo `New` o el selector de `Load` en el boot vuelve a la portada (2D
+  parity). El separador de callbacks del menú distingue `close` (solo oculta; una acción actuó) de
+  `dismiss` (oculta + avisa al boot).
+
 - **Menú File** (`FileMenuText`): `items()` define estructura, orden, palabras y estado
   (`enabled` + `disabledReason`) de `New`/`Load`/`Save`/`Settings`/`Quit`, y `displayLabel(item)`
-  añade el motivo entre paréntesis mientras la entrada está bloqueada. En este slice `New`
-  (motivo *settings arrive in the next slice*) y `Settings` (*arrives with the settings slice*)
-  están visibles pero deshabilitadas; `Load`/`Save` abren sus diálogos y `Quit` sustituye al
-  antiguo cierre directo con `Esc` (decisión D11). `Esc` abre el menú (`view.showFileMenu()` en
-  ambos presentadores) y `Esc` de nuevo lo cierra.
+  añade el motivo entre paréntesis mientras la entrada está bloqueada. `MenuState.terminal(hasGame)`
+  y `MenuState.graphic(hasGame)` comparten el patrón contextual: `New` habilitado, `Save` según
+  haya partida (`no game in progress`) y `Load`/`Quit` siempre. La única diferencia es `Settings`:
+  el 2D lo habilita (S3b) y el 3D lo mantiene deshabilitado con *3D parity slice* hasta S4b.
+  `Load`/`Save` abren sus diálogos y `Quit` sustituye al antiguo cierre directo con `Esc`
+  (decisión D11). `Esc` abre el menú (`view.showFileMenu()` en ambos presentadores) y `Esc` de
+  nuevo lo cierra.
+- **Diálogo Nueva Partida 3D** (#777, V1): `Gdx3DHud.showNewGameDialog(form, onStart, onCancel)`
+  reutiliza `NewGameForm` (semilla + sliders de agua/montaña, con la regla cruzada del catálogo) y
+  valida con `form.toSettings()`, mostrando el mensaje del catálogo en línea si falla. El skin
+  code-built no tenía `Slider`, así que añade un `Slider.SliderStyle` "default-horizontal" mínimo.
+  Los sliders 2D de `NewGameForm` y la `Settings` del catálogo llegan en rebanadas posteriores
+  (S4b #778 / S4c).
 - **Editor**: los pies 2D (`TerminalView.editorFooterActions`) y 3D (`Gdx3DHud`) ya no llevan
   `Save`/`Load`: quedan `Export`/`Import`/`Reload from game`/`Apply program`/`Rebuild world`/
   `Close`. Los comandos de consola `save;`/`load;` se mantienen.

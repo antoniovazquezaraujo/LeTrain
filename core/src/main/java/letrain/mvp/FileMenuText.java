@@ -12,8 +12,9 @@ import letrain.utils.ValidationUtils;
  * Issue #746 (arc #742): {@code New} is enabled in the 2D client now that the New Game dialog
  * exists. At the boot menu (cover dismissed, no game yet) {@code Save} and {@code Settings} are
  * disabled with their reason (D8: one contextual menu, no auto-start; S3b: settings need a running
- * game). The 3D parity slice (S4) keeps {@code New}/{@code Settings} disabled with the parity
- * reason. {@code Load} works and {@code Quit} replaces the old direct {@code Esc} exit.
+ * game). Since S4 (#777) the 3D client reaches the same boot flow: {@code New} is enabled and opens
+ * the 3D New Game dialog, while {@code Settings} stays disabled with the parity reason until S4b.
+ * {@code Load} works and {@code Quit} replaces the old direct {@code Esc} exit.
  */
 public final class FileMenuText {
 
@@ -67,11 +68,13 @@ public final class FileMenuText {
         }
 
         /**
-         * 3D client state until S4: no New Game flow yet, so {@code New} and {@code Settings} stay
-         * visible but disabled with {@link #PARITY_LOCK_REASON}.
+         * 3D client state since S4 (#777): {@code New} is enabled and opens the 3D New Game dialog;
+         * {@code Settings} stays visible but disabled with {@link #PARITY_LOCK_REASON} until S4b.
+         * {@code hasGame} is false at the boot menu (cover dismissed, no game started yet), so
+         * {@code Save} is disabled with {@link #SAVE_NO_GAME_REASON}, exactly like 2D.
          */
-        public static MenuState graphic() {
-            return new MenuState(true, false, PARITY_LOCK_REASON, false, PARITY_LOCK_REASON);
+        public static MenuState graphic(boolean hasGame) {
+            return new MenuState(hasGame, true, "", false, PARITY_LOCK_REASON);
         }
     }
 

@@ -8,8 +8,9 @@ import java.util.Random;
  * State of the New Game form (S2, issue #746). Presentation-neutral: holds the raw text of every
  * catalogue field plus the terrain proportions, enforces the terrain cross-field rule (water +
  * mountain ≤ {@link SettingsCatalog#MAX_TERRAIN_PERCENT} %) and validates the whole form against
- * the catalogue on {@link #toSettings()}. The 2D dialog (and the future 3D one) only has to bind
- * widgets to {@link #value(String)} / {@link #setValue(String, String)} and to the sliders.
+ * the catalogue on {@link #toSettings()}. The 2D dialog and the 3D New Game dialog (S4, #777) only
+ * has to bind widgets to {@link #value(String)} / {@link #setValue(String, String)} and to the
+ * sliders.
  *
  * <p>
  * {@link #forNewGame(Map)} prefills the form: every catalogue default is overlaid with the current
@@ -64,6 +65,23 @@ public final class NewGameForm {
     /** Fresh random seed in {@code [1, MAX_SEED]}; seed 0 stays reserved for "engine picks one". */
     public static int nextSeed(Random random) {
         return 1 + random.nextInt(MAX_SEED);
+    }
+
+    /**
+     * Resolves the seed text a client got from its New Game dialog: {@code random} (or a
+     * missing/blank value) draws a fresh seed, anything else goes through the catalogue's seed
+     * validation (integer in range). Shared by the 2D terminal and the 3D client so both clients
+     * start the same world for the same text.
+     *
+     * @throws IllegalArgumentException when the text is neither {@code random} nor a valid seed
+     */
+    public static int resolveSeed(String seedText) {
+        String normalized = SettingsCatalog.validate(SEED_KEY,
+                seedText == null || seedText.isBlank() ? "random" : seedText);
+        if (normalized.equals("random")) {
+            return nextSeed(new Random());
+        }
+        return Integer.parseInt(normalized);
     }
 
     /** Current raw text of a catalogue field. */

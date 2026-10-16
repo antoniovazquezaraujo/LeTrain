@@ -9,8 +9,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Issue #743: the 3D HUD File menu consumes the shared {@link FileMenuText} rows, so the words and
- * the lock reasons read exactly like the 2D terminal's.
+ * Issue #743/#777: the 3D HUD File menu consumes the shared {@link FileMenuText} rows, so the words
+ * and the lock reasons read exactly like the 2D terminal's. Since S4 New is enabled (it opens the
+ * 3D New Game dialog) and only Settings keeps the parity lock.
  */
 @DisplayName("3D File menu rows")
 class Gdx3DHudFileMenuTest {
@@ -18,11 +19,11 @@ class Gdx3DHudFileMenuTest {
     @Test
     @DisplayName("every shared row shows the same words as 2D, lock reasons included")
     void should_ShowTheSharedLabels() {
-        List<FileMenuText.Item> items = FileMenuText.items(FileMenuText.MenuState.graphic());
+        List<FileMenuText.Item> items = FileMenuText.items(FileMenuText.MenuState.graphic(false));
 
-        assertEquals("New (3D parity slice)", Gdx3DHud.fileMenuButtonText(items.get(0)));
+        assertEquals("New", Gdx3DHud.fileMenuButtonText(items.get(0)));
         assertEquals("Load", Gdx3DHud.fileMenuButtonText(items.get(1)));
-        assertEquals("Save", Gdx3DHud.fileMenuButtonText(items.get(2)));
+        assertEquals("Save (no game in progress)", Gdx3DHud.fileMenuButtonText(items.get(2)));
         assertEquals("Settings (3D parity slice)", Gdx3DHud.fileMenuButtonText(items.get(3)));
         assertEquals("Quit", Gdx3DHud.fileMenuButtonText(items.get(4)));
     }
