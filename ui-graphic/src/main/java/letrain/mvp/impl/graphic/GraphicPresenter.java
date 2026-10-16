@@ -924,7 +924,6 @@ public class GraphicPresenter extends ApplicationAdapter
         model.getGroundMap().renderBlock(center.getX() - getCols() / 2,
                 center.getY() - getRows() / 2, getCols(), getRows());
         log.info("New game started (seed {})", seed);
-        showMessage(letrain.mvp.NewGameText.TITLE, letrain.mvp.NewGameText.startedMessage(seed));
     }
 
     @Override
