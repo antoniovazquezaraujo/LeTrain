@@ -72,7 +72,7 @@ comerse el diálogo, y desde #755 va **pegado al borde izquierdo** (x=0):
   `TERRAIN_CHROME_ROWS` es 5 (seed, water, mountain, barra y hueco) y los tamaños de preview no
   cambian (16×8 / 22×11).
 - La **barra apilada** ocupa la fila completa del slider: empieza en el borde izquierdo y acaba
-  donde termina el porcentaje (`valueColumn + bar + 7`, 57 celdas a 70 columnas) con
+  donde termina el porcentaje (`valueColumn + bar + 8`, 58 celdas a 70 columnas) con
   `stackedBarWidth()`, compartiendo `sliderBarWidth()` con el slider.
 
 ## Secciones

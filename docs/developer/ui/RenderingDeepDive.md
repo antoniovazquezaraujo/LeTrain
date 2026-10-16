@@ -319,8 +319,8 @@ palabras no pueden divergir entre clientes:
   recibir el foco por la navegación propia (libGDX solo selecciona desde `TextField.next()`, que no
   usamos), paridad con el select-on-focus del 2D (#757). (4) El reveal propio (`revealScrollY`):
   `ScrollPane.scrollTo` de 1.14.2 clampa `[y + height, y + actorArea.height]` tras el `maxY - y`,
-  desfasado en una altura de viewport, así que al subir dejaba el campo justo fuera; ahora el
-  scrollY se calcula en coordenadas del contenido. Además, la página **Terrain** ya pinta el glifo
+  desfasado en la altura del widget enfocado (una fila), así que al subir dejaba el campo justo
+  encima del viewport; ahora el scrollY se calcula en coordenadas del contenido. Además, la página **Terrain** ya pinta el glifo
   de estado (● rojo NEW_GAME, gris si un escenario lo fija) en sus tres filas —seed, Water,
   Mountain— con columna de 24 px (`GLYPH_COLUMN_WIDTH`) como el resto de páginas, y las etiquetas
   2D/3D de los sliders pierden el `%` del nombre (vive solo tras el valor, "25 %").

@@ -237,14 +237,14 @@ class NewGameDialogTest {
     }
 
     @Test
-    @DisplayName("the stacked bar spans the full slider row: 57 cells at 70 columns (#755)")
+    @DisplayName("the stacked bar spans the full slider row: 58 cells at 70 columns (#755)")
     void should_SpanTheSliderRow() {
         assertEquals(40, NewGameDialog.sliderBarWidth(70, TERRAIN_COLUMN));
-        assertEquals(57, NewGameDialog.stackedBarWidth(70, TERRAIN_COLUMN));
-        assertEquals(57, NewGameDialog.stackedBarWidth(120, TERRAIN_COLUMN));
-        assertEquals(57, NewGameDialog.stackedBarWidth(200, TERRAIN_COLUMN));
+        assertEquals(58, NewGameDialog.stackedBarWidth(70, TERRAIN_COLUMN));
+        assertEquals(58, NewGameDialog.stackedBarWidth(120, TERRAIN_COLUMN));
+        assertEquals(58, NewGameDialog.stackedBarWidth(200, TERRAIN_COLUMN));
         // Narrow terminals shrink the slider bar and the stacked bar follows it exactly.
-        assertEquals(32, NewGameDialog.sliderBarWidth(49, TERRAIN_COLUMN));
+        assertEquals(31, NewGameDialog.sliderBarWidth(49, TERRAIN_COLUMN));
         assertEquals(49, NewGameDialog.stackedBarWidth(49, TERRAIN_COLUMN));
     }
 

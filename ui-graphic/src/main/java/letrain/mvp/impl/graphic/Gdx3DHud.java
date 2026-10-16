@@ -2287,11 +2287,11 @@ public class Gdx3DHud {
     /**
      * Scrolls {@code fieldsScroll} just enough to reveal {@code focused}, computing the scroll
      * ourselves in the content's own coordinates: {@link ScrollPane#scrollTo} of libGDX 1.14.2
-     * clamps {@code [y + height, y + actorArea.height]} after its {@code maxY - y} flip, which
-     * offsets the target by one viewport height and leaves an upward move just outside the view
-     * (the bug the owner reported). Shared by focus navigation and the confirmation callbacks that
-     * hand the focus back (S4b feedback, #780). A focused actor outside the pane (e.g. a footer
-     * button) is skipped: it cannot be mapped into the pane's space.
+     * clamps {@code [y + height, y + actorArea.height]} after its {@code maxY - y} flip, offsetting
+     * both ends by the focused widget's height (one row), so an upward move leaves the field just
+     * above the viewport (the bug the owner reported). Shared by focus navigation and the
+     * confirmation callbacks that hand the focus back (S4b feedback, #780). A focused actor outside
+     * the pane (e.g. a footer button) is skipped: it cannot be mapped into the pane's space.
      */
     private static void revealInScroll(Actor focused, ScrollPane fieldsScroll, Table content) {
         if (!isInsideScroll(focused, fieldsScroll) || !isInsideScroll(focused, content)) {
