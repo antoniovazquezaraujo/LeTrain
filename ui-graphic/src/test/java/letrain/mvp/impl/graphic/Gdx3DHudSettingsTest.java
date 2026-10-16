@@ -155,6 +155,62 @@ class Gdx3DHudSettingsTest {
         assertTone(VisualPalette.Token.TERRAIN_MOUNTAIN, 0x80664D);
     }
 
+    @Test
+    @DisplayName("the tab letter is the first letter of the section name (T/G/E/B/U)")
+    void should_MapTabLetters() {
+        assertEquals('T', Gdx3DHud.settingsTabLetter(SettingCategory.TERRAIN));
+        assertEquals('G', Gdx3DHud.settingsTabLetter(SettingCategory.WORLD));
+        assertEquals('E', Gdx3DHud.settingsTabLetter(SettingCategory.ECONOMY));
+        assertEquals('B', Gdx3DHud.settingsTabLetter(SettingCategory.CONSTRUCTION));
+        assertEquals('U', Gdx3DHud.settingsTabLetter(SettingCategory.UI));
+    }
+
+    @Test
+    @DisplayName("Alt+letter selects the tab case-insensitively, empty for any other key (#780)")
+    void should_ResolveTabHotkeys() {
+        assertEquals(SettingCategory.TERRAIN, Gdx3DHud.settingsTabHotkey('T').orElseThrow());
+        assertEquals(SettingCategory.TERRAIN, Gdx3DHud.settingsTabHotkey('t').orElseThrow());
+        assertEquals(SettingCategory.WORLD, Gdx3DHud.settingsTabHotkey('G').orElseThrow());
+        assertEquals(SettingCategory.ECONOMY, Gdx3DHud.settingsTabHotkey('e').orElseThrow());
+        assertEquals(SettingCategory.CONSTRUCTION, Gdx3DHud.settingsTabHotkey('B').orElseThrow());
+        assertEquals(SettingCategory.UI, Gdx3DHud.settingsTabHotkey('u').orElseThrow());
+
+        assertTrue(Gdx3DHud.settingsTabHotkey('A').isEmpty(), "an action letter is not a tab");
+        assertTrue(Gdx3DHud.settingsTabHotkey('X').isEmpty());
+    }
+
+    @Test
+    @DisplayName("the mnemonic label paints the letter green like the 2D mnemonicRenderer (#780)")
+    void should_FormatMnemonicLabels() {
+        assertEquals("[GREEN]A[]pply", Gdx3DHud.settingsHotkeyLabel(SettingsText.APPLY, 'A'));
+        assertEquals("[GREEN]N[]ew game", Gdx3DHud.settingsHotkeyLabel(SettingsText.NEW_GAME, 'N'));
+        assertEquals("[GREEN]S[]ave as defaults",
+                Gdx3DHud.settingsHotkeyLabel(SettingsText.SAVE_DEFAULTS, 'S'));
+        assertEquals("plain", Gdx3DHud.settingsHotkeyLabel("plain", 'Z'),
+                "a label without the mnemonic is returned unchanged");
+    }
+
+    @Test
+    @DisplayName("the five footer actions carry the 2D Alt mnemonics A/R/N/S/C (#780)")
+    void should_MapActionHotkeys() {
+        assertEquals("apply,restore,newGame,saveDefaults,close", Gdx3DHud.SETTINGS_ACTIONS.stream()
+                .map(Gdx3DHud.SettingsAction::id).reduce((a, b) -> a + "," + b).orElseThrow());
+        assertEquals("ARNSC", Gdx3DHud.SETTINGS_ACTIONS.stream()
+                .map(a -> String.valueOf(a.mnemonic())).reduce("", String::concat));
+        assertEquals(SettingsText.NEW_GAME, Gdx3DHud.SETTINGS_ACTIONS.get(2).label());
+    }
+
+    @Test
+    @DisplayName("Ctrl+Tab cycles the categories forward and Ctrl+Shift+Tab backwards (#780)")
+    void should_CycleTabs() {
+        assertEquals(SettingCategory.WORLD,
+                Gdx3DHud.settingsCycleTab(SettingCategory.TERRAIN, false));
+        assertEquals(SettingCategory.TERRAIN, Gdx3DHud.settingsCycleTab(SettingCategory.UI, false),
+                "wraps forward");
+        assertEquals(SettingCategory.UI, Gdx3DHud.settingsCycleTab(SettingCategory.TERRAIN, true),
+                "wraps backwards");
+    }
+
     private static void assertTone(VisualPalette.Token token, int rgb) {
         Color color = Gdx3DHud.terrainDayColor(token);
         assertEquals(1f, color.a, "the alpha guard must lift rgb888ToColor's a=0");

@@ -227,8 +227,14 @@ palabras no pueden divergir entre clientes:
   valida con `form.toSettings()`, mostrando el mensaje del catálogo en línea si falla. El skin
   code-built no tenía `Slider`, así que añade un `Slider.SliderStyle` "default-horizontal" (ver
   *Estilo de controles* más abajo). El campo de semilla lleva un `TextFieldFilter` que descarta los
-  caracteres de control (#780, ver *Caracteres de control*). Las pestañas del catálogo, el preview y
-  la barra del formulario 3D llegan en S4c.
+  caracteres de control (#780, ver *Caracteres de control*). Desde el feedback S4b (#780) el bloque
+  de terreno es **vivo**: bajo los sliders van la barra tricolor del 100 % y el preview cuadrado
+  (`TerrainPreviewView`, 88x88 a 2x) y ambos se recalculan al mover cualquier slider y al editar la
+  semilla cuando parsea a entero (se guarda la última semilla válida, como el 2D); el botón "new"
+  desapareció, así que la semilla se sortea al abrir y a mano después. El foco se pinta en vivo
+  (`paintNewGameFocus`): los sliders cambian al estilo "focused-horizontal" (knob cian) y Start/Cancel
+  al estilo "focused" (fondo `SELECTED_BG`); las flechas no roban el caret a los `TextField`. Las
+  pestañas del catálogo llegan en S4c.
 - **Diálogo Settings 3D** (#778, `Gdx3DHud.showSettingsDialog`): espejo del 2D con las mismas
   palabras y semántica. Un selector de categorías (una página a la vez) y, por cada
   `SettingDefinition`, una fila con el glifo de estado —● verde LIVE, ● amarillo REAPPLY, ● rojo
@@ -260,15 +266,19 @@ palabras no pueden divergir entre clientes:
   `TerrainPreview.sample(seed, water, mountain, 88, 88)` pintado en un `Pixmap` a 2x (176x176 px)
   con filtro `Nearest`. El bloque cabe sin scroll en la zona de campos (660x340) y **nada entra en
   el ciclo de Tab** (#767): los controles están deshabilitados y `categoryFields` queda vacío. El
-  `close` libera `Pixmap`/`Texture` del preview (`disposeTerrainPreview`), que se recrean al abrir;
-  el mismo `close` corre al elegir New game.
+  `close` libera el preview (`disposeTerrainPreviews`), que se recrea al abrir; el mismo `close` corre
+  al elegir New game. Desde el feedback S4b (#780) el preview y la barra salen del componente
+  compartido `TerrainPreviewView`/`terrainBarTable`, que el diálogo de Nueva Partida reutiliza en
+  modo vivo.
 - **Estilo de controles del HUD 3D** (#780): el skin code-built añade al `Slider.SliderStyle`
   "default-horizontal" un track/base con `minHeight` explícito (`sliderTrack`) y un knob circular de
   24x24 (`sliderKnob`, `Pixmap.fillCircle` en el acento) con mínimos cuadrados para no deformarse;
   sin ellos el píxel "white" 1x1 colapsaba el slider a "una aguja". El `CheckBoxStyle` "default"
   usa cuadros 26x26 dibujados a mano (cuadrado oscuro con borde claro; el "on" añade el check en dos
   trazos de acento). Ambos llevan variantes *disabled* en gris, de modo que los controles de solo
-  lectura se ven grises de verdad.
+  lectura se ven grises de verdad. Desde el feedback S4b (#780) el skin añade también la variante
+  "focused-horizontal" del slider (mismo track, knob cian) y el estilo "focused" del `TextButton`
+  (fondo `SELECTED_BG` con `over` más claro y texto blanco) que usan todos los diálogos 3D.
 - **Caracteres de control en los campos 3D** (#780): el backend LWJGL3 sintetiza `keyTyped('\t')` al
   pulsar Tab y `BitmapFontData.hasGlyph` devuelve `true` para cualquier carácter cuando la fuente
   FreeType tiene `missingGlyph`, así que un `TextField` normal insertaba un `\t` que se dibujaba como
@@ -288,9 +298,17 @@ palabras no pueden divergir entre clientes:
   diálogo fija **siempre** el foco al abrir y al cambiar de página (`categoryFields.get(0)` o, si la
   página no tiene campos —Terrain—, el primer botón del footer): con `keyboardFocus == null`,
   `Stage.keyDown` envía el evento al root y el listener del diálogo no lo oiría, así que Tab/Enter/Esc
-  quedarían muertos. Los botones del footer y los checkboxes no tienen caret propio, así que el
-  enfocado se resalta en cian como en el menú File (`paintFooterFocus`), refrescado tras navegar,
-  tras `showCategory` y cuando las confirmaciones (reapply/save defaults) devuelven el foco.
+  quedarían muertos. Los botones del footer y los checkboxes no tienen caret propio: el botón
+  enfocado cambia al estilo "focused" (fondo `SELECTED_BG`, texto blanco) y el checkbox se tiñe de
+  cian (`paintFooterFocus`), refrescado tras navegar, tras `showCategory` y cuando las
+  confirmaciones (reapply/save defaults) devuelven el foco. Desde el feedback S4b (#780) el diálogo
+  añade los accesos **Alt+T/G/E/B/U** (pestañas) y **Alt+A/R/N/S/C** (acciones) con la letra
+  resaltada en verde en el label (`settingsHotkeyLabel`, mismo markup que el `mnemonicRenderer` 2D),
+  **Ctrl+Tab**/**Ctrl+Shift+Tab** cicla las categorías (`settingsCycleTab`) sin disparar la
+  navegación normal, y `navigateSettingsFocus` hace scroll automático al campo enfocado
+  (`revealInScroll`, `ScrollPane.scrollTo` con coordenadas del actor) al navegar y al recuperar el
+  foco tras una confirmación. El **menú File** y el **diálogo de confirmación** usan el mismo swap de
+  estilo "focused" para su foco (fondo, no color de texto).
 
 - **Editor**: los pies 2D (`TerminalView.editorFooterActions`) y 3D (`Gdx3DHud`) ya no llevan
   `Save`/`Load`: quedan `Export`/`Import`/`Reload from game`/`Apply program`/`Rebuild world`/
