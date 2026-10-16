@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Colors;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Group;
 import java.util.LinkedHashMap;
@@ -86,6 +87,25 @@ class Gdx3DHudSettingsTest {
         assertTrue(legend.contains(SettingsText.LEGEND_NEW_GAME), legend);
         assertEquals(3, legend.split(Gdx3DHud.SETTINGS_GLYPH, -1).length - 1,
                 "exactly one glyph per documented state, no scenario entry: " + legend);
+    }
+
+    @Test
+    @DisplayName("the legend registers the exact row state palette, not libGDX's [RED] (#780)")
+    void should_RegisterTheLegendColorsFromTheRowPalette() {
+        // The class of the bug: the legend used "[RED]" (pure 255,0,0) while the rows paint
+        // NEW_GAME as (1, 0.35, 0.35); the registered names must match the row palette exactly.
+        assertEquals(Gdx3DHud.settingsGlyphColor(SettingFieldState.LIVE),
+                Colors.get(Gdx3DHud.LEGEND_LIVE_COLOR));
+        assertEquals(Gdx3DHud.settingsGlyphColor(SettingFieldState.REAPPLY),
+                Colors.get(Gdx3DHud.LEGEND_REAPPLY_COLOR));
+        assertEquals(Gdx3DHud.settingsGlyphColor(SettingFieldState.NEW_GAME),
+                Colors.get(Gdx3DHud.LEGEND_NEW_GAME_COLOR));
+
+        String legend = Gdx3DHud.settingsLegendMarkup();
+        assertTrue(legend.contains("[" + Gdx3DHud.LEGEND_LIVE_COLOR + "]"), legend);
+        assertTrue(legend.contains("[" + Gdx3DHud.LEGEND_REAPPLY_COLOR + "]"), legend);
+        assertTrue(legend.contains("[" + Gdx3DHud.LEGEND_NEW_GAME_COLOR + "]"), legend);
+        assertFalse(legend.contains("[RED]"), "the default pure-red markup name must be gone");
     }
 
     @Test

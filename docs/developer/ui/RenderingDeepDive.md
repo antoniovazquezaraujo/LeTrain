@@ -323,7 +323,10 @@ palabras no pueden divergir entre clientes:
   encima del viewport; ahora el scrollY se calcula en coordenadas del contenido. Además, la página **Terrain** ya pinta el glifo
   de estado (● rojo NEW_GAME, gris si un escenario lo fija) en sus tres filas —seed, Water,
   Mountain— con columna de 24 px (`GLYPH_COLUMN_WIDTH`) como el resto de páginas, y las etiquetas
-  2D/3D de los sliders pierden el `%` del nombre (vive solo tras el valor, "25 %").
+  2D/3D de los sliders pierden el `%` del nombre (vive solo tras el valor, "25 %"). Por último, la
+  leyenda registra en `Colors` la paleta exacta de las filas (`SETTINGS_LIVE/REAPPLY/NEW_GAME`)
+  porque el `[RED]` por defecto del markup de libGDX es rojo puro (255,0,0) y no coincide con el
+  rojo de estado (255,89,89).
 
 - **Editor**: los pies 2D (`TerminalView.editorFooterActions`) y 3D (`Gdx3DHud`) ya no llevan
   `Save`/`Load`: quedan `Export`/`Import`/`Reload from game`/`Apply program`/`Rebuild world`/

@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Colors;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.Texture.TextureFilter;
@@ -1848,11 +1849,26 @@ public class Gdx3DHud {
         }
     }
 
+    /** Markup names of the legend dots, registered from the row palette (#780). */
+    static final String LEGEND_LIVE_COLOR = "SETTINGS_LIVE";
+    static final String LEGEND_REAPPLY_COLOR = "SETTINGS_REAPPLY";
+    static final String LEGEND_NEW_GAME_COLOR = "SETTINGS_NEW_GAME";
+
+    static {
+        // libGDX's built-in markup "RED" is pure Color.RED (255,0,0), which reads differently from
+        // the row glyphs (1, 0.35, 0.35) on the dialog panel: register the exact row palette
+        // (#780).
+        Colors.put(LEGEND_LIVE_COLOR, settingsGlyphColor(SettingFieldState.LIVE));
+        Colors.put(LEGEND_REAPPLY_COLOR, settingsGlyphColor(SettingFieldState.REAPPLY));
+        Colors.put(LEGEND_NEW_GAME_COLOR, settingsGlyphColor(SettingFieldState.NEW_GAME));
+    }
+
     /** Colour legend under the form; the scenario lock has no colour of its own (#767). */
     static String settingsLegendMarkup() {
-        return "[GREEN]" + SETTINGS_GLYPH + "[] " + SettingsText.LEGEND_LIVE + "   [YELLOW]"
-                + SETTINGS_GLYPH + "[] " + SettingsText.LEGEND_REAPPLY + "   [RED]" + SETTINGS_GLYPH
-                + "[] " + SettingsText.LEGEND_NEW_GAME;
+        return "[" + LEGEND_LIVE_COLOR + "]" + SETTINGS_GLYPH + "[] " + SettingsText.LEGEND_LIVE
+                + "   [" + LEGEND_REAPPLY_COLOR + "]" + SETTINGS_GLYPH + "[] "
+                + SettingsText.LEGEND_REAPPLY + "   [" + LEGEND_NEW_GAME_COLOR + "]"
+                + SETTINGS_GLYPH + "[] " + SettingsText.LEGEND_NEW_GAME;
     }
 
     /**
