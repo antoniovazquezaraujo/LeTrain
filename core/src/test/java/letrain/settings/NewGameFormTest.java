@@ -173,4 +173,29 @@ class NewGameFormTest {
     void should_RejectInvalidSeedText() {
         assertThrows(IllegalArgumentException.class, () -> NewGameForm.resolveSeed("nope"));
     }
+
+    @Test
+    @DisplayName("resolveSeed keeps 0 and negative integers verbatim (no range on the seed setting)")
+    void should_KeepIntegerSeedEdges() {
+        assertEquals(0, NewGameForm.resolveSeed("0"),
+                "seed 0 stays reserved for the engine to pick one");
+        assertEquals(-7, NewGameForm.resolveSeed("-7"));
+        assertEquals(999_999, NewGameForm.resolveSeed("999999"));
+    }
+
+    @Test
+    @DisplayName("resolveSeed accepts the random keyword case-insensitively")
+    void should_ResolveRandomCaseInsensitively() {
+        for (String text : List.of("random", "RANDOM", " Random ")) {
+            int seed = NewGameForm.resolveSeed(text);
+            assertTrue(seed >= 1 && seed <= NewGameForm.MAX_SEED, text + " -> " + seed);
+        }
+    }
+
+    @Test
+    @DisplayName("resolveSeed rejects an integer that overflows the int range")
+    void should_RejectOverflowingSeed() {
+        assertThrows(IllegalArgumentException.class, () -> NewGameForm.resolveSeed("999999999999"));
+        assertThrows(IllegalArgumentException.class, () -> NewGameForm.resolveSeed("2147483648"));
+    }
 }

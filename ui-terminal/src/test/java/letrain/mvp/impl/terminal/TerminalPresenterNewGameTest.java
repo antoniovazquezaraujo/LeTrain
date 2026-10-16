@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -194,6 +195,25 @@ class TerminalPresenterNewGameTest {
         assertTrue(random >= 1 && random <= letrain.settings.NewGameForm.MAX_SEED,
                 "drawn seed: " + random);
         int blank = TerminalPresenter.resolveSeed(null);
+        assertTrue(blank >= 1 && blank <= letrain.settings.NewGameForm.MAX_SEED);
+    }
+
+    @Test
+    @DisplayName("the 2D resolver delegates to the shared core for every seed text (S4, #777)")
+    void seedResolution_delegatesToTheSharedCore() {
+        // Numeric inputs are deterministic, so both clients must return the exact same seed.
+        for (String text : new String[] {"123", "  123 ", "0", "-7", "999999"}) {
+            assertEquals(letrain.settings.NewGameForm.resolveSeed(text),
+                    TerminalPresenter.resolveSeed(text), text);
+        }
+
+        // Both reject the same malformed texts.
+        assertThrows(IllegalArgumentException.class, () -> TerminalPresenter.resolveSeed("nope"));
+        assertThrows(IllegalArgumentException.class,
+                () -> TerminalPresenter.resolveSeed("999999999999"));
+
+        // Random/blank draw a fresh seed in the same catalogue range.
+        int blank = TerminalPresenter.resolveSeed("  ");
         assertTrue(blank >= 1 && blank <= letrain.settings.NewGameForm.MAX_SEED);
     }
 }

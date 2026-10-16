@@ -110,4 +110,22 @@ class FileMenuTextTest {
         assertEquals("Settings (3D parity slice)",
                 FileMenuText.displayLabel(FileMenuText.items(MenuState.graphic(false)).get(3)));
     }
+
+    @Test
+    @DisplayName("3D New never carries a lock reason; Save shares the no-game reason")
+    void should_Define3DNewAndSaveReasons() {
+        List<Item> boot = FileMenuText.items(MenuState.graphic(false));
+        List<Item> inGame = FileMenuText.items(MenuState.graphic(true));
+
+        assertEquals("", boot.get(0).disabledReason(), "New is enabled: no lock reason");
+        assertEquals("", inGame.get(0).disabledReason(), "New is enabled: no lock reason");
+        assertEquals("New", FileMenuText.displayLabel(boot.get(0)));
+
+        assertEquals(FileMenuText.SAVE_NO_GAME_REASON, boot.get(2).disabledReason(),
+                "the boot Save reason is the shared one, exactly like 2D");
+        assertEquals("Save (no game in progress)", FileMenuText.displayLabel(boot.get(2)));
+
+        assertTrue(inGame.get(2).enabled(), "Save works while a game is running");
+        assertEquals("Save", FileMenuText.displayLabel(inGame.get(2)));
+    }
 }
