@@ -1218,8 +1218,9 @@ public class Gdx3DHud {
                             || keycode == Input.Keys.RIGHT) {
                         Actor focused = stage.getKeyboardFocus();
                         int index = focusable.indexOf(focused);
-                        int step =
-                                (keycode == Input.Keys.UP || keycode == Input.Keys.LEFT) ? -1 : 1;
+                        // Shift+Tab walks the ring backwards, like Shift+Up/Shift+Left.
+                        int step = (keycode == Input.Keys.UP || keycode == Input.Keys.LEFT
+                                || (keycode == Input.Keys.TAB && isShiftPressed())) ? -1 : 1;
                         int next = Math.floorMod(index + step, focusable.size());
                         stage.setKeyboardFocus(focusable.get(next));
                         paintFocus.run();
@@ -1640,10 +1641,11 @@ public class Gdx3DHud {
                             || ((keycode == Input.Keys.LEFT || keycode == Input.Keys.RIGHT)
                                     && !(focused instanceof TextField))) {
                         int index = focusable.indexOf(focused);
-                        int step =
-                                (keycode == Input.Keys.UP || keycode == Input.Keys.LEFT) ? -1 : 1;
+                        // Shift+Tab walks the ring backwards, like Shift+Up/Shift+Left.
+                        int step = (keycode == Input.Keys.UP || keycode == Input.Keys.LEFT
+                                || (keycode == Input.Keys.TAB && isShiftPressed())) ? -1 : 1;
                         int next = Math.floorMod(index + step, focusable.size());
-                        stage.setKeyboardFocus(focusable.get(next));
+                        focusAndSelect(focusable.get(next));
                         paintNewGameFocus.run();
                         return true;
                     }
@@ -1694,9 +1696,9 @@ public class Gdx3DHud {
 
             stage.addActor(blocker);
             stage.addActor(dialog);
-            stage.setKeyboardFocus(seedField);
-            seedField.setCursorPosition(seedField.getText().length());
-            // The seed field starts focused: nothing is highlighted yet.
+            // The seed field starts focused with its whole value selected, so the first keystroke
+            // replaces the drawn seed, like the 2D dialog's select-on-focus (#757).
+            focusAndSelect(seedField);
             paintNewGameFocus.run();
         });
     }
@@ -1786,6 +1788,12 @@ public class Gdx3DHud {
     static final int TERRAIN_PREVIEW_SCALE = 2;
     /** Width of the three-colour 100 % bar, aligned under the terrain sliders (#778). */
     static final int TERRAIN_BAR_WIDTH = 280;
+
+    /**
+     * Width of the state-glyph column, shared by the catalogue field rows and the Terrain page so
+     * every glyph lines up (#780).
+     */
+    static final float GLYPH_COLUMN_WIDTH = 24f;
 
     /**
      * Left gutter of every Settings page, equivalent to one 24px glyph column, so the 3D form keeps
@@ -1996,7 +2004,8 @@ public class Gdx3DHud {
                 active[0] = category;
                 disposeTerrainPreviews(terrainPreviews);
                 if (category == SettingCategory.TERRAIN) {
-                    fillSettingsTerrain(fieldsTable, categoryFields, form, terrainPreviews);
+                    fillSettingsTerrain(fieldsTable, categoryFields, form, terrainPreviews,
+                            scenarioKeys);
                 } else {
                     fillSettingsCategory(category, fieldsTable, categoryFields, form, scenarioKeys);
                 }
@@ -2010,8 +2019,7 @@ public class Gdx3DHud {
                 // Always pin the focus: with a null focus Stage sends keyDown to the root and this
                 // dialog never hears it, so on a field-less page (Terrain) Tab/Enter/Esc would be
                 // dead (#778). The footer always contributes five buttons.
-                stage.setKeyboardFocus(
-                        categoryFields.isEmpty() ? focusable.get(0) : categoryFields.get(0));
+                focusAndSelect(categoryFields.isEmpty() ? focusable.get(0) : categoryFields.get(0));
                 paintFooterFocus.run();
             };
             for (SettingCategory category : SETTINGS_CATEGORIES) {
@@ -2046,12 +2054,12 @@ public class Gdx3DHud {
                     showConfirmDialog(SettingsText.REAPPLY_TITLE,
                             SettingsText.reapplyMessage(reapply), SettingsText.APPLY, () -> {
                                 applyValues(port, baseline, feedback, values);
-                                stage.setKeyboardFocus(restoreFocus);
-                                revealInScroll(restoreFocus, fieldsScroll);
+                                focusAndSelect(restoreFocus);
+                                revealInScroll(restoreFocus, fieldsScroll, fieldsTable);
                                 paintFooterFocus.run();
                             }, () -> {
-                                stage.setKeyboardFocus(restoreFocus);
-                                revealInScroll(restoreFocus, fieldsScroll);
+                                focusAndSelect(restoreFocus);
+                                revealInScroll(restoreFocus, fieldsScroll, fieldsTable);
                                 paintFooterFocus.run();
                             });
                 } else {
@@ -2078,12 +2086,12 @@ public class Gdx3DHud {
                             String error = port.saveDefaults(new LinkedHashMap<>(form));
                             feedback.setText(error == null ? SettingsText.SAVED_DEFAULTS
                                     : SettingsText.SAVE_DEFAULTS_FAILED + error);
-                            stage.setKeyboardFocus(restoreFocus);
-                            revealInScroll(restoreFocus, fieldsScroll);
+                            focusAndSelect(restoreFocus);
+                            revealInScroll(restoreFocus, fieldsScroll, fieldsTable);
                             paintFooterFocus.run();
                         }, () -> {
-                            stage.setKeyboardFocus(restoreFocus);
-                            revealInScroll(restoreFocus, fieldsScroll);
+                            focusAndSelect(restoreFocus);
+                            revealInScroll(restoreFocus, fieldsScroll, fieldsTable);
                             paintFooterFocus.run();
                         });
             };
@@ -2150,28 +2158,31 @@ public class Gdx3DHud {
                     }
                     if (keycode == Input.Keys.TAB || keycode == Input.Keys.UP
                             || keycode == Input.Keys.DOWN) {
-                        navigateSettingsFocus(keycode == Input.Keys.UP ? -1 : 1, focusable,
-                                fieldsScroll);
+                        int step = (keycode == Input.Keys.UP
+                                || (keycode == Input.Keys.TAB && isShiftPressed())) ? -1 : 1;
+                        navigateSettingsFocus(step, focusable, fieldsScroll, fieldsTable);
                         paintFooterFocus.run();
                         return true;
                     }
                     if ((keycode == Input.Keys.LEFT || keycode == Input.Keys.RIGHT)
                             && !(focused instanceof TextField)) {
                         navigateSettingsFocus(keycode == Input.Keys.LEFT ? -1 : 1, focusable,
-                                fieldsScroll);
+                                fieldsScroll, fieldsTable);
                         paintFooterFocus.run();
                         return true;
                     }
                     if (keycode == Input.Keys.ENTER || keycode == Input.Keys.NUMPAD_ENTER
                             || keycode == Input.Keys.SPACE) {
-                        if (focused instanceof TextButton) {
-                            ((TextButton) focused).fire(new ChangeEvent());
-                            return true;
-                        }
+                        // libGDX 1.14.2: CheckBox extends TextButton, so this branch must run
+                        // before the TextButton one (which only fires a ChangeEvent, no toggle).
                         if (focused instanceof CheckBox) {
                             // Toggling fires the ChangeListener, which keeps the form in sync.
                             CheckBox checkBox = (CheckBox) focused;
                             checkBox.setChecked(!checkBox.isChecked());
+                            return true;
+                        }
+                        if (focused instanceof TextButton) {
+                            ((TextButton) focused).fire(new ChangeEvent());
                             return true;
                         }
                         return false;
@@ -2220,15 +2231,28 @@ public class Gdx3DHud {
     }
 
     /** Moves the keyboard focus through the active page, wrapping around, and reveals it. */
-    private void navigateSettingsFocus(int step, List<Actor> focusable, ScrollPane fieldsScroll) {
+    private void navigateSettingsFocus(int step, List<Actor> focusable, ScrollPane fieldsScroll,
+            Table content) {
         if (focusable.isEmpty()) {
             return;
         }
         int index = focusable.indexOf(stage.getKeyboardFocus());
         int next = index < 0 ? 0 : Math.floorMod(index + step, focusable.size());
         Actor target = focusable.get(next);
+        focusAndSelect(target);
+        revealInScroll(target, fieldsScroll, content);
+    }
+
+    /**
+     * Moves the keyboard focus and, on a text field, selects all its content so typing replaces it
+     * (#757). libGDX only selects all from its own {@code TextField.next()} traversal, which the
+     * custom navigation never triggers, so every focus move goes through here.
+     */
+    private void focusAndSelect(Actor target) {
         stage.setKeyboardFocus(target);
-        revealInScroll(target, fieldsScroll);
+        if (target instanceof TextField) {
+            ((TextField) target).selectAll();
+        }
     }
 
     /**
@@ -2244,18 +2268,40 @@ public class Gdx3DHud {
     }
 
     /**
-     * Scrolls {@code fieldsScroll} just enough to reveal {@code focused}, using the ScrollPane's
-     * actor-relative coordinates (libGDX 1.14.2). Shared by focus navigation and the confirmation
-     * callbacks that hand the focus back (S4b feedback, #780). A focused actor outside the pane
-     * (e.g. a footer button) is skipped: it cannot be mapped into the pane's space.
+     * New scrollY (0 = top) that reveals the rect in the pane's content coordinates, keeping the
+     * current scroll when it is already visible. Package-visible to pin it headlessly (#780).
      */
-    private static void revealInScroll(Actor focused, ScrollPane fieldsScroll) {
-        if (!isInsideScroll(focused, fieldsScroll)) {
+    static float revealScrollY(float rectBottom, float rectHeight, float contentHeight,
+            float viewHeight, float scrollY) {
+        float windowTop = contentHeight - scrollY;
+        float windowBottom = windowTop - viewHeight;
+        if (rectBottom + rectHeight > windowTop) {
+            return contentHeight - (rectBottom + rectHeight);
+        }
+        if (rectBottom < windowBottom) {
+            return contentHeight - viewHeight - rectBottom;
+        }
+        return scrollY;
+    }
+
+    /**
+     * Scrolls {@code fieldsScroll} just enough to reveal {@code focused}, computing the scroll
+     * ourselves in the content's own coordinates: {@link ScrollPane#scrollTo} of libGDX 1.14.2
+     * clamps {@code [y + height, y + actorArea.height]} after its {@code maxY - y} flip, which
+     * offsets the target by one viewport height and leaves an upward move just outside the view
+     * (the bug the owner reported). Shared by focus navigation and the confirmation callbacks that
+     * hand the focus back (S4b feedback, #780). A focused actor outside the pane (e.g. a footer
+     * button) is skipped: it cannot be mapped into the pane's space.
+     */
+    private static void revealInScroll(Actor focused, ScrollPane fieldsScroll, Table content) {
+        if (!isInsideScroll(focused, fieldsScroll) || !isInsideScroll(focused, content)) {
             return;
         }
-        com.badlogic.gdx.math.Vector2 p = focused.localToAscendantCoordinates(fieldsScroll,
-                new com.badlogic.gdx.math.Vector2());
-        fieldsScroll.scrollTo(p.x, p.y, focused.getWidth(), focused.getHeight());
+        fieldsScroll.validate();
+        com.badlogic.gdx.math.Vector2 p =
+                focused.localToAscendantCoordinates(content, new com.badlogic.gdx.math.Vector2());
+        fieldsScroll.setScrollY(revealScrollY(p.y, focused.getHeight(), content.getHeight(),
+                fieldsScroll.getHeight(), fieldsScroll.getScrollY()));
     }
 
     /** True while either Alt key is held (Alt+letter access keys). */
@@ -2296,7 +2342,7 @@ public class Gdx3DHud {
      * {@code categoryFields} stays empty, so the dialog pins the focus to the footer instead.
      */
     private void fillSettingsTerrain(Table fieldsTable, List<Actor> categoryFields,
-            Map<String, String> form, List<TerrainPreviewView> previews) {
+            Map<String, String> form, List<TerrainPreviewView> previews, Set<String> scenarioKeys) {
         fieldsTable.clear();
         categoryFields.clear();
 
@@ -2313,9 +2359,12 @@ public class Gdx3DHud {
         block.top().left();
         block.defaults().space(6);
 
-        // Seed: read-only text field, greyed out and out of the focus cycle (#767).
+        // Seed: read-only text field, greyed out and out of the focus cycle (#767). Every row opens
+        // with the state glyph so the Terrain page keeps the dots of the other pages (S4b #780).
         Table seedRow = new Table();
         seedRow.left();
+        seedRow.add(settingsGlyphLabel(terrainFieldState(NewGameForm.SEED_KEY, scenarioKeys)))
+                .width(GLYPH_COLUMN_WIDTH);
         seedRow.add(new Label(NewGameText.SEED_LABEL, skin, "small")).width(labelWidth).left();
         TextField seedField = new TextField(String.valueOf(seed), skin);
         seedField.setDisabled(true);
@@ -2325,13 +2374,15 @@ public class Gdx3DHud {
         seedRow.add(seedField).width(TERRAIN_SEED_WIDTH).height(32f).left();
         block.add(seedRow).left().row();
 
-        block.add(terrainSliderRow(NewGameText.WATER_LABEL, water, labelWidth, valueWidth)).left()
-                .row();
-        block.add(terrainSliderRow(NewGameText.MOUNTAIN_LABEL, mountain, labelWidth, valueWidth))
-                .left().row();
+        block.add(terrainSliderRow(NewGameText.WATER_LABEL, water, NewGameForm.WATER_KEY,
+                scenarioKeys, labelWidth, valueWidth)).left().row();
+        block.add(terrainSliderRow(NewGameText.MOUNTAIN_LABEL, mountain, NewGameForm.MOUNTAIN_KEY,
+                scenarioKeys, labelWidth, valueWidth)).left().row();
 
+        // The bar and the map start under the widgets, past the glyph and the label columns.
+        final float widgetIndent = GLYPH_COLUMN_WIDTH + labelWidth;
         // Three-colour 100 % bar, aligned under the sliders (same split as the 2D dialog).
-        block.add(terrainBarTable(water, mountain)).left().padLeft(labelWidth).row();
+        block.add(terrainBarTable(water, mountain)).left().padLeft(widgetIndent).row();
 
         // Blank gap, then the map preview from the same sampler as the 2D section. The view is
         // handed to {@code previews} so the caller disposes it when the page is swapped or the
@@ -2340,20 +2391,37 @@ public class Gdx3DHud {
         TerrainPreviewView preview = new TerrainPreviewView();
         preview.setValues(seed, water, mountain);
         previews.add(preview);
-        block.add(preview).left().padLeft(labelWidth).row();
+        block.add(preview).left().padLeft(widgetIndent).row();
 
         fieldsTable.add(block).growX().left().top();
     }
 
-    /** One disabled terrain slider row: label, slider and its percentage, greyed out (#767). */
-    private Table terrainSliderRow(String label, int percent, float labelWidth, float valueWidth) {
+    /**
+     * One disabled terrain slider row for the Settings page: state glyph, label, slider and its
+     * percentage, greyed out (#767, S4b feedback #780).
+     */
+    private Table terrainSliderRow(String label, int percent, String key, Set<String> scenarioKeys,
+            float labelWidth, float valueWidth) {
         Slider slider = new Slider(0, SettingsCatalog.MAX_TERRAIN_PERCENT, 1, false, skin);
         slider.setValue(percent);
         // Disabled style paints the grey track/knob (no setColor tint, #780).
         slider.setDisabled(true);
         Label value = new Label(percent + " %", skin, "small");
         value.setColor(Color.LIGHT_GRAY);
-        return terrainSliderRow(label, slider, value, labelWidth, valueWidth);
+        Table row = new Table();
+        row.left();
+        row.add(settingsGlyphLabel(terrainFieldState(key, scenarioKeys))).width(GLYPH_COLUMN_WIDTH);
+        row.add(new Label(label, skin, "small")).width(labelWidth).left();
+        row.add(slider).width(TERRAIN_BAR_WIDTH).height(30f);
+        row.add(value).width(valueWidth).left();
+        return row;
+    }
+
+    /** Field state of a terrain key: NEW_GAME (red) unless a scenario pins it to grey (#780). */
+    private static SettingFieldState terrainFieldState(String key, Set<String> scenarioKeys) {
+        return SettingsCatalog.definition(key)
+                .map(definition -> SettingsCatalog.fieldState(definition, scenarioKeys))
+                .orElse(SettingFieldState.NEW_GAME);
     }
 
     /**
@@ -2479,6 +2547,13 @@ public class Gdx3DHud {
         }
     }
 
+    /** State glyph of a field/Terrain row: {@link #SETTINGS_GLYPH} tinted with the state colour. */
+    private Label settingsGlyphLabel(SettingFieldState state) {
+        Label glyph = new Label(SETTINGS_GLYPH, skin, "default");
+        glyph.setColor(settingsGlyphColor(state));
+        return glyph;
+    }
+
     /**
      * One field row: state glyph, label with unit and the editing widget — a checkbox for BOOLEAN
      * settings, a text field otherwise — or a read-only value label when the field is locked.
@@ -2489,9 +2564,7 @@ public class Gdx3DHud {
         Table row = new Table();
         row.left();
         row.defaults().space(8);
-        Label glyph = new Label(SETTINGS_GLYPH, skin, "default");
-        glyph.setColor(settingsGlyphColor(state));
-        row.add(glyph).width(24f);
+        row.add(settingsGlyphLabel(state)).width(GLYPH_COLUMN_WIDTH);
         row.add(new Label(settingsFieldLabel(definition), skin, "default")).width(280f).left();
         String value = form.getOrDefault(definition.key(), "");
         if (definition.type() == SettingValueType.BOOLEAN) {

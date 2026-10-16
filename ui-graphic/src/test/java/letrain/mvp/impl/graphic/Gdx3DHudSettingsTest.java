@@ -271,6 +271,20 @@ class Gdx3DHudSettingsTest {
         assertFalse(Gdx3DHud.isInsideScroll(nestedField, null));
     }
 
+    @Test
+    @DisplayName("revealScrollY keeps a visible rect put and aligns an off-screen one (#780)")
+    void should_ComputeTheRevealScroll() {
+        // Content 100 tall, 20-tall viewport. A rect inside the window keeps the scroll.
+        assertEquals(30f, Gdx3DHud.revealScrollY(55f, 10f, 100f, 20f, 30f),
+                "55..65 sits in the 50..70 window of scrollY=30");
+        // A rect above the window pulls the scroll so its top meets the window top.
+        assertEquals(45f, Gdx3DHud.revealScrollY(50f, 5f, 100f, 20f, 60f),
+                "50..55 is above the 20..40 window of scrollY=60: top aligns at 55");
+        // A rect below the window pushes the scroll so its bottom meets the window bottom.
+        assertEquals(50f, Gdx3DHud.revealScrollY(30f, 5f, 100f, 20f, 10f),
+                "30..35 is below the 70..90 window of scrollY=10: bottom aligns at 30");
+    }
+
     private static void assertTone(VisualPalette.Token token, int rgb) {
         Color color = Gdx3DHud.terrainDayColor(token);
         assertEquals(1f, color.a, "the alpha guard must lift rgb888ToColor's a=0");
