@@ -72,7 +72,7 @@ comerse el diálogo, y desde #755 va **pegado al borde izquierdo** (x=0):
   `TERRAIN_CHROME_ROWS` es 5 (seed, water, mountain, barra y hueco) y los tamaños de preview no
   cambian (16×8 / 22×11).
 - La **barra apilada** ocupa la fila completa del slider: empieza en el borde izquierdo y acaba
-  donde termina el porcentaje (`valueColumn + bar + 7`, 59 celdas a 70 columnas) con
+  donde termina el porcentaje (`valueColumn + bar + 8`, 58 celdas a 70 columnas) con
   `stackedBarWidth()`, compartiendo `sliderBarWidth()` con el slider.
 
 ## Secciones
@@ -84,12 +84,12 @@ Las pestañas **Terrain / Game / Economy / Build / UI** se generan iterando
 - **Una sola columna con scroll**: cada campo es una fila `Nombre: valor` + unidad. La etiqueta es
   solo el nombre (`fieldLabel()`, sin pistas de rango, #751); `alignedLabel()` pega los dos puntos
   al nombre y rellena con espacios hasta la **columna de la página**: `valueColumn(fieldNames())`
-  toma el nombre más ancho de esa pestaña + `: ` (#755). Terrain usa la suya (12: Seed, Water %,
-  Mountain %) y cada sección la suya (Game 14, Economy 21, Build 24, UI 26), así que el hueco a la
+  toma el nombre más ancho de esa pestaña + `: ` (#755). Terrain usa la suya (10: Seed, Water,
+  Mountain) y cada sección la suya (Game 14, Economy 21, Build 24, UI 26), así que el hueco a la
   izquierda de los valores se recorta en todas las páginas. `fieldUnit()` da la unidad completa
   (`%`, `°`, `cells`, `ticks`). Las filas usan `rowLayout()` (spacing 0): sin el hueco de una
   columna que `LinearLayout` mete por defecto, el widget cae exactamente en la columna (semilla y
-  sliders de Terrain coinciden en la 12, #757). La columna (`ScrollColumn`) se desplaza siguiendo
+  sliders de Terrain coinciden en la 10, #757). La columna (`ScrollColumn`) se desplaza siguiendo
   el foco (Tab/flechas) y marca la posición con una barra fina en el borde derecho cuando hay
   desbordamiento. El cuerpo entero se indenta una columna (`LEFT_MARGIN_COLUMNS`, #757).
 - Campos numéricos → `ValidatingTextBox`; booleanos → `CheckBox`.
@@ -141,15 +141,12 @@ Los acentos propios (mnemónicos, slider, barra, preview y tooltip) siguen pint�
   anterior + tooltip, colores del terreno, atajos por letra, ciclo Ctrl+Tab, reemplazo al teclear y
   tema oscuro), `TerminalPaletteTest` (incluye el modo del terminal expuesto),
   `TerminalPresenterNewGameTest` (portada → menú → partida, confirmación, cancelar, consola).
-- `ui-graphic`: `Gdx3DHudFileMenuTest` fija las palabras/estados del menú 3D (New habilitado,
-  Settings con «3D parity slice»), `GraphicPresenterBootTest` el arranque interactivo (portada →
-  menú → partida, cancelación a portada).
+- `ui-graphic`: `Gdx3DHudFileMenuTest` fija las palabras/estados del menú 3D (New y Settings
+  habilitados en partida, deshabilitados en portada con `no game in progress`),
+  `GraphicPresenterBootTest` el arranque interactivo (portada → menú → partida, cancelación a
+  portada), `Gdx3DHudSettingsTest`/`GraphicPresenterSettingsTest` el diálogo Settings 3D (#778).
 
 ## Pendiente (otras rebanadas)
 
-- **S3**: diálogo Settings en partida con estados 🟢/🟡/🔴 y «empezar nueva partida con estos
-  valores».
-- **S4**: paridad 3D. S4a (#777) ya trae el arranque interactivo y el diálogo de Nueva Partida V1
-  (semilla + sliders de terreno y validación en línea); S4b (#778) traerá el diálogo Settings 3D y
-  S4c las pestañas del catálogo, el preview y la barra.
+- **S4c**: pestañas del catálogo, preview y barra del formulario de Nueva Partida 3D.
 - **#417**: flujo completo Guardar/Descartar/Cancelar en lugar de la confirmación simple.

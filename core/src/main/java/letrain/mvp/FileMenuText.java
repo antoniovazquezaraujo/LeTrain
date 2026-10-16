@@ -13,8 +13,8 @@ import letrain.utils.ValidationUtils;
  * exists. At the boot menu (cover dismissed, no game yet) {@code Save} and {@code Settings} are
  * disabled with their reason (D8: one contextual menu, no auto-start; S3b: settings need a running
  * game). Since S4 (#777) the 3D client reaches the same boot flow: {@code New} is enabled and opens
- * the 3D New Game dialog, while {@code Settings} stays disabled with the parity reason until S4b.
- * {@code Load} works and {@code Quit} replaces the old direct {@code Esc} exit.
+ * the 3D New Game dialog, and since S4b (#778) {@code Settings} is enabled in-game with the shared
+ * 3D Settings dialog. {@code Load} works and {@code Quit} replaces the old direct {@code Esc} exit.
  */
 public final class FileMenuText {
 
@@ -37,8 +37,6 @@ public final class FileMenuText {
         }
     }
 
-    /** Reason shown while the 3D client waits for the parity slice (S4). */
-    public static final String PARITY_LOCK_REASON = "3D parity slice";
     /**
      * Reason shown on {@code Save}/{@code Settings} at the boot menu: there is no running game to
      * save or configure yet (D8, S3b).
@@ -68,13 +66,14 @@ public final class FileMenuText {
         }
 
         /**
-         * 3D client state since S4 (#777): {@code New} is enabled and opens the 3D New Game dialog;
-         * {@code Settings} stays visible but disabled with {@link #PARITY_LOCK_REASON} until S4b.
-         * {@code hasGame} is false at the boot menu (cover dismissed, no game started yet), so
-         * {@code Save} is disabled with {@link #SAVE_NO_GAME_REASON}, exactly like 2D.
+         * 3D client state since S4 (#777)/S4b (#778): {@code New} is enabled and opens the 3D New
+         * Game dialog, {@code Settings} is enabled with a running game and opens the 3D Settings
+         * dialog. {@code hasGame} is false at the boot menu (cover dismissed, no game started yet),
+         * so {@code Save} and {@code Settings} are disabled with {@link #SAVE_NO_GAME_REASON},
+         * exactly like 2D.
          */
         public static MenuState graphic(boolean hasGame) {
-            return new MenuState(hasGame, true, "", false, PARITY_LOCK_REASON);
+            return new MenuState(hasGame, true, "", hasGame, SAVE_NO_GAME_REASON);
         }
     }
 

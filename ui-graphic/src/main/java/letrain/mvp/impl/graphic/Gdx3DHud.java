@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Colors;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.Texture.TextureFilter;
@@ -14,6 +15,7 @@ import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Cell;
+import com.badlogic.gdx.scenes.scene2d.ui.CheckBox;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
@@ -26,17 +28,22 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextField;
 import com.badlogic.gdx.scenes.scene2d.ui.Tree;
 import com.badlogic.gdx.scenes.scene2d.ui.WidgetGroup;
 import com.badlogic.gdx.scenes.scene2d.ui.Window;
+import com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener.ChangeEvent;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Random;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
+import letrain.ground.TerrainPreview;
 import letrain.itinerary.Punctuality;
 import letrain.mvp.EditorText;
 import letrain.mvp.FileMenuText;
@@ -44,7 +51,14 @@ import letrain.mvp.MenuText;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameModeMenuOption;
 import letrain.mvp.NewGameText;
+import letrain.mvp.SettingsText;
+import letrain.palette.VisualPalette;
 import letrain.settings.NewGameForm;
+import letrain.settings.SettingCategory;
+import letrain.settings.SettingDefinition;
+import letrain.settings.SettingFieldState;
+import letrain.settings.SettingValueType;
+import letrain.settings.SettingsApplyResult;
 import letrain.settings.SettingsCatalog;
 import letrain.utils.FontManager;
 import letrain.vehicle.rail.impl.Locomotive;
@@ -59,6 +73,12 @@ public class Gdx3DHud {
      * the terminal's {@code TextColor}s.
      */
     static final Color SELECTED_BG = new Color(0f, 0f, 0.67f, 1f);
+
+    /**
+     * Tint that greys out the read-only Terrain controls (seed field and water/mountain sliders) on
+     * the Settings dialog, so they read as non-editable like the 2D block (#767).
+     */
+    private static final Color DISABLED_TINT = new Color(0.6f, 0.6f, 0.6f, 1f);
     private static final String ENABLED_MARKUP = "[WHITE]";
     private static final String DISABLED_MARKUP = "[GRAY]";
     private static final String HOTKEY_MARKUP = "[GREEN]";
@@ -127,6 +147,7 @@ public class Gdx3DHud {
     private boolean fileMenuOpen;
     private boolean confirmDialogOpen;
     private boolean newGameDialogOpen;
+    private boolean settingsDialogOpen;
     private Table coverTable;
 
     /** Cover capture bundled with the game (copying-core resources onto the classpath). */
@@ -224,6 +245,18 @@ public class Gdx3DHud {
         textButtonStyle.overFontColor = Color.WHITE;
         textButtonStyle.checkedFontColor = Color.WHITE;
         skin.add("default", textButtonStyle);
+
+        // Focused variant (S4b feedback, #780): the focused button swaps to this style so the
+        // highlight is a background block (SELECTED_BG) with white text, never a text colour swap.
+        // Shared by the File menu, the confirmation dialog, the New Game dialog and the Settings
+        // footer.
+        TextButton.TextButtonStyle focusedButtonStyle =
+                new TextButton.TextButtonStyle(textButtonStyle);
+        focusedButtonStyle.up = skin.newDrawable("white", SELECTED_BG);
+        focusedButtonStyle.over = skin.newDrawable("white", new Color(0.15f, 0.28f, 0.85f, 1f));
+        focusedButtonStyle.fontColor = Color.WHITE;
+        focusedButtonStyle.overFontColor = Color.WHITE;
+        skin.add("focused", focusedButtonStyle);
 
         // Toggle Button Style (IDE Panels)
         TextButton.TextButtonStyle toggleStyle = new TextButton.TextButtonStyle();
@@ -380,13 +413,37 @@ public class Gdx3DHud {
         textFieldStyle.selection = skin.newDrawable("white", Color.BLUE);
         skin.add("default", textFieldStyle);
 
-        // Slider style for the New Game dialog terrain proportions (S4, #777). The code-built skin
-        // has no slider yet; the track/knob reuse the "white" pixel with the dialog accent colour.
+        // Slider style shared by the New Game terrain proportions (S4, #777) and the read-only
+        // Terrain page of the in-game Settings (S4b, #778). The skin's "white" is a 1x1 pixel with
+        // no minimum size, so the bare drawables collapsed to "needles"; the explicit minimums and
+        // the round knob give the track real thickness. The disabled variants paint the read-only
+        // Terrain sliders grey without the setColor(DISABLED_TINT) hack.
         Slider.SliderStyle sliderStyle = new Slider.SliderStyle();
-        sliderStyle.background = skin.newDrawable("white", new Color(0.2f, 0.2f, 0.2f, 1f));
-        sliderStyle.knob = skin.newDrawable("white", new Color(0.29f, 0.65f, 1f, 1f));
-        sliderStyle.knobBefore = skin.newDrawable("white", new Color(0.29f, 0.65f, 1f, 0.45f));
+        sliderStyle.background = sliderTrack(skin, new Color(0.2f, 0.2f, 0.2f, 1f));
+        sliderStyle.knobBefore = sliderTrack(skin, new Color(0.29f, 0.65f, 1f, 0.45f));
+        sliderStyle.knob = sliderKnob(new Color(0.29f, 0.65f, 1f, 1f));
+        sliderStyle.disabledBackground = sliderTrack(skin, new Color(0.35f, 0.35f, 0.35f, 1f));
+        sliderStyle.disabledKnobBefore = sliderTrack(skin, new Color(0.5f, 0.5f, 0.5f, 0.45f));
+        sliderStyle.disabledKnob = sliderKnob(new Color(0.5f, 0.5f, 0.5f, 1f));
         skin.add("default-horizontal", sliderStyle);
+
+        // Focused variant of the slider (S4b feedback, #780): same track, cyan knob, so the
+        // focused slider reads as selected without changing the geometry.
+        Slider.SliderStyle focusedSliderStyle = new Slider.SliderStyle(sliderStyle);
+        focusedSliderStyle.knob = sliderKnob(Color.CYAN);
+        skin.add("focused-horizontal", focusedSliderStyle);
+
+        // CheckBox style for the boolean settings (S4b, #778): a 26x26 square, hand-drawn off/on
+        // (dark square with a light border, on adds the accent check) plus grey disabled variants.
+        CheckBox.CheckBoxStyle checkBoxStyle = new CheckBox.CheckBoxStyle();
+        checkBoxStyle.font = skin.getFont("default");
+        checkBoxStyle.fontColor = Color.WHITE;
+        checkBoxStyle.disabledFontColor = Color.GRAY;
+        checkBoxStyle.checkboxOff = checkboxDrawable(false, false);
+        checkBoxStyle.checkboxOn = checkboxDrawable(true, false);
+        checkBoxStyle.checkboxOffDisabled = checkboxDrawable(false, true);
+        checkBoxStyle.checkboxOnDisabled = checkboxDrawable(true, true);
+        skin.add("default", checkBoxStyle);
 
         // ScrollPane Style
         ScrollPane.ScrollPaneStyle scrollPaneStyle = new ScrollPane.ScrollPaneStyle();
@@ -495,6 +552,65 @@ public class Gdx3DHud {
         applyHelpLevel();
     }
 
+    /**
+     * Track/base segment of the sliders: the shared "white" pixel with an explicit minimum height
+     * so the 1x1 drawable does not collapse to a needle (#778).
+     */
+    private static Drawable sliderTrack(Skin skin, Color color) {
+        BaseDrawable track = (BaseDrawable) skin.newDrawable("white", color);
+        track.setMinHeight(8f);
+        return track;
+    }
+
+    /**
+     * Round knob of the sliders: a 24x24 filled disc in {@code color}, kept square via equal
+     * minimums so Scene2D never deforms it into an ellipse (#778).
+     */
+    private static Drawable sliderKnob(Color color) {
+        Pixmap pixmap = new Pixmap(24, 24, Pixmap.Format.RGBA8888);
+        pixmap.setColor(color);
+        pixmap.fillCircle(12, 12, 11);
+        Texture texture = new Texture(pixmap);
+        pixmap.dispose();
+        TextureRegionDrawable knob = new TextureRegionDrawable(new TextureRegion(texture));
+        knob.setMinWidth(24f);
+        knob.setMinHeight(24f);
+        return knob;
+    }
+
+    /**
+     * Checkbox square for the boolean settings: a dark square with a light border; the checked
+     * variant adds the accent tick, the disabled ones grey everything out (#778).
+     */
+    private static Drawable checkboxDrawable(boolean checked, boolean disabled) {
+        int size = 26;
+        Color fill =
+                disabled ? new Color(0.18f, 0.18f, 0.18f, 1f) : new Color(0.15f, 0.15f, 0.15f, 1f);
+        Color border =
+                disabled ? new Color(0.45f, 0.45f, 0.45f, 1f) : new Color(0.7f, 0.7f, 0.7f, 1f);
+        Color accent = disabled ? new Color(0.5f, 0.5f, 0.5f, 1f) : new Color(0.29f, 0.65f, 1f, 1f);
+        Pixmap pixmap = new Pixmap(size, size, Pixmap.Format.RGBA8888);
+        pixmap.setColor(fill);
+        pixmap.fill();
+        pixmap.setColor(border);
+        pixmap.drawRectangle(0, 0, size, size);
+        pixmap.drawRectangle(1, 1, size - 2, size - 2);
+        if (checked) {
+            // Two-stroke tick: short down-right leg into a long up-right leg, doubled for weight.
+            pixmap.setColor(accent);
+            pixmap.drawLine(6, 14, 11, 19);
+            pixmap.drawLine(7, 14, 12, 19);
+            pixmap.drawLine(11, 19, 20, 8);
+            pixmap.drawLine(11, 18, 20, 7);
+        }
+        Texture texture = new Texture(pixmap);
+        pixmap.dispose();
+        TextureRegionDrawable square = new TextureRegionDrawable(new TextureRegion(texture));
+        square.setMinWidth(size);
+        square.setMinHeight(size);
+        return square;
+    }
+
     /** Adds the bottom strip columns in {@link #STRIP_COLUMNS} order. */
     private static void addStripColumns(Table strip, Table labelArea, Table statusArea) {
         for (StripColumn column : STRIP_COLUMNS) {
@@ -558,6 +674,24 @@ public class Gdx3DHud {
         } else if (cell.getActor() != null) {
             cell.setActor(null);
         }
+    }
+
+    /**
+     * Swaps a button between the normal and the focused (SELECTED_BG background) styles. Used by
+     * every 3D dialog so the focused control is highlighted with a background block, never a text
+     * colour change (owner feedback S4b, #780).
+     */
+    private void paintButtonFocus(TextButton button, boolean focused) {
+        button.setStyle(
+                skin.get(focused ? "focused" : "default", TextButton.TextButtonStyle.class));
+    }
+
+    /**
+     * Swaps a slider between the normal and the focused (cyan knob) styles (S4b feedback, #780).
+     */
+    private void paintSliderFocus(Slider slider, boolean focused) {
+        slider.setStyle(skin.get(focused ? "focused-horizontal" : "default-horizontal",
+                Slider.SliderStyle.class));
     }
 
     /**
@@ -1074,7 +1208,7 @@ public class Gdx3DHud {
             final Runnable paintFocus = () -> {
                 Actor focused = stage.getKeyboardFocus();
                 for (TextButton button : focusable) {
-                    button.getLabel().setColor(focused == button ? Color.CYAN : Color.WHITE);
+                    paintButtonFocus(button, focused == button);
                 }
             };
             InputListener navigation = new InputListener() {
@@ -1085,8 +1219,9 @@ public class Gdx3DHud {
                             || keycode == Input.Keys.RIGHT) {
                         Actor focused = stage.getKeyboardFocus();
                         int index = focusable.indexOf(focused);
-                        int step =
-                                (keycode == Input.Keys.UP || keycode == Input.Keys.LEFT) ? -1 : 1;
+                        // Shift+Tab walks the ring backwards, like Shift+Up/Shift+Left.
+                        int step = (keycode == Input.Keys.UP || keycode == Input.Keys.LEFT
+                                || (keycode == Input.Keys.TAB && isShiftPressed())) ? -1 : 1;
                         int next = Math.floorMod(index + step, focusable.size());
                         stage.setKeyboardFocus(focusable.get(next));
                         paintFocus.run();
@@ -1158,9 +1293,13 @@ public class Gdx3DHud {
                     close.run();
                     view.showSaveDialog();
                 };
+            case SETTINGS:
+                return () -> {
+                    close.run();
+                    view.onSettings();
+                };
             case QUIT:
                 return () -> Gdx.app.exit();
-            case SETTINGS:
             default:
                 return () -> {
                 };
@@ -1184,6 +1323,18 @@ public class Gdx3DHud {
      */
     public void showConfirmDialog(String title, String messageText, String confirmLabel,
             Runnable onConfirm) {
+        showConfirmDialog(title, messageText, confirmLabel, onConfirm, null);
+    }
+
+    /**
+     * Modal yes/no confirmation with an optional cancel callback (S4b, #778): the Settings dialog
+     * uses it to keep the keyboard focus on its own form when the player dismisses the
+     * confirmation. Same keyboard navigation as the File menu (Tab/arrows move the focus,
+     * Enter/Space activate the focused button, Esc cancels); the dialog swallows the rest of the
+     * keys while open. Only one of the two callbacks runs.
+     */
+    public void showConfirmDialog(String title, String messageText, String confirmLabel,
+            Runnable onConfirm, Runnable onCancel) {
         if (confirmDialogOpen) {
             return;
         }
@@ -1227,10 +1378,8 @@ public class Gdx3DHud {
             // rest of the keys while open.
             final Runnable paintFocus = () -> {
                 Actor focused = stage.getKeyboardFocus();
-                confirmButton.getLabel()
-                        .setColor(focused == confirmButton ? Color.CYAN : Color.WHITE);
-                cancelButton.getLabel()
-                        .setColor(focused == cancelButton ? Color.CYAN : Color.WHITE);
+                paintButtonFocus(confirmButton, focused == confirmButton);
+                paintButtonFocus(cancelButton, focused == cancelButton);
             };
             InputListener navigation = new InputListener() {
                 @Override
@@ -1265,7 +1414,11 @@ public class Gdx3DHud {
                     blocker.remove();
                     dialog.hide(null);
                     if (confirmed) {
-                        onConfirm.run();
+                        if (onConfirm != null) {
+                            onConfirm.run();
+                        }
+                    } else if (onCancel != null) {
+                        onCancel.run();
                     }
                 }
             };
@@ -1324,8 +1477,9 @@ public class Gdx3DHud {
             final TextField seedField = new TextField(form.value(NewGameForm.SEED_KEY), skin);
             // The dialog owns Tab/arrow navigation, so the field must not consume Tab itself.
             seedField.setFocusTraversal(false);
-            seedField.setTextFieldListener((field, c) -> form.setSeed(field.getText()));
-            final TextButton newSeedButton = new TextButton(NewGameText.NEW_SEED, skin);
+            // LWJGL3 synthesises keyTyped('\t') on Tab and hasGlyph lies for the missing glyph: a
+            // plain field would type the "?" placeholder, so only accept printable characters.
+            seedField.setTextFieldFilter((f, c) -> c >= 32);
 
             final Slider waterSlider =
                     new Slider(0, SettingsCatalog.MAX_TERRAIN_PERCENT, 1, false, skin);
@@ -1340,12 +1494,24 @@ public class Gdx3DHud {
             validation.setColor(new Color(1f, 0.4f, 0.4f, 1f));
             validation.setWrap(true);
 
-            newSeedButton.addListener(new ChangeListener() {
-                @Override
-                public void changed(ChangeEvent event, Actor actor) {
-                    int seed = NewGameForm.nextSeed(new Random());
-                    form.setSeed(String.valueOf(seed));
-                    seedField.setText(String.valueOf(seed));
+            // Live terrain block: the three-colour 100 % bar and the map preview refresh on every
+            // slider move and on every valid seed edit (2D parity), reusing the Settings helpers
+            // and the shared TerrainPreviewView.
+            final Table bar = terrainBarTable(form.waterPercent(), form.mountainPercent());
+            final TerrainPreviewView preview = new TerrainPreviewView();
+            preview.setValues(form.seed(), form.waterPercent(), form.mountainPercent());
+            final Runnable refreshTerrain = () -> {
+                updateTerrainBar(bar, form.waterPercent(), form.mountainPercent());
+                preview.setValues(form.seed(), form.waterPercent(), form.mountainPercent());
+            };
+
+            seedField.setTextFieldListener((field, c) -> {
+                int previous = form.seed();
+                form.setSeed(field.getText());
+                // Keep the last valid seed for the preview when the text does not parse (form
+                // ignores the malformed value); only repaint when the seed actually moved.
+                if (form.seed() != previous) {
+                    refreshTerrain.run();
                 }
             });
             waterSlider.addListener(new ChangeListener() {
@@ -1356,6 +1522,7 @@ public class Gdx3DHud {
                     // The cross-field rule may have clamped the mountain side: refresh it too.
                     mountainSlider.setValue(form.mountainPercent());
                     mountainValue.setText(form.mountainPercent() + " %");
+                    refreshTerrain.run();
                 }
             });
             mountainSlider.addListener(new ChangeListener() {
@@ -1365,25 +1532,38 @@ public class Gdx3DHud {
                     mountainValue.setText(form.mountainPercent() + " %");
                     waterSlider.setValue(form.waterPercent());
                     waterValue.setText(form.waterPercent() + " %");
+                    refreshTerrain.run();
                 }
             });
+
+            final float labelWidth = 90f;
+            final float valueWidth = 80f;
 
             Table content = dialog.getContentTable();
             content.pad(24, 48, 8, 48);
             content.defaults().space(12);
-            content.add(new Label(NewGameText.SEED_LABEL, skin, "small")).left();
-            content.add(seedField).width(240f).height(38f);
-            content.add(newSeedButton).width(120f).height(38f);
-            content.row();
-            content.add(new Label(NewGameText.WATER_LABEL, skin, "small")).left();
-            content.add(waterSlider).width(280f);
-            content.add(waterValue).width(80f).left();
-            content.row();
-            content.add(new Label(NewGameText.MOUNTAIN_LABEL, skin, "small")).left();
-            content.add(mountainSlider).width(280f);
-            content.add(mountainValue).width(80f).left();
-            content.row();
-            content.add(validation).colspan(3).width(520f).left();
+            Table block = new Table();
+            block.top().left();
+            block.defaults().space(6);
+
+            Table seedRow = new Table();
+            seedRow.left();
+            seedRow.add(new Label(NewGameText.SEED_LABEL, skin, "small")).width(labelWidth).left();
+            seedRow.add(seedField).width(280f).height(38f).left();
+            block.add(seedRow).left().row();
+
+            block.add(terrainSliderRow(NewGameText.WATER_LABEL, waterSlider, waterValue, labelWidth,
+                    valueWidth)).left().row();
+            block.add(terrainSliderRow(NewGameText.MOUNTAIN_LABEL, mountainSlider, mountainValue,
+                    labelWidth, valueWidth)).left().row();
+
+            // Bar under the sliders, then a gap and the map: same order as the 2D terrain block.
+            block.add(bar).left().padLeft(labelWidth).row();
+            block.add().height(8f).row();
+            block.add(preview).left().padLeft(labelWidth).row();
+
+            content.add(block).left().row();
+            content.add(validation).width(520f).left();
 
             final TextButton startButton = new TextButton(NewGameText.START, skin);
             final TextButton cancelButton = new TextButton(NewGameText.CANCEL, skin);
@@ -1393,13 +1573,24 @@ public class Gdx3DHud {
             dialog.getButtonTable().add(startButton);
             dialog.getButtonTable().add(cancelButton);
 
-            final List<Actor> focusable = List.of(seedField, newSeedButton, waterSlider,
-                    mountainSlider, startButton, cancelButton);
+            final List<Actor> focusable =
+                    List.of(seedField, waterSlider, mountainSlider, startButton, cancelButton);
+
+            // Focus highlight (owner feedback S4b): sliders swap to the cyan-knob style and the
+            // Start/Cancel buttons to the SELECTED_BG background. Refreshed after every navigation.
+            final Runnable paintNewGameFocus = () -> {
+                Actor focused = stage.getKeyboardFocus();
+                paintSliderFocus(waterSlider, focused == waterSlider);
+                paintSliderFocus(mountainSlider, focused == mountainSlider);
+                paintButtonFocus(startButton, focused == startButton);
+                paintButtonFocus(cancelButton, focused == cancelButton);
+            };
 
             final Runnable finish = () -> {
                 newGameDialogOpen = false;
                 blocker.remove();
                 dialog.hide(null);
+                preview.dispose();
             };
             final Runnable start = () -> {
                 try {
@@ -1447,13 +1638,16 @@ public class Gdx3DHud {
                         return true;
                     }
                     if (keycode == Input.Keys.TAB || keycode == Input.Keys.UP
-                            || keycode == Input.Keys.DOWN || keycode == Input.Keys.LEFT
-                            || keycode == Input.Keys.RIGHT) {
+                            || keycode == Input.Keys.DOWN
+                            || ((keycode == Input.Keys.LEFT || keycode == Input.Keys.RIGHT)
+                                    && !(focused instanceof TextField))) {
                         int index = focusable.indexOf(focused);
-                        int step =
-                                (keycode == Input.Keys.UP || keycode == Input.Keys.LEFT) ? -1 : 1;
+                        // Shift+Tab walks the ring backwards, like Shift+Up/Shift+Left.
+                        int step = (keycode == Input.Keys.UP || keycode == Input.Keys.LEFT
+                                || (keycode == Input.Keys.TAB && isShiftPressed())) ? -1 : 1;
                         int next = Math.floorMod(index + step, focusable.size());
-                        stage.setKeyboardFocus(focusable.get(next));
+                        focusAndSelect(focusable.get(next));
+                        paintNewGameFocus.run();
                         return true;
                     }
                     if (keycode == Input.Keys.ENTER || keycode == Input.Keys.NUMPAD_ENTER) {
@@ -1465,10 +1659,6 @@ public class Gdx3DHud {
                             cancel.run();
                             return true;
                         }
-                        if (focused == newSeedButton) {
-                            newSeedButton.fire(new ChangeEvent());
-                            return true;
-                        }
                         return false;
                     }
                     if (keycode == Input.Keys.SPACE) {
@@ -1478,10 +1668,6 @@ public class Gdx3DHud {
                         }
                         if (focused == cancelButton) {
                             cancel.run();
-                            return true;
-                        }
-                        if (focused == newSeedButton) {
-                            newSeedButton.fire(new ChangeEvent());
                             return true;
                         }
                         // In the seed field a space is a character; let it type.
@@ -1505,15 +1691,941 @@ public class Gdx3DHud {
             dialog.padTop(46);
             dialog.pack();
             dialog.setWidth(Math.max(dialog.getWidth(), 640f));
-            dialog.setHeight(Math.max(dialog.getHeight(), 420f));
+            dialog.setHeight(Math.max(dialog.getHeight(), 460f));
             dialog.setPosition((stage.getWidth() - dialog.getWidth()) / 2,
                     (stage.getHeight() - dialog.getHeight()) / 2);
 
             stage.addActor(blocker);
             stage.addActor(dialog);
-            stage.setKeyboardFocus(seedField);
-            seedField.setCursorPosition(seedField.getText().length());
+            // The seed field starts focused with its whole value selected, so the first keystroke
+            // replaces the drawn seed, like the 2D dialog's select-on-focus (#757).
+            focusAndSelect(seedField);
+            paintNewGameFocus.run();
         });
+    }
+
+    /** Apply-state glyph shared with the 2D Settings dialog (#764). */
+    static final String SETTINGS_GLYPH = "●";
+
+    /** Form sections of the Settings dialog, in the shared order. */
+    private static final List<SettingCategory> SETTINGS_CATEGORIES =
+            List.of(SettingCategory.TERRAIN, SettingCategory.WORLD, SettingCategory.ECONOMY,
+                    SettingCategory.CONSTRUCTION, SettingCategory.UI);
+
+    /** Ids of the five Settings footer actions, single-sourced with their labels and mnemonics. */
+    static final String APPLY_ID = "apply";
+    static final String RESTORE_ID = "restore";
+    static final String NEW_GAME_ID = "newGame";
+    static final String SAVE_DEFAULTS_ID = "saveDefaults";
+    static final String CLOSE_ID = "close";
+
+    /** One footer action of the 3D Settings dialog: its id, label and Alt mnemonic (2D parity). */
+    record SettingsAction(String id, String label, char mnemonic) {
+    }
+
+    /** The five actions, in display order (`Alt+A/R/N/S/C`), mirroring 2D (#780). */
+    static final List<SettingsAction> SETTINGS_ACTIONS =
+            List.of(new SettingsAction(APPLY_ID, SettingsText.APPLY, 'A'),
+                    new SettingsAction(RESTORE_ID, SettingsText.RESTORE, 'R'),
+                    new SettingsAction(NEW_GAME_ID, SettingsText.NEW_GAME, 'N'),
+                    new SettingsAction(SAVE_DEFAULTS_ID, SettingsText.SAVE_DEFAULTS, 'S'),
+                    new SettingsAction(CLOSE_ID, SettingsText.CLOSE, 'C'));
+
+    /** Letter of the Alt shortcut of a tab: the first letter of its name ({@code T/G/E/B/U}). */
+    static char settingsTabLetter(SettingCategory category) {
+        return Character.toUpperCase(category.displayName().charAt(0));
+    }
+
+    /**
+     * Tab selected by an Alt access key: its letter ({@code T/G/E/B/U}, case-insensitive), empty
+     * for any other key. Mirror of the 2D {@code NewGameDialog.tabHotkey} (#780).
+     */
+    static Optional<SettingCategory> settingsTabHotkey(char key) {
+        char letter = Character.toLowerCase(key);
+        for (SettingCategory category : SETTINGS_CATEGORIES) {
+            if (letter == Character.toLowerCase(settingsTabLetter(category))) {
+                return Optional.of(category);
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Tab that follows (or precedes, when {@code reverse}) {@code active} in the tab order,
+     * wrapping around. Pure maths for the Ctrl+Tab / Ctrl+Shift+Tab cycle (#780).
+     */
+    static SettingCategory settingsCycleTab(SettingCategory active, boolean reverse) {
+        int index = active == null ? -1 : SETTINGS_CATEGORIES.indexOf(active);
+        if (index < 0) {
+            return SETTINGS_CATEGORIES.get(0);
+        }
+        int step = reverse ? -1 : 1;
+        return SETTINGS_CATEGORIES.get(Math.floorMod(index + step, SETTINGS_CATEGORIES.size()));
+    }
+
+    /**
+     * Label with its Alt mnemonic highlighted, e.g. {@code "[GREEN]A[]pply"} (the 3D counterpart of
+     * the 2D {@code mnemonicRenderer}). The first occurrence of {@code mnemonic} (case-insensitive)
+     * is painted green; a label without the letter is returned unchanged.
+     */
+    static String settingsHotkeyLabel(String label, char mnemonic) {
+        int index = -1;
+        for (int i = 0; i < label.length(); i++) {
+            if (Character.toLowerCase(label.charAt(i)) == Character.toLowerCase(mnemonic)) {
+                index = i;
+                break;
+            }
+        }
+        if (index < 0) {
+            return label;
+        }
+        return label.substring(0, index) + HOTKEY_MARKUP + label.charAt(index) + MARKUP_RESET
+                + label.substring(index + 1);
+    }
+
+    /** Sample grid of the Terrain page preview: covers the calibration window, square (#778). */
+    static final int TERRAIN_PREVIEW_CELLS = 88;
+    /** Render scale of one preview cell, in pixels (2x keeps the 1:1 world cells readable). */
+    static final int TERRAIN_PREVIEW_SCALE = 2;
+    /** Width of the three-colour 100 % bar, aligned under the terrain sliders (#778). */
+    static final int TERRAIN_BAR_WIDTH = 280;
+
+    /**
+     * Width of the state-glyph column, shared by the catalogue field rows and the Terrain page so
+     * every glyph lines up (#780).
+     */
+    static final float GLYPH_COLUMN_WIDTH = 24f;
+
+    /**
+     * Left gutter of every Settings page, equivalent to one 24px glyph column, so the 3D form keeps
+     * the 2D {@code NewGameDialog.LEFT_MARGIN_COLUMNS = 1} indent (#780).
+     */
+    static final float SETTINGS_LEFT_GUTTER = 24f;
+
+    /**
+     * Width of the Terrain page seed box: roughly a third of the slider bar, matching the 2D
+     * 10-cell seed box instead of the old over-wide {@link #TERRAIN_BAR_WIDTH} (#780).
+     */
+    static final int TERRAIN_SEED_WIDTH = 140;
+
+    /** Port the 3D Settings dialog uses to reach the running game; the presenter implements it. */
+    public interface SettingsPort {
+        /** Applies the editable values and reports the rejections (S3a). */
+        SettingsApplyResult apply(Map<String, String> values);
+
+        /** Writes the values as {@code letrain.cfg} defaults; {@code null} on success. */
+        String saveDefaults(Map<String, String> values);
+    }
+
+    /** Form sections the 3D dialog offers, in display order (shared with 2D). */
+    static List<SettingCategory> settingsCategories() {
+        return SETTINGS_CATEGORIES;
+    }
+
+    /** Field state (scenario lock wins over the catalogue state) both clients show (#764). */
+    static SettingFieldState settingsFieldState(SettingDefinition definition,
+            Set<String> scenarioKeys) {
+        return SettingsCatalog.fieldState(definition, scenarioKeys);
+    }
+
+    /** Catalogue label with its unit, e.g. {@code Water (%)}. */
+    static String settingsFieldLabel(SettingDefinition definition) {
+        String unit = definition.unit();
+        return unit == null || unit.isBlank() ? definition.displayName()
+                : definition.displayName() + " (" + unit + ")";
+    }
+
+    /** Colour of the state glyph, mirroring the 2D {@code SettingsDialog.FieldState} palette. */
+    static Color settingsGlyphColor(SettingFieldState state) {
+        switch (state) {
+            case REAPPLY:
+                return Color.YELLOW;
+            case NEW_GAME:
+                return new Color(1f, 0.35f, 0.35f, 1f);
+            case SCENARIO:
+                return Color.GRAY;
+            default:
+                return Color.GREEN;
+        }
+    }
+
+    /** Markup names of the legend dots, registered from the row palette (#780). */
+    static final String LEGEND_LIVE_COLOR = "SETTINGS_LIVE";
+    static final String LEGEND_REAPPLY_COLOR = "SETTINGS_REAPPLY";
+    static final String LEGEND_NEW_GAME_COLOR = "SETTINGS_NEW_GAME";
+
+    static {
+        // libGDX's built-in markup "RED" is pure Color.RED (255,0,0), which reads differently from
+        // the row glyphs (1, 0.35, 0.35) on the dialog panel: register the exact row palette
+        // (#780).
+        Colors.put(LEGEND_LIVE_COLOR, settingsGlyphColor(SettingFieldState.LIVE));
+        Colors.put(LEGEND_REAPPLY_COLOR, settingsGlyphColor(SettingFieldState.REAPPLY));
+        Colors.put(LEGEND_NEW_GAME_COLOR, settingsGlyphColor(SettingFieldState.NEW_GAME));
+    }
+
+    /** Colour legend under the form; the scenario lock has no colour of its own (#767). */
+    static String settingsLegendMarkup() {
+        return "[" + LEGEND_LIVE_COLOR + "]" + SETTINGS_GLYPH + "[] " + SettingsText.LEGEND_LIVE
+                + "   [" + LEGEND_REAPPLY_COLOR + "]" + SETTINGS_GLYPH + "[] "
+                + SettingsText.LEGEND_REAPPLY + "   [" + LEGEND_NEW_GAME_COLOR + "]"
+                + SETTINGS_GLYPH + "[] " + SettingsText.LEGEND_NEW_GAME;
+    }
+
+    /**
+     * Segment widths {@code [water, field, mountain]} of the 100 % stacked bar (draw order): the
+     * largest-remainder algorithm is copied verbatim from the 2D {@code NewGameDialog} so both
+     * clients split the bar identically (#778). Every segment totals exactly {@code width} cells.
+     */
+    static int[] stackedBarWidths(int waterPercent, int mountainPercent, int width) {
+        int[] parts =
+                {waterPercent, Math.max(0, 100 - waterPercent - mountainPercent), mountainPercent};
+        int[] cells = new int[3];
+        int[] remainders = new int[3];
+        int used = 0;
+        for (int i = 0; i < 3; i++) {
+            cells[i] = parts[i] * width / 100;
+            remainders[i] = parts[i] * width % 100;
+            used += cells[i];
+        }
+        while (used < width) {
+            int best = 0;
+            for (int i = 1; i < 3; i++) {
+                if (remainders[i] > remainders[best]) {
+                    best = i;
+                }
+            }
+            cells[best]++;
+            remainders[best] = -1;
+            used++;
+        }
+        return cells;
+    }
+
+    /**
+     * Day-tone colour of a terrain segment for the Terrain page bar and preview: the world 3D
+     * palette at ratio 0 (day). Water and mountain match the 2D tones; the field green is the 3D
+     * board green (#778).
+     */
+    static Color terrainDayColor(VisualPalette.Token token) {
+        Color color = new Color();
+        Color.rgb888ToColor(color, new VisualPalette().color(token, 0.0));
+        // rgb888ToColor leaves the alpha of the (fresh) Color at 0, so without this the bar and the
+        // preview pixmap come out fully transparent (#780).
+        color.a = 1f;
+        return color;
+    }
+
+    /** Values of the editable fields (LIVE/REAPPLY, scenario lock included) from a form map. */
+    static Map<String, String> editableValues(Map<String, String> form, Set<String> scenarioKeys) {
+        Map<String, String> values = new LinkedHashMap<>();
+        for (SettingDefinition definition : SettingsCatalog.definitions()) {
+            if (form.containsKey(definition.key())
+                    && SettingsCatalog.fieldState(definition, scenarioKeys).editable()) {
+                values.put(definition.key(), form.get(definition.key()));
+            }
+        }
+        return values;
+    }
+
+    /**
+     * In-game Settings dialog (S4b, #778): the 3D counterpart of the 2D {@code SettingsDialog}. A
+     * category selector swaps the visible page; every catalogue field shows the shared apply-state
+     * glyph and is a text field while LIVE/REAPPLY (read-only label otherwise, never editable for
+     * NEW_GAME/scenario). The five actions keep the 2D semantics: Apply collects the editable
+     * values (confirming first when a REAPPLY field changed) and lists the rejections without
+     * closing; Restore resets to the baseline; New game closes and hands the whole form over; Save
+     * as defaults confirms and writes {@code letrain.cfg}; Close/Esc closes.
+     *
+     * @param currentSettings the running game's effective values (Restore baseline)
+     * @param scenarioKeys keys fixed by the scenario's {@code configuration { }} (locked)
+     * @param port applies values and writes defaults
+     * @param onNewGame receives the whole form when the player chooses New game
+     */
+    public void showSettingsDialog(Map<String, String> currentSettings, Set<String> scenarioKeys,
+            SettingsPort port, Consumer<Map<String, String>> onNewGame) {
+        if (settingsDialogOpen) {
+            return;
+        }
+        settingsDialogOpen = true;
+        Gdx.app.postRunnable(() -> {
+            final Actor blocker = new Actor();
+            blocker.setBounds(0, 0, stage.getWidth(), stage.getHeight());
+            blocker.addListener(new InputListener() {
+                @Override
+                public boolean touchDown(InputEvent event, float x, float y, int pointer,
+                        int button) {
+                    return true;
+                }
+            });
+
+            final Map<String, String> baseline = SettingsCatalog.overDefaults(currentSettings);
+            final Map<String, String> form = new LinkedHashMap<>(baseline);
+            final List<Actor> categoryFields = new ArrayList<>();
+            final List<Actor> focusable = new ArrayList<>();
+            final SettingCategory[] active = {SettingCategory.TERRAIN};
+            // Terrain page preview views, disposed when the page is swapped or the dialog closes
+            // (never touched on the other pages, which leave the list empty).
+            final List<TerrainPreviewView> terrainPreviews = new ArrayList<>();
+
+            final com.badlogic.gdx.scenes.scene2d.ui.Dialog dialog =
+                    new com.badlogic.gdx.scenes.scene2d.ui.Dialog(SettingsText.TITLE,
+                            skin.get("dialog", Window.WindowStyle.class));
+
+            final Label feedback = new Label("", skin, "small");
+            final Table fieldsTable = new Table();
+            fieldsTable.top().left();
+            fieldsTable.padLeft(SETTINGS_LEFT_GUTTER);
+            final ScrollPane fieldsScroll = new ScrollPane(fieldsTable, skin);
+            fieldsScroll.setFadeScrollBars(false);
+            final Map<SettingCategory, TextButton> categoryButtons = new LinkedHashMap<>();
+            final Table categoryBar = new Table();
+
+            // Footer buttons carry their Alt mnemonic in the label, like the 2D mnemonicRenderer.
+            final Map<String, TextButton> actionButtons = new LinkedHashMap<>();
+            for (SettingsAction action : SETTINGS_ACTIONS) {
+                actionButtons.put(action.id(), new TextButton(
+                        settingsHotkeyLabel(action.label(), action.mnemonic()), skin));
+            }
+            final List<TextButton> footerButtons = new ArrayList<>(actionButtons.values());
+            // The footer buttons and the boolean checkboxes have no caret of their own, so a
+            // focused button swaps to the SELECTED_BG background style and a focused checkbox is
+            // tinted cyan. Refreshed after navigating, after a page swap and when a confirmation
+            // hands the focus back (#778, #780).
+            final Runnable paintFooterFocus = () -> {
+                Actor focused = stage.getKeyboardFocus();
+                for (TextButton button : footerButtons) {
+                    paintButtonFocus(button, focused == button);
+                }
+                for (Actor widget : focusable) {
+                    if (widget instanceof CheckBox) {
+                        // The tint must go on the Image child: a Table's own colour does not
+                        // cascade to its children.
+                        ((CheckBox) widget).getImage()
+                                .setColor(focused == widget ? Color.CYAN : Color.WHITE);
+                    }
+                }
+            };
+
+            final Runnable close = () -> {
+                settingsDialogOpen = false;
+                blocker.remove();
+                dialog.hide(null);
+                disposeTerrainPreviews(terrainPreviews);
+            };
+
+            // Swaps the visible page and refreshes the Tab cycle: the fields of the active page
+            // plus the five footer buttons (the category selector stays out of it, like 2D #757).
+            // The Terrain page is the 2D read-only block (map, sliders, bar), not a field list.
+            final Consumer<SettingCategory> showCategory = category -> {
+                active[0] = category;
+                disposeTerrainPreviews(terrainPreviews);
+                if (category == SettingCategory.TERRAIN) {
+                    fillSettingsTerrain(fieldsTable, categoryFields, form, terrainPreviews,
+                            scenarioKeys);
+                } else {
+                    fillSettingsCategory(category, fieldsTable, categoryFields, form, scenarioKeys);
+                }
+                for (Map.Entry<SettingCategory, TextButton> entry : categoryButtons.entrySet()) {
+                    entry.getValue().setChecked(entry.getKey() == category);
+                }
+                focusable.clear();
+                focusable.addAll(categoryFields);
+                focusable.addAll(footerButtons);
+                fieldsScroll.setScrollY(0);
+                // Always pin the focus: with a null focus Stage sends keyDown to the root and this
+                // dialog never hears it, so on a field-less page (Terrain) Tab/Enter/Esc would be
+                // dead (#778). The footer always contributes five buttons.
+                focusAndSelect(categoryFields.isEmpty() ? focusable.get(0) : categoryFields.get(0));
+                paintFooterFocus.run();
+            };
+            for (SettingCategory category : SETTINGS_CATEGORIES) {
+                final TextButton tab = new TextButton(
+                        settingsHotkeyLabel(category.displayName(), settingsTabLetter(category)),
+                        skin, "toggle");
+                // ClickListener (not ChangeListener): showCategory re-syncs every tab's checked
+                // state, so reacting to ChangeEvent would ping-pong the programmatic setChecked
+                // back into this listener and recurse until StackOverflowError (#778). The
+                // selector is mouse-only (tabs stay out of the Tab cycle), so clicks are enough.
+                tab.addListener(new ClickListener() {
+                    @Override
+                    public void clicked(InputEvent event, float x, float y) {
+                        if (active[0] == category) {
+                            // Re-clicking the active tab must not refill/reset scroll: keep it
+                            // checked without re-triggering showCategory.
+                            tab.setChecked(true);
+                            return;
+                        }
+                        showCategory.accept(category);
+                    }
+                });
+                categoryButtons.put(category, tab);
+                categoryBar.add(tab).pad(4);
+            }
+
+            final Runnable applyAction = () -> {
+                Map<String, String> values = editableValues(form, scenarioKeys);
+                List<String> reapply = SettingsCatalog.changedReapplyKeys(baseline, values);
+                if (!reapply.isEmpty()) {
+                    Actor restoreFocus = stage.getKeyboardFocus();
+                    showConfirmDialog(SettingsText.REAPPLY_TITLE,
+                            SettingsText.reapplyMessage(reapply), SettingsText.APPLY, () -> {
+                                applyValues(port, baseline, feedback, values);
+                                focusAndSelect(restoreFocus);
+                                revealInScroll(restoreFocus, fieldsScroll, fieldsTable);
+                                paintFooterFocus.run();
+                            }, () -> {
+                                focusAndSelect(restoreFocus);
+                                revealInScroll(restoreFocus, fieldsScroll, fieldsTable);
+                                paintFooterFocus.run();
+                            });
+                } else {
+                    applyValues(port, baseline, feedback, values);
+                }
+            };
+            final Runnable restoreAction = () -> {
+                form.clear();
+                form.putAll(baseline);
+                showCategory.accept(active[0]);
+                feedback.setText(SettingsText.RESTORED);
+            };
+            final Runnable newGameAction = () -> {
+                Map<String, String> values = new LinkedHashMap<>(form);
+                close.run();
+                if (onNewGame != null) {
+                    onNewGame.accept(values);
+                }
+            };
+            final Runnable saveDefaultsAction = () -> {
+                Actor restoreFocus = stage.getKeyboardFocus();
+                showConfirmDialog(SettingsText.SAVE_DEFAULTS_TITLE,
+                        SettingsText.SAVE_DEFAULTS_CONFIRM, SettingsText.SAVE_DEFAULTS, () -> {
+                            String error = port.saveDefaults(new LinkedHashMap<>(form));
+                            feedback.setText(error == null ? SettingsText.SAVED_DEFAULTS
+                                    : SettingsText.SAVE_DEFAULTS_FAILED + error);
+                            focusAndSelect(restoreFocus);
+                            revealInScroll(restoreFocus, fieldsScroll, fieldsTable);
+                            paintFooterFocus.run();
+                        }, () -> {
+                            focusAndSelect(restoreFocus);
+                            revealInScroll(restoreFocus, fieldsScroll, fieldsTable);
+                            paintFooterFocus.run();
+                        });
+            };
+
+            Map<String, Runnable> actionRunnables = new LinkedHashMap<>();
+            actionRunnables.put(APPLY_ID, applyAction);
+            actionRunnables.put(RESTORE_ID, restoreAction);
+            actionRunnables.put(NEW_GAME_ID, newGameAction);
+            actionRunnables.put(SAVE_DEFAULTS_ID, saveDefaultsAction);
+            actionRunnables.put(CLOSE_ID, close);
+            for (SettingsAction action : SETTINGS_ACTIONS) {
+                actionButtons.get(action.id())
+                        .addListener(fireAction(actionRunnables.get(action.id())));
+            }
+            // Alt+letter access keys: the tabs (< T/G/E/B/U >) are checked first, then the five
+            // footer actions (A/R/N/S/C), like the 2D SettingsDialog.
+            final Map<Character, Runnable> hotkeyActions = new LinkedHashMap<>();
+            for (SettingsAction action : SETTINGS_ACTIONS) {
+                hotkeyActions.put(Character.toLowerCase(action.mnemonic()),
+                        actionRunnables.get(action.id()));
+            }
+
+            Table content = dialog.getContentTable();
+            content.pad(24, 40, 10, 40);
+            content.defaults().space(10);
+            content.add(categoryBar).left().row();
+            content.add(fieldsScroll).width(660f).height(340f).row();
+            content.add(new Label(settingsLegendMarkup(), skin, "small")).left().row();
+            content.add(feedback).left().row();
+
+            Table buttons = dialog.getButtonTable();
+            buttons.defaults().space(14).minWidth(150).minHeight(48);
+            for (TextButton button : footerButtons) {
+                buttons.add(button);
+            }
+
+            // Keyboard: Tab/arrows walk the active page's fields and the five buttons, Enter/Space
+            // activate a focused button, Esc closes. Text fields keep the left/right arrows for the
+            // caret and the space for typing. Alt+letter reaches a tab or action and Ctrl+Tab
+            // cycles the tabs, both like the 2D SettingsDialog.
+            dialog.addListener(new InputListener() {
+                @Override
+                public boolean keyDown(InputEvent event, int keycode) {
+                    Actor focused = stage.getKeyboardFocus();
+                    if (keycode == Input.Keys.TAB && isCtrlPressed()) {
+                        // Ctrl+Tab / Ctrl+Shift+Tab cycles the categories and never triggers the
+                        // normal Tab navigation.
+                        boolean reverse = isShiftPressed();
+                        showCategory.accept(settingsCycleTab(active[0], reverse));
+                        return true;
+                    }
+                    if (isAltPressed() && keycode >= Input.Keys.A && keycode <= Input.Keys.Z) {
+                        char letter = (char) ('A' + keycode - Input.Keys.A);
+                        Optional<SettingCategory> tab = settingsTabHotkey(letter);
+                        if (tab.isPresent()) {
+                            showCategory.accept(tab.get());
+                            return true;
+                        }
+                        Runnable action = hotkeyActions.get(Character.toLowerCase(letter));
+                        if (action != null) {
+                            action.run();
+                            return true;
+                        }
+                    }
+                    if (keycode == Input.Keys.TAB || keycode == Input.Keys.UP
+                            || keycode == Input.Keys.DOWN) {
+                        int step = (keycode == Input.Keys.UP
+                                || (keycode == Input.Keys.TAB && isShiftPressed())) ? -1 : 1;
+                        navigateSettingsFocus(step, focusable, fieldsScroll, fieldsTable);
+                        paintFooterFocus.run();
+                        return true;
+                    }
+                    if ((keycode == Input.Keys.LEFT || keycode == Input.Keys.RIGHT)
+                            && !(focused instanceof TextField)) {
+                        navigateSettingsFocus(keycode == Input.Keys.LEFT ? -1 : 1, focusable,
+                                fieldsScroll, fieldsTable);
+                        paintFooterFocus.run();
+                        return true;
+                    }
+                    if (keycode == Input.Keys.ENTER || keycode == Input.Keys.NUMPAD_ENTER
+                            || keycode == Input.Keys.SPACE) {
+                        // libGDX 1.14.2: CheckBox extends TextButton, so this branch must run
+                        // before the TextButton one (which only fires a ChangeEvent, no toggle).
+                        if (focused instanceof CheckBox) {
+                            // Toggling fires the ChangeListener, which keeps the form in sync.
+                            CheckBox checkBox = (CheckBox) focused;
+                            checkBox.setChecked(!checkBox.isChecked());
+                            return true;
+                        }
+                        if (focused instanceof TextButton) {
+                            ((TextButton) focused).fire(new ChangeEvent());
+                            return true;
+                        }
+                        return false;
+                    }
+                    if (keycode == Input.Keys.ESCAPE) {
+                        close.run();
+                        return true;
+                    }
+                    return false;
+                }
+
+                @Override
+                public boolean keyTyped(InputEvent event, char character) {
+                    // Never swallow: the active text fields must receive their characters.
+                    return false;
+                }
+            });
+
+            dialog.padTop(46);
+            dialog.pack();
+            dialog.setWidth(Math.max(dialog.getWidth(), 760f));
+            dialog.setHeight(Math.max(dialog.getHeight(), 620f));
+            dialog.setPosition((stage.getWidth() - dialog.getWidth()) / 2,
+                    (stage.getHeight() - dialog.getHeight()) / 2);
+
+            stage.addActor(blocker);
+            stage.addActor(dialog);
+            showCategory.accept(SettingCategory.TERRAIN);
+        });
+    }
+
+    /**
+     * Applies the collected values: rejections go to the message panel, success to the feedback.
+     */
+    private void applyValues(SettingsPort port, Map<String, String> baseline, Label feedback,
+            Map<String, String> values) {
+        SettingsApplyResult outcome = port.apply(values);
+        if (outcome.hasRejections()) {
+            feedback.setText("");
+            showMessage(SettingsText.REJECTED_TITLE,
+                    SettingsText.rejectedMessage(outcome.rejections()));
+        } else {
+            baseline.putAll(values);
+            feedback.setText(SettingsText.APPLIED);
+        }
+    }
+
+    /** Moves the keyboard focus through the active page, wrapping around, and reveals it. */
+    private void navigateSettingsFocus(int step, List<Actor> focusable, ScrollPane fieldsScroll,
+            Table content) {
+        if (focusable.isEmpty()) {
+            return;
+        }
+        int index = focusable.indexOf(stage.getKeyboardFocus());
+        int next = index < 0 ? 0 : Math.floorMod(index + step, focusable.size());
+        Actor target = focusable.get(next);
+        focusAndSelect(target);
+        revealInScroll(target, fieldsScroll, content);
+    }
+
+    /**
+     * Moves the keyboard focus and, on a text field, selects all its content so typing replaces it
+     * (#757). libGDX only selects all from its own {@code TextField.next()} traversal, which the
+     * custom navigation never triggers, so every focus move goes through here.
+     */
+    private void focusAndSelect(Actor target) {
+        stage.setKeyboardFocus(target);
+        if (target instanceof TextField) {
+            ((TextField) target).selectAll();
+        }
+    }
+
+    /**
+     * True when {@code focused} really lives inside {@code container}, so the ScrollPane can map
+     * its coordinates. A footer button belongs to the dialog's button table, not to the scroll
+     * pane, and {@link Actor#localToAscendantCoordinates} throws {@code IllegalArgumentException}
+     * for a non-descendant (libGDX 1.14.2): the guard keeps Tab onto the five footer buttons from
+     * scrolling — or crashing — the page. Package-visible to pin it headlessly (S4b feedback,
+     * #780).
+     */
+    static boolean isInsideScroll(Actor focused, Actor container) {
+        return focused != null && container != null && focused.isDescendantOf(container);
+    }
+
+    /**
+     * New scrollY (0 = top) that reveals the rect in the pane's content coordinates, keeping the
+     * current scroll when it is already visible. Package-visible to pin it headlessly (#780).
+     */
+    static float revealScrollY(float rectBottom, float rectHeight, float contentHeight,
+            float viewHeight, float scrollY) {
+        float windowTop = contentHeight - scrollY;
+        float windowBottom = windowTop - viewHeight;
+        if (rectBottom + rectHeight > windowTop) {
+            return contentHeight - (rectBottom + rectHeight);
+        }
+        if (rectBottom < windowBottom) {
+            return contentHeight - viewHeight - rectBottom;
+        }
+        return scrollY;
+    }
+
+    /**
+     * Scrolls {@code fieldsScroll} just enough to reveal {@code focused}, computing the scroll
+     * ourselves in the content's own coordinates: {@link ScrollPane#scrollTo} of libGDX 1.14.2
+     * clamps {@code [y + height, y + actorArea.height]} after its {@code maxY - y} flip, offsetting
+     * both ends by the focused widget's height (one row), so an upward move leaves the field just
+     * above the viewport (the bug the owner reported). Shared by focus navigation and the
+     * confirmation callbacks that hand the focus back (S4b feedback, #780). A focused actor outside
+     * the pane (e.g. a footer button) is skipped: it cannot be mapped into the pane's space.
+     */
+    private static void revealInScroll(Actor focused, ScrollPane fieldsScroll, Table content) {
+        if (!isInsideScroll(focused, fieldsScroll) || !isInsideScroll(focused, content)) {
+            return;
+        }
+        fieldsScroll.validate();
+        com.badlogic.gdx.math.Vector2 p =
+                focused.localToAscendantCoordinates(content, new com.badlogic.gdx.math.Vector2());
+        fieldsScroll.setScrollY(revealScrollY(p.y, focused.getHeight(), content.getHeight(),
+                fieldsScroll.getHeight(), fieldsScroll.getScrollY()));
+    }
+
+    /** True while either Alt key is held (Alt+letter access keys). */
+    private static boolean isAltPressed() {
+        return Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT)
+                || Gdx.input.isKeyPressed(Input.Keys.ALT_RIGHT);
+    }
+
+    /** True while either Ctrl key is held (Ctrl+Tab category cycle). */
+    private static boolean isCtrlPressed() {
+        return Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT)
+                || Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT);
+    }
+
+    /** True while either Shift key is held (reverse Ctrl+Tab). */
+    private static boolean isShiftPressed() {
+        return Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)
+                || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
+    }
+
+    /** Fills the page with one row per catalogue field of {@code category}, in catalogue order. */
+    private void fillSettingsCategory(SettingCategory category, Table fieldsTable,
+            List<Actor> categoryFields, Map<String, String> form, Set<String> scenarioKeys) {
+        fieldsTable.clear();
+        categoryFields.clear();
+        for (SettingDefinition definition : SettingsCatalog.definitions()) {
+            if (definition.category() == category) {
+                fieldsTable.add(settingsFieldRow(definition, scenarioKeys, form, categoryFields))
+                        .growX().left().padBottom(6).row();
+            }
+        }
+    }
+
+    /**
+     * Terrain page (#778): the 2D New Game terrain block (seed, water/mountain sliders,
+     * three-colour 100 % bar and the map preview) with the running world's parameters, read-only.
+     * Nothing here enters the Tab cycle (#767): the controls are disabled and
+     * {@code categoryFields} stays empty, so the dialog pins the focus to the footer instead.
+     */
+    private void fillSettingsTerrain(Table fieldsTable, List<Actor> categoryFields,
+            Map<String, String> form, List<TerrainPreviewView> previews, Set<String> scenarioKeys) {
+        fieldsTable.clear();
+        categoryFields.clear();
+
+        int seed = parseIntOr(form.get(NewGameForm.SEED_KEY), 0);
+        int water =
+                parseIntOr(form.get(NewGameForm.WATER_KEY), SettingsCatalog.DEFAULT_WATER_PERCENT);
+        int mountain = parseIntOr(form.get(NewGameForm.MOUNTAIN_KEY),
+                SettingsCatalog.DEFAULT_MOUNTAIN_PERCENT);
+
+        final float labelWidth = 90f;
+        final float valueWidth = 64f;
+
+        Table block = new Table();
+        block.top().left();
+        block.defaults().space(6);
+
+        // Seed: read-only text field, greyed out and out of the focus cycle (#767). Every row opens
+        // with the state glyph so the Terrain page keeps the dots of the other pages (S4b #780).
+        Table seedRow = new Table();
+        seedRow.left();
+        seedRow.add(settingsGlyphLabel(terrainFieldState(NewGameForm.SEED_KEY, scenarioKeys)))
+                .width(GLYPH_COLUMN_WIDTH);
+        seedRow.add(new Label(NewGameText.SEED_LABEL, skin, "small")).width(labelWidth).left();
+        TextField seedField = new TextField(String.valueOf(seed), skin);
+        seedField.setDisabled(true);
+        seedField.setFocusTraversal(false);
+        seedField.setColor(DISABLED_TINT);
+        seedField.setTextFieldFilter((f, c) -> c >= 32);
+        seedRow.add(seedField).width(TERRAIN_SEED_WIDTH).height(32f).left();
+        block.add(seedRow).left().row();
+
+        block.add(terrainSliderRow(NewGameText.WATER_LABEL, water, NewGameForm.WATER_KEY,
+                scenarioKeys, labelWidth, valueWidth)).left().row();
+        block.add(terrainSliderRow(NewGameText.MOUNTAIN_LABEL, mountain, NewGameForm.MOUNTAIN_KEY,
+                scenarioKeys, labelWidth, valueWidth)).left().row();
+
+        // The bar and the map start under the widgets, past the glyph and the label columns.
+        final float widgetIndent = GLYPH_COLUMN_WIDTH + labelWidth;
+        // Three-colour 100 % bar, aligned under the sliders (same split as the 2D dialog).
+        block.add(terrainBarTable(water, mountain)).left().padLeft(widgetIndent).row();
+
+        // Blank gap, then the map preview from the same sampler as the 2D section. The view is
+        // handed to {@code previews} so the caller disposes it when the page is swapped or the
+        // dialog closes.
+        block.add().height(8f).row();
+        TerrainPreviewView preview = new TerrainPreviewView();
+        preview.setValues(seed, water, mountain);
+        previews.add(preview);
+        block.add(preview).left().padLeft(widgetIndent).row();
+
+        fieldsTable.add(block).growX().left().top();
+    }
+
+    /**
+     * One disabled terrain slider row for the Settings page: state glyph, label, slider and its
+     * percentage, greyed out (#767, S4b feedback #780).
+     */
+    private Table terrainSliderRow(String label, int percent, String key, Set<String> scenarioKeys,
+            float labelWidth, float valueWidth) {
+        Slider slider = new Slider(0, SettingsCatalog.MAX_TERRAIN_PERCENT, 1, false, skin);
+        slider.setValue(percent);
+        // Disabled style paints the grey track/knob (no setColor tint, #780).
+        slider.setDisabled(true);
+        Label value = new Label(percent + " %", skin, "small");
+        value.setColor(Color.LIGHT_GRAY);
+        Table row = new Table();
+        row.left();
+        row.add(settingsGlyphLabel(terrainFieldState(key, scenarioKeys))).width(GLYPH_COLUMN_WIDTH);
+        row.add(new Label(label, skin, "small")).width(labelWidth).left();
+        row.add(slider).width(TERRAIN_BAR_WIDTH).height(30f);
+        row.add(value).width(valueWidth).left();
+        return row;
+    }
+
+    /** Field state of a terrain key: NEW_GAME (red) unless a scenario pins it to grey (#780). */
+    private static SettingFieldState terrainFieldState(String key, Set<String> scenarioKeys) {
+        return SettingsCatalog.definition(key)
+                .map(definition -> SettingsCatalog.fieldState(definition, scenarioKeys))
+                .orElse(SettingFieldState.NEW_GAME);
+    }
+
+    /**
+     * One terrain slider row from existing widgets: label, slider and its value. Shared by the
+     * disabled Settings page and the editable New Game dialog (S4b feedback, #780).
+     */
+    private Table terrainSliderRow(String label, Slider slider, Label value, float labelWidth,
+            float valueWidth) {
+        Table row = new Table();
+        row.left();
+        row.add(new Label(label, skin, "small")).width(labelWidth).left();
+        row.add(slider).width(TERRAIN_BAR_WIDTH).height(30f);
+        row.add(value).width(valueWidth).left();
+        return row;
+    }
+
+    /** One bar segment: the shared "white" pixel tinted with the world's day tone (#778). */
+    private Image terrainColorImage(VisualPalette.Token token) {
+        return new Image(skin.newDrawable("white", terrainDayColor(token)));
+    }
+
+    /**
+     * Three-colour 100 % bar (draw order water/field/mountain), aligned under the terrain sliders:
+     * shared by the Settings Terrain page and the live New Game block (#778, #780).
+     */
+    private Table terrainBarTable(int waterPercent, int mountainPercent) {
+        int[] segments = stackedBarWidths(waterPercent, mountainPercent, TERRAIN_BAR_WIDTH);
+        Table bar = new Table();
+        bar.add(terrainColorImage(VisualPalette.Token.TERRAIN_WATER)).width(segments[0])
+                .height(18f);
+        bar.add(terrainColorImage(VisualPalette.Token.TERRAIN_FIELDS)).width(segments[1])
+                .height(18f);
+        bar.add(terrainColorImage(VisualPalette.Token.TERRAIN_MOUNTAIN)).width(segments[2])
+                .height(18f);
+        return bar;
+    }
+
+    /** Resizes the three segments of a bar built by {@link #terrainBarTable} in place. */
+    private static void updateTerrainBar(Table bar, int waterPercent, int mountainPercent) {
+        int[] segments = stackedBarWidths(waterPercent, mountainPercent, TERRAIN_BAR_WIDTH);
+        for (int i = 0; i < 3; i++) {
+            bar.getCells().get(i).width(segments[i]);
+        }
+        bar.invalidateHierarchy();
+    }
+
+    /**
+     * Live square terrain preview shared by the New Game dialog and the Settings Terrain page: owns
+     * an {@link Image}, its {@link Pixmap} and its {@link Texture}. {@link #setValues} repaints the
+     * sample on the same pixmap and uploads it with {@code texture.draw(pixmap, 0, 0)}, so the
+     * texture is reused instead of recreating the pipeline. The caller disposes it when the dialog
+     * closes (New Game) or the page is swapped (Settings).
+     */
+    static final class TerrainPreviewView extends Image {
+        private final Pixmap pixmap;
+        private final Texture texture;
+        private final int cells;
+        private final int scale;
+
+        TerrainPreviewView() {
+            this(TERRAIN_PREVIEW_CELLS, TERRAIN_PREVIEW_SCALE);
+        }
+
+        TerrainPreviewView(int cells, int scale) {
+            this.cells = cells;
+            this.scale = scale;
+            int pixels = cells * scale;
+            this.pixmap = new Pixmap(pixels, pixels, Pixmap.Format.RGBA8888);
+            this.texture = new Texture(pixmap);
+            this.texture.setFilter(TextureFilter.Nearest, TextureFilter.Nearest);
+            setDrawable(new TextureRegionDrawable(new TextureRegion(texture)));
+        }
+
+        /** Repaints the sample for {@code seed} and the terrain proportions on the same texture. */
+        void setValues(int seed, int waterPercent, int mountainPercent) {
+            Color waterColor = terrainDayColor(VisualPalette.Token.TERRAIN_WATER);
+            Color fieldsColor = terrainDayColor(VisualPalette.Token.TERRAIN_FIELDS);
+            Color mountainColor = terrainDayColor(VisualPalette.Token.TERRAIN_MOUNTAIN);
+            TerrainPreview.Grid grid =
+                    TerrainPreview.sample(seed, waterPercent, mountainPercent, cells, cells);
+            for (int row = 0; row < cells; row++) {
+                for (int column = 0; column < cells; column++) {
+                    pixmap.setColor(terrainCellColor(grid.cell(column, row), waterColor,
+                            fieldsColor, mountainColor));
+                    pixmap.fillRectangle(column * scale, row * scale, scale, scale);
+                }
+            }
+            texture.draw(pixmap, 0, 0);
+        }
+
+        /** Frees the texture and the pixmap; idempotent. */
+        void dispose() {
+            texture.dispose();
+            pixmap.dispose();
+        }
+    }
+
+    /** Cell colour of the preview: sea blue, board green or the shared mountain brown. */
+    private static Color terrainCellColor(int terrain, Color water, Color fields, Color mountain) {
+        if (terrain == TerrainPreview.WATER) {
+            return water;
+        }
+        if (terrain == TerrainPreview.ROCK) {
+            return mountain;
+        }
+        return fields;
+    }
+
+    /** Disposes every preview view of a page and empties the list (idempotent). */
+    private static void disposeTerrainPreviews(List<TerrainPreviewView> previews) {
+        for (TerrainPreviewView preview : previews) {
+            preview.dispose();
+        }
+        previews.clear();
+    }
+
+    /** Parses an integer, falling back on malformed or absent text (mirrors the 2D dialog). */
+    private static int parseIntOr(String text, int fallback) {
+        try {
+            return Integer.parseInt(text.trim());
+        } catch (RuntimeException e) {
+            return fallback;
+        }
+    }
+
+    /** State glyph of a field/Terrain row: {@link #SETTINGS_GLYPH} tinted with the state colour. */
+    private Label settingsGlyphLabel(SettingFieldState state) {
+        Label glyph = new Label(SETTINGS_GLYPH, skin, "default");
+        glyph.setColor(settingsGlyphColor(state));
+        return glyph;
+    }
+
+    /**
+     * One field row: state glyph, label with unit and the editing widget — a checkbox for BOOLEAN
+     * settings, a text field otherwise — or a read-only value label when the field is locked.
+     */
+    private Table settingsFieldRow(SettingDefinition definition, Set<String> scenarioKeys,
+            Map<String, String> form, List<Actor> categoryFields) {
+        SettingFieldState state = SettingsCatalog.fieldState(definition, scenarioKeys);
+        Table row = new Table();
+        row.left();
+        row.defaults().space(8);
+        row.add(settingsGlyphLabel(state)).width(GLYPH_COLUMN_WIDTH);
+        row.add(new Label(settingsFieldLabel(definition), skin, "default")).width(280f).left();
+        String value = form.getOrDefault(definition.key(), "");
+        if (definition.type() == SettingValueType.BOOLEAN) {
+            // Boolean settings get a real checkbox (2D parity, #780); a disabled one mirrors the
+            // read-only label of the other types and stays out of the Tab cycle.
+            CheckBox checkBox = new CheckBox("", skin);
+            checkBox.setChecked(Boolean.parseBoolean(value));
+            checkBox.setDisabled(!state.editable());
+            // Keep the working form in sync: Apply collects editableValues from it, unchanged.
+            checkBox.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    form.put(definition.key(), checkBox.isChecked() ? "true" : "false");
+                }
+            });
+            row.add(checkBox).width(240f).height(34f).left();
+            if (state.editable()) {
+                categoryFields.add(checkBox);
+            }
+        } else if (state.editable()) {
+            TextField field = new TextField(value, skin);
+            field.setFocusTraversal(false);
+            // LWJGL3 synthesises keyTyped('\t') on Tab and hasGlyph lies for the missing glyph, so
+            // a plain field would type the "?" placeholder: only accept printable characters.
+            field.setTextFieldFilter((f, c) -> c >= 32);
+            // Keep the working form in sync so switching categories never loses an edit.
+            field.setTextFieldListener((f, c) -> form.put(definition.key(), f.getText()));
+            row.add(field).width(240f).height(34f);
+            categoryFields.add(field);
+        } else {
+            Label valueLabel = new Label(value, skin, "default");
+            valueLabel.setColor(Color.LIGHT_GRAY);
+            row.add(valueLabel).width(240f).left();
+        }
+        return row;
+    }
+
+    /** One button listener that fires its action. */
+    private static ChangeListener fireAction(Runnable action) {
+        return new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                action.run();
+            }
+        };
     }
 
     /**

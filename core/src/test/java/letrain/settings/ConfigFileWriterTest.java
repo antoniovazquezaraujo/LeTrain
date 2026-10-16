@@ -124,4 +124,18 @@ class ConfigFileWriterTest {
 
         assertEquals(first, Files.readString(cfg), "a second save must not duplicate keys");
     }
+
+    @Test
+    @DisplayName("writeDefaultsOrMessage reports null on success and the failure message otherwise")
+    void writeDefaultsOrMessage_reportsSuccessOrFailure() throws Exception {
+        Path cfg = dir.resolve("letrain.cfg");
+
+        assertEquals(null,
+                ConfigFileWriter.writeDefaultsOrMessage(cfg.toFile(), defaults("seed", "1")));
+        assertTrue(Files.readString(cfg).contains("seed=1"));
+
+        // A directory target cannot be written: the dialog shows the reason instead of throwing.
+        org.junit.jupiter.api.Assertions.assertNotNull(
+                ConfigFileWriter.writeDefaultsOrMessage(dir.toFile(), defaults("seed", "1")));
+    }
 }

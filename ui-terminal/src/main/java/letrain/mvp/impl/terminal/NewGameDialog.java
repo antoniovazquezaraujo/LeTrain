@@ -158,18 +158,19 @@ final class NewGameDialog {
     /**
      * Width of a slider bar when the value column starts at {@code valueColumn}: the full
      * {@link #SLIDER_BAR_WIDTH} when it fits, down to 5 cells in narrow terminals. The closing
-     * {@code "] 100%"} span takes 7 cells after the bar.
+     * {@code "] 100 %"} value span takes 7 cells after the bar, so with the opening {@code "["} the
+     * full row measures {@code valueColumn + bar + 8} and fits exactly in {@code columns}.
      */
     static int sliderBarWidth(int columns, int valueColumn) {
-        return Math.min(SLIDER_BAR_WIDTH, Math.max(5, columns - valueColumn - 7));
+        return Math.min(SLIDER_BAR_WIDTH, Math.max(5, columns - valueColumn - 8));
     }
 
     /**
      * Width of the 100 % stacked bar: the full Water/Mountain row, from the left edge to the end of
-     * the slider percentage ({@code valueColumn + bar + 7}; 59 cells at 70 columns, #755).
+     * the slider percentage ({@code valueColumn + bar + 8}; 58 cells at 70 columns, #755).
      */
     static int stackedBarWidth(int columns, int valueColumn) {
-        return Math.min(columns, valueColumn + sliderBarWidth(columns, valueColumn) + 7);
+        return Math.min(columns, valueColumn + sliderBarWidth(columns, valueColumn) + 8);
     }
 
     /**
@@ -1105,7 +1106,11 @@ final class NewGameDialog {
         private final class Renderer implements InteractableRenderer<PercentSlider> {
             @Override
             public TerminalSize getPreferredSize(PercentSlider component) {
-                return new TerminalSize(valueColumn + 1 + SLIDER_BAR_WIDTH + 2 + 1 + 4, 1);
+                // Exact row budget: "[" (1) + the bar + "] " (2) + the 5-glyph value ("100 %"),
+                // i.e.
+                // valueColumn + SLIDER_BAR_WIDTH + 8. No leftover slack: the space before the "%"
+                // now uses the cell the old 4-glyph value ("100%") left free.
+                return new TerminalSize(valueColumn + 1 + SLIDER_BAR_WIDTH + 2 + 5, 1);
             }
 
             @Override
@@ -1133,7 +1138,7 @@ final class NewGameDialog {
                 graphics.putString(x + 1 + filled, 0, "-".repeat(barWidth - filled));
                 graphics.setForegroundColor(labelColor);
                 graphics.putString(x + 1 + barWidth, 0,
-                        "] " + String.format("%3d%%", component.value));
+                        "] " + String.format("%3d %%", component.value));
             }
         }
     }

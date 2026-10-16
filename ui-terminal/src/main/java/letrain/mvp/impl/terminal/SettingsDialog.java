@@ -30,9 +30,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import letrain.mvp.SettingsText;
-import letrain.settings.SettingApplyState;
 import letrain.settings.SettingCategory;
 import letrain.settings.SettingDefinition;
+import letrain.settings.SettingFieldState;
 import letrain.settings.SettingValueType;
 import letrain.settings.SettingsApplyResult;
 import letrain.settings.SettingsCatalog;
@@ -119,12 +119,21 @@ final class SettingsDialog {
 
     /** Apply state shown for one field: the scenario lock wins over the catalogue state (D10). */
     static FieldState fieldState(SettingDefinition definition, Set<String> scenarioKeys) {
-        if (scenarioKeys.contains(definition.key())) {
-            return FieldState.SCENARIO;
+        return from(SettingsCatalog.fieldState(definition, scenarioKeys));
+    }
+
+    /** Maps the shared field state (S4b #778) to the terminal glyph/colour (#764). */
+    static FieldState from(SettingFieldState state) {
+        switch (state) {
+            case REAPPLY:
+                return FieldState.REAPPLY;
+            case NEW_GAME:
+                return FieldState.NEW_GAME;
+            case SCENARIO:
+                return FieldState.SCENARIO;
+            default:
+                return FieldState.LIVE;
         }
-        return definition.applyState() == SettingApplyState.REAPPLY ? FieldState.REAPPLY
-                : definition.applyState() == SettingApplyState.NEW_GAME ? FieldState.NEW_GAME
-                        : FieldState.LIVE;
     }
 
     /** One footer action: its id, the label and the Alt mnemonic (#764). */
@@ -173,19 +182,7 @@ final class SettingsDialog {
 
     /** REAPPLY fields (yellow) whose text differs from the current values: Apply confirms first. */
     static List<String> changedReapplyKeys(Map<String, String> baseline, Map<String, String> form) {
-        List<String> changed = new ArrayList<>();
-        for (SettingDefinition definition : SettingsCatalog.definitions()) {
-            if (definition.applyState() != SettingApplyState.REAPPLY
-                    || !form.containsKey(definition.key())) {
-                continue;
-            }
-            String before = baseline.getOrDefault(definition.key(), "").trim();
-            String after = form.get(definition.key()).trim();
-            if (!before.equals(after)) {
-                changed.add(definition.key());
-            }
-        }
-        return changed;
+        return SettingsCatalog.changedReapplyKeys(baseline, form);
     }
 
     /** What the player chose when the dialog closed. */
@@ -367,12 +364,7 @@ final class SettingsDialog {
 
     /** Effective values overlaid on the catalogue defaults, so every field has text. */
     private static Map<String, String> baselineOf(Map<String, String> currentSettings) {
-        Map<String, String> baseline = new LinkedHashMap<>();
-        for (SettingDefinition definition : SettingsCatalog.definitions()) {
-            String current = currentSettings == null ? null : currentSettings.get(definition.key());
-            baseline.put(definition.key(), current != null ? current : definition.defaultValue());
-        }
-        return baseline;
+        return SettingsCatalog.overDefaults(currentSettings);
     }
 
     /** Reads the widgets into a map: editable keys only, or every key for the other actions. */

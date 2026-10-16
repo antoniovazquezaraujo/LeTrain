@@ -3,9 +3,9 @@ package letrain.mvp;
 import java.util.Map;
 
 /**
- * Shared wording of the in-game Settings dialog (S3b, concept §5.2/D9/D10). Both clients must read
- * the same words so the 2D terminal and the future 3D parity slice cannot drift apart (same
- * convention as {@link NewGameText}, {@link FileMenuText} and {@link EditorText}).
+ * Shared wording of the in-game Settings dialog (S3b, concept §5.2/D9/D10). Both clients read the
+ * same words so the 2D terminal and the 3D HUD cannot drift apart (same convention as
+ * {@link NewGameText}, {@link FileMenuText} and {@link EditorText}).
  */
 public final class SettingsText {
 

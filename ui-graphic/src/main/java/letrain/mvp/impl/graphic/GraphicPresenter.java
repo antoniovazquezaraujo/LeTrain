@@ -862,6 +862,51 @@ public class GraphicPresenter extends ApplicationAdapter
     }
 
     /**
+     * File → Settings (S4b, #778): opens the 3D in-game Settings dialog with the current effective
+     * values (plus the world seed), the scenario-locked keys and a port that applies settings to
+     * the running game and writes {@code letrain.cfg} defaults (D4). Choosing "New game" closes the
+     * dialog and re-enters the New Game flow with the form prefilled (same discard confirmation as
+     * 2D, S4a).
+     */
+    @Override
+    public void onSettings() {
+        if (model.getEconomyManager() == null || hud == null) {
+            return;
+        }
+        Map<String, String> current =
+                new java.util.LinkedHashMap<>(model.getEconomyManager().effectiveConfig());
+        current.put(letrain.settings.NewGameForm.SEED_KEY, String.valueOf(model.getSeed()));
+        hud.showSettingsDialog(current, model.getScenarioSettingKeys(),
+                new Gdx3DHud.SettingsPort() {
+                    @Override
+                    public letrain.settings.SettingsApplyResult apply(Map<String, String> values) {
+                        return model.applyLiveSettings(values);
+                    }
+
+                    @Override
+                    public String saveDefaults(Map<String, String> values) {
+                        return saveSettingsAsDefaults(values);
+                    }
+                }, this::onNewGame);
+    }
+
+    /**
+     * Writes the form values into the game's {@code letrain.cfg} (D4); when the game found no file
+     * it creates one in the working directory. Returns {@code null} on success or the failure
+     * message the dialog shows. Shares the write with the 2D presenter through
+     * {@link letrain.settings.ConfigFileWriter#writeDefaultsOrMessage}.
+     */
+    String saveSettingsAsDefaults(Map<String, String> values) {
+        return letrain.settings.ConfigFileWriter
+                .writeDefaultsOrMessage(model.getEconomyManager().getConfigFile(), values);
+    }
+
+    /** Writes the values into {@code target}; {@code null} on success or the failure message. */
+    static String writeDefaults(File target, Map<String, String> values) {
+        return letrain.settings.ConfigFileWriter.writeDefaultsOrMessage(target, values);
+    }
+
+    /**
      * Builds a fresh world from the dialog settings (S2) and swaps it in, reusing
      * {@link #applyLoadedModel} so the camera, HUD, input handler and journal rebind exactly like a
      * load (S4, #777). The seed text goes through the shared
@@ -879,7 +924,6 @@ public class GraphicPresenter extends ApplicationAdapter
         model.getGroundMap().renderBlock(center.getX() - getCols() / 2,
                 center.getY() - getRows() / 2, getCols(), getRows());
         log.info("New game started (seed {})", seed);
-        showMessage(letrain.mvp.NewGameText.TITLE, letrain.mvp.NewGameText.startedMessage(seed));
     }
 
     @Override

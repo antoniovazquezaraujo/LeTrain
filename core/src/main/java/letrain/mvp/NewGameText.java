@@ -13,12 +13,9 @@ public final class NewGameText {
     /** Seed row. */
     public static final String SEED_LABEL = "Seed";
 
-    /** Button that draws a fresh random seed. */
-    public static final String NEW_SEED = "new";
-
-    /** Terrain slider labels. */
-    public static final String WATER_LABEL = "Water %";
-    public static final String MOUNTAIN_LABEL = "Mountain %";
+    /** Terrain slider labels; the "%" lives in the value shown next to the slider. */
+    public static final String WATER_LABEL = "Water";
+    public static final String MOUNTAIN_LABEL = "Mountain";
 
     /** Dialog actions (same words as the rest of the UI). */
     public static final String START = "Start";

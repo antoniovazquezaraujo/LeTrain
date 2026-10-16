@@ -122,9 +122,9 @@ class FontManagerTest {
     }
 
     @Test
-    @DisplayName("the generated charset includes the HUD glyphs: notch bar, ellipsis and accents")
+    @DisplayName("the generated charset includes the HUD glyphs: notch bar, status dots, ellipsis and accents")
     void testExtraCharsCoverHudGlyphs() {
-        for (char c : "■□…áéíóú".toCharArray()) {
+        for (char c : "■□●…áéíóú".toCharArray()) {
             assertTrue(FontManager.EXTRA_CHARS.indexOf(c) >= 0,
                     "EXTRA_CHARS must include '" + c + "' or it renders as '?'");
         }

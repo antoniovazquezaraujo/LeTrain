@@ -2318,21 +2318,13 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
      * message the dialog shows.
      */
     String saveSettingsAsDefaults(Map<String, String> values) {
-        File target = model.getEconomyManager().getConfigFile();
-        if (target == null) {
-            target = new File("letrain.cfg");
-        }
-        return writeDefaults(target, values);
+        return letrain.settings.ConfigFileWriter
+                .writeDefaultsOrMessage(model.getEconomyManager().getConfigFile(), values);
     }
 
     /** Writes the values into {@code target}; {@code null} on success or the failure message. */
     static String writeDefaults(File target, Map<String, String> values) {
-        try {
-            letrain.settings.ConfigFileWriter.writeDefaults(target, values);
-            return null;
-        } catch (IOException e) {
-            return e.getMessage();
-        }
+        return letrain.settings.ConfigFileWriter.writeDefaultsOrMessage(target, values);
     }
 
     /**

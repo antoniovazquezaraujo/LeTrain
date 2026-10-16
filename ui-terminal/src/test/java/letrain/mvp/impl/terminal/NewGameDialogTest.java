@@ -208,7 +208,7 @@ class NewGameDialogTest {
     void should_AlignTheValueColumnPerPage() {
         for (SettingCategory category : SettingCategory.values()) {
             if (category == SettingCategory.TERRAIN) {
-                continue; // the Terrain page shows its own labels (Water %, Mountain %)
+                continue; // the Terrain page shows its own labels (Water, Mountain)
             }
             List<String> names = NewGameDialog.fieldNames(category);
             int column = NewGameDialog.valueColumn(names);
@@ -226,9 +226,9 @@ class NewGameDialogTest {
             }
         }
 
-        // Terrain keeps its own, much closer column: Seed, Water % and Mountain % at 12 (#755).
-        assertEquals(12, TERRAIN_COLUMN);
-        assertEquals("Seed:" + " ".repeat(7),
+        // Terrain keeps its own, much closer column: Seed, Water and Mountain at 10 (#755).
+        assertEquals(10, TERRAIN_COLUMN);
+        assertEquals("Seed:" + " ".repeat(5),
                 NewGameDialog.alignedLabel(NewGameText.SEED_LABEL, TERRAIN_COLUMN));
         assertTrue(
                 TERRAIN_COLUMN < NewGameDialog
@@ -237,15 +237,35 @@ class NewGameDialogTest {
     }
 
     @Test
-    @DisplayName("the stacked bar spans the full slider row: 59 cells at 70 columns (#755)")
+    @DisplayName("the stacked bar spans the full slider row: 58 cells at 70 columns (#755)")
     void should_SpanTheSliderRow() {
         assertEquals(40, NewGameDialog.sliderBarWidth(70, TERRAIN_COLUMN));
-        assertEquals(59, NewGameDialog.stackedBarWidth(70, TERRAIN_COLUMN));
-        assertEquals(59, NewGameDialog.stackedBarWidth(120, TERRAIN_COLUMN));
-        assertEquals(59, NewGameDialog.stackedBarWidth(200, TERRAIN_COLUMN));
+        assertEquals(58, NewGameDialog.stackedBarWidth(70, TERRAIN_COLUMN));
+        assertEquals(58, NewGameDialog.stackedBarWidth(120, TERRAIN_COLUMN));
+        assertEquals(58, NewGameDialog.stackedBarWidth(200, TERRAIN_COLUMN));
         // Narrow terminals shrink the slider bar and the stacked bar follows it exactly.
-        assertEquals(30, NewGameDialog.sliderBarWidth(49, TERRAIN_COLUMN));
+        assertEquals(31, NewGameDialog.sliderBarWidth(49, TERRAIN_COLUMN));
         assertEquals(49, NewGameDialog.stackedBarWidth(49, TERRAIN_COLUMN));
+    }
+
+    @Test
+    @DisplayName("the slider row fits inside every realistic terminal width (#780)")
+    void should_FitTheSliderRowInsideTheTerminal() {
+        // The drawn row is the valueColumn-wide label + "[" + the bar + "] " + the 5-glyph value
+        // (" 25 %", "100 %"), i.e. valueColumn + sliderBarWidth + 8 cells. The bar adapts so the
+        // exact-fit budget (columns - valueColumn - 8) never overflows a 40..120 column terminal.
+        for (int columns = 40; columns <= 120; columns++) {
+            int bar = NewGameDialog.sliderBarWidth(columns, TERRAIN_COLUMN);
+            assertTrue(bar >= 5, "columns " + columns + ": the bar never disappears");
+            int row = TERRAIN_COLUMN + 1 + bar + 2 + 5;
+            assertTrue(row <= columns,
+                    "columns " + columns + ": the " + row + "-cell slider row must fit");
+            assertTrue(NewGameDialog.stackedBarWidth(columns, TERRAIN_COLUMN) <= columns,
+                    "columns " + columns + ": the stacked bar never overflows the terminal");
+        }
+        // The exact-fit boundary the owner validated: the narrow bar and the capped stacked bar.
+        assertEquals(31, NewGameDialog.sliderBarWidth(49, TERRAIN_COLUMN));
+        assertEquals(58, NewGameDialog.stackedBarWidth(70, TERRAIN_COLUMN));
     }
 
     @Test

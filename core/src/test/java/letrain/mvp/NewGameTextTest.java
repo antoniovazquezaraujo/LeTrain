@@ -1,6 +1,7 @@
 package letrain.mvp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.DisplayName;
@@ -41,5 +42,17 @@ class NewGameTextTest {
     void should_WarnAboutUnsavedChanges() {
         assertTrue(NewGameText.CONFIRM_MESSAGE.contains("Unsaved changes"),
                 NewGameText.CONFIRM_MESSAGE);
+    }
+
+    @Test
+    @DisplayName("the terrain slider labels are bare names: the % lives only in the value (#780)")
+    void should_KeepTheTerrainLabelsUnitless() {
+        // The unit is appended to the value next to the slider ("25 %"), so the label must not
+        // repeat it (owner feedback, round 5): "Water", never "Water %".
+        assertEquals("Water", NewGameText.WATER_LABEL);
+        assertEquals("Mountain", NewGameText.MOUNTAIN_LABEL);
+        assertEquals("Seed", NewGameText.SEED_LABEL, "labels share the same bare-name convention");
+        assertFalse(NewGameText.WATER_LABEL.contains("%"), NewGameText.WATER_LABEL);
+        assertFalse(NewGameText.MOUNTAIN_LABEL.contains("%"), NewGameText.MOUNTAIN_LABEL);
     }
 }
