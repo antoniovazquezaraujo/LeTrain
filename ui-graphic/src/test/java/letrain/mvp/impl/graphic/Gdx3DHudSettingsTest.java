@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import letrain.mvp.SettingsText;
+import letrain.palette.VisualPalette;
 import letrain.settings.SettingCategory;
 import letrain.settings.SettingDefinition;
 import letrain.settings.SettingFieldState;
@@ -142,6 +143,26 @@ class Gdx3DHudSettingsTest {
         }
         // A zero proportion must claim no cells when the bar still has room elsewhere.
         assertArrayEquals(new int[] {0, width, 0}, Gdx3DHud.stackedBarWidths(0, 0, width));
+    }
+
+    @Test
+    @DisplayName("terrainDayColor is opaque and keeps the exact day RGB tones (#780)")
+    void should_ReturnOpaqueDayTones() {
+        // rgb888ToColor leaves the alpha of a fresh Color at 0; without the guard the Terrain bar
+        // and preview would be 100 % transparent.
+        assertTone(VisualPalette.Token.TERRAIN_WATER, 0x3366CC);
+        assertTone(VisualPalette.Token.TERRAIN_FIELDS, 0x66994C);
+        assertTone(VisualPalette.Token.TERRAIN_MOUNTAIN, 0x80664D);
+    }
+
+    private static void assertTone(VisualPalette.Token token, int rgb) {
+        Color color = Gdx3DHud.terrainDayColor(token);
+        assertEquals(1f, color.a, "the alpha guard must lift rgb888ToColor's a=0");
+        assertEquals(((rgb >> 16) & 0xFF) / 255f, color.r, 1e-6f,
+                "red of 0x" + Integer.toHexString(rgb));
+        assertEquals(((rgb >> 8) & 0xFF) / 255f, color.g, 1e-6f,
+                "green of 0x" + Integer.toHexString(rgb));
+        assertEquals((rgb & 0xFF) / 255f, color.b, 1e-6f, "blue of 0x" + Integer.toHexString(rgb));
     }
 
     private static SettingDefinition definition(String key) {

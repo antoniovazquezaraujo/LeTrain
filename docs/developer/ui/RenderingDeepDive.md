@@ -225,13 +225,21 @@ palabras no pueden divergir entre clientes:
 - **Diálogo Nueva Partida 3D** (#777, V1): `Gdx3DHud.showNewGameDialog(form, onStart, onCancel)`
   reutiliza `NewGameForm` (semilla + sliders de agua/montaña, con la regla cruzada del catálogo) y
   valida con `form.toSettings()`, mostrando el mensaje del catálogo en línea si falla. El skin
-  code-built no tenía `Slider`, así que añade un `Slider.SliderStyle` "default-horizontal" mínimo.
-  Las pestañas del catálogo, el preview y la barra del formulario 3D llegan en S4c.
+  code-built no tenía `Slider`, así que añade un `Slider.SliderStyle` "default-horizontal" (ver
+  *Estilo de controles* más abajo). El campo de semilla lleva un `TextFieldFilter` que descarta los
+  caracteres de control (#780, ver *Caracteres de control*). Las pestañas del catálogo, el preview y
+  la barra del formulario 3D llegan en S4c.
 - **Diálogo Settings 3D** (#778, `Gdx3DHud.showSettingsDialog`): espejo del 2D con las mismas
   palabras y semántica. Un selector de categorías (una página a la vez) y, por cada
   `SettingDefinition`, una fila con el glifo de estado —● verde LIVE, ● amarillo REAPPLY, ● rojo
-  NEW_GAME, ● gris SCENARIO—, la etiqueta con unidad y un `TextField` editable solo en LIVE/REAPPLY
-  (etiqueta de solo lectura en el resto, nunca editable el scenario-locked). Debajo, la leyenda
+  NEW_GAME, ● gris SCENARIO—, la etiqueta con unidad y el widget editable solo en LIVE/REAPPLY
+  (etiqueta de solo lectura en el resto, nunca editable el scenario-locked). Los ajustes BOOLEAN
+  montan un `CheckBox` scene2d (`CheckBoxStyle` "default" con cuadros pintados a mano off/on y
+  variantes disabled en gris), con el valor de partida de `form` y un `ChangeListener` que reescribe
+  `form` (`"true"`/`"false"`), de modo que `Apply` lo recoge por `editableValues` sin cambios extra;
+  no editable ⇒ `setDisabled(true)` y fuera del ciclo de Tab, como el 2D. Todas las páginas llevan
+  un gutter izquierdo de `SETTINGS_LEFT_GUTTER` (24 px, una columna de glifo) que reproduce el
+  margen de una celda del 2D (`NewGameDialog.LEFT_MARGIN_COLUMNS`). Debajo, la leyenda
   compartida (`SettingsText.LEGEND_*`, sin entrada de escenario, #767) y la línea de feedback
   (`SettingsText.APPLIED/RESTORED/SAVED_DEFAULTS/SAVE_DEFAULTS_FAILED`). Los cinco botones
   (`Apply`/`Restore`/`New game`/`Save as defaults`/`Close`) replican el 2D: `Apply` confirma los
@@ -243,16 +251,35 @@ palabras no pueden divergir entre clientes:
   `SettingFieldState`) y los consumen los dos clientes.
 - **Página Terrain del Settings 3D** (#778): en vez de una lista de campos, monta el bloque de
   terreno del New Game 2D en modo lectura: semilla (`NewGameText.SEED_LABEL` + `TextField`
-  deshabilitado), sliders de agua/montaña deshabilitados y atenuados (`DISABLED_TINT`) con su
-  `"N %"`, y la barra tricolor del 100 % de `TERRAIN_BAR_WIDTH` (280 px). El reparto de segmentos
-  usa `Gdx3DHud.stackedBarWidths`, copia del algoritmo de restos mayores del 2D, y los colores son
-  los tonos diurnos del mundo 3D (`VisualPalette.color(TERRAIN_WATER/FIELDS/MOUNTAIN, 0.0)`, con el
-  verde del tablero 3D). Bajo la barra, un hueco y el mapa: `TerrainPreview.sample(seed, water,
-  mountain, 88, 88)` pintado en un `Pixmap` a 2x (176x176 px) con filtro `Nearest`. El bloque cabe
-  sin scroll en la zona de campos (660x340) y **nada entra en el ciclo de Tab** (#767): los controles
-  están deshabilitados y `categoryFields` queda vacío. El `close` libera `Pixmap`/`Texture` del
-  preview (`disposeTerrainPreview`), que se recrean al abrir; el mismo `close` corre al elegir
-  New game.
+  deshabilitado de `TERRAIN_SEED_WIDTH`, 140 px), sliders de agua/montaña deshabilitados (el estilo
+  *disabled* del skin los pinta grises, sin el antiguo tinte `DISABLED_TINT`) con su `"N %"`, y la
+  barra tricolor del 100 % de `TERRAIN_BAR_WIDTH` (280 px). El reparto de segmentos usa
+  `Gdx3DHud.stackedBarWidths`, copia del algoritmo de restos mayores del 2D, y los colores son los
+  tonos diurnos del mundo 3D (`terrainDayColor`: `VisualPalette.color(TERRAIN_WATER/FIELDS/MOUNTAIN,
+  0.0)` con **alfa forzado a 1**, ver *Guardián del alfa*). Bajo la barra, un hueco y el mapa:
+  `TerrainPreview.sample(seed, water, mountain, 88, 88)` pintado en un `Pixmap` a 2x (176x176 px)
+  con filtro `Nearest`. El bloque cabe sin scroll en la zona de campos (660x340) y **nada entra en
+  el ciclo de Tab** (#767): los controles están deshabilitados y `categoryFields` queda vacío. El
+  `close` libera `Pixmap`/`Texture` del preview (`disposeTerrainPreview`), que se recrean al abrir;
+  el mismo `close` corre al elegir New game.
+- **Estilo de controles del HUD 3D** (#780): el skin code-built añade al `Slider.SliderStyle`
+  "default-horizontal" un track/base con `minHeight` explícito (`sliderTrack`) y un knob circular de
+  24x24 (`sliderKnob`, `Pixmap.fillCircle` en el acento) con mínimos cuadrados para no deformarse;
+  sin ellos el píxel "white" 1x1 colapsaba el slider a "una aguja". El `CheckBoxStyle` "default"
+  usa cuadros 26x26 dibujados a mano (cuadrado oscuro con borde claro; el "on" añade el check en dos
+  trazos de acento). Ambos llevan variantes *disabled* en gris, de modo que los controles de solo
+  lectura se ven grises de verdad.
+- **Caracteres de control en los campos 3D** (#780): el backend LWJGL3 sintetiza `keyTyped('\t')` al
+  pulsar Tab y `BitmapFontData.hasGlyph` devuelve `true` para cualquier carácter cuando la fuente
+  FreeType tiene `missingGlyph`, así que un `TextField` normal insertaba un `\t` que se dibujaba como
+  `?`. Todos los `TextField` de diálogo (semilla del New Game, semilla y campos del Settings) llevan
+  `setTextFieldFilter((f, c) -> c >= 32)`, que solo descarta los caracteres de control "add" sin
+  afectar a Backspace/Delete/Enter. Los `TextArea`/editor quedan fuera: ahí el tab sí tiene semántica.
+- **Guardián del alfa en `terrainDayColor`** (#780): `Color.rgb888ToColor` no fija el alfa del
+  `Color` destino (el constructor deja `a=0`), así que la barra y el pixmap del preview salían
+  transparentes. `terrainDayColor` fuerza `color.a = 1f` tras convertir; el test
+  `Gdx3DHudSettingsTest.should_ReturnOpaqueDayTones` fija `a == 1f` y los RGB diurnos exactos
+  (water `0x3366CC`, fields `0x66994C`, mountain `0x80664D`).
 - **Glifos y teclado del Settings 3D** (#778): el glifo ● (`SETTINGS_GLYPH`) llega a las filas y a
   la leyenda gracias a que está declarado en `FontManager.EXTRA_CHARS`; FreeType solo rasteriza los
   caracteres listados y cualquier símbolo ausente se dibuja como `?`. El test guardián
@@ -261,9 +288,9 @@ palabras no pueden divergir entre clientes:
   diálogo fija **siempre** el foco al abrir y al cambiar de página (`categoryFields.get(0)` o, si la
   página no tiene campos —Terrain—, el primer botón del footer): con `keyboardFocus == null`,
   `Stage.keyDown` envía el evento al root y el listener del diálogo no lo oiría, así que Tab/Enter/Esc
-  quedarían muertos. Los botones del footer no tienen caret propio, así que el enfocado se resalta en
-  cian como en el menú File (`paintFooterFocus`), refrescado tras navegar, tras `showCategory` y
-  cuando las confirmaciones (reapply/save defaults) devuelven el foco.
+  quedarían muertos. Los botones del footer y los checkboxes no tienen caret propio, así que el
+  enfocado se resalta en cian como en el menú File (`paintFooterFocus`), refrescado tras navegar,
+  tras `showCategory` y cuando las confirmaciones (reapply/save defaults) devuelven el foco.
 
 - **Editor**: los pies 2D (`TerminalView.editorFooterActions`) y 3D (`Gdx3DHud`) ya no llevan
   `Save`/`Load`: quedan `Export`/`Import`/`Reload from game`/`Apply program`/`Rebuild world`/

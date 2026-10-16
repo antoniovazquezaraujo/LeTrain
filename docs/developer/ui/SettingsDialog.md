@@ -66,10 +66,11 @@ el **preview** debajo, con los parámetros actuales del mundo y todo en **read-o
 (seed/water/mountain) ya no se listan como filas; su estado NEW_GAME queda implícito en el bloque.
 
 En 3D (#778) la página Terrain reproduce el mismo bloque con widgets scene2d
-(`Gdx3DHud.fillSettingsTerrain`): `TextField` y sliders deshabilitados y atenuados, la barra de
-`TERRAIN_BAR_WIDTH` repartida con `stackedBarWidths` (misma resta mayor que el 2D) y el mapa de
-`TerrainPreview.sample` pintado a 2x en un `Pixmap`/`Texture` que el diálogo libera al cerrar.
-Nada entra en el ciclo de foco, así que el diálogo fija el foco al footer.
+(`Gdx3DHud.fillSettingsTerrain`): `TextField` y sliders deshabilitados (el estilo *disabled* del skin
+los pinta grises), la semilla con `TERRAIN_SEED_WIDTH` (140 px), la barra de `TERRAIN_BAR_WIDTH`
+repartida con `stackedBarWidths` (misma resta mayor que el 2D) y el mapa de `TerrainPreview.sample`
+pintado a 2x en un `Pixmap`/`Texture` que el diálogo libera al cerrar. Nada entra en el ciclo de
+foco, así que el diálogo fija el foco al footer.
 
 ## Acciones y confirmaciones
 
@@ -108,8 +109,11 @@ scene2d del diálogo 2D, con las mismas palabras (`SettingsText`) y la misma sem
   `ScrollPane` para que ninguna categoría desborde.
 - **Filas**: una por `SettingDefinition` de la categoría, en orden de catálogo, con el glifo de
   estado (mismo criterio que 2D, vía `SettingsCatalog.fieldState`), la etiqueta con unidad
-  (`settingsFieldLabel`) y un `TextField` **editable solo en LIVE/REAPPLY**; en NEW_GAME y SCENARIO
-  el valor es una etiqueta de solo lectura (nunca editable).
+  (`settingsFieldLabel`) y un `TextField` **editable solo en LIVE/REAPPLY**; los BOOLEAN montan un
+  `CheckBox` (mismo estado de edición, fuera del ciclo de Tab cuando son de solo lectura); en
+  NEW_GAME y SCENARIO el valor es una etiqueta de solo lectura (nunca editable). Todas las páginas
+  llevan un gutter izquierdo de `SETTINGS_LEFT_GUTTER` (una columna de glifo, paridad con el margen
+  de una celda del 2D).
 - **Leyenda** abajo (`settingsLegendMarkup`, tres entradas, sin escenario) y **línea de feedback**
   con `SettingsText.APPLIED/RESTORED/SAVED_DEFAULTS/SAVE_DEFAULTS_FAILED`.
 - **Acciones** (`Apply`/`Restore`/`New game`/`Save as defaults`/`Close`): `Apply` recoge los campos
@@ -119,9 +123,11 @@ scene2d del diálogo 2D, con las mismas palabras (`SettingsText`) y la misma sem
   `onNewGame(prefill)`, que mantiene la confirmación de descarte de S4a. `Save as defaults` confirma
   (`SAVE_DEFAULTS_TITLE/CONFIRM`) y escribe mediante `ConfigFileWriter.writeDefaultsOrMessage`.
   `Close`/Esc cierra.
-- **Teclado**: Tab/↑/↓ recorren los campos de la página activa y los cinco botones (←/→ se reservan
-  al caret dentro de un `TextField`), Enter/Espacio activan un botón enfocado y Esc cierra. El layout
-  es code-built sobre el skin existente (no añade estilos nuevos).
+- **Teclado**: Tab/↑/↓ recorren los campos de la página activa (un `TextField` o un `CheckBox`
+  editable) y los cinco botones (←/→ se reservan al caret dentro de un `TextField`), Enter/Espacio
+  activan un botón o conmutan un `CheckBox` enfocado y Esc cierra. El layout es code-built sobre el
+  skin existente, al que S4b/#780 añade estilos (`Slider` con track y knob redondo, variantes
+  *disabled* y `CheckBoxStyle`) y un `TextFieldFilter` que descarta los caracteres de control.
 
 ## Tests
 

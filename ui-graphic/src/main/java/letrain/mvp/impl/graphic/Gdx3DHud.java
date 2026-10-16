@@ -14,6 +14,7 @@ import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Cell;
+import com.badlogic.gdx.scenes.scene2d.ui.CheckBox;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
@@ -26,9 +27,11 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextField;
 import com.badlogic.gdx.scenes.scene2d.ui.Tree;
 import com.badlogic.gdx.scenes.scene2d.ui.WidgetGroup;
 import com.badlogic.gdx.scenes.scene2d.ui.Window;
+import com.badlogic.gdx.scenes.scene2d.utils.BaseDrawable;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener.ChangeEvent;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import java.util.ArrayList;
@@ -53,6 +56,7 @@ import letrain.settings.NewGameForm;
 import letrain.settings.SettingCategory;
 import letrain.settings.SettingDefinition;
 import letrain.settings.SettingFieldState;
+import letrain.settings.SettingValueType;
 import letrain.settings.SettingsApplyResult;
 import letrain.settings.SettingsCatalog;
 import letrain.utils.FontManager;
@@ -396,13 +400,31 @@ public class Gdx3DHud {
         textFieldStyle.selection = skin.newDrawable("white", Color.BLUE);
         skin.add("default", textFieldStyle);
 
-        // Slider style for the New Game dialog terrain proportions (S4, #777). The code-built skin
-        // has no slider yet; the track/knob reuse the "white" pixel with the dialog accent colour.
+        // Slider style shared by the New Game terrain proportions (S4, #777) and the read-only
+        // Terrain page of the in-game Settings (S4b, #778). The skin's "white" is a 1x1 pixel with
+        // no minimum size, so the bare drawables collapsed to "needles"; the explicit minimums and
+        // the round knob give the track real thickness. The disabled variants paint the read-only
+        // Terrain sliders grey without the setColor(DISABLED_TINT) hack.
         Slider.SliderStyle sliderStyle = new Slider.SliderStyle();
-        sliderStyle.background = skin.newDrawable("white", new Color(0.2f, 0.2f, 0.2f, 1f));
-        sliderStyle.knob = skin.newDrawable("white", new Color(0.29f, 0.65f, 1f, 1f));
-        sliderStyle.knobBefore = skin.newDrawable("white", new Color(0.29f, 0.65f, 1f, 0.45f));
+        sliderStyle.background = sliderTrack(skin, new Color(0.2f, 0.2f, 0.2f, 1f));
+        sliderStyle.knobBefore = sliderTrack(skin, new Color(0.29f, 0.65f, 1f, 0.45f));
+        sliderStyle.knob = sliderKnob(new Color(0.29f, 0.65f, 1f, 1f));
+        sliderStyle.disabledBackground = sliderTrack(skin, new Color(0.35f, 0.35f, 0.35f, 1f));
+        sliderStyle.disabledKnobBefore = sliderTrack(skin, new Color(0.5f, 0.5f, 0.5f, 0.45f));
+        sliderStyle.disabledKnob = sliderKnob(new Color(0.5f, 0.5f, 0.5f, 1f));
         skin.add("default-horizontal", sliderStyle);
+
+        // CheckBox style for the boolean settings (S4b, #778): a 26x26 square, hand-drawn off/on
+        // (dark square with a light border, on adds the accent check) plus grey disabled variants.
+        CheckBox.CheckBoxStyle checkBoxStyle = new CheckBox.CheckBoxStyle();
+        checkBoxStyle.font = skin.getFont("default");
+        checkBoxStyle.fontColor = Color.WHITE;
+        checkBoxStyle.disabledFontColor = Color.GRAY;
+        checkBoxStyle.checkboxOff = checkboxDrawable(false, false);
+        checkBoxStyle.checkboxOn = checkboxDrawable(true, false);
+        checkBoxStyle.checkboxOffDisabled = checkboxDrawable(false, true);
+        checkBoxStyle.checkboxOnDisabled = checkboxDrawable(true, true);
+        skin.add("default", checkBoxStyle);
 
         // ScrollPane Style
         ScrollPane.ScrollPaneStyle scrollPaneStyle = new ScrollPane.ScrollPaneStyle();
@@ -509,6 +531,65 @@ public class Gdx3DHud {
 
         updateMenuButtons();
         applyHelpLevel();
+    }
+
+    /**
+     * Track/base segment of the sliders: the shared "white" pixel with an explicit minimum height
+     * so the 1x1 drawable does not collapse to a needle (#778).
+     */
+    private static Drawable sliderTrack(Skin skin, Color color) {
+        BaseDrawable track = (BaseDrawable) skin.newDrawable("white", color);
+        track.setMinHeight(8f);
+        return track;
+    }
+
+    /**
+     * Round knob of the sliders: a 24x24 filled disc in {@code color}, kept square via equal
+     * minimums so Scene2D never deforms it into an ellipse (#778).
+     */
+    private static Drawable sliderKnob(Color color) {
+        Pixmap pixmap = new Pixmap(24, 24, Pixmap.Format.RGBA8888);
+        pixmap.setColor(color);
+        pixmap.fillCircle(12, 12, 11);
+        Texture texture = new Texture(pixmap);
+        pixmap.dispose();
+        TextureRegionDrawable knob = new TextureRegionDrawable(new TextureRegion(texture));
+        knob.setMinWidth(24f);
+        knob.setMinHeight(24f);
+        return knob;
+    }
+
+    /**
+     * Checkbox square for the boolean settings: a dark square with a light border; the checked
+     * variant adds the accent tick, the disabled ones grey everything out (#778).
+     */
+    private static Drawable checkboxDrawable(boolean checked, boolean disabled) {
+        int size = 26;
+        Color fill =
+                disabled ? new Color(0.18f, 0.18f, 0.18f, 1f) : new Color(0.15f, 0.15f, 0.15f, 1f);
+        Color border =
+                disabled ? new Color(0.45f, 0.45f, 0.45f, 1f) : new Color(0.7f, 0.7f, 0.7f, 1f);
+        Color accent = disabled ? new Color(0.5f, 0.5f, 0.5f, 1f) : new Color(0.29f, 0.65f, 1f, 1f);
+        Pixmap pixmap = new Pixmap(size, size, Pixmap.Format.RGBA8888);
+        pixmap.setColor(fill);
+        pixmap.fill();
+        pixmap.setColor(border);
+        pixmap.drawRectangle(0, 0, size, size);
+        pixmap.drawRectangle(1, 1, size - 2, size - 2);
+        if (checked) {
+            // Two-stroke tick: short down-right leg into a long up-right leg, doubled for weight.
+            pixmap.setColor(accent);
+            pixmap.drawLine(6, 14, 11, 19);
+            pixmap.drawLine(7, 14, 12, 19);
+            pixmap.drawLine(11, 19, 20, 8);
+            pixmap.drawLine(11, 18, 20, 7);
+        }
+        Texture texture = new Texture(pixmap);
+        pixmap.dispose();
+        TextureRegionDrawable square = new TextureRegionDrawable(new TextureRegion(texture));
+        square.setMinWidth(size);
+        square.setMinHeight(size);
+        return square;
     }
 
     /** Adds the bottom strip columns in {@link #STRIP_COLUMNS} order. */
@@ -1360,6 +1441,9 @@ public class Gdx3DHud {
             final TextField seedField = new TextField(form.value(NewGameForm.SEED_KEY), skin);
             // The dialog owns Tab/arrow navigation, so the field must not consume Tab itself.
             seedField.setFocusTraversal(false);
+            // LWJGL3 synthesises keyTyped('\t') on Tab and hasGlyph lies for the missing glyph: a
+            // plain field would type the "?" placeholder, so only accept printable characters.
+            seedField.setTextFieldFilter((f, c) -> c >= 32);
             seedField.setTextFieldListener((field, c) -> form.setSeed(field.getText()));
             final TextButton newSeedButton = new TextButton(NewGameText.NEW_SEED, skin);
 
@@ -1567,6 +1651,18 @@ public class Gdx3DHud {
     /** Width of the three-colour 100 % bar, aligned under the terrain sliders (#778). */
     static final int TERRAIN_BAR_WIDTH = 280;
 
+    /**
+     * Left gutter of every Settings page, equivalent to one 24px glyph column, so the 3D form keeps
+     * the 2D {@code NewGameDialog.LEFT_MARGIN_COLUMNS = 1} indent (#780).
+     */
+    static final float SETTINGS_LEFT_GUTTER = 24f;
+
+    /**
+     * Width of the Terrain page seed box: roughly a third of the slider bar, matching the 2D
+     * 10-cell seed box instead of the old over-wide {@link #TERRAIN_BAR_WIDTH} (#780).
+     */
+    static final int TERRAIN_SEED_WIDTH = 140;
+
     /** Port the 3D Settings dialog uses to reach the running game; the presenter implements it. */
     public interface SettingsPort {
         /** Applies the editable values and reports the rejections (S3a). */
@@ -1653,6 +1749,9 @@ public class Gdx3DHud {
     static Color terrainDayColor(VisualPalette.Token token) {
         Color color = new Color();
         Color.rgb888ToColor(color, new VisualPalette().color(token, 0.0));
+        // rgb888ToColor leaves the alpha of the (fresh) Color at 0, so without this the bar and the
+        // preview pixmap come out fully transparent (#780).
+        color.a = 1f;
         return color;
     }
 
@@ -1701,7 +1800,7 @@ public class Gdx3DHud {
 
             final Map<String, String> baseline = SettingsCatalog.overDefaults(currentSettings);
             final Map<String, String> form = new LinkedHashMap<>(baseline);
-            final List<TextField> categoryFields = new ArrayList<>();
+            final List<Actor> categoryFields = new ArrayList<>();
             final List<Actor> focusable = new ArrayList<>();
             final SettingCategory[] active = {SettingCategory.TERRAIN};
             // Terrain page preview resources, disposed when the page is swapped or the dialog
@@ -1716,6 +1815,7 @@ public class Gdx3DHud {
             final Label feedback = new Label("", skin, "small");
             final Table fieldsTable = new Table();
             fieldsTable.top().left();
+            fieldsTable.padLeft(SETTINGS_LEFT_GUTTER);
             final ScrollPane fieldsScroll = new ScrollPane(fieldsTable, skin);
             fieldsScroll.setFadeScrollBars(false);
             final Map<SettingCategory, TextButton> categoryButtons = new LinkedHashMap<>();
@@ -1729,13 +1829,22 @@ public class Gdx3DHud {
 
             final List<TextButton> footerButtons = List.of(applyButton, restoreButton,
                     newGameButton, saveDefaultsButton, closeButton);
-            // The footer buttons have no caret of their own, so a focused one is highlighted like
-            // the File menu (cyan label). Refreshed after navigating, after a page swap and when a
-            // confirmation hands the focus back (#778).
+            // The footer buttons and the boolean checkboxes have no caret of their own, so a
+            // focused one is highlighted like the File menu (cyan tint/label). Refreshed after
+            // navigating, after a page swap and when a confirmation hands the focus back (#778,
+            // #780).
             final Runnable paintFooterFocus = () -> {
                 Actor focused = stage.getKeyboardFocus();
                 for (TextButton button : footerButtons) {
                     button.getLabel().setColor(focused == button ? Color.CYAN : Color.WHITE);
+                }
+                for (Actor widget : focusable) {
+                    if (widget instanceof CheckBox) {
+                        // The tint must go on the Image child: a Table's own colour does not
+                        // cascade to its children.
+                        ((CheckBox) widget).getImage()
+                                .setColor(focused == widget ? Color.CYAN : Color.WHITE);
+                    }
                 }
             };
 
@@ -1887,6 +1996,12 @@ public class Gdx3DHud {
                             ((TextButton) focused).fire(new ChangeEvent());
                             return true;
                         }
+                        if (focused instanceof CheckBox) {
+                            // Toggling fires the ChangeListener, which keeps the form in sync.
+                            CheckBox checkBox = (CheckBox) focused;
+                            checkBox.setChecked(!checkBox.isChecked());
+                            return true;
+                        }
                         return false;
                     }
                     if (keycode == Input.Keys.ESCAPE) {
@@ -1944,7 +2059,7 @@ public class Gdx3DHud {
 
     /** Fills the page with one row per catalogue field of {@code category}, in catalogue order. */
     private void fillSettingsCategory(SettingCategory category, Table fieldsTable,
-            List<TextField> categoryFields, Map<String, String> form, Set<String> scenarioKeys) {
+            List<Actor> categoryFields, Map<String, String> form, Set<String> scenarioKeys) {
         fieldsTable.clear();
         categoryFields.clear();
         for (SettingDefinition definition : SettingsCatalog.definitions()) {
@@ -1961,7 +2076,7 @@ public class Gdx3DHud {
      * Nothing here enters the Tab cycle (#767): the controls are disabled and
      * {@code categoryFields} stays empty, so the dialog pins the focus to the footer instead.
      */
-    private void fillSettingsTerrain(Table fieldsTable, List<TextField> categoryFields,
+    private void fillSettingsTerrain(Table fieldsTable, List<Actor> categoryFields,
             Map<String, String> form, List<Pixmap> pixmaps, List<Texture> textures) {
         fieldsTable.clear();
         categoryFields.clear();
@@ -1987,7 +2102,8 @@ public class Gdx3DHud {
         seedField.setDisabled(true);
         seedField.setFocusTraversal(false);
         seedField.setColor(DISABLED_TINT);
-        seedRow.add(seedField).width(TERRAIN_BAR_WIDTH).height(32f).left();
+        seedField.setTextFieldFilter((f, c) -> c >= 32);
+        seedRow.add(seedField).width(TERRAIN_SEED_WIDTH).height(32f).left();
         block.add(seedRow).left().row();
 
         block.add(terrainSliderRow(NewGameText.WATER_LABEL, water, labelWidth, valueWidth)).left()
@@ -2020,10 +2136,10 @@ public class Gdx3DHud {
         row.left();
         Slider slider = new Slider(0, SettingsCatalog.MAX_TERRAIN_PERCENT, 1, false, skin);
         slider.setValue(percent);
+        // Disabled style paints the grey track/knob (no setColor tint, #780).
         slider.setDisabled(true);
-        slider.setColor(DISABLED_TINT);
         row.add(new Label(label, skin, "small")).width(labelWidth).left();
-        row.add(slider).width(TERRAIN_BAR_WIDTH);
+        row.add(slider).width(TERRAIN_BAR_WIDTH).height(30f);
         Label value = new Label(percent + " %", skin, "small");
         value.setColor(Color.LIGHT_GRAY);
         row.add(value).width(valueWidth).left();
@@ -2098,9 +2214,12 @@ public class Gdx3DHud {
         }
     }
 
-    /** One field row: state glyph, label with unit and a text field or a read-only value label. */
+    /**
+     * One field row: state glyph, label with unit and the editing widget — a checkbox for BOOLEAN
+     * settings, a text field otherwise — or a read-only value label when the field is locked.
+     */
     private Table settingsFieldRow(SettingDefinition definition, Set<String> scenarioKeys,
-            Map<String, String> form, List<TextField> categoryFields) {
+            Map<String, String> form, List<Actor> categoryFields) {
         SettingFieldState state = SettingsCatalog.fieldState(definition, scenarioKeys);
         Table row = new Table();
         row.left();
@@ -2110,9 +2229,29 @@ public class Gdx3DHud {
         row.add(glyph).width(24f);
         row.add(new Label(settingsFieldLabel(definition), skin, "default")).width(280f).left();
         String value = form.getOrDefault(definition.key(), "");
-        if (state.editable()) {
+        if (definition.type() == SettingValueType.BOOLEAN) {
+            // Boolean settings get a real checkbox (2D parity, #780); a disabled one mirrors the
+            // read-only label of the other types and stays out of the Tab cycle.
+            CheckBox checkBox = new CheckBox("", skin);
+            checkBox.setChecked(Boolean.parseBoolean(value));
+            checkBox.setDisabled(!state.editable());
+            // Keep the working form in sync: Apply collects editableValues from it, unchanged.
+            checkBox.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    form.put(definition.key(), checkBox.isChecked() ? "true" : "false");
+                }
+            });
+            row.add(checkBox).width(240f).height(34f).left();
+            if (state.editable()) {
+                categoryFields.add(checkBox);
+            }
+        } else if (state.editable()) {
             TextField field = new TextField(value, skin);
             field.setFocusTraversal(false);
+            // LWJGL3 synthesises keyTyped('\t') on Tab and hasGlyph lies for the missing glyph, so
+            // a plain field would type the "?" placeholder: only accept printable characters.
+            field.setTextFieldFilter((f, c) -> c >= 32);
             // Keep the working form in sync so switching categories never loses an edit.
             field.setTextFieldListener((f, c) -> form.put(definition.key(), f.getText()));
             row.add(field).width(240f).height(34f);
