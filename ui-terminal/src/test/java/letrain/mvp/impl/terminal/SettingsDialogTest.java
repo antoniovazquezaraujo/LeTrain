@@ -187,10 +187,12 @@ class SettingsDialogTest {
     @Test
     @DisplayName("the box fits the screen and keeps margins with room, never collapsing (#742 polish)")
     void should_KeepTheDialogInsideTheScreen() {
-        int[][] screens = {{1, 1}, {56, 20}, {69, 21}, {70, 22}, {80, 24}, {100, 30}, {200, 60}};
-        TerminalSize[] expected = {new TerminalSize(1, 1), new TerminalSize(50, 16),
-                new TerminalSize(63, 17), new TerminalSize(64, 18), new TerminalSize(70, 20),
-                new TerminalSize(70, 26), new TerminalSize(100, 30)};
+        int[][] screens = {{1, 1}, {2, 2}, {3, 3}, {56, 20}, {69, 21}, {70, 22}, {80, 24},
+                {100, 30}, {120, 30}, {160, 30}, {200, 60}};
+        TerminalSize[] expected = {new TerminalSize(1, 1), new TerminalSize(1, 1),
+                new TerminalSize(1, 1), new TerminalSize(50, 16), new TerminalSize(63, 17),
+                new TerminalSize(64, 18), new TerminalSize(70, 20), new TerminalSize(70, 26),
+                new TerminalSize(70, 26), new TerminalSize(80, 26), new TerminalSize(100, 30)};
 
         for (int i = 0; i < screens.length; i++) {
             TerminalSize screen = new TerminalSize(screens[i][0], screens[i][1]);
