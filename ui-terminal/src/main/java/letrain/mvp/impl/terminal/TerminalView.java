@@ -808,6 +808,9 @@ public class TerminalView implements letrain.mvp.View {
      */
     @Override
     public Map<String, String> showNewGameDialog(Map<String, String> currentSettings) {
+        // Refresh the front buffer before the dialog freezes it as its backdrop: the File menu or
+        // the discard confirmation paint over the last game frame (#742 polish).
+        paint();
         return NewGameDialog.show(screen, currentSettings);
     }
 
@@ -818,6 +821,9 @@ public class TerminalView implements letrain.mvp.View {
      */
     public SettingsDialog.Action showSettingsDialog(Map<String, String> currentSettings,
             Set<String> scenarioKeys, SettingsDialog.SettingsPort port) {
+        // The File menu just painted over the game: repaint before the dialog captures its backdrop
+        // (#742 polish).
+        paint();
         return SettingsDialog.show(screen, currentSettings, scenarioKeys, port);
     }
 

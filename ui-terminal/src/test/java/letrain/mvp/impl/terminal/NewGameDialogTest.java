@@ -62,6 +62,41 @@ class NewGameDialogTest {
     private static final int TERRAIN_COLUMN = NewGameDialog.valueColumn(TERRAIN_NAMES);
 
     @Test
+    @DisplayName("New Game uses the shared bounded box over the game and still plans the preview (#742 polish)")
+    void should_SizeTheNewGameDialogLikeSettings() {
+        int[][] screens = {{56, 20}, {69, 21}, {70, 22}, {80, 24}, {100, 30}, {200, 60}};
+        for (int[] size : screens) {
+            TerminalSize screen = new TerminalSize(size[0], size[1]);
+            TerminalSize box = DialogWindow.dialogSize(screen);
+            String label = size[0] + "x" + size[1];
+
+            assertTrue(box.getColumns() > 0 && box.getRows() > 0, label);
+            assertTrue(
+                    box.getColumns() + 2 * DialogWindow.DECORATION_COLUMNS <= screen.getColumns(),
+                    label + ": the frame must fit the terminal");
+            assertTrue(box.getRows() + 2 * DialogWindow.DECORATION_ROWS <= screen.getRows(),
+                    label + ": the frame must fit the terminal");
+
+            NewGameDialog.PreviewPlan plan =
+                    NewGameDialog.previewPlan(box.getColumns(), box.getRows(), 0, 0);
+            assertNotNull(plan, label + ": the centered box still plans a preview");
+            int body = box.getRows() - NewGameDialog.TAB_ROWS - NewGameDialog.FOOTER_ROWS
+                    - NewGameDialog.SECTION_TOP_ROWS;
+            assertTrue(NewGameDialog.TERRAIN_CHROME_ROWS + plan.textRows() <= body,
+                    label + ": seed, sliders, bar and preview fit the box body");
+        }
+
+        // The common terminal size: 70x20 content (72x22 framed) leaves 17 body rows.
+        TerminalSize box = DialogWindow.dialogSize(new TerminalSize(80, 24));
+        assertEquals(new TerminalSize(70, 20), box);
+        NewGameDialog.PreviewPlan plan = NewGameDialog.previewPlan(70, 20, 0, 0);
+        assertEquals(12, plan.sampleRows(), "a 12x12 sample fills the 17-row Terrain page");
+        assertEquals(6, plan.textRows());
+        assertEquals(17, 20 - NewGameDialog.TAB_ROWS - NewGameDialog.FOOTER_ROWS
+                - NewGameDialog.SECTION_TOP_ROWS);
+    }
+
+    @Test
     @DisplayName("120x30: the preview samples a 22x22 square (11 text rows), a quarter of the area")
     void should_PlanSquarePreviewAt120x30() {
         NewGameDialog.PreviewPlan plan = NewGameDialog.previewPlan(120, 30);

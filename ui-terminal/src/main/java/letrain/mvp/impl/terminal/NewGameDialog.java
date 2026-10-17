@@ -52,8 +52,8 @@ import letrain.settings.SettingsCatalog;
 import letrain.visitor.terminal.TerminalPalette;
 
 /**
- * 2D New Game dialog (S2, issue #746; layout polished for #749, field format #751). Full-screen,
- * borderless, built from the shared catalogue:
+ * 2D New Game dialog (S2, issue #746; layout polished for #749, field format #751), a bounded,
+ * centered and framed box over the running game (like the 3D Settings, #742 polish):
  *
  * <ul>
  * <li><b>Terrain</b> tab (opens first): seed (random, editable and copyable), water/mountain
@@ -357,11 +357,14 @@ final class NewGameDialog {
      */
     static Map<String, String> show(Screen screen, Map<String, String> currentSettings) {
         NewGameForm form = NewGameForm.forNewGame(currentSettings);
-        MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
-        gui.setTheme(darkTheme(gui.getTheme()));
+        MultiWindowTextGUI gui = DialogWindow.gui(screen);
         TerminalPalette palette = TerminalPalette.detect();
-        BasicWindow window = new BasicWindow();
-        window.setHints(List.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
+        // Bounded, centered and framed like the in-game Settings (#742 polish): the game stays
+        // visible around the dialog. The decoration adds one cell per side outside the box.
+        TerminalSize box = DialogWindow.dialogSize(screen.getTerminalSize());
+        BasicWindow window = new BasicWindow(NewGameText.TITLE);
+        window.setHints(List.of(Window.Hint.CENTERED));
+        window.setFixedSize(box);
         window.setCloseWindowWithEscape(true);
 
         final Map<String, String>[] result = new Map[] {null};
@@ -371,8 +374,10 @@ final class NewGameDialog {
         Panel content = new Panel(new BorderLayout());
 
         // --- Terrain tab: seed, sliders, bar and preview (only here since #749) -----
+        // The box already discounts the frame: preview against the content area, with explicit
+        // zero minimums so the smaller-than-80x24 box still plans a preview (#742 polish).
         final TerrainControls terrainControls = new TerrainControls(form.seed(),
-                form.waterPercent(), form.mountainPercent(), palette, screen.getTerminalSize());
+                form.waterPercent(), form.mountainPercent(), palette, box, 0, 0);
         final int[] seed = {form.seed()};
 
         Runnable recalibrate = () -> terrainControls.setValues(seed[0], form.waterPercent(),
@@ -1291,6 +1296,15 @@ final class NewGameDialog {
 
     private static ThemeDefinition darkDefinition(ThemeDefinition definition) {
         return new DelegatingThemeDefinition(definition) {
+            @Override
+            public boolean getBooleanProperty(String name, boolean defaultValue) {
+                // Center the dialog title on the top border of the one-line frame (#742 polish).
+                if ("CENTER_TITLE".equals(name)) {
+                    return true;
+                }
+                return super.getBooleanProperty(name, defaultValue);
+            }
+
             @Override
             public ThemeStyle getNormal() {
                 return restyled(super.getNormal(), TerminalView.NORMAL_MENU_FG_COLOR,

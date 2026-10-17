@@ -47,7 +47,8 @@ import letrain.visitor.terminal.TerminalPalette;
  *
  * <p>
  * Since the #742 polish the window is a bounded, centered box over the running game (like the 3D
- * Settings), sized once by {@link #dialogSize(TerminalSize)} so swapping tabs does not resize it.
+ * Settings), sized once by {@link DialogWindow#dialogSize(TerminalSize)} so swapping tabs does not
+ * resize it.
  *
  * <p>
  * Every field carries its apply-state mark: green {@code ●} for LIVE, yellow {@code ●} for REAPPLY
@@ -78,39 +79,6 @@ final class SettingsDialog {
     static final int SECTION_TOP_ROWS = 1;
     /** Columns the state glyph and its trailing space take at the left of every row (#764). */
     static final int STATE_COLUMNS = 2;
-
-    /**
-     * Margins kept around the centered dialog when the terminal has room: the 2D Settings is a box
-     * over the running game, like the 3D one (#742 polish).
-     */
-    static final int MARGIN_COLUMNS = 2;
-    static final int MARGIN_ROWS = 1;
-    /** Narrowest dialog: the five footer buttons in one row (65 cells) plus a little slack. */
-    static final int MIN_COLUMNS = 70;
-    /** Widest dialog, so large terminals show the game around it instead of a full-screen page. */
-    static final int MAX_COLUMNS = 100;
-    /** Shortest dialog: tabs, a usable section body and the three footer rows. */
-    static final int MIN_ROWS = 22;
-    /** Tallest dialog, keeping a bounded box on tall terminals. */
-    static final int MAX_ROWS = 30;
-
-    /**
-     * Size of the centered Settings box for a terminal: wide enough for the footer and the Terrain
-     * sliders, at most half the terminal (capped at {@link #MAX_COLUMNS}), and never larger than
-     * the screen minus {@link #MARGIN_COLUMNS}/{@link #MARGIN_ROWS}. Pure maths so the 80x24 and
-     * large terminal cases are pinned by tests (#742 polish).
-     */
-    static TerminalSize dialogSize(TerminalSize screen) {
-        int availableColumns = Math.max(1, screen.getColumns() - 2 * MARGIN_COLUMNS);
-        int width = Math.max(MIN_COLUMNS, screen.getColumns() / 2);
-        width = Math.min(width, Math.min(MAX_COLUMNS, availableColumns));
-
-        int availableRows = Math.max(1, screen.getRows() - 2 * MARGIN_ROWS);
-        int height = Math.min(Math.max(MIN_ROWS, availableRows), MAX_ROWS);
-        height = Math.min(height, Math.max(1, screen.getRows()));
-
-        return new TerminalSize(width, height);
-    }
 
     /**
      * Size handed to the shared Terrain block (seed, sliders, bar and preview): the dialog box
@@ -261,14 +229,14 @@ final class SettingsDialog {
     static Action show(Screen screen, Map<String, String> currentSettings, Set<String> scenarioKeys,
             SettingsPort port) {
         Map<String, String> baseline = baselineOf(currentSettings);
-        MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
-        gui.setTheme(NewGameDialog.darkTheme(gui.getTheme()));
+        MultiWindowTextGUI gui = DialogWindow.gui(screen);
         // A bounded, centered box over the running game, like the 3D Settings (#742 polish): the
-        // fixed size keeps it stable while the tabs swap their section.
-        TerminalSize box = dialogSize(screen.getTerminalSize());
+        // fixed content size keeps it stable while the tabs swap their section. The decoration adds
+        // one cell per side outside the box.
+        TerminalSize box = DialogWindow.dialogSize(screen.getTerminalSize());
         List<List<ActionButton>> footerLayout = footerRows(box.getColumns());
-        BasicWindow window = new BasicWindow();
-        window.setHints(List.of(Window.Hint.CENTERED, Window.Hint.NO_DECORATIONS));
+        BasicWindow window = new BasicWindow(SettingsText.TITLE);
+        window.setHints(List.of(Window.Hint.CENTERED));
         window.setFixedSize(box);
         window.setCloseWindowWithEscape(true);
 
