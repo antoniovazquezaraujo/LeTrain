@@ -2,6 +2,7 @@ package letrain.mvp.impl.terminal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -135,6 +136,8 @@ class NewGameDialogTest {
         controls.addTo(column);
         assertEquals(6, column.getChildrenList().size(),
                 "seed, water, mountain, bar, gap and preview");
+        assertFalse(column.getChildrenList().get(5) instanceof Label,
+                "120x30 still shows the preview, not the no-preview notice");
 
         NewGameDialog.TerrainControls small = new NewGameDialog.TerrainControls(1, 25, 10,
                 new TerminalPalette(TerminalPalette.Depth.TRUECOLOR), new TerminalSize(70, 20));
@@ -143,6 +146,9 @@ class NewGameDialogTest {
         assertNull(NewGameDialog.previewPlan(70, 20), "below 80x24 there is no preview");
         assertEquals(6, smallColumn.getChildrenList().size(),
                 "the no-preview notice keeps the sixth row");
+        Label notice = assertInstanceOf(Label.class, smallColumn.getChildrenList().get(5),
+                "the 5-arg constructor must keep New Game's 80x24 minimum");
+        assertEquals(NewGameText.NO_PREVIEW, notice.getText());
     }
 
     @Test

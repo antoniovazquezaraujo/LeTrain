@@ -77,7 +77,7 @@ class SettingsDialogTest {
     }
 
     @Test
-    @DisplayName("70x20 fits the five buttons in two rows (order kept); 120x30 in one (#764)")
+    @DisplayName("70 columns fits the five buttons in one row; 50 wraps in two (order kept) (#764)")
     void should_WrapTheFooter() {
         assertEquals("New game", SettingsText.NEW_GAME, "short label since #767");
 
@@ -173,6 +173,56 @@ class SettingsDialogTest {
                         - SettingsDialog.LEGEND_ROWS - SettingsDialog.FEEDBACK_ROWS;
         assertTrue(NewGameDialog.TERRAIN_CHROME_ROWS + plan.textRows() <= sectionBody,
                 "no preview row is hidden behind the fixed frame");
+    }
+
+    @Test
+    @DisplayName("the box fits the screen and keeps margins with room, never collapsing (#742 polish)")
+    void should_KeepTheDialogInsideTheScreen() {
+        int[][] screens = {{1, 1}, {56, 20}, {69, 21}, {70, 22}, {80, 24}, {100, 30}, {200, 60}};
+        TerminalSize[] expected = {new TerminalSize(1, 1), new TerminalSize(52, 20),
+                new TerminalSize(65, 21), new TerminalSize(66, 22), new TerminalSize(70, 22),
+                new TerminalSize(70, 28), new TerminalSize(100, 30)};
+
+        for (int i = 0; i < screens.length; i++) {
+            TerminalSize screen = new TerminalSize(screens[i][0], screens[i][1]);
+            TerminalSize dialog = SettingsDialog.dialogSize(screen);
+            String label = screen.getColumns() + "x" + screen.getRows();
+
+            assertEquals(expected[i], dialog, label);
+            assertTrue(dialog.getColumns() > 0 && dialog.getRows() > 0,
+                    label + " must never get a non-positive dimension");
+            assertTrue(dialog.getColumns() <= screen.getColumns(),
+                    label + " must not be wider than the terminal");
+            assertTrue(dialog.getRows() <= screen.getRows(),
+                    label + " must not be taller than the terminal");
+            if (screen.getColumns() >= SettingsDialog.MIN_COLUMNS
+                    + 2 * SettingsDialog.MARGIN_COLUMNS) {
+                assertTrue(
+                        dialog.getColumns() <= screen.getColumns()
+                                - 2 * SettingsDialog.MARGIN_COLUMNS,
+                        label + " must keep the horizontal margins");
+            }
+            if (screen.getRows() >= SettingsDialog.MIN_ROWS + 2 * SettingsDialog.MARGIN_ROWS) {
+                assertTrue(dialog.getRows() <= screen.getRows() - 2 * SettingsDialog.MARGIN_ROWS,
+                        label + " must keep the vertical margins");
+            }
+
+            int footerButtonRows = SettingsDialog.footerRows(dialog.getColumns()).size();
+            TerminalSize terrain = SettingsDialog.terrainSize(dialog, footerButtonRows);
+            NewGameDialog.PreviewPlan plan =
+                    NewGameDialog.previewPlan(terrain.getColumns(), terrain.getRows(), 0, 0);
+            int sectionBody = dialog.getRows() - SettingsDialog.TAB_ROWS
+                    - SettingsDialog.SECTION_TOP_ROWS - footerButtonRows
+                    - SettingsDialog.LEGEND_ROWS - SettingsDialog.FEEDBACK_ROWS;
+            if (plan != null) {
+                assertTrue(NewGameDialog.TERRAIN_CHROME_ROWS + plan.textRows() <= sectionBody,
+                        label + " would hide preview rows behind the frame");
+            }
+        }
+
+        // TerminalSize accepts 0x0 although a real screen never reports it: the geometry still
+        // falls back to a positive 1x1 box instead of zero or negative dimensions.
+        assertEquals(new TerminalSize(1, 1), SettingsDialog.dialogSize(new TerminalSize(0, 0)));
     }
 
     @Test
