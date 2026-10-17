@@ -2,10 +2,14 @@ package letrain.mvp.impl.terminal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
@@ -20,6 +24,7 @@ import com.googlecode.lanterna.gui2.Label;
 import com.googlecode.lanterna.gui2.LinearLayout;
 import com.googlecode.lanterna.gui2.Panel;
 import com.googlecode.lanterna.gui2.TextBox;
+import com.googlecode.lanterna.gui2.TextGUIGraphics;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
 import java.util.Comparator;
@@ -59,6 +64,41 @@ class NewGameDialogTest {
     private static final List<String> TERRAIN_NAMES =
             List.of(NewGameText.SEED_LABEL, NewGameText.WATER_LABEL, NewGameText.MOUNTAIN_LABEL);
     private static final int TERRAIN_COLUMN = NewGameDialog.valueColumn(TERRAIN_NAMES);
+
+    @Test
+    @DisplayName("New Game uses the shared bounded box over the game and still plans the preview (#742 polish)")
+    void should_SizeTheNewGameDialogLikeSettings() {
+        int[][] screens = {{56, 20}, {69, 21}, {70, 22}, {80, 24}, {100, 30}, {200, 60}};
+        for (int[] size : screens) {
+            TerminalSize screen = new TerminalSize(size[0], size[1]);
+            TerminalSize box = DialogWindow.dialogSize(screen);
+            String label = size[0] + "x" + size[1];
+
+            assertTrue(box.getColumns() > 0 && box.getRows() > 0, label);
+            assertTrue(
+                    box.getColumns() + 2 * DialogWindow.DECORATION_COLUMNS <= screen.getColumns(),
+                    label + ": the frame must fit the terminal");
+            assertTrue(box.getRows() + 2 * DialogWindow.DECORATION_ROWS <= screen.getRows(),
+                    label + ": the frame must fit the terminal");
+
+            NewGameDialog.PreviewPlan plan =
+                    NewGameDialog.previewPlan(box.getColumns(), box.getRows(), 0, 0);
+            assertNotNull(plan, label + ": the centered box still plans a preview");
+            int body = box.getRows() - NewGameDialog.TAB_ROWS - NewGameDialog.FOOTER_ROWS
+                    - NewGameDialog.SECTION_TOP_ROWS;
+            assertTrue(NewGameDialog.TERRAIN_CHROME_ROWS + plan.textRows() <= body,
+                    label + ": seed, sliders, bar and preview fit the box body");
+        }
+
+        // The common terminal size: 70x20 content (72x22 framed) leaves 17 body rows.
+        TerminalSize box = DialogWindow.dialogSize(new TerminalSize(80, 24));
+        assertEquals(new TerminalSize(70, 20), box);
+        NewGameDialog.PreviewPlan plan = NewGameDialog.previewPlan(70, 20, 0, 0);
+        assertEquals(12, plan.sampleRows(), "a 12x12 sample fills the 17-row Terrain page");
+        assertEquals(6, plan.textRows());
+        assertEquals(17, 20 - NewGameDialog.TAB_ROWS - NewGameDialog.FOOTER_ROWS
+                - NewGameDialog.SECTION_TOP_ROWS);
+    }
 
     @Test
     @DisplayName("120x30: the preview samples a 22x22 square (11 text rows), a quarter of the area")
@@ -135,6 +175,8 @@ class NewGameDialogTest {
         controls.addTo(column);
         assertEquals(6, column.getChildrenList().size(),
                 "seed, water, mountain, bar, gap and preview");
+        assertFalse(column.getChildrenList().get(5) instanceof Label,
+                "120x30 still shows the preview, not the no-preview notice");
 
         NewGameDialog.TerrainControls small = new NewGameDialog.TerrainControls(1, 25, 10,
                 new TerminalPalette(TerminalPalette.Depth.TRUECOLOR), new TerminalSize(70, 20));
@@ -143,6 +185,93 @@ class NewGameDialogTest {
         assertNull(NewGameDialog.previewPlan(70, 20), "below 80x24 there is no preview");
         assertEquals(6, smallColumn.getChildrenList().size(),
                 "the no-preview notice keeps the sixth row");
+        Label notice = assertInstanceOf(Label.class, smallColumn.getChildrenList().get(5),
+                "the 5-arg constructor must keep New Game's 80x24 minimum");
+        assertEquals(NewGameText.NO_PREVIEW, notice.getText());
+    }
+
+    @Test
+    @DisplayName("a state mark opens the terrain rows and shifts their values two columns (#742 polish)")
+    void should_ShiftTheMarkedTerrainRows() {
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        NewGameDialog.StateMark mark = new NewGameDialog.StateMark("●", TextColor.ANSI.RED);
+
+        NewGameDialog.PercentSlider plain =
+                new NewGameDialog.PercentSlider(NewGameText.WATER_LABEL, TERRAIN_COLUMN, 25, () -> {
+                });
+        NewGameDialog.PercentSlider marked = new NewGameDialog.PercentSlider(
+                NewGameText.WATER_LABEL, TERRAIN_COLUMN, 25, mark, () -> {
+                });
+        assertEquals(TERRAIN_COLUMN + 1 + NewGameDialog.SLIDER_BAR_WIDTH + 2 + 5,
+                plain.getPreferredSize().getColumns());
+        assertEquals(plain.getPreferredSize().getColumns() + SettingsDialog.STATE_COLUMNS,
+                marked.getPreferredSize().getColumns(),
+                "the glyph adds its own two columns; the bar keeps its width");
+        assertEquals(SettingsDialog.STATE_COLUMNS, NewGameDialog.stateColumns(mark));
+        assertEquals(0, NewGameDialog.stateColumns(null));
+
+        // New Game keeps the base column: no marks, no shift.
+        NewGameDialog.ScrollColumn plainBlock = new NewGameDialog.ScrollColumn();
+        new NewGameDialog.TerrainControls(7, 25, 10, palette, new TerminalSize(120, 30))
+                .addTo(plainBlock);
+        assertEquals(TERRAIN_COLUMN, seedValueColumn(plainBlock));
+
+        // Settings passes the three marks: the value moves STATE_COLUMNS right.
+        NewGameDialog.ScrollColumn markedBlock = new NewGameDialog.ScrollColumn();
+        NewGameDialog.TerrainControls markedControls = new NewGameDialog.TerrainControls(7, 25, 10,
+                palette, new TerminalSize(120, 30), 0, 0, mark, mark, mark);
+        markedControls.addTo(markedBlock);
+        assertEquals(TERRAIN_COLUMN + SettingsDialog.STATE_COLUMNS, seedValueColumn(markedBlock));
+        assertEquals(
+                TERRAIN_COLUMN + 1 + NewGameDialog.SLIDER_BAR_WIDTH + 2 + 5
+                        + SettingsDialog.STATE_COLUMNS,
+                markedControls.water().getPreferredSize().getColumns(),
+                "Water keeps the mark and shifts its value");
+        assertEquals(
+                TERRAIN_COLUMN + 1 + NewGameDialog.SLIDER_BAR_WIDTH + 2 + 5
+                        + SettingsDialog.STATE_COLUMNS,
+                markedControls.mountain().getPreferredSize().getColumns(),
+                "Mountain keeps the mark and shifts its value");
+    }
+
+    @Test
+    @DisplayName("a marked slider draws the glyph at x=0 and shifts label/bar by the mark (#742 polish)")
+    void should_DrawTheMarkBeforeTheSliderLabel() {
+        NewGameDialog.StateMark mark = new NewGameDialog.StateMark("●", TextColor.ANSI.RED);
+        NewGameDialog.PercentSlider slider = new NewGameDialog.PercentSlider(
+                NewGameText.WATER_LABEL, TERRAIN_COLUMN, 25, mark, () -> {
+                });
+        TextGUIGraphics graphics = mock(TextGUIGraphics.class);
+        when(graphics.getSize()).thenReturn(new TerminalSize(70, 1));
+
+        slider.getRenderer().drawComponent(graphics, slider);
+
+        // Arrange: the glyph opens the row; label and bar must start after its two columns.
+        verify(graphics).putString(0, 0, "● ");
+        verify(graphics).putString(SettingsDialog.STATE_COLUMNS, 0,
+                NewGameDialog.alignedLabel(NewGameText.WATER_LABEL, TERRAIN_COLUMN));
+        verify(graphics).putString(SettingsDialog.STATE_COLUMNS + TERRAIN_COLUMN, 0, "[");
+
+        NewGameDialog.PercentSlider plain =
+                new NewGameDialog.PercentSlider(NewGameText.WATER_LABEL, TERRAIN_COLUMN, 25, () -> {
+                });
+        TextGUIGraphics plainGraphics = mock(TextGUIGraphics.class);
+        when(plainGraphics.getSize()).thenReturn(new TerminalSize(70, 1));
+
+        plain.getRenderer().drawComponent(plainGraphics, plain);
+
+        verify(plainGraphics).putString(0, 0,
+                NewGameDialog.alignedLabel(NewGameText.WATER_LABEL, TERRAIN_COLUMN));
+        verify(plainGraphics).putString(TERRAIN_COLUMN, 0, "[");
+    }
+
+    /** Lays out the seed row of a terrain block and returns the column of its text box. */
+    private static int seedValueColumn(NewGameDialog.ScrollColumn block) {
+        Panel seedHost = assertInstanceOf(Panel.class, block.getChildrenList().get(0));
+        Panel seedRow = assertInstanceOf(Panel.class, seedHost.getChildrenList().get(0));
+        seedRow.getLayoutManager().doLayout(new TerminalSize(40, 1), seedRow.getChildrenList());
+        return seedRow.getChildrenList().get(seedRow.getChildrenList().size() - 1).getPosition()
+                .getColumn();
     }
 
     @Test

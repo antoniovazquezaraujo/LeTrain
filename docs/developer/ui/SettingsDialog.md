@@ -11,6 +11,7 @@ mismas palabras (`SettingsText`).
 | Pieza | Módulo | Responsabilidad |
 | :--- | :--- | :--- |
 | `letrain.mvp.impl.terminal.SettingsDialog` | ui-terminal | Diálogo Lanterna 2D: pestañas con estados por campo, acciones y feedback. Reutiliza las piezas del formulario de `NewGameDialog`. |
+| `letrain.mvp.impl.terminal.DialogWindow` | ui-terminal | Chrome compartido con Nueva Partida: caja centrada/acotada, marco con título centrado y fondo con la instantánea del mapa (#742 polish). |
 | `Gdx3DHud.showSettingsDialog(...)` | ui-graphic | Diálogo scene2d 3D: selector de categorías, filas por campo con glifo de estado, leyenda y acciones. |
 | `letrain.mvp.SettingsText` | core | Textos compartidos (título, botones, leyenda, confirmaciones, mensajes). |
 | `letrain.settings.SettingFieldState` + `SettingsCatalog.fieldState/overDefaults/changedReapplyKeys` | core | Estado por campo (candado de escenario incluido), baseline y detección de REAPPLY compartidos por 2D y 3D. |
@@ -63,7 +64,18 @@ Desde #767 la pestaña Terrain muestra el **bloque compartido de Nueva Partida**
 (`NewGameDialog.TerrainControls`): seed, sliders de Water/Mountain, la **barra de tres colores** y
 el **preview** debajo, con los parámetros actuales del mundo y todo en **read-only**
 (`setEnabled(false)`: mismo aspecto, fuera del ciclo de foco). Los campos de terreno del catálogo
-(seed/water/mountain) ya no se listan como filas; su estado NEW_GAME queda implícito en el bloque.
+(seed/water/mountain) ya no se listan como filas.
+
+Desde el pulido de #742 el bloque recibe las **tres marcas de estado** opcionales
+(`NewGameDialog.StateMark`): cada fila (seed, Water y Mountain) abre con el glifo `●` y un espacio,
+igual que el resto de páginas y que el Settings 3D. Sin escenario son NEW_GAME (rojo); si el
+escenario fija la clave, gris `SCENARIO` (sin color propio). El glifo ocupa `STATE_COLUMNS` (2)
+celdas y por eso el valor se alinea dos columnas más a la derecha (`valueColumn = 2 +
+NewGameDialog.valueColumn`): seed, Water y Mountain siguen coincidiendo en la columna. La barra
+apilada y el preview **no** llevan glifo: la barra sigue empezando en x=0 y conserva su ancho (el
+bloque pasa la columna base a `StackedBar`, no la efectiva). A 80×24 el contenido es 70×20 y la
+fila marcada mide 2 + 10 + 1 + 40 + 2 + 5 = **60** celdas, así que cabe y el preview sigue sin
+filas ocultas.
 
 En 3D (#778) la página Terrain reproduce el mismo bloque con widgets scene2d
 (`Gdx3DHud.fillSettingsTerrain`): `TextField` y sliders deshabilitados (el estilo *disabled* del skin
@@ -89,6 +101,30 @@ foco, así que el diálogo fija el foco al footer.
 
 ## Layout
 
+- **Ventana centrada, acotada y con marco** (#742 polish): a diferencia de la primera versión de
+  Nueva Partida, Settings 2D se dibuja como una caja sobre la partida en curso, igual que el
+  diálogo 3D. La ventana usa `CENTERED` + `FIXED_SIZE` y **decoración de una línea** de Lanterna
+  (`DefaultWindowDecorationRenderer`), con el **título** `SettingsText.TITLE` centrado en el borde
+  superior (`CENTER_TITLE` en el tema oscuro). El tamaño fijo evita que la caja cambie al pasar de
+  Terrain a Economy.
+- **Fondo con la partida**: `DialogWindow.gui(screen)` construye el `MultiWindowTextGUI` con un
+  `FrozenBackground` que repinta la **instantánea del front buffer** (`Screen.getFrontCharacter`)
+  capturada antes de abrir el diálogo. Lanterna rellena con espacios antes de dibujar el fondo, así
+  que un fondo transparente no conservaría el mapa; la instantánea estática sí (el juego está
+  parado mientras el diálogo es modal). `TerminalView.showSettingsDialog` repinta una vez antes de
+  abrir para que el File menu no deje su último frame en la instantánea.
+- **Geometría** (`DialogWindow.dialogSize(screen)`, función pura): el tamaño devuelto es el **área
+  de contenido**, fuera de la decoración (1 celda por lado). El ancho es `clamp(screen.columns / 2,
+  MIN_COLUMNS=70, MAX_COLUMNS=100)` recortado a `screen.columns - 2*DECORACIÓN - 2*MARGIN_COLUMNS`
+  (2 columnas); el alto es `clamp(available rows, MIN_ROWS=20, MAX_ROWS=30)` recortado al espacio
+  disponible, con `MARGIN_ROWS=1`. A **80×24** sale un contenido de **70×20** y un **decorado de
+  72×22** (márgenes 4 columnas / 1 fila); a 120×30 → 70×26; 160×30 → 80×26; 200×60 → 100×30;
+  60×20 → 54×16. En terminales más pequeños que el mínimo se recorta al espacio disponible y el pie
+  vuelve a dos filas.
+- La columna Terrain recibe `terrainSize(dialog, footerRows)`: el alto del contenido menos las
+  filas extra del pie respecto a Nueva Partida (leyenda y feedback), no el tamaño del terminal. A
+  80×24 son **70×18**, de donde sale un preview **10×10** (5 filas de texto); el preview se calcula
+  con ese tamaño para que ninguna fila quede oculta dentro del marco.
 - Fila de pestañas + línea en blanco + una columna de margen, como Nueva Partida (#757). En el pie,
   de arriba a abajo: filas de botones, **leyenda de colores** y línea de feedback (#767).
 - Footer adaptativo (`footerRows(columns)`, función pura): con la etiqueta corta `New game`, los
@@ -133,9 +169,10 @@ scene2d del diálogo 2D, con las mismas palabras (`SettingsText`) y la misma sem
 
 - `ui-terminal`: `SettingsDialogTest` (estados, prioridad del candado y leyenda de tres entradas,
   ajuste de los botones, confirmación solo con REAPPLY cambiado, columna con marca, recogida de
-  valores y mensaje de rechazos), `NewGameDialogTest` (bloque de terreno compartido read-only,
-  #767), `TerminalPresenterSettingsTest` (valores efectivos + semilla, port S3a, atajo de nueva
-  partida con confirmación y prefill, escritura/error de `letrain.cfg`),
+  valores, mensaje de rechazos y geometría del contenido/decorado), `DialogWindowTest` (instantánea
+  del fondo y título centrado del marco), `NewGameDialogTest` (bloque de terreno compartido
+  read-only, #767), `TerminalPresenterSettingsTest` (valores efectivos + semilla, port S3a, atajo de
+  nueva partida con confirmación y prefill, escritura/error de `letrain.cfg`),
   `TerminalViewFileMenuStateTest` (Settings deshabilitado sin partida y habilitado en partida).
 - `ui-graphic`: `Gdx3DHudSettingsTest` (categorías, estados/glyph colours, etiqueta con unidad,
   leyenda y recogida de valores), `GraphicPresenterSettingsTest` (sin economía no abre, valores

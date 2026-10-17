@@ -52,8 +52,8 @@ import letrain.settings.SettingsCatalog;
 import letrain.visitor.terminal.TerminalPalette;
 
 /**
- * 2D New Game dialog (S2, issue #746; layout polished for #749, field format #751). Full-screen,
- * borderless, built from the shared catalogue:
+ * 2D New Game dialog (S2, issue #746; layout polished for #749, field format #751), a bounded,
+ * centered and framed box over the running game (like the 3D Settings, #742 polish):
  *
  * <ul>
  * <li><b>Terrain</b> tab (opens first): seed (random, editable and copyable), water/mountain
@@ -130,6 +130,25 @@ final class NewGameDialog {
         }
     }
 
+    /**
+     * Optional apply-state mark drawn at the left of a terrain row (Settings, #742 polish): the
+     * glyph plus a trailing space. New Game passes none, so its geometry does not change.
+     */
+    record StateMark(String glyph, TextColor color) {
+    }
+
+    /** Columns a state mark takes (glyph + space), or zero when there is no mark. */
+    static int stateColumns(StateMark mark) {
+        return mark == null ? 0 : mark.glyph().length() + 1;
+    }
+
+    /** Coloured label of a state mark, trailing space included. */
+    static Label stateMarkLabel(StateMark mark) {
+        Label label = new Label(mark.glyph() + " ");
+        label.setForegroundColor(mark.color());
+        return label;
+    }
+
     /** Rows left for one section body: terminal minus the tab bar, the blank row and the footer. */
     static int sectionRows(int rows) {
         return rows - TAB_ROWS - FOOTER_ROWS - SECTION_TOP_ROWS;
@@ -144,7 +163,15 @@ final class NewGameDialog {
      * area — so it no longer takes over the dialog (#754).
      */
     static PreviewPlan previewPlan(int columns, int rows) {
-        if (columns < MIN_COLUMNS || rows < MIN_ROWS) {
+        return previewPlan(columns, rows, MIN_COLUMNS, MIN_ROWS);
+    }
+
+    /**
+     * Same plan with explicit minimums: the Settings dialog sizes the preview against its effective
+     * box (smaller than the 80x24 whole-terminal minimum) and passes zeroes (#742 polish).
+     */
+    static PreviewPlan previewPlan(int columns, int rows, int minColumns, int minRows) {
+        if (columns < minColumns || rows < minRows || columns <= PREVIEW_MARGIN_COLUMNS) {
             return null;
         }
         int previewTextRows = sectionRows(rows) - TERRAIN_CHROME_ROWS;
@@ -349,11 +376,14 @@ final class NewGameDialog {
      */
     static Map<String, String> show(Screen screen, Map<String, String> currentSettings) {
         NewGameForm form = NewGameForm.forNewGame(currentSettings);
-        MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
-        gui.setTheme(darkTheme(gui.getTheme()));
+        MultiWindowTextGUI gui = DialogWindow.gui(screen);
         TerminalPalette palette = TerminalPalette.detect();
-        BasicWindow window = new BasicWindow();
-        window.setHints(List.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
+        // Bounded, centered and framed like the in-game Settings (#742 polish): the game stays
+        // visible around the dialog. The decoration adds one cell per side outside the box.
+        TerminalSize box = DialogWindow.dialogSize(screen.getTerminalSize());
+        BasicWindow window = new BasicWindow(NewGameText.TITLE);
+        window.setHints(List.of(Window.Hint.CENTERED));
+        window.setFixedSize(box);
         window.setCloseWindowWithEscape(true);
 
         final Map<String, String>[] result = new Map[] {null};
@@ -363,8 +393,10 @@ final class NewGameDialog {
         Panel content = new Panel(new BorderLayout());
 
         // --- Terrain tab: seed, sliders, bar and preview (only here since #749) -----
+        // The box already discounts the frame: preview against the content area, with explicit
+        // zero minimums so the smaller-than-80x24 box still plans a preview (#742 polish).
         final TerrainControls terrainControls = new TerrainControls(form.seed(),
-                form.waterPercent(), form.mountainPercent(), palette, screen.getTerminalSize());
+                form.waterPercent(), form.mountainPercent(), palette, box, 0, 0);
         final int[] seed = {form.seed()};
 
         Runnable recalibrate = () -> terrainControls.setValues(seed[0], form.waterPercent(),
@@ -554,30 +586,57 @@ final class NewGameDialog {
 
         TerrainControls(int seed, int waterPercent, int mountainPercent, TerminalPalette palette,
                 TerminalSize screen) {
+            this(seed, waterPercent, mountainPercent, palette, screen, MIN_COLUMNS, MIN_ROWS);
+        }
+
+        /**
+         * Variant for the in-game Settings dialog: {@code area} is the dialog's effective content
+         * box, so the preview adapts to it instead of requiring the 80x24 New Game terminal.
+         */
+        TerrainControls(int seed, int waterPercent, int mountainPercent, TerminalPalette palette,
+                TerminalSize area, int minColumns, int minRows) {
+            this(seed, waterPercent, mountainPercent, palette, area, minColumns, minRows, null,
+                    null, null);
+        }
+
+        /**
+         * Variant with the optional state marks of the Settings Terrain page (#742 polish): seed,
+         * water and mountain each open with a coloured glyph (2 columns) and their value shifts
+         * right. New Game passes no marks and keeps the base column untouched.
+         */
+        TerrainControls(int seed, int waterPercent, int mountainPercent, TerminalPalette palette,
+                TerminalSize area, int minColumns, int minRows, StateMark seedMark,
+                StateMark waterMark, StateMark mountainMark) {
             int column = valueColumn(List.of(NewGameText.SEED_LABEL, NewGameText.WATER_LABEL,
                     NewGameText.MOUNTAIN_LABEL));
             seedHost = new Panel(new LinearLayout(Direction.VERTICAL));
             Panel seedRow = new Panel(rowLayout());
+            if (seedMark != null) {
+                seedRow.addComponent(stateMarkLabel(seedMark));
+            }
             seedRow.addComponent(new Label(alignedLabel(NewGameText.SEED_LABEL, column)));
             seedBox = new ValidatingTextBox(
                     SettingsCatalog.definition(NewGameForm.SEED_KEY).orElseThrow(),
-                    String.valueOf(seed), column);
+                    String.valueOf(seed), column + stateColumns(seedMark));
             seedBox.setPreferredSize(new TerminalSize(SEED_BOX_WIDTH, 1));
             seedBox.setTooltipHost(seedHost);
             seedRow.addComponent(seedBox);
             seedHost.addComponent(seedRow);
 
-            water = new PercentSlider(NewGameText.WATER_LABEL, column, waterPercent, () -> {
-            });
-            mountain =
-                    new PercentSlider(NewGameText.MOUNTAIN_LABEL, column, mountainPercent, () -> {
+            water = new PercentSlider(NewGameText.WATER_LABEL, column, waterPercent, waterMark,
+                    () -> {
                     });
+            mountain = new PercentSlider(NewGameText.MOUNTAIN_LABEL, column, mountainPercent,
+                    mountainMark, () -> {
+                    });
+            // The bar has no mark of its own and still starts at x=0: it keeps the base column so
+            // the marks never widen it.
             bar = new StackedBar(palette, column, waterPercent, mountainPercent);
             barRow = singleRowComponent(bar);
             gap = new EmptySpace(new TerminalSize(1, 1));
             previewPanel = new TerrainPreviewPanel(palette);
             noPreview = new Label(NewGameText.NO_PREVIEW);
-            plan = previewPlan(screen.getColumns(), screen.getRows());
+            plan = previewPlan(area.getColumns(), area.getRows(), minColumns, minRows);
             setValues(seed, waterPercent, mountainPercent);
         }
 
@@ -1024,15 +1083,22 @@ final class NewGameDialog {
 
         private final String label;
         private final int valueColumn;
+        private final StateMark mark;
         private int value;
         private int max = SettingsCatalog.MAX_TERRAIN_PERCENT;
         private Runnable onChange = () -> {
         };
 
         PercentSlider(String label, int valueColumn, int value, Runnable onChange) {
+            this(label, valueColumn, value, null, onChange);
+        }
+
+        /** With an optional state mark: the glyph opens the row and the value shifts right. */
+        PercentSlider(String label, int valueColumn, int value, StateMark mark, Runnable onChange) {
             this.label = label;
             this.valueColumn = valueColumn;
             this.value = value;
+            this.mark = mark;
             this.onChange = onChange;
         }
 
@@ -1106,11 +1172,13 @@ final class NewGameDialog {
         private final class Renderer implements InteractableRenderer<PercentSlider> {
             @Override
             public TerminalSize getPreferredSize(PercentSlider component) {
-                // Exact row budget: "[" (1) + the bar + "] " (2) + the 5-glyph value ("100 %"),
-                // i.e.
-                // valueColumn + SLIDER_BAR_WIDTH + 8. No leftover slack: the space before the "%"
-                // now uses the cell the old 4-glyph value ("100%") left free.
-                return new TerminalSize(valueColumn + 1 + SLIDER_BAR_WIDTH + 2 + 5, 1);
+                // Exact row budget: optional state mark + label column + "[" (1) + the bar + "] "
+                // (2) + the 5-glyph value ("100 %"), i.e. mark + valueColumn +
+                // SLIDER_BAR_WIDTH + 8. No leftover slack: the space before the "%" now uses the
+                // cell the old 4-glyph value ("100%") left free.
+                return new TerminalSize(
+                        stateColumns(component.mark) + valueColumn + 1 + SLIDER_BAR_WIDTH + 2 + 5,
+                        1);
             }
 
             @Override
@@ -1122,11 +1190,17 @@ final class NewGameDialog {
             public void drawComponent(TextGUIGraphics graphics, PercentSlider component) {
                 TextColor labelColor = component.isFocused() ? TerminalView.SHORTCUT_COLOR
                         : TerminalView.NORMAL_MENU_FG_COLOR;
+                int offset = stateColumns(component.mark);
+                if (component.mark != null) {
+                    graphics.setForegroundColor(component.mark.color());
+                    graphics.setBackgroundColor(TerminalView.NORMAL_MENU_BG_COLOR);
+                    graphics.putString(0, 0, component.mark.glyph() + " ");
+                }
                 graphics.setForegroundColor(labelColor);
                 graphics.setBackgroundColor(TerminalView.NORMAL_MENU_BG_COLOR);
-                graphics.putString(0, 0, alignedLabel(label, valueColumn));
-                int x = valueColumn;
-                int barWidth = sliderBarWidth(graphics.getSize().getColumns(), valueColumn);
+                graphics.putString(offset, 0, alignedLabel(label, valueColumn));
+                int x = offset + valueColumn;
+                int barWidth = sliderBarWidth(graphics.getSize().getColumns(), x);
                 int filled = component.max == 0 ? 0
                         : (int) Math.round(component.value * barWidth
                                 / (double) SettingsCatalog.MAX_TERRAIN_PERCENT);
@@ -1274,6 +1348,15 @@ final class NewGameDialog {
 
     private static ThemeDefinition darkDefinition(ThemeDefinition definition) {
         return new DelegatingThemeDefinition(definition) {
+            @Override
+            public boolean getBooleanProperty(String name, boolean defaultValue) {
+                // Center the dialog title on the top border of the one-line frame (#742 polish).
+                if ("CENTER_TITLE".equals(name)) {
+                    return true;
+                }
+                return super.getBooleanProperty(name, defaultValue);
+            }
+
             @Override
             public ThemeStyle getNormal() {
                 return restyled(super.getNormal(), TerminalView.NORMAL_MENU_FG_COLOR,

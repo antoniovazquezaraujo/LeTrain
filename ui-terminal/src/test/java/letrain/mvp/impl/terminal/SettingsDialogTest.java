@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.googlecode.lanterna.TerminalSize;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +49,45 @@ class SettingsDialogTest {
     }
 
     @Test
+    @DisplayName("the Terrain page marks seed, water and mountain like the other pages (#742 polish)")
+    void should_MarkTheTerrainFields() {
+        List<String> keys = List.of("seed", "terrain.waterPercent", "terrain.mountainPercent");
+        for (String key : keys) {
+            SettingDefinition definition = SettingsCatalog.definition(key).orElseThrow();
+            assertEquals(SettingsDialog.FieldState.NEW_GAME,
+                    SettingsDialog.fieldState(definition, Set.of()), key + " without a scenario");
+            assertEquals(SettingsDialog.FieldState.SCENARIO,
+                    SettingsDialog.fieldState(definition, Set.of(key)),
+                    key + " pinned by a scenario");
+            assertFalse(SettingsDialog.fieldState(definition, Set.of(key)).editable(), key);
+
+            // The mark handed to the shared Terrain block carries that state, not a hard-coded
+            // LIVE dot (the row would otherwise lose its red/grey tone while the unit test above
+            // still passed).
+            NewGameDialog.StateMark newGame = SettingsDialog.terrainMark(key, Set.of());
+            assertEquals(SettingsDialog.FieldState.NEW_GAME.glyph(), newGame.glyph(), key);
+            assertEquals(SettingsDialog.FieldState.NEW_GAME.color(), newGame.color(), key);
+            NewGameDialog.StateMark scenario = SettingsDialog.terrainMark(key, Set.of(key));
+            assertEquals(SettingsDialog.FieldState.SCENARIO.glyph(), scenario.glyph(), key);
+            assertEquals(SettingsDialog.FieldState.SCENARIO.color(), scenario.color(), key);
+        }
+    }
+
+    @Test
+    @DisplayName("the marked Terrain block still fits the 70-column box at 80x24 (#742 polish)")
+    void should_FitTheMarkedTerrainBlock() {
+        TerminalSize dialog = DialogWindow.dialogSize(new TerminalSize(80, 24));
+        int base = NewGameDialog.valueColumn(NewGameDialog.fieldNames(SettingCategory.TERRAIN));
+        int row = SettingsDialog.STATE_COLUMNS + base + 1 + NewGameDialog.SLIDER_BAR_WIDTH + 2 + 5;
+
+        assertEquals(new TerminalSize(70, 20), dialog);
+        assertEquals(60, row, "2 glyph columns + the 10-cell label + the 40-cell bar and value");
+        assertTrue(row < dialog.getColumns(), "the marked slider row fits the content box");
+        // The stacked bar keeps the width it had without marks: it still starts at x=0.
+        assertEquals(58, NewGameDialog.stackedBarWidth(dialog.getColumns(), base));
+    }
+
+    @Test
     @DisplayName("the scenario lock wins over the catalogue state, with no colour of its own (#764/#767)")
     void should_LockScenarioKeys() {
         Set<String> scenario = Set.of("startingBalance");
@@ -76,7 +116,7 @@ class SettingsDialogTest {
     }
 
     @Test
-    @DisplayName("70x20 fits the five buttons in two rows (order kept); 120x30 in one (#764)")
+    @DisplayName("70 columns fits the five buttons in one row; 50 wraps in two (order kept) (#764)")
     void should_WrapTheFooter() {
         assertEquals("New game", SettingsText.NEW_GAME, "short label since #767");
 
@@ -144,6 +184,122 @@ class SettingsDialogTest {
         assertEquals(Map.of("startingBalance", "10", "seed", "7"),
                 SettingsDialog.collect(readers, editable, false),
                 "the new-game prefill keeps the disabled fields too");
+    }
+
+    @Test
+    @DisplayName("80x24 gets a 70x20 content box (72x22 framed), one footer row and a preview that fits (#742 polish)")
+    void should_SizeTheDialogAt80x24() {
+        TerminalSize screen = new TerminalSize(80, 24);
+        TerminalSize dialog = DialogWindow.dialogSize(screen);
+
+        assertEquals(new TerminalSize(70, 20), dialog, "content box");
+        assertEquals(new TerminalSize(72, 22),
+                dialog.withRelative(DialogWindow.DECORATION_COLUMNS * 2,
+                        DialogWindow.DECORATION_ROWS * 2),
+                "the framed box is 72x22");
+        assertTrue(
+                dialog.getColumns() + 2 * DialogWindow.DECORATION_COLUMNS <= screen.getColumns()
+                        - 2 * DialogWindow.MARGIN_COLUMNS,
+                "the framed box keeps at least the horizontal margins");
+        assertEquals(screen.getRows() - 2 * DialogWindow.MARGIN_ROWS,
+                dialog.getRows() + 2 * DialogWindow.DECORATION_ROWS,
+                "the framed box keeps the vertical margins");
+        assertEquals(1, SettingsDialog.footerRows(dialog.getColumns()).size(),
+                "the five buttons still fit in one row at 70 columns");
+
+        TerminalSize terrain = SettingsDialog.terrainSize(dialog,
+                SettingsDialog.footerRows(dialog.getColumns()).size());
+        assertEquals(new TerminalSize(70, 18), terrain);
+        // Settings lifts New Game's whole-terminal minimums: the plan is computed for the box.
+        NewGameDialog.PreviewPlan plan =
+                NewGameDialog.previewPlan(terrain.getColumns(), terrain.getRows(), 0, 0);
+        assertNotNull(plan, "the preview still has room at the common terminal size");
+        assertEquals(10, plan.sampleRows(), "a 10x10 sample (5 text rows) at 80x24");
+        int sectionBody =
+                dialog.getRows() - SettingsDialog.TAB_ROWS - SettingsDialog.SECTION_TOP_ROWS - 1
+                        - SettingsDialog.LEGEND_ROWS - SettingsDialog.FEEDBACK_ROWS;
+        assertEquals(15, sectionBody, "tabs + blank + three footer rows leave 15 body rows");
+        assertTrue(NewGameDialog.TERRAIN_CHROME_ROWS + plan.textRows() <= sectionBody,
+                "no preview row is hidden behind the framed box");
+    }
+
+    @Test
+    @DisplayName("the box fits the screen and keeps margins with room, never collapsing (#742 polish)")
+    void should_KeepTheDialogInsideTheScreen() {
+        int[][] screens = {{1, 1}, {2, 2}, {3, 3}, {56, 20}, {69, 21}, {70, 22}, {80, 24},
+                {100, 30}, {120, 30}, {160, 30}, {200, 60}};
+        TerminalSize[] expected = {new TerminalSize(1, 1), new TerminalSize(1, 1),
+                new TerminalSize(1, 1), new TerminalSize(50, 16), new TerminalSize(63, 17),
+                new TerminalSize(64, 18), new TerminalSize(70, 20), new TerminalSize(70, 26),
+                new TerminalSize(70, 26), new TerminalSize(80, 26), new TerminalSize(100, 30)};
+
+        for (int i = 0; i < screens.length; i++) {
+            TerminalSize screen = new TerminalSize(screens[i][0], screens[i][1]);
+            TerminalSize dialog = DialogWindow.dialogSize(screen);
+            String label = screen.getColumns() + "x" + screen.getRows();
+
+            assertEquals(expected[i], dialog, label);
+            assertTrue(dialog.getColumns() > 0 && dialog.getRows() > 0,
+                    label + " must never get a non-positive dimension");
+            if (screen.getColumns() > 2 * DialogWindow.DECORATION_COLUMNS) {
+                assertTrue(dialog.getColumns() + 2 * DialogWindow.DECORATION_COLUMNS <= screen
+                        .getColumns(), label + " must not be wider than the terminal");
+            }
+            if (screen.getRows() > 2 * DialogWindow.DECORATION_ROWS) {
+                assertTrue(dialog.getRows() + 2 * DialogWindow.DECORATION_ROWS <= screen.getRows(),
+                        label + " must not be taller than the terminal");
+            }
+            if (screen.getColumns() >= DialogWindow.MIN_COLUMNS + 2 * DialogWindow.MARGIN_COLUMNS) {
+                assertTrue(
+                        dialog.getColumns() + 2 * DialogWindow.DECORATION_COLUMNS <= screen
+                                .getColumns() - 2 * DialogWindow.MARGIN_COLUMNS,
+                        label + " must keep the horizontal margins");
+            }
+            if (screen.getRows() >= DialogWindow.MIN_ROWS + 2 * DialogWindow.MARGIN_ROWS) {
+                assertTrue(
+                        dialog.getRows() + 2 * DialogWindow.DECORATION_ROWS <= screen.getRows()
+                                - 2 * DialogWindow.MARGIN_ROWS,
+                        label + " must keep the vertical margins");
+            }
+
+            int footerButtonRows = SettingsDialog.footerRows(dialog.getColumns()).size();
+            TerminalSize terrain = SettingsDialog.terrainSize(dialog, footerButtonRows);
+            NewGameDialog.PreviewPlan plan =
+                    NewGameDialog.previewPlan(terrain.getColumns(), terrain.getRows(), 0, 0);
+            int sectionBody = dialog.getRows() - SettingsDialog.TAB_ROWS
+                    - SettingsDialog.SECTION_TOP_ROWS - footerButtonRows
+                    - SettingsDialog.LEGEND_ROWS - SettingsDialog.FEEDBACK_ROWS;
+            if (plan != null) {
+                assertTrue(NewGameDialog.TERRAIN_CHROME_ROWS + plan.textRows() <= sectionBody,
+                        label + " would hide preview rows behind the frame");
+            }
+        }
+
+        // TerminalSize accepts 0x0 although a real screen never reports it: the geometry still
+        // falls back to a positive 1x1 box instead of zero or negative dimensions.
+        assertEquals(new TerminalSize(1, 1), DialogWindow.dialogSize(new TerminalSize(0, 0)));
+    }
+
+    @Test
+    @DisplayName("large and tall terminals keep a bounded, centered box (#742 polish)")
+    void should_CapTheDialogOnLargeTerminals() {
+        TerminalSize large = DialogWindow.dialogSize(new TerminalSize(200, 60));
+        assertEquals(new TerminalSize(100, 30), large);
+        assertTrue(large.getColumns() <= DialogWindow.MAX_COLUMNS,
+                "the width stays capped instead of reaching the screen edges");
+        assertTrue(large.getRows() <= DialogWindow.MAX_ROWS,
+                "the height stays capped on tall terminals");
+
+        // 120x30: the minimum width and the available height minus the decoration and margins.
+        assertEquals(new TerminalSize(70, 26), DialogWindow.dialogSize(new TerminalSize(120, 30)));
+        // Half-width caps the box between the minimum and MAX_COLUMNS.
+        assertEquals(80, DialogWindow.dialogSize(new TerminalSize(160, 30)).getColumns());
+
+        // A terminal below the minimum still gets a box no larger than the screen.
+        TerminalSize tiny = DialogWindow.dialogSize(new TerminalSize(60, 20));
+        assertEquals(new TerminalSize(54, 16), tiny);
+        assertTrue(SettingsDialog.footerRows(tiny.getColumns()).size() > 1,
+                "narrow dialogs wrap the footer instead of shrinking the frame");
     }
 
     @Test

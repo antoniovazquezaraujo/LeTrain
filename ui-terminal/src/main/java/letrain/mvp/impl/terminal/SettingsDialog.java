@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import letrain.mvp.SettingsText;
+import letrain.settings.NewGameForm;
 import letrain.settings.SettingCategory;
 import letrain.settings.SettingDefinition;
 import letrain.settings.SettingFieldState;
@@ -46,6 +47,11 @@ import letrain.visitor.terminal.TerminalPalette;
  * switching tabs.
  *
  * <p>
+ * Since the #742 polish the window is a bounded, centered box over the running game (like the 3D
+ * Settings), sized once by {@link DialogWindow#dialogSize(TerminalSize)} so swapping tabs does not
+ * resize it.
+ *
+ * <p>
  * Every field carries its apply-state mark: green {@code ●} for LIVE, yellow {@code ●} for REAPPLY
  * (both editable) and red {@code ●} for NEW_GAME (disabled). Scenario-locked keys stay disabled
  * without a colour of their own. Since #767 there is no inline reason text and the small colour
@@ -53,7 +59,8 @@ import letrain.visitor.terminal.TerminalPalette;
  *
  * <p>
  * The Terrain page shows the shared New Game terrain block (seed, water/mountain sliders, the
- * three-colour bar and the preview) with the running world's parameters, read-only.
+ * three-colour bar and the preview) with the running world's parameters, read-only, and opens every
+ * field with the same state mark as the other pages (#742 polish).
  *
  * <p>
  * Actions: <b>Apply</b> sends the editable values to {@link SettingsPort#apply} (confirming first
@@ -68,10 +75,23 @@ final class SettingsDialog {
     static final int TAB_ROWS = 1;
     /** Rows the footer legend takes (moved to the footer in #767). */
     static final int LEGEND_ROWS = 1;
+    /** Rows the footer feedback line takes (under the legend since #767). */
+    static final int FEEDBACK_ROWS = 1;
     /** Blank row between the tabs and the first field of every section (#754 convention). */
     static final int SECTION_TOP_ROWS = 1;
     /** Columns the state glyph and its trailing space take at the left of every row (#764). */
     static final int STATE_COLUMNS = 2;
+
+    /**
+     * Size handed to the shared Terrain block (seed, sliders, bar and preview): the dialog box
+     * minus the footer rows the New Game preview planner does not know about (Settings adds the
+     * legend and feedback lines under the button row), so the whole preview fits without hidden
+     * rows.
+     */
+    static TerminalSize terrainSize(TerminalSize dialog, int footerButtonRows) {
+        int extraRows = footerButtonRows - NewGameDialog.FOOTER_ROWS + LEGEND_ROWS + FEEDBACK_ROWS;
+        return new TerminalSize(dialog.getColumns(), Math.max(1, dialog.getRows() - extraRows));
+    }
 
     /** Where the values start: the state mark plus the page's own column (#764). */
     static int valueColumn(List<String> names) {
@@ -211,10 +231,15 @@ final class SettingsDialog {
     static Action show(Screen screen, Map<String, String> currentSettings, Set<String> scenarioKeys,
             SettingsPort port) {
         Map<String, String> baseline = baselineOf(currentSettings);
-        MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
-        gui.setTheme(NewGameDialog.darkTheme(gui.getTheme()));
-        BasicWindow window = new BasicWindow();
-        window.setHints(List.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
+        MultiWindowTextGUI gui = DialogWindow.gui(screen);
+        // A bounded, centered box over the running game, like the 3D Settings (#742 polish): the
+        // fixed content size keeps it stable while the tabs swap their section. The decoration adds
+        // one cell per side outside the box.
+        TerminalSize box = DialogWindow.dialogSize(screen.getTerminalSize());
+        List<List<ActionButton>> footerLayout = footerRows(box.getColumns());
+        BasicWindow window = new BasicWindow(SettingsText.TITLE);
+        window.setHints(List.of(Window.Hint.CENTERED));
+        window.setFixedSize(box);
         window.setCloseWindowWithEscape(true);
 
         final Action[] result = {new Action.Close()};
@@ -228,8 +253,8 @@ final class SettingsDialog {
         final List<SettingCategory> tabs = List.of(SettingCategory.TERRAIN, SettingCategory.WORLD,
                 SettingCategory.ECONOMY, SettingCategory.CONSTRUCTION, SettingCategory.UI);
         Map<SettingCategory, Panel> sections = new EnumMap<>(SettingCategory.class);
-        sections.put(SettingCategory.TERRAIN,
-                terrainSection(baseline, TerminalPalette.detect(), screen.getTerminalSize()));
+        sections.put(SettingCategory.TERRAIN, terrainSection(baseline, TerminalPalette.detect(),
+                terrainSize(box, footerLayout.size()), scenarioKeys));
         for (SettingCategory category : tabs) {
             if (category != SettingCategory.TERRAIN) {
                 sections.put(category,
@@ -308,7 +333,7 @@ final class SettingsDialog {
         actions.put(CLOSE_ID, closeAction);
 
         Panel footer = new Panel(new LinearLayout(Direction.VERTICAL));
-        for (List<ActionButton> rowButtons : footerRows(screen.getTerminalSize().getColumns())) {
+        for (List<ActionButton> rowButtons : footerLayout) {
             Panel row = new Panel(new LinearLayout(Direction.HORIZONTAL));
             for (ActionButton action : rowButtons) {
                 row.addComponent(NewGameDialog.mnemonicButton(action.label(), action.mnemonic(),
@@ -470,21 +495,33 @@ final class SettingsDialog {
 
     /**
      * Terrain page: the New Game terrain block (seed, water/mountain sliders, three-colour bar and
-     * preview) with the running world's parameters, read-only (#767).
+     * preview) with the running world's parameters, read-only (#767). Seed, water and mountain get
+     * the same state marks as the other pages (#742 polish): red NEW_GAME, or grey when a scenario
+     * pins them; the value moves {@link #STATE_COLUMNS} right to make room for the glyph.
      */
     private static Panel terrainSection(Map<String, String> baseline, TerminalPalette palette,
-            TerminalSize screen) {
+            TerminalSize screen, Set<String> scenarioKeys) {
         NewGameDialog.TerrainControls controls =
-                new NewGameDialog.TerrainControls(parseInt(baseline.get("seed"), 0),
-                        parseInt(baseline.get("terrain.waterPercent"),
+                new NewGameDialog.TerrainControls(parseInt(baseline.get(NewGameForm.SEED_KEY), 0),
+                        parseInt(baseline.get(NewGameForm.WATER_KEY),
                                 SettingsCatalog.DEFAULT_WATER_PERCENT),
-                        parseInt(baseline.get("terrain.mountainPercent"),
+                        parseInt(baseline.get(NewGameForm.MOUNTAIN_KEY),
                                 SettingsCatalog.DEFAULT_MOUNTAIN_PERCENT),
-                        palette, screen);
+                        palette, screen, 0, 0, terrainMark(NewGameForm.SEED_KEY, scenarioKeys),
+                        terrainMark(NewGameForm.WATER_KEY, scenarioKeys),
+                        terrainMark(NewGameForm.MOUNTAIN_KEY, scenarioKeys));
         controls.setEnabled(false);
         NewGameDialog.ScrollColumn column = new NewGameDialog.ScrollColumn();
         controls.addTo(column);
         return column;
+    }
+
+    /**
+     * State mark of one terrain key: NEW_GAME red, grey when the scenario pins it (#742 polish).
+     */
+    static NewGameDialog.StateMark terrainMark(String key, Set<String> scenarioKeys) {
+        FieldState state = fieldState(SettingsCatalog.definition(key).orElseThrow(), scenarioKeys);
+        return new NewGameDialog.StateMark(state.glyph(), state.color());
     }
 
     private static int parseInt(String text, int fallback) {
