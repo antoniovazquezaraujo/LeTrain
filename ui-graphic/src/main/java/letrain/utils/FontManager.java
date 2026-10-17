@@ -20,10 +20,11 @@ public class FontManager {
      * Non-ASCII glyphs used across the 3D HUD and renderer. FreeType only rasterises the characters
      * listed in {@link FreeTypeFontParameter#characters}, so every symbol shown by the UI must be
      * declared here or it renders as {@code ?}: arrows for the camera keys and mode hints,
-     * geometric shapes for the notch bar ({@code ■}/{@code □}) and triangles, the ellipsis used to
+     * geometric shapes for the notch bar ({@code ■}/{@code □}) and triangles, the {@code ●}
+     * apply-state dots of the Settings dialog (rows and the colour legend), the ellipsis used to
      * truncate long labels, and the Spanish accents.
      */
-    public static final String EXTRA_CHARS = "—…←↑→↓⏴⏵⏶⏷■□▲▶▼◀áÁéíóú";
+    public static final String EXTRA_CHARS = "—…←↑→↓⏴⏵⏶⏷■□▲▶▼◀●áÁéíóú";
 
     private FontManager() {
         // Utility class, no instantiation

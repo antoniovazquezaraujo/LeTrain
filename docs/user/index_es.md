@@ -38,7 +38,7 @@
 
 - **Automatización Avanzada e IDE:**
   - Incluye un lenguaje de programación integrado (analizado mediante ANTLR4) para una verdadera automatización.
-  - Un editor en el juego con pestañas (**Scenario / Program / Config**), referencia rápida por pestaña, navegación de errores y validador sin interfaz (`letrain-check`).
+  - Un editor en el juego con pestañas (**Scenario / Programming / Config**), referencia rápida por pestaña, navegación de errores y validador sin interfaz (`letrain-check`).
   - Automatiza desvíos, configura rutas con piloto automático y gestiona itinerarios complejos con horarios (`arrival`/`departure` y puntualidad) y maniobras de enganche y apartado.
 
 - **Grabar, Deshacer y Escenarios:** Congela el mundo y graba cada edición (`R`), deshaz/rehaz de forma determinista (`u` / `Ctrl+R`) y exporta toda tu red como una pequeña receta de texto `.ltr` que puedes compartir, importar y reproducir. La misma semilla reconstruye el mismo mundo — sin partida guardada.

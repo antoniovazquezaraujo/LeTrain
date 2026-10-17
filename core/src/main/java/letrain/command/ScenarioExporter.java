@@ -3,6 +3,7 @@ package letrain.command;
 import java.util.ArrayList;
 import java.util.List;
 import letrain.mvp.Model;
+import letrain.settings.SettingsCatalog;
 import letrain.track.RailSemaphore;
 import letrain.track.SpeedSignal;
 import letrain.track.rail.ForkRailTrack;
@@ -72,10 +73,16 @@ public final class ScenarioExporter {
                 null);
     }
 
-    /** The model's effective settings (so the scenario reproduces terrain and rules), or null. */
+    /**
+     * The scenario's {@code configuration { }} block: the full settings catalogue (except the
+     * scenario's own {@code seed} line) laid over the model's effective values, so the exported
+     * block is always complete and deterministic. Legacy {@code threshold.*} keys in the snapshot
+     * are dropped because they are not in the catalogue (issue #782).
+     */
     private static java.util.Map<String, String> configuration(Model model) {
-        return model != null && model.getEconomyManager() != null
-                ? model.getEconomyManager().effectiveConfig()
-                : null;
+        return SettingsCatalog
+                .scenarioConfiguration(model != null && model.getEconomyManager() != null
+                        ? model.getEconomyManager().effectiveConfig()
+                        : null);
     }
 }

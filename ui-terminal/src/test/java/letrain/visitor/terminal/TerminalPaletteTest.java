@@ -240,6 +240,14 @@ class TerminalPaletteTest {
     }
 
     @Test
+    @DisplayName("the palette exposes its depth so dialogs can adapt their colours")
+    void should_ExposeDepth() {
+        assertEquals(Depth.ANSI_16, new TerminalPalette(Depth.ANSI_16).depth());
+        assertEquals(Depth.INDEXED_256, new TerminalPalette(Depth.INDEXED_256).depth());
+        assertEquals(Depth.TRUECOLOR, new TerminalPalette(Depth.TRUECOLOR).depth());
+    }
+
+    @Test
     @DisplayName("16-colour fallback keeps glyphs out of their backdrop slot")
     void should_KeepTokensOffTheBoard_When_Ansi16() {
         TerminalPalette palette = new TerminalPalette(Depth.ANSI_16);

@@ -206,4 +206,86 @@ class SimpleGameClockTest {
 
         assertEquals(20, clock.ticksUntil(new GameTime(1, 8, 5)));
     }
+
+    @Test
+    @DisplayName("a custom start instant shifts now, setTime and ticksUntil (S2b)")
+    void should_UseCustomStart() {
+        SimpleGameClock clock = new SimpleGameClock();
+        clock.setStartTime(new GameTime(300, 6, 30));
+
+        assertEquals(new GameTime(300, 6, 30), clock.now());
+        assertEquals(new GameTime(300, 6, 30), clock.startTime());
+        assertEquals(0, clock.elapsedTicks());
+        assertEquals(100, clock.ticksUntil(new GameTime(300, 6, 35)));
+
+        clock.setTime(new GameTime(300, 7, 0));
+
+        assertEquals(new GameTime(300, 7, 0), clock.now());
+        assertEquals(30L * GameClock.TICKS_PER_SECOND, clock.elapsedTicks());
+        assertEquals(0, clock.ticksUntil(new GameTime(300, 7, 0)),
+                "the jumped-to instant is the current tick");
+        assertEquals(600, clock.ticksUntil(new GameTime(300, 7, 30)));
+    }
+
+    @Test
+    @DisplayName("the clock crosses into the next day from a start before 08:00 (S2b)")
+    void should_CrossIntoTheNextDay_FromAnEarlyStart() {
+        SimpleGameClock clock = new SimpleGameClock();
+        clock.setStartTime(new GameTime(10, 23, 55));
+
+        for (int i = 0; i < 10 * GameClock.TICKS_PER_SECOND; i++) {
+            clock.tick();
+        }
+
+        assertEquals(new GameTime(11, 0, 5), clock.now(),
+                "10 game minutes after 23:55 the day rolls over at midnight");
+    }
+
+    @Test
+    @DisplayName("setTime before a custom origin rolls forward day by day (S2b)")
+    void should_RollForward_WhenSettingTimeBeforeCustomStart() {
+        SimpleGameClock clock = new SimpleGameClock();
+        clock.setStartTime(new GameTime(5, 6, 30));
+
+        clock.setTime(new GameTime(5, 6, 0));
+
+        assertEquals(new GameTime(6, 6, 0), clock.now(),
+                "one full day is added, like the day 1 08:00 roll-over");
+    }
+
+    @Test
+    @DisplayName("changing the origin keeps the running counter (savegame restore, S2b)")
+    void should_KeepElapsedTicks_WhenChangingStart() {
+        SimpleGameClock clock = new SimpleGameClock();
+        for (int i = 0; i < 60 * GameClock.TICKS_PER_SECOND; i++) {
+            clock.tick();
+        }
+
+        clock.setStartTime(new GameTime(300, 6, 30));
+
+        assertEquals(new GameTime(300, 7, 30), clock.now());
+        assertEquals(60L * GameClock.TICKS_PER_SECOND, clock.elapsedTicks());
+    }
+
+    @Test
+    @DisplayName("setStartTime(null) is ignored and the listeners stay silent (S2b)")
+    void should_IgnoreNullStart() {
+        SimpleGameClock clock = new SimpleGameClock();
+        List<String> events = new ArrayList<>();
+        clock.addListener(new GameClockListener() {
+            @Override
+            public void onHourChanged(GameTime time) {
+                events.add("hour " + time.hour());
+            }
+        });
+
+        clock.setStartTime(null);
+        assertEquals(new GameTime(1, 8, 0), clock.startTime(), "null is ignored");
+
+        clock.setStartTime(new GameTime(9, 5, 0));
+
+        assertEquals(0, clock.elapsedTicks(), "the running counter is never reset");
+        assertEquals(new GameTime(9, 5, 0), clock.now());
+        assertTrue(events.isEmpty(), events.toString());
+    }
 }

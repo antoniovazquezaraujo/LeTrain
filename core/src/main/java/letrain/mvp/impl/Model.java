@@ -1,6 +1,7 @@
 package letrain.mvp.impl;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -200,6 +201,157 @@ public class Model implements letrain.mvp.Model {
     int quantifierSteps = 0;
     LocalDateTime lastSaveTime = null;
 
+    /**
+     * Settings snapshot read from a savegame's {@code settings} section (concept §6); applied to
+     * the economy manager in {@link #postLoadInit()}. Null on live models and on savegames written
+     * before the section existed.
+     */
+    @JsonIgnore
+    private transient java.util.Map<String, String> loadedSettings;
+
+    /**
+     * Reserved entry inside the savegame's {@code settings} section that carries the keys fixed by
+     * the scenario's {@code configuration { }} (D10, S3a). It is not a catalogue setting: the
+     * settings dialog never shows it and a loaded game rebuilds its lock from it.
+     */
+    static final String SCENARIO_KEYS_SETTING = "scenario.keys";
+
+    /**
+     * Catalogue keys the current scenario's {@code configuration { }} defines (D10): a live apply
+     * refuses them with "defined by scenario". Serialized inside the settings section (see
+     * {@link #SCENARIO_KEYS_SETTING}) so the lock survives a save/load round-trip; empty on live
+     * games built from the New Game dialog and on savegames written before S3a.
+     */
+    @JsonIgnore
+    private transient java.util.Set<String> scenarioSettingKeys = new java.util.LinkedHashSet<>();
+
+    /**
+     * Effective settings snapshot, serialized with the savegame so a game carries its own rules.
+     * Computed on demand from the economy manager, so it always matches the live configuration
+     * (scenario settings included), plus the scenario-locked keys entry when there is one.
+     */
+    @JsonProperty("settings")
+    public java.util.Map<String, String> getSettings() {
+        if (economyManager == null) {
+            return java.util.Map.of();
+        }
+        java.util.Map<String, String> settings =
+                new java.util.LinkedHashMap<>(economyManager.effectiveConfig());
+        if (!scenarioSettingKeys.isEmpty()) {
+            settings.put(SCENARIO_KEYS_SETTING, String.join(",", scenarioSettingKeys));
+        }
+        return settings;
+    }
+
+    /** Receives a savegame's settings section; {@link #postLoadInit()} applies it. */
+    @JsonProperty("settings")
+    public void setSettings(java.util.Map<String, String> settings) {
+        this.loadedSettings = settings;
+        this.scenarioSettingKeys = parseScenarioKeys(settings);
+    }
+
+    /** Scenario-locked keys carried by a settings section (empty on old saves or without lock). */
+    private static java.util.Set<String> parseScenarioKeys(java.util.Map<String, String> settings) {
+        java.util.Set<String> keys = new java.util.LinkedHashSet<>();
+        if (settings == null) {
+            return keys;
+        }
+        String raw = settings.get(SCENARIO_KEYS_SETTING);
+        if (raw == null) {
+            return keys;
+        }
+        for (String key : raw.split(",")) {
+            String trimmed = key.trim();
+            if (!trimmed.isEmpty()) {
+                keys.add(trimmed);
+            }
+        }
+        return keys;
+    }
+
+    /**
+     * Applies a batch of catalogue settings to the running game (S3a, concept §5.2). LIVE and
+     * REAPPLY keys reach the economy manager; when the batch carries
+     * {@code time.dayDurationSeconds} the clock is re-synchronised and the displayed instant is
+     * preserved (the counter is rebased to the new scale, so the calendar never jumps), and
+     * {@code world.latitude} re-syncs the solar cycle. NEW_GAME keys (start day/time, seed,
+     * terrain...) and scenario-fixed keys are rejected with their reason, as are unknown keys and
+     * invalid values; a rejected key is never applied.
+     *
+     * @param settings catalogue keys to apply to the current game
+     * @return the applied keys and the rejections with their reason, for the settings dialog
+     */
+    @Override
+    public letrain.settings.SettingsApplyResult applyLiveSettings(
+            java.util.Map<String, String> settings) {
+        java.util.Set<String> applied = new java.util.LinkedHashSet<>();
+        java.util.Map<String, String> rejections = new java.util.LinkedHashMap<>();
+        if (settings == null || settings.isEmpty()) {
+            return new letrain.settings.SettingsApplyResult(applied, rejections);
+        }
+        java.util.Map<String, String> toApply = new java.util.LinkedHashMap<>();
+        for (java.util.Map.Entry<String, String> entry : settings.entrySet()) {
+            String key = entry.getKey();
+            java.util.Optional<letrain.settings.SettingDefinition> definition =
+                    letrain.settings.SettingsCatalog.definition(key);
+            if (definition.isEmpty()) {
+                rejections.put(key, letrain.settings.SettingsApplyResult.UNKNOWN_SETTING);
+            } else if (scenarioSettingKeys.contains(key)) {
+                rejections.put(key, letrain.settings.SettingsApplyResult.DEFINED_BY_SCENARIO);
+            } else if (definition.get()
+                    .applyState() == letrain.settings.SettingApplyState.NEW_GAME) {
+                rejections.put(key, letrain.settings.SettingsApplyResult.REQUIRES_NEW_GAME);
+            } else {
+                try {
+                    toApply.put(key,
+                            letrain.settings.SettingsCatalog.validate(key, entry.getValue()));
+                } catch (IllegalArgumentException e) {
+                    rejections.put(key, e.getMessage());
+                }
+            }
+        }
+        if (toApply.isEmpty() || economyManager == null) {
+            return new letrain.settings.SettingsApplyResult(applied, rejections);
+        }
+        // The counter means game time under the old scale: capture the displayed instant and
+        // rebase the clock after the change, so changing the day length never jumps the calendar.
+        letrain.time.GameTime displayed = gameClock.now();
+        economyManager.applyConfig(toApply);
+        syncClockWith(toApply);
+        if (toApply.containsKey("time.dayDurationSeconds")) {
+            gameClock.setTime(displayed);
+        }
+        applied.addAll(toApply.keySet());
+        return new letrain.settings.SettingsApplyResult(applied, rejections);
+    }
+
+    /**
+     * Applies a scenario's {@code configuration { }} to a freshly rebuilt world and remembers its
+     * keys (D10, S3a); the presenters call this instead of {@code applyConfig} directly. The
+     * scenario rules win over the local {@code letrain.cfg} for the clock too: day length, latitude
+     * and, since the world is new, the creation-time origin.
+     */
+    @Override
+    public void applyScenarioConfiguration(java.util.Map<String, String> configuration) {
+        if (configuration == null || configuration.isEmpty()) {
+            return;
+        }
+        economyManager.applyConfig(configuration);
+        scenarioSettingKeys = new java.util.LinkedHashSet<>(configuration.keySet());
+        gameClock.setDayDurationSeconds(economyManager.getDayDurationSeconds());
+        gameClock.setLatitude(economyManager.getLatitude());
+        gameClock.setStartTime(clockOrigin());
+    }
+
+    /**
+     * Catalogue keys the current scenario fixes (D10); empty when the game has no scenario lock.
+     */
+    @Override
+    public java.util.Set<String> getScenarioSettingKeys() {
+        return java.util.Collections
+                .unmodifiableSet(new java.util.LinkedHashSet<>(scenarioSettingKeys));
+    }
+
     private transient AutomationEngine automationEngine;
     private transient SimulationService internalSimService;
     private transient letrain.time.impl.SimpleGameClock gameClock =
@@ -284,6 +436,7 @@ public class Model implements letrain.mvp.Model {
         this.economyManager.reloadConfig();
         this.gameClock.setDayDurationSeconds(this.economyManager.getDayDurationSeconds());
         this.gameClock.setLatitude(this.economyManager.getLatitude());
+        this.gameClock.setStartTime(clockOrigin());
         if (seed == 0) {
             seed = 1 + (int) (Math.random() * 255);
         }
@@ -358,7 +511,9 @@ public class Model implements letrain.mvp.Model {
     public void postLoadInit() {
         // NOTE: the economy/settings are NOT reloaded from the local file here on purpose: a
         // savegame or an imported scenario carries its own settings, and those must win over the
-        // local letrain.cfg for the world (terrain included) to be reproducible.
+        // local letrain.cfg for the world (terrain included) to be reproducible. Savegames
+        // predating the "settings" section fall back to their serialized legacy thresholds.
+        applySavedSettings();
         rebuildTrackConnections();
         if (nextSpeedSignalId == 0) {
             for (Sensor s : getSensors()) {
@@ -384,17 +539,9 @@ public class Model implements letrain.mvp.Model {
 
         if (this.groundMap != null) {
             try {
-                java.lang.reflect.Field noiseField =
-                        letrain.ground.impl.GroundMap.class.getDeclaredField("noise");
-                noiseField.setAccessible(true);
-                noiseField.set(this.groundMap, new letrain.ground.PerlinNoise(this.seed));
-                java.lang.reflect.Field ecoField =
-                        letrain.ground.impl.GroundMap.class.getDeclaredField("economyManager");
-                ecoField.setAccessible(true);
-                ecoField.set(this.groundMap, this.economyManager);
-                if (this.groundMap instanceof letrain.ground.impl.GroundMap) {
-                    ((letrain.ground.impl.GroundMap) this.groundMap).rebuildCellsFromBlocks();
-                }
+                letrain.ground.impl.GroundMap impl = (letrain.ground.impl.GroundMap) this.groundMap;
+                impl.initGenerator(this.seed, this.economyManager);
+                impl.rebuildCellsFromBlocks();
             } catch (Exception e) {
                 log.error("Error re-initializing GroundMap", e);
             }
@@ -457,6 +604,60 @@ public class Model implements letrain.mvp.Model {
             this.commandText = "";
             this.commandError = "";
         }
+    }
+
+    /**
+     * Applies the settings snapshot carried by a savegame (its "settings" section, concept §6)
+     * before the world generator is rebuilt, so the loaded terrain matches the saved one. A
+     * savegame without the section (written before it existed) falls back to its serialized legacy
+     * thresholds, which keeps its historical look.
+     *
+     * <p>
+     * The running clock is re-synced from the loaded settings (#761): only the keys the section
+     * actually carries are applied, so a savegame played with another day length or latitude keeps
+     * them even when the local {@code letrain.cfg} differs. Savegames without those keys keep the
+     * clock wired from the cfg/defaults, exactly as before. The counter ({@code elapsedTicks}) is
+     * never touched; the origin ({@code time.startDay} / {@code time.startTime}, S2b) is
+     * re-anchored so the loaded game continues at the saved instant.
+     */
+    private void applySavedSettings() {
+        if (economyManager == null) {
+            return;
+        }
+        if (loadedSettings != null && !loadedSettings.isEmpty()) {
+            economyManager.applyConfig(loadedSettings);
+            syncClockWith(loadedSettings);
+        } else {
+            economyManager.fallBackToLegacyTerrain();
+        }
+        gameClock.setStartTime(clockOrigin());
+    }
+
+    /**
+     * Re-syncs the running clock with the settings just applied (the constructor had wired it from
+     * the local cfg): day length and latitude, each only when the batch carries its key, so a
+     * savegame or live apply without them keeps the historical cfg/defaults fallback (#761). Never
+     * touches the counter; the origin is re-anchored by the callers that need it.
+     */
+    private void syncClockWith(java.util.Map<String, String> settings) {
+        if (economyManager == null) {
+            return;
+        }
+        if (settings.containsKey("time.dayDurationSeconds")) {
+            gameClock.setDayDurationSeconds(economyManager.getDayDurationSeconds());
+        }
+        if (settings.containsKey("world.latitude")) {
+            gameClock.setLatitude(economyManager.getLatitude());
+        }
+    }
+
+    /**
+     * Creation-time origin ({@code time.startDay} / {@code time.startTime}) the economy settings
+     * ask for: day 1 at 08:00 unless a new game, cfg or savegame says otherwise (S2b).
+     */
+    private letrain.time.GameTime clockOrigin() {
+        return letrain.time.GameTime.ofMinuteOfDay(economyManager.getStartDay(),
+                economyManager.getStartMinuteOfDay());
     }
 
     private void setupModelTrainEventListeners() {
@@ -1464,6 +1665,31 @@ public class Model implements letrain.mvp.Model {
         this();
         this.seed = seed;
         this.groundMap = new letrain.ground.impl.GroundMap(seed, this.economyManager);
+    }
+
+    /**
+     * Creates a fresh game from the New Game dialog (S2, issue #746): a world generated from
+     * {@code seed} whose settings were validated against {@link letrain.settings.SettingsCatalog}
+     * and applied before any terrain is generated, so the calibrated terrain proportions and the
+     * economy match the form. It reuses the same machinery as the scenario/load path: a seeded
+     * model plus {@code EconomyManager.applyConfig}, followed by re-wiring the day clock (which the
+     * constructor had set from {@code letrain.cfg}): day duration, latitude and the S2b origin
+     * ({@code time.startDay} / {@code time.startTime}, day 1 08:00 by default).
+     *
+     * @param seed generation seed (callers resolve the literal {@code random} before calling)
+     * @param settings validated catalogue values; unknown keys are ignored
+     * @throws IllegalArgumentException when a setting is malformed or out of range
+     */
+    public static Model newGame(int seed, java.util.Map<String, String> settings) {
+        java.util.Map<String, String> validated =
+                letrain.settings.SettingsCatalog.validateAll(settings);
+        Model model = new Model(seed);
+        model.getEconomyManager().applyConfig(validated);
+        model.getGameClock()
+                .setDayDurationSeconds(model.getEconomyManager().getDayDurationSeconds());
+        model.getGameClock().setLatitude(model.getEconomyManager().getLatitude());
+        model.getGameClock().setStartTime(model.clockOrigin());
+        return model;
     }
 
     public void setEventLogManager(EventLogManager eventLogManager) {

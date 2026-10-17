@@ -68,6 +68,16 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     private int dayDurationSeconds = letrain.time.GameClock.DEFAULT_DAY_DURATION_SECONDS;
     private double latitude = letrain.time.SolarModel.DEFAULT_LATITUDE;
 
+    /**
+     * Creation-time origin of the game clock ({@code time.startDay} / {@code time.startTime}, S2b):
+     * day (1..366) and minute of day (0..1439). Defaults keep the ADR-022 origin (day 1, 08:00).
+     */
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private int startDay = letrain.time.GameClock.DEFAULT_START_DAY;
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private int startMinuteOfDay = letrain.time.GameClock.DEFAULT_START_MINUTE_OF_DAY;
+
     @com.fasterxml.jackson.annotation.JsonProperty("goldThreshold")
     private float goldThreshold = 0.30f;
 
@@ -82,6 +92,20 @@ public class EconomyManager implements letrain.economy.EconomyManager {
 
     @com.fasterxml.jackson.annotation.JsonProperty("rockThreshold")
     private float rockThreshold = 180f;
+
+    /**
+     * When true (default), terrain generation calibrates thresholds per seed from
+     * {@code terrain.waterPercent} / {@code terrain.mountainPercent} (D2 defaults 25/10). Legacy
+     * keys switch it off and keep the historical threshold look.
+     */
+    @com.fasterxml.jackson.annotation.JsonProperty("terrainPercentEnabled")
+    private boolean terrainPercentEnabled = true;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("terrainWaterPercent")
+    private int waterPercent = letrain.settings.SettingsCatalog.DEFAULT_WATER_PERCENT;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("terrainMountainPercent")
+    private int mountainPercent = letrain.settings.SettingsCatalog.DEFAULT_MOUNTAIN_PERCENT;
 
     @com.fasterxml.jackson.annotation.JsonProperty("viewRadius")
     private int viewRadius = 15;
@@ -493,13 +517,32 @@ public class EconomyManager implements letrain.economy.EconomyManager {
         return latitude;
     }
 
+    /** The {@code letrain.cfg} actually read, or null when none exists (D4 target, S3a). */
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Override
+    public File getConfigFile() {
+        return locateConfigFile();
+    }
+
+    /** Creation-time start day of the clock ({@code time.startDay}, S2b): 1..366, default 1. */
+    @Override
+    public int getStartDay() {
+        return startDay;
+    }
+
+    /** Creation-time start minute of day of the clock ({@code time.startTime}, S2b), 0..1439. */
+    @Override
+    public int getStartMinuteOfDay() {
+        return startMinuteOfDay;
+    }
+
     public float getTotalExpenses() {
         return totalExpenses;
     }
 
     @Override
     public void reloadConfig() {
-        File configFile = findConfigFile();
+        File configFile = locateConfigFile();
         if (configFile == null) {
             return;
         }
@@ -518,7 +561,7 @@ public class EconomyManager implements letrain.economy.EconomyManager {
      * to the application and its ancestors. This makes the packaged default work no matter where
      * the launcher is started from.
      */
-    static File findConfigFile() {
+    private static File locateConfigFile() {
         java.util.List<File> dirs = new java.util.ArrayList<>();
         dirs.add(new File("."));
         File dir = jarDirectory();
@@ -580,6 +623,10 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     @Override
     public Map<String, String> effectiveConfig() {
         Map<String, String> config = new java.util.LinkedHashMap<>();
+        config.put("time.dayDurationSeconds", String.valueOf(dayDurationSeconds));
+        config.put("world.latitude", String.valueOf(latitude));
+        config.put("time.startDay", String.valueOf(startDay));
+        config.put("time.startTime", letrain.time.GameTime.formatTimeOfDay(startMinuteOfDay));
         config.put("fuelCostPerMeter", String.valueOf(fuelCostPerMeter));
         config.put("cargoLoadingFee", String.valueOf(cargoLoadingFee));
         config.put("startingBalance", String.valueOf(startingBalance));
@@ -595,12 +642,20 @@ public class EconomyManager implements letrain.economy.EconomyManager {
         config.put("threshold.RUBY", String.valueOf(rubyThreshold));
         config.put("threshold.WATER", String.valueOf(waterThreshold));
         config.put("threshold.ROCK", String.valueOf(rockThreshold));
+        // Percent mode exports both the new keys (authoritative) and the legacy thresholds, so an
+        // older reader still gets a deterministic world. A legacy snapshot must not export the
+        // percent keys, or reloading it would silently switch the terrain to calibration.
+        if (terrainPercentEnabled) {
+            config.put("terrain.waterPercent", String.valueOf(waterPercent));
+            config.put("terrain.mountainPercent", String.valueOf(mountainPercent));
+        }
         config.put("map.VIEW_RADIUS", String.valueOf(viewRadius));
         for (Presenter.TrackType type : Presenter.TrackType.values()) {
             config.put("delay." + type.name(), String.valueOf(getConstructionDelay(type)));
         }
         config.put("derail.minCurveInterval", String.valueOf(derailMinCurveInterval));
         config.put("derail.minSpeed", String.valueOf(derailMinSpeed));
+        config.put("ui.highlightBlockedTracks", String.valueOf(highlightBlockedTracks));
         return config;
     }
 
@@ -612,6 +667,7 @@ public class EconomyManager implements letrain.economy.EconomyManager {
         if (!Double.isNaN(newLatitude)) {
             latitude = Math.max(-90.0, Math.min(90.0, newLatitude));
         }
+        applyClockOrigin(props);
 
         // Load general costs
         fuelCostPerMeter = Float.parseFloat(
@@ -635,10 +691,31 @@ public class EconomyManager implements letrain.economy.EconomyManager {
                 .parseFloat(props.getProperty("threshold.COAL", String.valueOf(coalThreshold)));
         rubyThreshold = Float
                 .parseFloat(props.getProperty("threshold.RUBY", String.valueOf(rubyThreshold)));
-        waterThreshold = Float
-                .parseFloat(props.getProperty("threshold.WATER", String.valueOf(waterThreshold)));
-        rockThreshold = Float
-                .parseFloat(props.getProperty("threshold.ROCK", String.valueOf(rockThreshold)));
+
+        // Terrain proportions (D2). Within one source the new percent keys win over the legacy
+        // thresholds; a source that only carries legacy keys (old scenario/savegame, current
+        // letrain.cfg) keeps the historical look. Sources are applied in precedence order
+        // (scenario > savegame > cfg > defaults), so the last source defining a terrain key
+        // decides the mode.
+        boolean hasPercentKeys = props.containsKey("terrain.waterPercent")
+                || props.containsKey("terrain.mountainPercent");
+        if (props.containsKey("terrain.waterPercent")) {
+            waterPercent = Integer.parseInt(props.getProperty("terrain.waterPercent"));
+        }
+        if (props.containsKey("terrain.mountainPercent")) {
+            mountainPercent = Integer.parseInt(props.getProperty("terrain.mountainPercent"));
+        }
+        if (props.containsKey("threshold.WATER")) {
+            waterThreshold = Float.parseFloat(props.getProperty("threshold.WATER"));
+        }
+        if (props.containsKey("threshold.ROCK")) {
+            rockThreshold = Float.parseFloat(props.getProperty("threshold.ROCK"));
+        }
+        if (hasPercentKeys) {
+            terrainPercentEnabled = true;
+        } else if (props.containsKey("threshold.WATER") || props.containsKey("threshold.ROCK")) {
+            terrainPercentEnabled = false;
+        }
         viewRadius =
                 Integer.parseInt(props.getProperty("map.VIEW_RADIUS", String.valueOf(viewRadius)));
 
@@ -677,6 +754,31 @@ public class EconomyManager implements letrain.economy.EconomyManager {
         }
     }
 
+    /**
+     * Creation-time origin of the game clock (S2b): {@code time.startDay} / {@code time.startTime}.
+     * The day is clamped to the catalogue range (1..366) and a malformed time keeps the previous
+     * value (the catalogue validates the dialog path; a broken local cfg must not take the game
+     * down). Legacy sources carry neither key, so the ADR-022 default (day 1, 08:00) is kept.
+     */
+    private void applyClockOrigin(Properties props) {
+        String dayValue = props.getProperty("time.startDay");
+        if (dayValue != null) {
+            try {
+                startDay = Math.max(1, Math.min(366, Integer.parseInt(dayValue.trim())));
+            } catch (NumberFormatException e) {
+                log.warn("Ignoring malformed time.startDay: '{}'", dayValue);
+            }
+        }
+        String timeValue = props.getProperty("time.startTime");
+        if (timeValue != null) {
+            try {
+                startMinuteOfDay = letrain.time.GameTime.parseMinuteOfDay(timeValue);
+            } catch (IllegalArgumentException e) {
+                log.warn("Ignoring malformed time.startTime: '{}'", timeValue);
+            }
+        }
+    }
+
     @Override
     public float getGoldThreshold() {
         return goldThreshold;
@@ -700,6 +802,26 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     @Override
     public float getRockThreshold() {
         return rockThreshold;
+    }
+
+    @Override
+    public boolean isTerrainPercentEnabled() {
+        return terrainPercentEnabled;
+    }
+
+    @Override
+    public int getWaterPercent() {
+        return waterPercent;
+    }
+
+    @Override
+    public int getMountainPercent() {
+        return mountainPercent;
+    }
+
+    @Override
+    public void fallBackToLegacyTerrain() {
+        terrainPercentEnabled = false;
     }
 
     @Override

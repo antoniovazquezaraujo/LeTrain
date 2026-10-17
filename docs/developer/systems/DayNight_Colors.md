@@ -20,10 +20,11 @@ fuera (solo se revisará su legibilidad al final).
 
 Lo que hay en `develop` a día de hoy; el detalle por fase está al final de la ficha.
 
-- **Reloj**: `GameClock`/`SimpleGameClock` (`core`, `letrain.time`). Arranca en el **día 1 a las
-  08:00** y un día completo dura `DEFAULT_DAY_DURATION_SECONDS = 1440` (24 minutos reales;
-  configurable con `time.dayDurationSeconds`). Avanza desde `SimulationController.tick()` (20 TPS) y
-  la pausa de edición lo congela; se persiste `elapsedTicks` y `GameTime` se deriva.
+- **Reloj**: `GameClock`/`SimpleGameClock` (`core`, `letrain.time`). Arranca por defecto en el **día
+  1 a las 08:00** (configurable en Nueva Partida desde S2b: `time.startDay` / `time.startTime`) y un
+  día completo dura `DEFAULT_DAY_DURATION_SECONDS = 1440` (24 minutos reales; configurable con
+  `time.dayDurationSeconds`). Avanza desde `SimulationController.tick()` (20 TPS) y la pausa de
+  edición lo congela; se persiste `elapsedTicks` y `GameTime` se deriva.
 - **Modelo solar**: `SolarModel` calcula elevación y azimut del sol a partir del **día del año** y la
   hora solar, con la **latitud mundial** (`world.latitude`, por defecto 40°) y una banda de
   **crepúsculo** de 18°. `getDayNightRatio()` (0 = pleno día, 1 = noche cerrada) e `isNight()`

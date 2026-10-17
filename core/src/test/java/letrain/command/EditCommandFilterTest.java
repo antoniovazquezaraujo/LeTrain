@@ -20,6 +20,7 @@ class EditCommandFilterTest {
         assertTrue(EditCommandFilter.isNonRecordable("undo;"));
         assertTrue(EditCommandFilter.isNonRecordable("ls;"));
         assertTrue(EditCommandFilter.isNonRecordable("save foo;"));
+        assertTrue(EditCommandFilter.isNonRecordable("new game;"));
         assertTrue(EditCommandFilter.isNonRecordable("time;"));
         assertTrue(EditCommandFilter.isNonRecordable("version;"));
         assertTrue(EditCommandFilter.isNonRecordable(""));

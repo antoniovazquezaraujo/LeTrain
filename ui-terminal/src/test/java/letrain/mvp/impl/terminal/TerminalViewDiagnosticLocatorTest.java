@@ -29,7 +29,7 @@ class TerminalViewDiagnosticLocatorTest {
     }
 
     @Test
-    @DisplayName("program lines go to the Program tab")
+    @DisplayName("program lines go to the Programming tab")
     void programLines() {
         assertEquals(new TerminalView.Jump(1, 2), TerminalView.locateDiagnostic(FULL, 10));
     }

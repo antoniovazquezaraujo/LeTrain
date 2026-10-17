@@ -21,6 +21,11 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
     private java.util.function.IntConsumer onRedo;
     private java.util.function.Consumer<java.io.File> onExport;
     private java.util.function.Consumer<java.io.File> onImport;
+    /**
+     * Opens the New Game flow (D1: console {@code new game;}). Null in contexts without a client
+     * able to show the dialog; the command then reports it as unavailable.
+     */
+    private Runnable onNewGame;
 
     /** Problem notices gathered while this typed command runs (D1 contextual channel). */
     private final letrain.command.CommandNotices commandNotices =
@@ -59,6 +64,21 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             java.util.function.IntConsumer onUndo, java.util.function.IntConsumer onRedo,
             java.util.function.Consumer<java.io.File> onExport,
             java.util.function.Consumer<java.io.File> onImport) {
+        this(model, onSave, onLoad, turtleDelegate, onMessage, onQuit, onUndo, onRedo, onExport,
+                onImport, null);
+    }
+
+    /**
+     * @param onNewGame opens the New Game flow for the console command {@code new game;} (D1); null
+     *        in contexts without a New Game dialog
+     */
+    public PlayerCommandExecutor(Model model, java.util.function.Consumer<java.io.File> onSave,
+            java.util.function.Consumer<java.io.File> onLoad,
+            letrain.command.TurtleDelegate turtleDelegate,
+            java.util.function.BiConsumer<String, String> onMessage, Runnable onQuit,
+            java.util.function.IntConsumer onUndo, java.util.function.IntConsumer onRedo,
+            java.util.function.Consumer<java.io.File> onExport,
+            java.util.function.Consumer<java.io.File> onImport, Runnable onNewGame) {
         this.model = model;
         this.onSave = onSave;
         this.onLoad = onLoad;
@@ -69,10 +89,25 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         this.onRedo = onRedo;
         this.onExport = onExport;
         this.onImport = onImport;
+        this.onNewGame = onNewGame;
     }
 
     public PlayerCommandExecutor(Model model) {
         this(model, null, null, null);
+    }
+
+    /**
+     * Console/scenario command {@code new game;} (D1): opens the client's New Game flow through the
+     * callback wired by the client. There is no world state to touch here, so the whole flow
+     * belongs to the UI (settings dialog, confirmation, model swap).
+     */
+    @Override
+    public Object visitNewGameCommand(PlayerCommandsParser.NewGameCommandContext ctx) {
+        if (onNewGame == null) {
+            throw new RuntimeException("New game is not available in this context.");
+        }
+        onNewGame.run();
+        return null;
     }
 
     /**
@@ -168,7 +203,22 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
                 onUndo, onRedo, null, null, autoRecordJournal);
     }
 
+    public static String execute(String commandText, Model model,
+            java.util.function.Consumer<java.io.File> onSave,
+            java.util.function.Consumer<java.io.File> onLoad,
+            letrain.command.TurtleDelegate turtleDelegate,
+            java.util.function.BiConsumer<String, String> onMessage, Runnable onQuit,
+            java.util.function.IntConsumer onUndo, java.util.function.IntConsumer onRedo,
+            java.util.function.Consumer<java.io.File> onExport,
+            java.util.function.Consumer<java.io.File> onImport, boolean autoRecordJournal) {
+        return execute(commandText, model, onSave, onLoad, turtleDelegate, onMessage, onQuit,
+                onUndo, onRedo, onExport, onImport, null, autoRecordJournal);
+    }
+
     /**
+     * @param onNewGame opens the New Game dialog for the console command {@code new game;} (D1);
+     *        null in contexts without a client able to show it, where the command reports it as
+     *        unavailable
      * @param autoRecordJournal when false, the executor does not auto-record the raw command into
      *        the {@link CommandJournal}; callers that capture a canonical, self-positioned form
      *        (e.g. the console funnels prepend {@code go x,y; face d;}) do their own recording.
@@ -181,7 +231,8 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
             java.util.function.BiConsumer<String, String> onMessage, Runnable onQuit,
             java.util.function.IntConsumer onUndo, java.util.function.IntConsumer onRedo,
             java.util.function.Consumer<java.io.File> onExport,
-            java.util.function.Consumer<java.io.File> onImport, boolean autoRecordJournal) {
+            java.util.function.Consumer<java.io.File> onImport, Runnable onNewGame,
+            boolean autoRecordJournal) {
         // `help` is handled here (not in the grammar) so any topic works, reserved words included.
         if (commandText != null) {
             String trimmed = commandText.trim();
@@ -236,8 +287,9 @@ public class PlayerCommandExecutor extends PlayerCommandsParserBaseVisitor<Objec
         }
 
         try {
-            PlayerCommandExecutor executor = new PlayerCommandExecutor(model, onSave, onLoad,
-                    turtleDelegate, onMessage, onQuit, onUndo, onRedo, onExport, onImport);
+            PlayerCommandExecutor executor =
+                    new PlayerCommandExecutor(model, onSave, onLoad, turtleDelegate, onMessage,
+                            onQuit, onUndo, onRedo, onExport, onImport, onNewGame);
             executor.setAutoRecordJournal(autoRecordJournal);
             try {
                 executor.visit(tree);

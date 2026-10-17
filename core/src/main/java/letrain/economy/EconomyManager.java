@@ -30,6 +30,23 @@ public interface EconomyManager {
      */
     double getLatitude();
 
+    /**
+     * The {@code letrain.cfg} this manager reads (working directory first, then next to the app),
+     * or {@code null} when neither exists. The settings dialog uses it as the target of "save as
+     * defaults" (D4, S3a).
+     */
+    java.io.File getConfigFile();
+
+    /**
+     * Creation-time start day of the game clock ({@code time.startDay}, S2b): 1..366, default 1.
+     * {@code Model.newGame} applies it before the first tick; loading a savegame restores its own
+     * origin and never moves the running clock.
+     */
+    int getStartDay();
+
+    /** Creation-time start minute of day of the game clock ({@code time.startTime}), 0..1439. */
+    int getStartMinuteOfDay();
+
     float getCost(ExpenseType type);
 
     void spend(ExpenseType type);
@@ -146,6 +163,28 @@ public interface EconomyManager {
     public float getWaterThreshold();
 
     public float getRockThreshold();
+
+    /**
+     * True when the terrain proportions drive world generation: {@code GroundMap} calibrates the
+     * water/rock thresholds per seed from {@link #getWaterPercent()} and
+     * {@link #getMountainPercent()} (new keys {@code terrain.waterPercent} /
+     * {@code terrain.mountainPercent}, D2). When false, the legacy raw thresholds
+     * ({@link #getWaterThreshold()} / {@link #getRockThreshold()}) apply, which keeps old
+     * scenarios, savegames and cfg files looking the same.
+     */
+    boolean isTerrainPercentEnabled();
+
+    /** Requested water percentage (0..95). Only meaningful in percent mode. */
+    int getWaterPercent();
+
+    /** Requested mountain percentage (0..95). Only meaningful in percent mode. */
+    int getMountainPercent();
+
+    /**
+     * Switches to the legacy raw thresholds. Savegames written before the settings section only
+     * carried {@code threshold.WATER/ROCK}, so keeping them preserves their exact look.
+     */
+    void fallBackToLegacyTerrain();
 
     int getConstructionDelay(Presenter.TrackType type);
 

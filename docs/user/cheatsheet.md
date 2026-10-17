@@ -138,6 +138,7 @@
 | :--- | :--- | :--- |
 | `save <name?>;` | Save the map. If omitted, uses an automatic name. | `save "map1";` |
 | `load <name?>;` | Load a saved map. | `load "map1";` |
+| `new game;` | Open the New Game dialog (seed, terrain, settings). | `new game;` |
 
 ---
 

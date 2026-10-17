@@ -52,6 +52,8 @@ TOGGLE: 'toggle';
 
 // New Keywords for PlayerCommands
 NEW: 'new';
+// Issue #746: `new game;` opens the New Game dialog from the console/scenario grammar (D1).
+GAME: 'game';
 JOURNAL: 'journal';
 UNDO: 'undo';
 REDO: 'redo';

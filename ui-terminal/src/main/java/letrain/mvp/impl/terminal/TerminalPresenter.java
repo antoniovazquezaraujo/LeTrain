@@ -90,6 +90,20 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private final GameSaveService gameSaveService;
 
     /**
+     * Title cover (issue #743): shown at startup, any key continues. Kept in the presenter so the
+     * key that dismisses the cover is consumed and never reaches the game.
+     */
+    private boolean coverActive = false;
+    private boolean coverEnabled = true;
+
+    /**
+     * True once a game is running. Interactive boot starts without a game (D8): the cover gives way
+     * to the File menu and only New/Load start the world. Headless/scenario presenters and direct
+     * launches keep the default, so they land straight in the world.
+     */
+    private boolean gameStarted = true;
+
+    /**
      * Soundscape glue (styles, zones, weather), owned by the launcher; {@code null} in tests and
      * when audio is disabled, in which case the legacy {@link letrain.audio.AudioController}
      * ambient keeps playing.
@@ -412,10 +426,61 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
     }
 
+    /**
+     * Skips the title cover. Used by headless runs and direct scenario launches that must land on
+     * the world without a splash (issue #743).
+     */
+    public void setCoverEnabled(boolean enabled) {
+        this.coverEnabled = enabled;
+    }
+
+    /** True while the title cover is on screen waiting for any key. */
+    public boolean isCoverActive() {
+        return coverActive;
+    }
+
+    /** Shows the cover; {@link #start()} calls this unless the cover was disabled. */
+    void showCover() {
+        coverActive = true;
+        view.setCoverVisible(true);
+    }
+
+    /** Dismisses the cover (any key continues) and hands the screen back to the game. */
+    void dismissCover() {
+        coverActive = false;
+        view.setCoverVisible(false);
+    }
+
+    /**
+     * Interactive boot (D8): the cover leads to the File menu instead of auto-starting the world.
+     * Package-visible so tests can drive the boot flow without the blocking main loop.
+     */
+    void beginStartup() {
+        gameStarted = false;
+        showCover();
+    }
+
+    /**
+     * One step of the boot flow: shows the File menu. New/Load start a game; when the player leaves
+     * the menu with Esc and still has no game, the cover comes back (there is no world yet to
+     * return to). Returns true when a game was started.
+     */
+    boolean startupMenuStep() {
+        view.showFileMenu();
+        if (!gameStarted) {
+            showCover();
+            return false;
+        }
+        view.clear();
+        return true;
+    }
+
     public void start() {
         running = true;
         try {
-
+            if (coverEnabled) {
+                beginStartup();
+            }
             model.setMode(RAILS);
             letrain.map.Point startPos = model.getCursor().getPosition();
             view.centerOn(startPos.getX(), startPos.getY());
@@ -423,6 +488,31 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             while (running) {
                 com.googlecode.lanterna.input.KeyStroke rawStroke = view.readKey();
                 boolean endOfGame = view.isEndOfGame(rawStroke);
+                if (coverActive) {
+                    // Cover: any key continues. The dismissing keystroke is consumed with the
+                    // rest of the queued burst, so it never reaches the game as an action.
+                    if (rawStroke != null) {
+                        dismissCover();
+                        while (rawStroke != null) {
+                            rawStroke = view.readKey();
+                            endOfGame = endOfGame || view.isEndOfGame(rawStroke);
+                        }
+                    }
+                    if (endOfGame) {
+                        break;
+                    }
+                    if (coverActive) {
+                        view.paint();
+                    } else if (!gameStarted) {
+                        // Interactive boot (D8): no auto-start. The File menu offers New/Load;
+                        // Esc there returns to the cover.
+                        startupMenuStep();
+                    } else {
+                        view.clear();
+                    }
+                    Thread.sleep(50);
+                    continue;
+                }
                 // Handles the whole queued burst: the old code discarded every key after the first
                 // one of the frame, so fast typing (commands) and quick taps got lost.
                 while (rawStroke != null) {
@@ -502,7 +592,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 new letrain.command.TurtleBuilder(model, railTrackMaker),
                 (title, msg) -> view.showMessage(title, msg), () -> onExitGame(),
                 steps -> undo(steps), steps -> redo(steps), file -> saveScenario(file),
-                file -> playScenario(file), false);
+                file -> playScenario(file), () -> onNewGame(), false);
 
         if (error != null) {
             // Short form for the one-line command bar; the full message goes to the scrollable
@@ -714,6 +804,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     @Override
     public void onChar(InputEvent keyEvent) {
+        if (coverActive) {
+            // Any key continues from the cover; the key is consumed, never acted on.
+            dismissCover();
+            return;
+        }
         if (((TerminalView) view).isShowingOverlay()) {
             // Vim-style pager: j/k (or Ctrl+N/P) scroll, h/l change width, PageUp/PageDown page,
             // +/- width, F maximize.
@@ -889,7 +984,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             view.setHelpLevel(next);
             return;
         } else if (keyEvent.getKeyType() == KeyType.Escape) {
-            view.showExitDialog();
+            // Esc opens the File menu (owner decision D11); Quit lives inside it now.
+            view.showFileMenu();
         } else if (handleModeHotkey(keyEvent)) {
             return;
         }
@@ -2155,8 +2251,114 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         return new File(directory, newFileName);
     }
 
+    /**
+     * New Game entry point (File → New and console {@code new game;}, D1). With a game in progress
+     * it first confirms the discard (simple flow until #417), then opens the dialog and starts the
+     * chosen world.
+     */
     @Override
-    public void onNewGame() {}
+    public void onNewGame() {
+        Map<String, String> currentSettings =
+                model.getEconomyManager() != null ? model.getEconomyManager().effectiveConfig()
+                        : Map.of();
+        onNewGame(currentSettings);
+    }
+
+    /**
+     * New Game flow with explicit prefill (used by New and by the Settings dialog's "New game with
+     * these values…", S3b): confirms the discard when a game is running, opens the dialog and
+     * starts the chosen world.
+     */
+    void onNewGame(Map<String, String> prefill) {
+        if (gameStarted && !view.confirm(letrain.mvp.NewGameText.CONFIRM_TITLE,
+                letrain.mvp.NewGameText.CONFIRM_MESSAGE)) {
+            return;
+        }
+        Map<String, String> settings = view.showNewGameDialog(prefill);
+        if (settings == null || settings.isEmpty()) {
+            return;
+        }
+        startNewGame(settings);
+    }
+
+    /**
+     * File → Settings (S3b, #764): opens the in-game dialog with the current effective values (plus
+     * the world seed), the scenario-locked keys and a port that applies settings to the running
+     * game and writes {@code letrain.cfg} defaults (D4). Choosing "New game" closes the dialog and
+     * re-enters the New Game flow with the form prefilled.
+     */
+    @Override
+    public void onSettings() {
+        if (model.getEconomyManager() == null) {
+            return;
+        }
+        Map<String, String> current =
+                new java.util.LinkedHashMap<>(model.getEconomyManager().effectiveConfig());
+        current.put(letrain.settings.NewGameForm.SEED_KEY, String.valueOf(model.getSeed()));
+        SettingsDialog.Action action = view.showSettingsDialog(current,
+                model.getScenarioSettingKeys(), new SettingsDialog.SettingsPort() {
+                    @Override
+                    public letrain.settings.SettingsApplyResult apply(Map<String, String> values) {
+                        return model.applyLiveSettings(values);
+                    }
+
+                    @Override
+                    public String saveDefaults(Map<String, String> values) {
+                        return saveSettingsAsDefaults(values);
+                    }
+                });
+        if (action instanceof SettingsDialog.Action.StartGame startGame) {
+            onNewGame(startGame.settings());
+        }
+    }
+
+    /**
+     * Writes the form values into the game's {@code letrain.cfg} (D4); when the game found no file
+     * it creates one in the working directory. Returns {@code null} on success or the failure
+     * message the dialog shows.
+     */
+    String saveSettingsAsDefaults(Map<String, String> values) {
+        return letrain.settings.ConfigFileWriter
+                .writeDefaultsOrMessage(model.getEconomyManager().getConfigFile(), values);
+    }
+
+    /** Writes the values into {@code target}; {@code null} on success or the failure message. */
+    static String writeDefaults(File target, Map<String, String> values) {
+        return letrain.settings.ConfigFileWriter.writeDefaultsOrMessage(target, values);
+    }
+
+    /**
+     * Builds a fresh world from the dialog settings (S2) and swaps it in. Reuses the load/rebuild
+     * machinery: {@code Model.newGame} creates a seeded model and applies the validated settings
+     * before any terrain is generated, then {@link #setModel} rebinds the presenter (journal,
+     * listeners, free construction off).
+     */
+    void startNewGame(Map<String, String> settings) {
+        int seed = resolveSeed(settings.get(letrain.settings.NewGameForm.SEED_KEY));
+        letrain.mvp.impl.Model fresh = letrain.mvp.impl.Model.newGame(seed, settings);
+        setModel(fresh);
+        gameStarted = true;
+        model.setMode(RAILS);
+        view.centerOn(model.getCursor().getPosition().getX(),
+                model.getCursor().getPosition().getY());
+        model.updateGroundMap(view.getScrollOffset(), view.getCols(), view.getRows());
+        view.setStatusBarText(letrain.mvp.NewGameText.startedMessage(seed));
+    }
+
+    /**
+     * Resolves the form's seed text; {@code random} (or a missing/invalid value) draws a fresh one.
+     * Delegates to the shared {@link letrain.settings.NewGameForm#resolveSeed(String)} so the 2D
+     * terminal and the 3D client start the same world for the same text (S4, #777).
+     */
+    static int resolveSeed(String seedText) {
+        return letrain.settings.NewGameForm.resolveSeed(seedText);
+    }
+
+    /** True once New/Load started a game; the boot File menu disables Save until then (D8). */
+    @Override
+    public boolean hasActiveGame() {
+        return gameStarted;
+    }
 
     @Override
     public void onSaveGame(File file) {
@@ -2194,12 +2396,14 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         return letrain.command.ScenarioExporter.renderWorld(model, commandJournal.appliedEntries());
     }
 
-    /** Generates the scenario's settings section (the model's effective configuration). */
+    /** Generates the scenario's settings section from the settings catalogue. */
     @Override
     public String getConfigurationText() {
-        String section = letrain.command.ScenarioFile.configurationSection(
-                model.getEconomyManager() != null ? model.getEconomyManager().effectiveConfig()
-                        : null);
+        String section =
+                letrain.command.ScenarioFile.configurationSection(letrain.settings.SettingsCatalog
+                        .scenarioConfiguration(model.getEconomyManager() != null
+                                ? model.getEconomyManager().effectiveConfig()
+                                : null));
         return section.isBlank() ? "configuration {\n}\n" : section;
     }
 
@@ -2246,10 +2450,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     letrain.command.ScenarioFile.parse(text);
             // Apply the scenario's settings (configuration section) to the fresh world BEFORE any
             // terrain generation, so the scenario reproduces the same terrain and rules regardless
-            // of the local letrain.cfg.
+            // of the local letrain.cfg; the model remembers the keys as scenario-locked (S3a/D10)
+            // and wires the clock with them.
             letrain.mvp.impl.Model fresh = new letrain.mvp.impl.Model(scenario.seed());
-            fresh.getEconomyManager().applyConfig(scenario.configuration());
+            fresh.applyScenarioConfiguration(scenario.configuration());
             applyModel(fresh);
+            gameStarted = true;
             // Constructor libre: building the scenario costs nothing (ADR-020).
             model.getEconomyManager().setFreeConstruction(true);
             // Replay silently: re-running a coupling must not play the "link" sound of the user
@@ -2370,6 +2576,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     letrain.mvp.impl.Model loadedModel = optionalModel.get();
                     // setModel already registers this presenter as a train event listener.
                     setModel(loadedModel);
+                    gameStarted = true;
                     letrain.map.Point startPos = getActiveFocusPoint();
                     if (startPos != null) {
                         view.centerOn(startPos.getX(), startPos.getY());

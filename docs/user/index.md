@@ -39,7 +39,7 @@
 
 - **Advanced Automation & IDE:**
   - Includes a built-in programming language (parsed via ANTLR4) for true automation.
-  - A tabbed in-game editor (**Scenario / Program / Config**) with a per-tab quick reference, error navigation and a headless validator (`letrain-check`).
+  - A tabbed in-game editor (**Scenario / Programming / Config**) with a per-tab quick reference, error navigation and a headless validator (`letrain-check`).
   - Automate switches, set up autopilot routes with timetables (`arrival`/`departure` and punctuality), and manage complex itineraries with shunting maneuvers.
 
 - **Record, Undo & Scenarios:** Freeze the world and record every edit (`R`), undo/redo deterministically (`u` / `Ctrl+R`), and export your whole network as a small `.ltr` text recipe you can share, import and replay. The same seed rebuilds the same world — no savegame needed.
@@ -170,7 +170,7 @@ You can run either the modern 3D version or the classic 2D version:
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/p7L3IR3CbWI" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/26AmqDbMsUk" frameborder="0" allowfullscreen></iframe></div>
 </div>
-- **Program IDE:** In `program` mode, you have access to a simple IDE that allows you to program actions and events. Itineraries can be created and assigned to trains. An itinerary can contain several stations or sensors, so when the train passes them, it performs specific tasks automatically, such as loading, unloading, reversing direction, or stopping.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Programming IDE:** In `program` mode, you have access to a simple IDE that allows you to program actions and events. Itineraries can be created and assigned to trains. An itinerary can contain several stations or sensors, so when the train passes them, it performs specific tasks automatically, such as loading, unloading, reversing direction, or stopping.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/ke0XuMDk3iM" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/z6CGDnxDqa0" frameborder="0" allowfullscreen></iframe></div>
 </div>

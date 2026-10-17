@@ -12,6 +12,31 @@ Welcome to the official **LeTrain** manual. Here you will find everything you ne
 
 The game can be controlled via the keyboard in both its 2D and 3D versions. Below are the main keys and modes:
 
+### Title cover, File menu and New Game
+- The game opens with a **title cover**: in the 2D terminal, a full-colour braille picture of the train, drawn even when the terminal is smaller than the picture — it is centred and cropped, so lower the zoom if you want to see it whole; on dumb terminals with no colour the same picture is drawn as plain coloured dots over the terminal background. The 3D view paints a full-screen picture of the letter-train. Neither client shows a "press any key" hint: just press **any key** to continue to the **File menu** — neither client auto-starts a world, so **New** or **Load** is what starts your railway.
+- Press **Esc** to open the **File** menu, with the same words in 2D and 3D: **New**, **Load**, **Save**, **Settings** and **Quit**. **Esc** closes the menu again and **Quit** leaves the game. At the boot menu, **Esc** goes back to the title cover.
+  - **New** opens the **New Game** dialog: in 2D, seed, terrain proportions and the catalogue sections (see below); in 3D (V1), the seed and the terrain proportions. It is the way to start a game from the boot menu. With a game in progress it asks for confirmation first (the full Save/Discard/Cancel flow arrives later); the unsaved game is discarded.
+  - **Save** is disabled with the reason *no game in progress* until a game is running.
+  - **Settings** opens the in-game **Settings** dialog in both clients while a game is running; at the boot menu it is disabled with *no game in progress*.
+- The in-game **LeTrain Editor** no longer has `Save`/`Load` buttons: they live in the File menu. The console commands `save;`/`load;` still work.
+- Console command **`new game;`** opens the same New Game dialog from the CLI in both clients.
+
+#### New Game dialog (2D and 3D V1)
+- In 2D, the **Terrain** tab opens first and keeps every terrain control: the seed, the **Water**/**Mountain** sliders, the **stacked bar** (as wide as the slider row) and the **preview**. The other tabs (**Game**, **Economy**, **Build**, **UI**) show the settings catalogue only. In 3D (V1) the dialog offers the seed and the two terrain sliders; the catalogue tabs and the preview arrive with later slices.
+- **Seed**: a random seed is drawn when the dialog opens. It stays editable and copyable.
+- **Terrain**: the rule is *water + mountain ≤ 95 %*: moving one slider clamps the other, so there is always at least 5 % of field. The 100 % **stacked bar** shows the water / field / mountain split.
+- **Preview**: an adaptive **square** terrain sampler (same noise and calibrated thresholds as the world generator) drawn with half blocks, so the world keeps its 1:1 cell shape; the mountain is the game brown. It sits at the left edge and appears from **80×24**, growing with the terminal (16×16 cells at 80×24, 22×22 at 120×30: about a quarter of the section area, so it never takes over the dialog); below 80×24 the sliders and the bar stay.
+- **Sections**: one **scrolling column** per tab, one field per row as `Name: value` (plus its unit; checkboxes for on/off options). Each page aligns its values after its own widest name (the Terrain values sit close to their labels), so the left gap is gone. A focused field is armed: typing replaces the whole value (moving the caret cancels that, Backspace clears it). No range hints on the rows: confirming an invalid value (**Enter**/Tab) keeps the previous one and opens a small box with the allowed range (`Allowed: 0..95`, `Allowed: 00:00..23:59`, `Minimum: 0`, `Maximum: 12`). **Start** builds the world with those values; **Cancel**/Esc leaves everything as it was.
+- **Game tab**: besides the world settings it sets the clock origin of the new game: **Start day** (1..366, default 1) and **Start time** (`HH:MM`, default 08:00, accepted as `H:MM` or `HH:MM` and normalised to zero-padded `HH:MM` on confirm). They only apply when the world is created: a loaded game always continues at its saved date and time.
+- **Keys**: **Alt+T/G/E/B/U** switch tabs by their letter (also **Ctrl+Tab**/**Ctrl+Shift+Tab** to cycle), **Alt+S** starts and **Alt+C**/**Esc** cancels. The dialog has a black background.
+
+#### Settings dialog (2D and 3D)
+- **File → Settings** opens it in both clients while a game is running (disabled with *no game in progress* at the boot menu). In 2D it uses the same form conventions as the New Game dialog: tabs by page, aligned values, Enter/Tab commits with a range tooltip. In 3D a category selector shows one page at a time, with the same words and actions and checkboxes for on/off options.
+- Every row carries its state: green **●** *live* and yellow **●** *reapply* are editable (applying a changed *reapply* asks for confirmation first); red **●** *requires a new game* stays locked. Scenario-locked values (rare, scenario games only) render disabled too. A small colour legend at the bottom repeats the meanings.
+- The **Terrain** page shows the running world's terrain parameters, read-only: both clients show the New Game terrain block (seed, Water/Mountain sliders, the three-colour bar and the map) filled with the running values and disabled. In 3D the map is the same square sampler rendered from the 3D world's day tones.
+- **Apply** sends the editable values to the running game (invalid, new-game-only and scenario-locked values are listed with their reason and the dialog stays open). **Restore** puts the current values back. **New game** confirms and opens the New Game form prefilled with the form values. **Save as defaults** writes them into `letrain.cfg`. **Close** (or Esc) leaves.
+- **Keys**: **Alt+A/R/N/S/C** for the actions and **Alt+T/G/E/B/U** for the tabs in both clients, and **Ctrl+Tab**/**Ctrl+Shift+Tab** cycles the tabs. **Tab**/arrows walk the fields of the active page and the footer, **Enter**/**Space** activate a focused button or toggle a focused checkbox and **Esc** closes. In 3D the focused control is highlighted with a background block; text fields follow the caret with the arrows.
+
 ### Navigation and Views
 - **Arrow Keys (or h, j, k, l)**: Move the cursor freely or follow a track (Vim-style navigation).
 - **Alt + Arrows (or Alt + h, j, k, l)**: Zoom and pan/orbit the camera.
@@ -23,7 +48,7 @@ The game can be controlled via the keyboard in both its 2D and 3D versions. Belo
   - **g**: Build Speed Signal
 - **Key 'o'**: Instantly relocate the cursor to the currently selected train, station, fork, sensor, or speed signal; a brief white cross flashes around the cursor so you can spot it.
 - **Key 'z'**: In 3D: Toggle between the three cameras (Perspective, Top-down, and Cab view). In 2D: Cycle the camera deadzone box.
-- **Esc**: In 3D: Exit the game menu.
+- **Esc**: Open the **File** menu (`New`/`Load`/`Save`/`Settings`/`Quit`). Press it again to close the menu.
 - **Key 'Z' (Shift+z)**: In 2D: Toggle camera pagination mode.
 - **Key 'Tab'**: Cycle through the information bar visibility levels (Compact, Full, Hidden).
 
@@ -40,7 +65,7 @@ LeTrain is deeply modal. Pressing the following keys will switch your current in
 - **`g`**: **Speed Signals Mode** - Manage speed limit signals.
 - **`n`**: **Stations Mode** - Select and inspect stations.
 - **`e`**: **Sensors Mode** - Select and inspect sensors.
-- **`p`**: **Program Mode** - Open the IDE to write automation scripts.
+- **`p`**: **Programming Mode** - Open the editor to write automation scripts.
 - **`:`**: **CLI Mode** - Open the command line interface.
 - **`R`**: **Toggle Record/edit mode** (off by default). When enabled, the world (trains, economy, derailments) freezes while you are in any editing mode (Rails, Add, Stations, Sensors, Semaphores, Speed Signals, Forks, Trains, console or program editor), track construction becomes instantaneous, and every edit is journaled for deterministic undo and scenario export. Simulation only runs in play/view modes (Drive, Menu, Link/Unlink) or when the toggle is off.
 
@@ -76,9 +101,10 @@ For a complete reference of the CLI commands, see **[grammar.md](grammar.md)**.
 
 ### Scenario Editor and Undo/Redo
 - **`p`**: Open the **LeTrain Editor** (scenario editor). It has three tabs — **Scenario**
-  (`seed` + `on build` + `on start`), **Program** (the automation script) and **Config** (game
+  (`seed` + `on build` + `on start`), **Programming** (the automation script) and **Config** (game
   settings) — a per-tab quick reference, and a footer with `Export`/`Import` of `.ltr` scenario
-  files, `Refresh`, `Reprogram` and `Rebuild`. `Esc` closes it. See **[scenarios.md](scenarios.md)**.
+  files, `Reload from game`, `Apply program`, `Rebuild world` and `Close`. Save/Load moved to the
+  File menu (**Esc**). `Esc` closes the editor. See **[scenarios.md](scenarios.md)**.
 - **Record/edit mode (`R`)**: while it is on, **`u`** undoes and **Ctrl+R** redoes edits (the same
   as `undo;` / `redo;`). Outside this mode, `u` is the **Unlink** mode.
 
@@ -112,7 +138,7 @@ the normal rail colour.
 
 ## 🕐 Game Time & Day/Night
 
-The world runs on a logical game clock, independent from real time. The HUD shows the current game date and time (`D1 08:00`) in both the 2D terminal and the 3D view, and the world starts on day 1 at 08:00; one full game day lasts 24 real minutes by default (adjustable in `letrain.cfg`). The clock is deterministic and drives the simulation, so the same scenario always replays with the same times.
+The world runs on a logical game clock, independent from real time. The HUD shows the current game date and time (`D1 08:00`) in both the 2D terminal and the 3D view; a new game starts on **day 1 at 08:00** by default, and the **Game** tab of the New Game dialog lets you choose another **Start day** (1..366) and **Start time** (`HH:MM`) when the world is created. One full game day lasts 24 real minutes by default (adjustable in `letrain.cfg`). The clock is deterministic and drives the simulation, so the same scenario always replays with the same times.
 
 - **Day/Night cycle**: Sunrise and sunset are simulated, and the world palette shifts through day, dusk and night in both clients: ambient light, sunlight, sky and terrain colours in 3D, and the terminal colour palette in 2D. The same network looks very different at midnight.
 - **Headlights**: Locomotive headlights only shine once it gets dark, and only while the engine is running — switching the engine off turns them off. The two lamps stay visible (unlit) at any hour, and only the head locomotive of a consist shines: the other locomotives keep their lamps off.

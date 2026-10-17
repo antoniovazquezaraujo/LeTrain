@@ -19,7 +19,9 @@ Ambos artefactos son autocontenidos y nunca se mezclan.
 # LeTrain scenario v1
 seed 123
 configuration {
-  threshold.WATER=130
+  terrain.waterPercent=25
+  terrain.mountainPercent=10
+  world.latitude=40.0
 }
 on build {
   go 0,0; face e; write 5;
@@ -34,8 +36,9 @@ program {
 ```
 
 - `seed <n>` — **obligatorio**. La semilla del terreno; la misma semilla reproduce el mismo terreno.
-- `configuration { ... }` — ajustes como `clave=valor` (las mismas claves que `letrain.cfg`). El
-  escenario lleva sus propias reglas y **tienen preferencia sobre** el fichero `letrain.cfg` local.
+- `configuration { ... }` — ajustes como `clave=valor` (el catálogo de ajustes; ejecuta `help config`
+  en la consola para listar todas las claves). El escenario lleva sus propias reglas y **tienen
+  preferencia sobre** el fichero `letrain.cfg` local.
 - `on build { ... }` — los comandos de construcción (vías, elementos, trenes). Se reproducen una vez,
   primero.
 - `on start { ... }` — condiciones iniciales opcionales aplicadas justo después de construir: estado
@@ -76,21 +79,23 @@ letrain-check mi-escenario.ltr
 Pulsa `p` para abrir el **LeTrain Editor**. Sus tres pestañas forman el escenario:
 
 - **Scenario** — `seed` + `on build` + `on start`.
-- **Program** — el bloque `program { ... }`.
+- **Programming** — el bloque `program { ... }`.
 - **Config** — los ajustes de `configuration { ... }`.
 
 ![El LeTrain Editor con la pestaña Config seleccionada](images/config-editor.png)
 
 La referencia rápida de la derecha muestra solo los comandos que tienen sentido en la pestaña
-activa; al elegir uno se inserta en una línea nueva. El pie tiene `Save`/`Load` (partida guardada),
-`Export`/`Import` (fichero de escenario), `Refresh` (recargar desde el mundo), `Reprogram` (aplicar
-el Program) y `Rebuild` (validar y jugar el escenario). `Esc` cierra el editor. Si hay errores,
-aparece una lista con scroll que te lleva a la línea del fallo.
+activa; al elegir uno se inserta en una línea nueva. El pie tiene `Export`/`Import` (fichero de
+escenario), `Reload from game` (recargar desde el mundo), `Apply program` (aplicar el programa
+editado al juego en marcha), `Rebuild world` (validar el escenario y reconstruir el mundo con un
+replay) y `Close`; las partidas guardadas se han movido al menú File (`Esc`). `Rebuild world` pide
+confirmación antes: el mundo actual se descarta. `Esc` cierra el editor. Si hay errores, aparece
+una lista con scroll que te lleva a la línea del fallo.
 
-`Reprogram` vuelve a aplicar el Program desde cero: los trenes en marcha se reinician (se cancelan
-las misiones, se limpian las esperas de bloque y el tren frena) y un itinerario reasignado vuelve a
-empezar por su primer waypoint. Se avisa de cada tren que estaba en marcha, así que un re-program
-en caliente nunca repite una maniobra a medias en silencio.
+`Apply program` vuelve a aplicar el Program desde cero: los trenes en marcha se reinician (se
+cancelan las misiones, se limpian las esperas de bloque y el tren frena) y un itinerario reasignado
+vuelve a empezar por su primer waypoint. Se avisa de cada tren que estaba en marcha, así que un
+re-program en caliente nunca repite una maniobra a medias en silencio.
 
 ---
 
