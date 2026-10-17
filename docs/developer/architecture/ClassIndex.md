@@ -144,6 +144,7 @@
 - [[letrain.mvp.impl.services.TrackElementMovementService|TrackElementMovementService]] (core)
 - [[letrain.mvp.impl.terminal.CoverArtPainter|CoverArtPainter]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.CoverStyle|CoverStyle]] (ui-terminal)
+- [[letrain.mvp.impl.terminal.DialogWindow|DialogWindow]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.NewGameDialog|NewGameDialog]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.SettingsDialog|SettingsDialog]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.TerminalPresenter|TerminalPresenter]] (ui-terminal)
