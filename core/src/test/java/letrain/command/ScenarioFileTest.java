@@ -161,6 +161,24 @@ class ScenarioFileTest {
     }
 
     @Test
+    @DisplayName("configurationSection writes the keys sorted by name (deterministic output, #782)")
+    void configurationSection_sortsKeys() {
+        Map<String, String> config = new LinkedHashMap<>();
+        config.put("terrain.waterPercent", "25");
+        config.put("startingBalance", "0.0");
+        config.put("map.VIEW_RADIUS", "15");
+
+        String section = ScenarioFile.configurationSection(config);
+
+        int viewRadius = section.indexOf("map.VIEW_RADIUS=");
+        int starting = section.indexOf("startingBalance=");
+        int terrain = section.indexOf("terrain.waterPercent=");
+        assertTrue(viewRadius >= 0 && starting > viewRadius && terrain > starting, section);
+        // The same map renders byte-for-byte identically on a second call.
+        assertEquals(section, ScenarioFile.configurationSection(config));
+    }
+
+    @Test
     @DisplayName("programSection wraps and programSectionBody extracts (round-trip)")
     void programSection_roundTrip() {
         String body = "sensor 1 on train enter { semaphore 1 open; }";

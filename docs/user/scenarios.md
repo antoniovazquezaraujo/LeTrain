@@ -18,7 +18,9 @@ Both artifacts are self-contained and are never mixed.
 # LeTrain scenario v1
 seed 123
 configuration {
-  threshold.WATER=130
+  terrain.waterPercent=25
+  terrain.mountainPercent=10
+  world.latitude=40.0
 }
 on build {
   go 0,0; face e; write 5;
@@ -33,8 +35,9 @@ program {
 ```
 
 - `seed <n>` — **required**. The terrain seed; the same seed reproduces the same terrain.
-- `configuration { ... }` — game settings as `key=value` (the same keys as `letrain.cfg`). The
-  scenario carries its own rules and they **take precedence over** the local `letrain.cfg` file.
+- `configuration { ... }` — game settings as `key=value` (the settings catalogue; run `help config`
+  in the console to list every key). The scenario carries its own rules and they **take precedence
+  over** the local `letrain.cfg` file.
 - `on build { ... }` — the construction commands (tracks, elements, trains). Replayed once, first.
 - `on start { ... }` — optional initial conditions applied right after the build: semaphore states,
   fork routes and speed-signal mode/limit, so the rebuilt world starts exactly as exported.

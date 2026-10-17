@@ -2396,12 +2396,14 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         return letrain.command.ScenarioExporter.renderWorld(model, commandJournal.appliedEntries());
     }
 
-    /** Generates the scenario's settings section (the model's effective configuration). */
+    /** Generates the scenario's settings section from the settings catalogue. */
     @Override
     public String getConfigurationText() {
-        String section = letrain.command.ScenarioFile.configurationSection(
-                model.getEconomyManager() != null ? model.getEconomyManager().effectiveConfig()
-                        : null);
+        String section =
+                letrain.command.ScenarioFile.configurationSection(letrain.settings.SettingsCatalog
+                        .scenarioConfiguration(model.getEconomyManager() != null
+                                ? model.getEconomyManager().effectiveConfig()
+                                : null));
         return section.isBlank() ? "configuration {\n}\n" : section;
     }
 
