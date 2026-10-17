@@ -56,4 +56,50 @@ class BlockManagerTest {
         assertTrue(blockManager.getOwners(segment).isEmpty());
         assertTrue(blockManager.tryLock(trainB, segment));
     }
+
+    @Test
+    void waitTurnsAreMonotonicAndStableWhileWaiting() {
+        long first = blockManager.requestWaitTurn(trainA);
+        long second = blockManager.requestWaitTurn(trainB);
+
+        assertTrue(second > first, "turns must be assigned in request order");
+        assertEquals(first, blockManager.requestWaitTurn(trainA),
+                "a train that is already waiting keeps its turn");
+        assertEquals(first, blockManager.getWaitTurn(trainA).orElseThrow());
+        assertEquals(second, blockManager.getWaitTurn(trainB).orElseThrow());
+    }
+
+    @Test
+    void clearWaitTurnRemovesTheTrainWithoutReusingTurns() {
+        long first = blockManager.requestWaitTurn(trainA);
+        blockManager.clearWaitTurn(trainA);
+        assertTrue(blockManager.getWaitTurn(trainA).isEmpty(), "the turn must be gone");
+
+        long second = blockManager.requestWaitTurn(trainB);
+        long third = blockManager.requestWaitTurn(trainA);
+
+        assertTrue(second > first, "the counter must not go backwards");
+        assertTrue(third > second, "a new wait of the same train goes to the back of the queue");
+    }
+
+    @Test
+    void releaseAllAlsoClearsTheWaitTurn() {
+        blockManager.requestWaitTurn(trainA);
+
+        blockManager.releaseAll(trainA);
+
+        assertTrue(blockManager.getWaitTurn(trainA).isEmpty(),
+                "a train that released everything is no longer queued");
+    }
+
+    @Test
+    void tabulaRasaClearsWaitTurnsAndRestartsTheCounter() {
+        blockManager.requestWaitTurn(trainA);
+
+        blockManager.clearAll();
+
+        assertTrue(blockManager.getWaitTurn(trainA).isEmpty());
+        assertEquals(0, blockManager.requestWaitTurn(trainB),
+                "tabula rasa restarts the deterministic turn counter");
+    }
 }

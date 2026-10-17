@@ -25,6 +25,12 @@ public interface Model {
 
     letrain.time.GameClock getGameClock();
 
+    /**
+     * World registry of temporal triggers ({@code at}/{@code every}, ADR-022 phase 3). The scope is
+     * global (D5) and a program replace clears and re-registers it through the automation engine.
+     */
+    letrain.time.TemporalTriggerService getTemporalTriggerService();
+
     public void addScriptTrainEventListener(ScriptTrainEventListener listener);
 
     public void addCoreTrainEventListener(CoreTrainEventListener listener);
@@ -296,6 +302,13 @@ public interface Model {
 
     boolean selectPrevLocomotive();
 
+    /**
+     * Selects the first drivable locomotive in list order (index 0 first), regardless of any stale
+     * selection index. Used when entering DRIVE with nothing selected (issue #700). Returns false
+     * when there is no director linker to drive.
+     */
+    boolean selectFirstLocomotive();
+
     enum GameMode {
         MENU("Menu mode"), RAILS("Navigate map, create and delete tracks"), ADD(
                 "Add entities"), DRIVE("Manage locomotives"), FORKS("Manage forks"), SEMAPHORES(
@@ -371,6 +384,28 @@ public interface Model {
     default void reportUserMessage(String title, String text) {}
 
     public EconomyManager getEconomyManager();
+
+    /**
+     * Applies catalogue settings to the running game (S3a, concept §5.2): LIVE/REAPPLY keys reach
+     * the game (the clock re-syncs day length/latitude, and a day-length change keeps the displayed
+     * instant); NEW_GAME and scenario-fixed keys come back rejected with their reason and are never
+     * applied.
+     *
+     * @param settings catalogue keys to apply; unknown keys are rejected too
+     * @return applied keys and rejections with reason, for the settings dialog
+     */
+    letrain.settings.SettingsApplyResult applyLiveSettings(java.util.Map<String, String> settings);
+
+    /**
+     * Applies a scenario's {@code configuration { }} when a world is rebuilt from it and remembers
+     * its keys (D10), so the settings UI shows them locked with "defined by scenario".
+     */
+    void applyScenarioConfiguration(java.util.Map<String, String> configuration);
+
+    /**
+     * Catalogue keys the current scenario fixes (D10); empty when the game has no scenario lock.
+     */
+    java.util.Set<String> getScenarioSettingKeys();
 
 
     void setMark(String name, letrain.map.Point pos);

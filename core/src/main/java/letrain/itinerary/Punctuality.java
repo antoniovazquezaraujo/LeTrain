@@ -163,13 +163,24 @@ public final class Punctuality {
             }
             sb.append(String.join(", ", parts)).append('\n');
         }
-        sb.append("  Current: ").append(signed(currentDelta().orElseThrow())).append(" min\n");
+        sb.append("  Current: ").append(compact()).append(" min\n");
         double average = averageDelta().orElseThrow();
         sb.append("  Average: ")
                 .append(String.format(Locale.ROOT, average > 0 ? "+%.1f" : "%.1f", average))
                 .append(" min\n");
         sb.append("  Max: ").append(signed(maxDelta().orElseThrow())).append(" min\n");
         return sb.toString();
+    }
+
+    /**
+     * Compact signed current deviation for the HUD (ADR-022 phase 2c): {@code +2} = two minutes
+     * late, {@code -1} = one minute early, exact {@code 0} without a sign. Empty while no stop has
+     * been measured. It uses the same sign formatting as the {@code Current:} line of
+     * {@link #describe()}, so the HUD and {@code info train N} cannot drift.
+     */
+    public String compact() {
+        OptionalInt current = currentDelta();
+        return current.isPresent() ? signed(current.getAsInt()) : "";
     }
 
     private static String label(Stop stop) {

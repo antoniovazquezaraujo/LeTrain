@@ -13,6 +13,7 @@ import java.util.function.Consumer;
 import letrain.economy.EconomyManager;
 import letrain.ground.Ground;
 import letrain.ground.PerlinNoise;
+import letrain.ground.TerrainCalibrator;
 import letrain.map.Point;
 import letrain.visitor.Visitor;
 import org.slf4j.Logger;
@@ -29,6 +30,25 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
     @com.fasterxml.jackson.annotation.JsonIgnore
     PerlinNoise noise = null;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    int generatorSeed;
+
+    /**
+     * Cached effective thresholds: calibrated per seed when the economy manager is in percent mode,
+     * or the legacy raw thresholds otherwise. Refreshed by {@link #ensureTerrainThresholds()}.
+     */
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    float waterThresholdValue = 130f;
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    float rockThresholdValue = 180f;
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    int calibratedWaterPercent = -1;
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    int calibratedMountainPercent = -1;
+
     @com.fasterxml.jackson.annotation.JsonProperty("blocks")
     Set<Block> blocks;
 
@@ -43,10 +63,23 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
 
     // Constructor
     public GroundMap(int seed, EconomyManager economyManager) {
-        noise = new PerlinNoise(seed);
         cells = new HashMap<>();
         blocks = new HashSet<>();
+        initGenerator(seed, economyManager);
+    }
+
+    /**
+     * (Re)wires the deterministic terrain generator: noise seed, economy settings and the cached
+     * thresholds derived from them. Called by the constructor and after a savegame load (where the
+     * generator fields are re-injected), so the per-seed calibration always uses the right seed and
+     * the settings carried by that game.
+     */
+    public void initGenerator(int seed, EconomyManager economyManager) {
+        this.generatorSeed = seed;
+        this.noise = new PerlinNoise(seed);
         this.economyManager = economyManager;
+        this.calibratedWaterPercent = -1;
+        this.calibratedMountainPercent = -1;
     }
 
     /** Public default constructor for Jackson deserialization. */
@@ -157,17 +190,47 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
         if (noise == null) {
             return letrain.ground.GroundMap.GROUND;
         }
+        ensureTerrainThresholds();
         float baseNoise = noise.smoothNoise((col * 0.01F), (row * 0.02F), 0, OCTAVES);
         float scaledBase = scaleAndShift(baseNoise, -0.7F, 0.7F, 0F, 255F);
-        float waterThreshold = (economyManager != null) ? economyManager.getWaterThreshold() : 130f;
-        float rockThreshold = (economyManager != null) ? economyManager.getRockThreshold() : 180f;
-        if (scaledBase < waterThreshold) {
+        if (scaledBase < waterThresholdValue) {
             return letrain.ground.GroundMap.WATER;
         }
-        if (scaledBase > rockThreshold) {
+        if (scaledBase > rockThresholdValue) {
             return letrain.ground.GroundMap.ROCK;
         }
         return letrain.ground.GroundMap.GROUND;
+    }
+
+    /**
+     * Resolves the effective thresholds: calibrated from the requested proportions when the economy
+     * manager is in percent mode (D2), or the legacy raw thresholds otherwise. Cheap to call per
+     * cell; it only resamples when the proportions actually changed, so a settings update (REAPPLY)
+     * is picked up by the next generated cell while old materialized cells stay as they were
+     * rendered (terrain settings are NEW_GAME).
+     */
+    private void ensureTerrainThresholds() {
+        if (economyManager == null) {
+            return;
+        }
+        if (economyManager.isTerrainPercentEnabled()) {
+            int waterPercent = economyManager.getWaterPercent();
+            int mountainPercent = economyManager.getMountainPercent();
+            if (waterPercent != calibratedWaterPercent
+                    || mountainPercent != calibratedMountainPercent) {
+                TerrainCalibrator.Thresholds thresholds = TerrainCalibrator
+                        .thresholdFor(generatorSeed, waterPercent, mountainPercent);
+                waterThresholdValue = thresholds.water();
+                rockThresholdValue = thresholds.rock();
+                calibratedWaterPercent = waterPercent;
+                calibratedMountainPercent = mountainPercent;
+            }
+        } else {
+            waterThresholdValue = economyManager.getWaterThreshold();
+            rockThresholdValue = economyManager.getRockThreshold();
+            calibratedWaterPercent = -1;
+            calibratedMountainPercent = -1;
+        }
     }
 
     void generateTerrain(int startX, int startY, int width, int height) {
@@ -187,15 +250,13 @@ public class GroundMap implements letrain.ground.GroundMap, Serializable {
      */
     int computeTerrainValue(int colIndex, int rowIndex) {
         // LAYER 0: Base Terrain
+        ensureTerrainThresholds();
         float baseNoise = noise.smoothNoise((colIndex * 0.01F), (rowIndex * 0.02F), 0, OCTAVES);
         float scaledBase = scaleAndShift(baseNoise, -0.7F, 0.7F, 0F, 255F);
 
-        float waterThreshold = (economyManager != null) ? economyManager.getWaterThreshold() : 130f;
-        float rockThreshold = (economyManager != null) ? economyManager.getRockThreshold() : 180f;
-
-        if (scaledBase < waterThreshold) {
+        if (scaledBase < waterThresholdValue) {
             return 1;
-        } else if (scaledBase > rockThreshold) {
+        } else if (scaledBase > rockThresholdValue) {
             return 2;
         }
         // GROUND - check for industries

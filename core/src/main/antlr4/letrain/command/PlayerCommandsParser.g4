@@ -6,6 +6,7 @@ playerStart : playerStatement+ EOF;
 
 playerStatement : statement
                 | goCommand SEMI
+                | newGameCommand SEMI
                 | newCommand SEMI
                 | delCommand SEMI
                 | clearCommand SEMI
@@ -24,12 +25,15 @@ playerStatement : statement
                 | undoCommand SEMI
                 | redoCommand SEMI
                 | timeCommand SEMI
+                | versionCommand SEMI
                 | quitCommand SEMI
                 ;
 
 journalCommand : JOURNAL ;
 
 timeCommand : TIME_KW (SET (TIME | NUMBER COLON NUMBER | NUMBER))? ;
+
+versionCommand : VERSION ;
 
 undoCommand : UNDO (NUMBER)? ;
 
@@ -54,6 +58,8 @@ faceCommand : FACE (DIR_N | DIR_S | DIR_E | DIR_W | DIR_NE | DIR_NW | DIR_SE | D
             | FACE entityType (NUMBER | identifier)
             | FACE (MARK | M) (NUMBER | identifier)
             ;
+
+newGameCommand : NEW GAME ;
 
 newCommand : NEW (STATION | SENSOR | FORK | SEMAPHORE | SIGNAL)
            | NEW (LOCOMOTIVE | LOCO) aspectId color?

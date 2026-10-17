@@ -27,4 +27,12 @@ final class HudHelp {
     static boolean showKeyHelp(int level) {
         return level >= FULL;
     }
+
+    /**
+     * The selected-mode description only shows at the full level: the 2D terminal paints its help
+     * bar only when {@code helpLevel >= 2}, so the compact panel is menu-only in both clients.
+     */
+    static boolean showSelectedHint(int level) {
+        return level >= FULL;
+    }
 }

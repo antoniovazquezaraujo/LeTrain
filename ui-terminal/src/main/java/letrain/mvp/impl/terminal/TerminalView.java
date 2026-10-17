@@ -33,11 +33,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import letrain.map.Page;
 import letrain.map.Point;
+import letrain.mvp.CoverArt;
+import letrain.mvp.EditorText;
+import letrain.mvp.FileMenuText;
 import letrain.mvp.GameViewListener;
+import letrain.mvp.MenuText;
 import letrain.mvp.Model.GameModeMenuOption;
+import letrain.visitor.terminal.TerminalPalette;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,11 +76,26 @@ public class TerminalView implements letrain.mvp.View {
     private TextColor bgColor;
     private boolean isUnderline = false;
     private boolean isBlink = false;
-    private int cameraDeadzone = 1;
+    /**
+     * Full-screen camera dead zone: {@code ensureVisible} treats it as "the whole visible map" and
+     * the flash outline as "the screen border" (#697).
+     */
+    static final int FULL_SCREEN_DEADZONE = 999;
+
+    /**
+     * The camera starts with the full-screen dead zone, so it only scrolls near the border (#697).
+     */
+    private int cameraDeadzone = FULL_SCREEN_DEADZONE;
     private boolean cameraPagination = false;
     private int flashDeadzoneTicks = 0;
     boolean endOfGame = false;
     private int helpLevel = 0;
+
+    /** True while the title cover is on screen; {@link #paint()} draws it instead of the game. */
+    private boolean coverVisible = false;
+
+    /** Terminal colour mode used to degrade the coloured cover art; detected once, lazily. */
+    private TerminalPalette coverPalette;
 
     /**
      * Hand-edited scenario text kept between IDE openings; null means "regenerate from the world".
@@ -98,8 +120,16 @@ public class TerminalView implements letrain.mvp.View {
     static final TextColor NORMAL_MENU_FG_COLOR = ANSI.WHITE;
     static final TextColor NORMAL_MENU_BG_COLOR = ANSI.BLACK;
     static final TextColor DISABLED_FG_COLOR = ANSI.BLACK_BRIGHT;
+    /**
+     * Disabled menu entries stay readable grey ({@code #808080}, an exact RGB independent of the
+     * terminal theme; Lanterna degrades it on 256/16-colour terminals) and only lose the green
+     * shortcut (owner feedback). The info/help lines keep {@link #DISABLED_FG_COLOR}.
+     */
+    static final TextColor MENU_DISABLED_FG_COLOR = new TextColor.RGB(0x80, 0x80, 0x80);
     static final TextColor SELECTED_BG_COLOR = ANSI.BLUE;
     static final TextColor SHORTCUT_COLOR = ANSI.GREEN_BRIGHT;
+    /** Accent of the Alt mnemonic letters (footer buttons, dialog tabs): the editor-footer red. */
+    static final TextColor MNEMONIC_COLOR = ANSI.RED_BRIGHT;
 
     public TerminalView(GameViewListener gameViewListener) {
         this.gameViewListener = gameViewListener;
@@ -186,6 +216,58 @@ public class TerminalView implements letrain.mvp.View {
 
     public boolean isEndOfGame(KeyStroke keyStroke) {
         return endOfGame;
+    }
+
+    /**
+     * Shows or hides the title cover; while visible, {@link #paint()} draws it instead of the game.
+     */
+    public void setCoverVisible(boolean visible) {
+        this.coverVisible = visible;
+    }
+
+    /** True while the title cover is on screen. */
+    public boolean isCoverVisible() {
+        return coverVisible;
+    }
+
+    /**
+     * Style the 2D cover is painted with (issue #771): full colour on real-colour terminals, dots
+     * over the terminal background on dumb 16-colour terminals. Package-visible and static so the
+     * selection can be pinned without a real terminal; it delegates to
+     * {@link CoverStyle#forPalette(TerminalPalette)} so both stay one decision.
+     */
+    static CoverStyle coverStyle(TerminalPalette palette) {
+        return CoverStyle.forPalette(palette);
+    }
+
+    /**
+     * Paints the cover full-screen and refreshes; called by {@link #paint()} while visible. The
+     * coloured braille art carrying the slant {@code LeTrain} logo is painted always, centred and
+     * cropped when the terminal is smaller than the artwork; dumb terminals get the dots-only style
+     * ({@link #coverStyle(TerminalPalette)}). There is no "press any key" text in 2D (owner
+     * decision): any key still continues.
+     */
+    private void paintCover() {
+        if (screen == null) {
+            return;
+        }
+        try {
+            TerminalSize size = screen.getTerminalSize();
+            TextGraphics tg = screen.newTextGraphics();
+            tg.setBackgroundColor(NORMAL_MENU_BG_COLOR);
+            tg.setForegroundColor(NORMAL_MENU_FG_COLOR);
+            tg.fillRectangle(TerminalPosition.TOP_LEFT_CORNER, size, ' ');
+            if (coverPalette == null) {
+                coverPalette = TerminalPalette.detect();
+            }
+            CoverArtPainter.paint(tg, CoverArt.load(), coverPalette, size,
+                    coverStyle(coverPalette));
+            this.screen.refresh();
+            Thread.yield();
+        } catch (IOException e) {
+            log.error("Error refreshing the cover, window might be closed", e);
+            setEndOfGame(true);
+        }
     }
 
     @Override
@@ -309,35 +391,21 @@ public class TerminalView implements letrain.mvp.View {
             gameBox.fillRectangle(gameBoxPosition, gameBoxSize, ' ');
         }
 
+        if (coverVisible) {
+            paintCover();
+            return;
+        }
+
         try {
             if (flashDeadzoneTicks > 0) {
                 flashDeadzoneTicks--;
                 int radius = getCameraDeadzone();
                 if (radius >= 0) {
-                    int cols = getCols();
-                    int rows = getRows();
-                    int centerX = cols / 2;
-                    int centerY = rows / 2;
-
-                    int radiusX = (int) Math.round(radius * ((double) cols / rows));
-                    int radiusY = radius;
-
-                    int screenMinX = centerX - radiusX;
-                    int screenMaxX = centerX + radiusX;
-                    int screenMinY = centerY - radiusY;
-                    int screenMaxY = centerY + radiusY;
-
-                    if (radius >= 999) {
-                        screenMinX = 0;
-                        screenMaxX = cols - 1;
-                        screenMinY = 0;
-                        screenMaxY = rows - 1;
-                    }
-
-                    screenMinX = Math.max(0, screenMinX);
-                    screenMaxX = Math.min(cols - 1, screenMaxX);
-                    screenMinY = Math.max(0, screenMinY);
-                    screenMaxY = Math.min(rows - 1, screenMaxY);
+                    int[] rect = deadzoneRect(getCols(), getRows(), radius);
+                    int screenMinX = rect[0];
+                    int screenMinY = rect[1];
+                    int screenMaxX = rect[2];
+                    int screenMaxY = rect[3];
 
                     if (screenMinX <= screenMaxX && screenMinY <= screenMaxY) {
                         com.googlecode.lanterna.TextColor dotColor =
@@ -458,43 +526,50 @@ public class TerminalView implements letrain.mvp.View {
         }
         int length = 1;
         for (GameModeMenuOption option : options) {
-            String[] parts = option.gameModeName().split("&");
-            String firstPart = parts[0];
-            String shortcutPart = parts[1].substring(0, 1);
-            String thirdPart = parts[1].substring(1);
-
-            menuBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
-            if (!option.enabledIf().get()) {
-                menuBox.setForegroundColor(DISABLED_FG_COLOR);
-            }
-
+            length = drawMenuOption(menuBox, menuBoxPosition.withRelative(0, 1), option, length);
             if (option.selectedIf().get()) {
-                menuBox.setBackgroundColor(SELECTED_BG_COLOR);
-            } else {
-                menuBox.setBackgroundColor(NORMAL_MENU_BG_COLOR);
-            }
-            menuBox.putString(menuBoxPosition.withRelative(length, 1), firstPart);
-            length += firstPart.length();
-
-            if (!option.enabledIf().get()) {
-                menuBox.setForegroundColor(DISABLED_FG_COLOR);
-            } else {
-                menuBox.setForegroundColor(SHORTCUT_COLOR);
-            }
-            menuBox.putString(menuBoxPosition.withRelative(length, 1), shortcutPart);
-            length += shortcutPart.length();
-
-            menuBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
-            if (!option.enabledIf().get()) {
-                menuBox.setForegroundColor(DISABLED_FG_COLOR);
-            }
-            menuBox.putString(menuBoxPosition.withRelative(length, 1), thirdPart);
-            menuBox.setBackgroundColor(NORMAL_MENU_BG_COLOR);
-            length += thirdPart.length() + 1;
-            if (option.selectedIf().get()) {
-                setHelpBarText(option.gameModeDescription());
+                setHelpBarText(MenuText.selectedHint(option.gameModeDescription(),
+                        gameViewListener.isRecordingCommands()));
             }
         }
+    }
+
+    /**
+     * Paints one menu option at {@code offset} columns from {@code origin}: label and suffix in
+     * white, the shortcut in green and the candidate mode's background in blue when selected. A
+     * disabled option is painted in grey ({@link #MENU_DISABLED_FG_COLOR}) and loses the green
+     * shortcut. The label is split with the shared {@link MenuText} parser, the same one the 3D HUD
+     * uses, so wording and shortcuts cannot drift between clients. Package-visible and static so a
+     * test can check the layout without a real terminal.
+     *
+     * @return the offset for the next option (plain text plus the separating space)
+     */
+    static int drawMenuOption(TextGraphics menuBox, TerminalPosition origin,
+            GameModeMenuOption option, int offset) {
+        MenuText.Label label = MenuText.parse(option.gameModeName());
+        boolean enabled = option.enabledIf().get();
+        TextColor labelColor = enabled ? NORMAL_MENU_FG_COLOR : MENU_DISABLED_FG_COLOR;
+        TextColor hotkeyColor = enabled ? SHORTCUT_COLOR : MENU_DISABLED_FG_COLOR;
+
+        menuBox.setBackgroundColor(
+                option.selectedIf().get() ? SELECTED_BG_COLOR : NORMAL_MENU_BG_COLOR);
+        if (!label.prefix().isEmpty()) {
+            menuBox.setForegroundColor(labelColor);
+            menuBox.putString(origin.withRelative(offset, 0), label.prefix());
+            offset += label.prefix().length();
+        }
+        if (label.hasHotkey()) {
+            menuBox.setForegroundColor(hotkeyColor);
+            menuBox.putString(origin.withRelative(offset, 0), label.hotkey());
+            offset += label.hotkey().length();
+        }
+        if (!label.suffix().isEmpty()) {
+            menuBox.setForegroundColor(labelColor);
+            menuBox.putString(origin.withRelative(offset, 0), label.suffix());
+            offset += label.suffix().length();
+        }
+        menuBox.setBackgroundColor(NORMAL_MENU_BG_COLOR);
+        return offset + 1;
     }
 
     @Override
@@ -503,8 +578,7 @@ public class TerminalView implements letrain.mvp.View {
             return;
         }
         menuBox.setForegroundColor(DISABLED_FG_COLOR);
-        menuBox.putString(menuBoxPosition.withRelative(1, 4), text + " | [R]: Record "
-                + (gameViewListener.isRecordingCommands() ? "ON" : "OFF") + " | [X]: Experiment");
+        menuBox.putString(menuBoxPosition.withRelative(1, 4), text);
         menuBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
     }
 
@@ -568,7 +642,20 @@ public class TerminalView implements letrain.mvp.View {
         if (cols <= 0 || rows <= 0) {
             return;
         }
+        Point next = scrollToKeepVisible(scrollOffset, cols, rows, x, y, radius, paginate);
+        if (!next.equals(scrollOffset)) {
+            setScrollOffset(next);
+        }
+    }
 
+    /**
+     * Scroll offset that keeps {@code (x, y)} inside the camera dead zone centered on the current
+     * viewport. With {@link #FULL_SCREEN_DEADZONE} the dead zone is the whole visible map (#697),
+     * so the camera only scrolls when the target is about to leave the screen. Pure and
+     * package-visible, so the scroll math can be unit-tested without a terminal.
+     */
+    static Point scrollToKeepVisible(Point scrollOffset, int cols, int rows, int x, int y,
+            int radius, boolean paginate) {
         int centerX = scrollOffset.getX() + cols / 2;
         int centerY = scrollOffset.getY() + rows / 2;
 
@@ -580,7 +667,7 @@ public class TerminalView implements letrain.mvp.View {
         int minY = centerY - radiusY;
         int maxY = centerY + radiusY;
 
-        if (radius >= 999) {
+        if (radius >= FULL_SCREEN_DEADZONE) {
             minX = scrollOffset.getX();
             maxX = scrollOffset.getX() + cols - 1;
             minY = scrollOffset.getY();
@@ -602,9 +689,38 @@ public class TerminalView implements letrain.mvp.View {
             newScrollY += (paginate ? Math.max(1, maxY - minY) : (y - maxY));
         }
 
-        if (newScrollX != scrollOffset.getX() || newScrollY != scrollOffset.getY()) {
-            setScrollOffset(new Point(newScrollX, newScrollY));
+        return new Point(newScrollX, newScrollY);
+    }
+
+    /**
+     * Flash rectangle of the dead zone as {@code {minX, minY, maxX, maxY}} in map cells, clamped to
+     * the screen. {@link #FULL_SCREEN_DEADZONE} spans the whole visible area, so the preview draws
+     * the map border. Pure and package-visible for tests.
+     */
+    static int[] deadzoneRect(int cols, int rows, int radius) {
+        int centerX = cols / 2;
+        int centerY = rows / 2;
+
+        int radiusX = (int) Math.round(radius * ((double) cols / rows));
+        int radiusY = radius;
+
+        int minX = centerX - radiusX;
+        int maxX = centerX + radiusX;
+        int minY = centerY - radiusY;
+        int maxY = centerY + radiusY;
+
+        if (radius >= FULL_SCREEN_DEADZONE) {
+            minX = 0;
+            maxX = cols - 1;
+            minY = 0;
+            maxY = rows - 1;
         }
+
+        minX = Math.max(0, minX);
+        maxX = Math.min(cols - 1, maxX);
+        minY = Math.max(0, minY);
+        maxY = Math.min(rows - 1, maxY);
+        return new int[] {minX, minY, maxX, maxY};
     }
 
     @Override
@@ -686,6 +802,44 @@ public class TerminalView implements letrain.mvp.View {
         TerminalView.this.gameViewListener.onLoadGame(result);
     }
 
+    /**
+     * New Game dialog (S2): seed, terrain sliders with the stacked bar and adaptive preview, and
+     * the catalogue sections. Returns the validated settings or {@code null} when cancelled.
+     */
+    @Override
+    public Map<String, String> showNewGameDialog(Map<String, String> currentSettings) {
+        // Refresh the front buffer before the dialog freezes it as its backdrop: the File menu or
+        // the discard confirmation paint over the last game frame (#742 polish).
+        paint();
+        return NewGameDialog.show(screen, currentSettings);
+    }
+
+    /**
+     * In-game Settings dialog (S3b): same form conventions as the New Game dialog plus the apply
+     * states and the Apply/Restore/new-game/save-defaults actions. The presenter supplies the
+     * current effective values, the scenario-locked keys and the port the actions call.
+     */
+    public SettingsDialog.Action showSettingsDialog(Map<String, String> currentSettings,
+            Set<String> scenarioKeys, SettingsDialog.SettingsPort port) {
+        // The File menu just painted over the game: repaint before the dialog captures its backdrop
+        // (#742 polish).
+        paint();
+        return SettingsDialog.show(screen, currentSettings, scenarioKeys, port);
+    }
+
+    /** Simple yes/no confirmation (used before discarding a game in progress, #417 pending). */
+    @Override
+    public boolean confirm(String title, String message) {
+        MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
+        com.googlecode.lanterna.gui2.dialogs.MessageDialogButton choice =
+                new com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder().setTitle(title)
+                        .setText(message)
+                        .addButton(com.googlecode.lanterna.gui2.dialogs.MessageDialogButton.Yes)
+                        .addButton(com.googlecode.lanterna.gui2.dialogs.MessageDialogButton.No)
+                        .build().showDialog(gui);
+        return choice == com.googlecode.lanterna.gui2.dialogs.MessageDialogButton.Yes;
+    }
+
     @Override
     public void showExportDialog() {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
@@ -708,6 +862,26 @@ public class TerminalView implements letrain.mvp.View {
         }
     }
 
+    /**
+     * One footer action of the editor: the shared label plus the Alt mnemonic highlighted in 2D.
+     */
+    record FooterAction(String label, char mnemonic) {
+    }
+
+    /**
+     * The editor footer in display order (issue #740). The labels are the shared {@link EditorText}
+     * words, so the 2D and 3D clients cannot drift; static and package-visible so a test can pin
+     * them without opening the modal window.
+     */
+    static List<FooterAction> editorFooterActions() {
+        return List.of(new FooterAction(EditorText.EXPORT, 'E'),
+                new FooterAction(EditorText.IMPORT, 'I'),
+                new FooterAction(EditorText.RELOAD_FROM_GAME, 'R'),
+                new FooterAction(EditorText.APPLY_PROGRAM, 'P'),
+                new FooterAction(EditorText.REBUILD_WORLD, 'B'),
+                new FooterAction(EditorText.CLOSE, 'C'));
+    }
+
     @Override
     public void showIDE() {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
@@ -718,9 +892,9 @@ public class TerminalView implements letrain.mvp.View {
 
         Panel mainPanel = new Panel(new BorderLayout());
 
-        // Three tabs share one editor: Scenario (seed + on build + on start), Program
+        // Three tabs share one editor: Scenario (seed + on build + on start), Programming
         // (program { ... }) and Config (configuration { ... }). The Scenario draft persists
-        // between openings until the user hits Refresh.
+        // between openings until the user hits Reload from game.
         final int tabScenario = 0;
         final int tabProgram = 1;
         final int tabConfig = 2;
@@ -953,27 +1127,27 @@ public class TerminalView implements letrain.mvp.View {
                 }
                 return;
             }
+            if (!confirmRebuildWorld(gui)) {
+                return;
+            }
             gameViewListener.onPlayScenarioText(full);
-        };
-        final Runnable saveAction = () -> showSaveDialog();
-        final Runnable loadAction = () -> {
-            showLoadDialog();
-            window.close();
         };
         final Runnable cancelAction = () -> {
             saveActive.run();
             window.close();
         };
 
-        // Fixed footer row: every action is always available, independent of the active tab.
-        addFooterButton(footer, "Save", 'S', saveAction);
-        addFooterButton(footer, "Load", 'L', loadAction);
-        addFooterButton(footer, "Export", 'E', exportAction);
-        addFooterButton(footer, "Import", 'I', importAction);
-        addFooterButton(footer, "Refresh", 'R', refreshAction);
-        addFooterButton(footer, "Reprogram", 'P', reprogramAction);
-        addFooterButton(footer, "Rebuild", 'B', rebuildAction);
-        addFooterButton(footer, "Close", 'C', cancelAction);
+        // Fixed footer row: every action is always available, independent of the active tab. The
+        // labels and mnemonics come from editorFooterActions() (the shared EditorText wording,
+        // same words as the 3D HUD); the actions stay in the same order. Save/Load moved to the
+        // File menu (Esc) in issue #743.
+        final Runnable[] footerActions = {exportAction, importAction, refreshAction,
+                reprogramAction, rebuildAction, cancelAction};
+        List<FooterAction> footerButtons = editorFooterActions();
+        for (int i = 0; i < footerButtons.size(); i++) {
+            addFooterButton(footer, footerButtons.get(i).label(), footerButtons.get(i).mnemonic(),
+                    footerActions[i]);
+        }
 
         // Tabs glow their own colour when active (distinct from the focus style).
         com.googlecode.lanterna.gui2.InteractableRenderer<Button> tabRenderer =
@@ -988,8 +1162,8 @@ public class TerminalView implements letrain.mvp.View {
                     public void drawComponent(com.googlecode.lanterna.gui2.TextGUIGraphics graphics,
                             Button component) {
                         String label = component.getLabel();
-                        int tab = "Scenario".equals(label) ? tabScenario
-                                : "Program".equals(label) ? tabProgram : tabConfig;
+                        int tab = EditorText.TAB_SCENARIO.equals(label) ? tabScenario
+                                : EditorText.TAB_PROGRAMMING.equals(label) ? tabProgram : tabConfig;
                         if (tab == activeTab[0]) {
                             graphics.setForegroundColor(
                                     com.googlecode.lanterna.TextColor.ANSI.BLACK);
@@ -1024,11 +1198,11 @@ public class TerminalView implements letrain.mvp.View {
                         return null;
                     }
                 };
-        Button scenarioTabBtn = new Button("Scenario", switchToScenario);
+        Button scenarioTabBtn = new Button(EditorText.TAB_SCENARIO, switchToScenario);
         scenarioTabBtn.setRenderer(tabRenderer);
-        Button programTabBtn = new Button("Program", switchToProgram);
+        Button programTabBtn = new Button(EditorText.TAB_PROGRAMMING, switchToProgram);
         programTabBtn.setRenderer(tabRenderer);
-        Button configTabBtn = new Button("Config", switchToConfig);
+        Button configTabBtn = new Button(EditorText.TAB_CONFIG, switchToConfig);
         configTabBtn.setRenderer(tabRenderer);
         tabBar.addComponent(scenarioTabBtn);
         tabBar.addComponent(programTabBtn);
@@ -1080,12 +1254,6 @@ public class TerminalView implements letrain.mvp.View {
                         deliverEvent.set(false);
                     } else if (c == 'b') {
                         rebuildAction.run();
-                        deliverEvent.set(false);
-                    } else if (c == 's') {
-                        saveAction.run();
-                        deliverEvent.set(false);
-                    } else if (c == 'l') {
-                        loadAction.run();
                         deliverEvent.set(false);
                     } else if (c == 'c') {
                         cancelAction.run();
@@ -1184,6 +1352,18 @@ public class TerminalView implements letrain.mvp.View {
         return sb.toString();
     }
 
+    /** Asks before rebuilding the world: the replay discards the current world (issue #740). */
+    private static boolean confirmRebuildWorld(MultiWindowTextGUI gui) {
+        com.googlecode.lanterna.gui2.dialogs.MessageDialogButton choice =
+                new com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder()
+                        .setTitle(EditorText.REBUILD_CONFIRM_TITLE)
+                        .setText(EditorText.REBUILD_CONFIRM_MESSAGE)
+                        .addButton(com.googlecode.lanterna.gui2.dialogs.MessageDialogButton.Yes)
+                        .addButton(com.googlecode.lanterna.gui2.dialogs.MessageDialogButton.No)
+                        .build().showDialog(gui);
+        return choice == com.googlecode.lanterna.gui2.dialogs.MessageDialogButton.Yes;
+    }
+
     /** Asks whether to export a scenario that has syntax errors. */
     private static boolean confirmExportAnyway(MultiWindowTextGUI gui, String diagnostics) {
         com.googlecode.lanterna.gui2.dialogs.MessageDialogButton choice =
@@ -1203,8 +1383,11 @@ public class TerminalView implements letrain.mvp.View {
         footer.addComponent(button);
     }
 
-    /** A button renderer that highlights the mnemonic letter (red) inside {@code < label >}. */
-    private static com.googlecode.lanterna.gui2.InteractableRenderer<Button> mnemonicRenderer(
+    /**
+     * A button renderer that highlights the mnemonic letter (red) inside {@code < label >}. Shared
+     * with the other modal dialogs (the New Game dialog highlights its Alt access keys).
+     */
+    static com.googlecode.lanterna.gui2.InteractableRenderer<Button> mnemonicRenderer(
             char mnemonic) {
         return new com.googlecode.lanterna.gui2.InteractableRenderer<Button>() {
             @Override
@@ -1226,7 +1409,7 @@ public class TerminalView implements letrain.mvp.View {
                 if (!component.isEnabled()) {
                     graphics.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.BLACK);
                 } else {
-                    graphics.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.RED_BRIGHT);
+                    graphics.setForegroundColor(MNEMONIC_COLOR);
                 }
                 int at = indexOfIgnoreCase(label, mnemonic);
                 if (at >= 0) {
@@ -1383,31 +1566,69 @@ public class TerminalView implements letrain.mvp.View {
         return false;
     }
 
+    /**
+     * File menu ({@code Esc} in both clients), built from the shared {@link FileMenuText} rows so
+     * the 2D terminal and the 3D HUD read the same words in the same order. New opens the New Game
+     * dialog; at the boot menu (no game yet) Save and Settings are disabled with their reason (D8);
+     * Settings opens the in-game settings dialog (S3b); Load/Save open their dialogs; Quit ends the
+     * game. Esc closes the menu again (owner decision D11).
+     */
     @Override
-    public void showExitDialog() {
+    public void showFileMenu() {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
-        BasicWindow window = new BasicWindow();
+        BasicWindow window = new BasicWindow(FileMenuText.TITLE);
         window.setHints(Arrays.asList(Window.Hint.CENTERED));
-        window.setTitle("LeTrain");
+        window.setCloseWindowWithEscape(true);
         Panel contentPanel = new Panel();
         contentPanel.setLayoutManager(new LinearLayout(Direction.VERTICAL));
         contentPanel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
-        contentPanel.addComponent(new Button("Exit", new Runnable() {
-            @Override
-            public void run() {
-                setEndOfGame(true);
-                window.close();
-            }
-        }));
-        contentPanel.addComponent(new Button("Play!", new Runnable() {
-            @Override
-            public void run() {
-                window.close();
-            }
-        }));
-
+        for (FileMenuText.Item item : fileMenuItems(gameViewListener.hasActiveGame())) {
+            Button button =
+                    new Button(FileMenuText.displayLabel(item), fileMenuAction(item, window));
+            button.setEnabled(item.enabled());
+            contentPanel.addComponent(button);
+        }
         window.setComponent(contentPanel);
         gui.addWindowAndWait(window);
+    }
+
+    /** The rows the 2D menu shows for the current game state (boot menu vs in-game, D8). */
+    static List<FileMenuText.Item> fileMenuItems(boolean hasGame) {
+        return FileMenuText.items(FileMenuText.MenuState.terminal(hasGame));
+    }
+
+    /** Action of one File menu row; locked rows stay disabled and never run it. */
+    private Runnable fileMenuAction(FileMenuText.Item item, Window window) {
+        switch (item.command()) {
+            case NEW:
+                return () -> {
+                    window.close();
+                    gameViewListener.onNewGame();
+                };
+            case LOAD:
+                return () -> {
+                    showLoadDialog();
+                    window.close();
+                };
+            case SAVE:
+                return () -> {
+                    showSaveDialog();
+                    window.close();
+                };
+            case QUIT:
+                return () -> {
+                    setEndOfGame(true);
+                    window.close();
+                };
+            case SETTINGS:
+                return () -> {
+                    window.close();
+                    gameViewListener.onSettings();
+                };
+            default:
+                return () -> {
+                };
+        }
     }
 
     protected void setEndOfGame(boolean endOfGame) {

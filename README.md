@@ -62,7 +62,7 @@ The editing workflow is now first-class — in both the 2D and 3D clients:
 - **Record/edit mode (`R`)**: freeze the world, build instantly, and journal every edit.
 - **Undo / redo**: `u` and **Ctrl+R** (or `undo;` / `redo;`), for construction *and* state changes (forks, semaphores, signals).
 - **Scenarios (`.ltr`)**: export your whole network as a small text recipe and import anyone else's. The same seed rebuilds the same world, so a scenario travels as plain text. Validate one headlessly with the bundled **`letrain-check`**.
-- **Built-in editor (`p`)**: a tabbed Scenario / Program / Config editor with a per-tab quick reference and error navigation.
+- **Built-in editor (`p`)**: a tabbed Scenario / Programming / Config editor with a per-tab quick reference and error navigation.
 - **Experiment mode (`X`)**: snapshot the live world, try anything, then restore it.
 
 <p align="center">

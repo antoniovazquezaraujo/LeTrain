@@ -1,6 +1,7 @@
 package letrain.vehicle.rail.rail2;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
@@ -277,5 +278,80 @@ class TrainSafetyManagerTest {
         train.advanceSimulationTick();
         safety.onRailAdvanced();
         assertEquals(0, loco.getTargetSpeed(), "the brake must engage at the scheduled rail");
+    }
+
+    // ------------------------------------------------------------------
+    // Issue #624: FIFO block arbitration
+    // ------------------------------------------------------------------
+
+    @Test
+    @DisplayName("starting a block wait requests its FIFO turn (#624)")
+    void blockWait_requestsFifoWaitTurn() {
+        WaitingTrain waiting = waitingTrainForNextBlock();
+
+        verify(blockManager).requestWaitTurn(waiting.train());
+    }
+
+    @Test
+    @DisplayName("taking the block on release clears the FIFO turn (#624)")
+    void blockReleased_takingTheBlock_clearsFifoWaitTurn() {
+        WaitingTrain waiting = waitingTrainForNextBlock();
+        when(blockManager.tryLock(waiting.train(), waiting.next())).thenReturn(true);
+
+        waiting.safety().onBlockReleased();
+
+        assertFalse(waiting.safety().isWaitingForBlock());
+        verify(blockManager).clearWaitTurn(waiting.train());
+    }
+
+    @Test
+    @DisplayName("cancelling the block wait clears the FIFO turn (#624)")
+    void cancelBlockWait_clearsFifoWaitTurn() {
+        WaitingTrain waiting = waitingTrainForNextBlock();
+
+        waiting.safety().cancelBlockWait();
+
+        assertFalse(waiting.safety().isWaitingForBlock());
+        verify(blockManager).clearWaitTurn(waiting.train());
+    }
+
+    /**
+     * A train whose next segment is blocked: the wait is active and its FIFO turn was requested.
+     */
+    private WaitingTrain waitingTrainForNextBlock() {
+        Train train = new Train(1);
+        train.setModel(model);
+
+        Locomotive loco = new Locomotive(101, 'L');
+        RailTrack track = mock(RailTrack.class);
+        loco.setTrack(track);
+        train.pushBack(loco);
+        train.setDirectorLinker(loco);
+        train.rebind();
+
+        AutoPilot autopilot = mock(AutoPilot.class);
+        when(autopilot.mode()).thenReturn(AutoPilot.Mode.FOLLOWING);
+        when(autopilot.currentRoute()).thenReturn(List.of());
+        train.setAutopilot(autopilot);
+
+        TrainSafetyManager safety = (TrainSafetyManager) train.getSafetyManager();
+        Segment current = mock(Segment.class, "current");
+        Segment next = mock(Segment.class, "next");
+        RailTrack nextTrack = mock(RailTrack.class);
+        when(track.getConnected(any())).thenReturn(nextTrack);
+        when(graph.getSegment(track)).thenReturn(current);
+        when(graph.getSegment(nextTrack)).thenReturn(next);
+        when(blockManager.tryLock(train, current)).thenReturn(true);
+        when(blockManager.tryLock(train, next)).thenReturn(false);
+
+        loco.setCurrentSpeed(2);
+        loco.setTargetSpeed(2);
+        safety.acquireInitialLocks();
+
+        assertTrue(safety.isWaitingForBlock(), "the helper must leave the train waiting");
+        return new WaitingTrain(train, safety, next);
+    }
+
+    private record WaitingTrain(Train train, TrainSafetyManager safety, Segment next) {
     }
 }

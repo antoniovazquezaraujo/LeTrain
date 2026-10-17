@@ -83,6 +83,27 @@ public final class ModelSelectionService {
         return false;
     }
 
+    /**
+     * Selects the first drivable locomotive in list order. Entering DRIVE with nothing selected
+     * lands on the first available locomotive (issue #700); unlike
+     * {@link #selectNextLocomotive(Model)}, a stale index is ignored so the first entry of the list
+     * always wins.
+     *
+     * @return true when a director linker was selected, false when no locomotive is drivable
+     */
+    public static boolean selectFirstLocomotive(Model model) {
+        List<Locomotive> locos = model.getLocomotives();
+        for (int i = 0; i < locos.size(); i++) {
+            Locomotive candidate = locos.get(i);
+            if (candidate.isDirectorLinker()) {
+                model.setSelectedLocomotiveIndex(i);
+                model.setSelectedLocomotive(candidate);
+                return true;
+            }
+        }
+        return false;
+    }
+
     // ── Fork Selection ───────────────────────────────────────────────
 
     public static boolean selectFork(Model model, int id) {

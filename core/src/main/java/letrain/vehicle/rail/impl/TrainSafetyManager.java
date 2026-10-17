@@ -871,6 +871,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
             return;
         }
         isWaitingForBlock = true;
+        requestWaitTurn();
         int speed = train.getSpeed();
         if (speed == 0) {
             // Parado: se queda esperando donde está (frenar ya era no-op y sigue siéndolo).
@@ -982,6 +983,7 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         brakedForBlock = false;
         targetCapped = false;
         isWaitingForBlock = false;
+        clearWaitTurn();
     }
 
     /**
@@ -1013,6 +1015,25 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
 
     private Locomotive directorLocomotive() {
         return train.getDirectorLinker() instanceof Locomotive locomotive ? locomotive : null;
+    }
+
+    /**
+     * Pide el turno FIFO de la espera que empieza (ADR-022 fase 2d). Es idempotente: si el tren ya
+     * tenía turno, conserva el suyo.
+     */
+    private void requestWaitTurn() {
+        letrain.mvp.Model model = train.getModel();
+        if (model != null && model.getBlockManager() != null) {
+            model.getBlockManager().requestWaitTurn(train);
+        }
+    }
+
+    /** Limpia el turno FIFO cuando el tren deja de esperar. */
+    private void clearWaitTurn() {
+        letrain.mvp.Model model = train.getModel();
+        if (model != null && model.getBlockManager() != null) {
+            model.getBlockManager().clearWaitTurn(train);
+        }
     }
 
     private static String segmentId(Segment segment) {

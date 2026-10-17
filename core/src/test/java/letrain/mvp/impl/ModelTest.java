@@ -105,6 +105,82 @@ class ModelTest {
     }
 
     @Test
+    @DisplayName("entering DRIVE with nothing selected auto-selects the first drivable locomotive")
+    void should_SelectFirstLocomotive_When_EnteringDriveWithNoneSelected() {
+        Locomotive first = addDrivableLocomotive(1, 'A');
+        Locomotive second = addDrivableLocomotive(2, 'B');
+
+        model.setMode(GameMode.DRIVE);
+
+        assertEquals(first, model.getSelectedLocomotive(),
+                "Drive must land on the first locomotive of the list");
+        assertEquals(0, model.getSelectedLocomotiveIndex());
+        // Cycling from the auto-selection keeps working as usual.
+        assertTrue(model.selectNextLocomotive());
+        assertEquals(second, model.getSelectedLocomotive());
+        assertTrue(model.selectPrevLocomotive());
+        assertEquals(first, model.getSelectedLocomotive());
+    }
+
+    @Test
+    @DisplayName("auto-selection skips locomotives that are not director linkers")
+    void should_SkipNonDrivableLocomotives_When_EnteringDrive() {
+        model.addLocomotive(new Locomotive(10, 'X')); // no train: cannot be driven
+        Locomotive drivable = addDrivableLocomotive(20, 'Y');
+
+        model.setMode(GameMode.DRIVE);
+
+        assertEquals(drivable, model.getSelectedLocomotive());
+        assertEquals(1, model.getSelectedLocomotiveIndex());
+    }
+
+    @Test
+    @DisplayName("entering DRIVE without locomotives stays unselected and does not fail")
+    void should_StayUnselected_When_EnteringDriveWithoutLocomotives() {
+        model.setMode(GameMode.DRIVE);
+
+        assertEquals(GameMode.DRIVE, model.getMode());
+        assertNull(model.getSelectedLocomotive());
+        assertFalse(model.selectFirstLocomotive());
+    }
+
+    @Test
+    @DisplayName("entering DRIVE keeps the locomotive the player already had selected")
+    void should_KeepSelection_When_EnteringDriveWithSelection() {
+        addDrivableLocomotive(1, 'A');
+        Locomotive second = addDrivableLocomotive(2, 'B');
+        assertTrue(model.selectLocomotive(2));
+
+        model.setMode(GameMode.DRIVE);
+
+        assertEquals(second, model.getSelectedLocomotive());
+        assertEquals(1, model.getSelectedLocomotiveIndex());
+    }
+
+    @Test
+    @DisplayName("selectFirstLocomotive ignores a stale previous index")
+    void should_IgnoreStaleIndex_When_SelectingFirstLocomotive() {
+        Locomotive first = addDrivableLocomotive(1, 'A');
+        addDrivableLocomotive(2, 'B');
+        model.setSelectedLocomotiveIndex(0); // stale index left by a removed selection
+
+        assertTrue(model.selectFirstLocomotive());
+
+        assertEquals(first, model.getSelectedLocomotive());
+        assertEquals(0, model.getSelectedLocomotiveIndex());
+    }
+
+    private Locomotive addDrivableLocomotive(int id, char aspect) {
+        Train train = new Train(model.nextTrainId());
+        Locomotive locomotive = new Locomotive(id, aspect);
+        train.pushBack(locomotive);
+        train.setDirectorLinker(locomotive);
+        train.rebind();
+        model.addLocomotive(locomotive);
+        return locomotive;
+    }
+
+    @Test
     @DisplayName("should add, retrieve and select forks")
     void should_ManageForksAndSelection_When_Added() {
         ForkRailTrack fork1 = new ForkRailTrack(10);

@@ -99,7 +99,7 @@ Si no se incluye una distancia después de un giro, se avanza por defecto un pas
 | Entidad | Comando | Ejemplo |
 | :--- | :--- | :--- |
 | **Fork** (Desvíos) | `fork <id> set straight;` / `set curved;` / `set <dirección>;` / `flip;` | `fork 1 set curved;` |
-| **Semaphore** (Semáforos) | `semaphore <id> open;` / `close;` / `invert;` | `semaphore 2 invert;` |
+| **Semaphore** (Semáforos) | `semaphore <id> open;` / `close;` / `toggle;` / `invert;` | `semaphore 2 toggle;` |
 | **Speed Signal** (Velocidad) | `signal <id> set limit <número>;` <br> `signal <id> set mode max;` / `set mode min;` <br> `signal <id> invert;` | `signal 3 set limit 120;` <br> `signal 3 set mode max;` |
 | **Station** (Estaciones) | `station <id> invert;` | `station 1 invert;` |
 | **Sensor** | `sensor <id> invert;` | `sensor 2 invert;` |
@@ -142,6 +142,7 @@ Si no se incluye una distancia después de un giro, se avanza por defecto un pas
 | :--- | :--- | :--- |
 | `save <nombre?>;` | Guarda el mapa. Si omites el nombre, usa uno automático. | `save "mapa1";` |
 | `load <nombre?>;` | Carga el mapa. | `load "mapa1";` |
+| `new game;` | Abre el diálogo de Nueva Partida (semilla, terreno, ajustes). | `new game;` |
 
 ---
 
@@ -174,3 +175,36 @@ Una vez nombrada, **puedes usar el nombre entre comillas** (o sin ellas si no ti
 | `time set <HH:MM>;` | Fija hora y minuto (`00:00`–`23:59`); se aceptan horas de un dígito. | `time set 18:45;` |
 
 > Un cambio correcto es silencioso: mira el reloj del HUD. Un valor fuera de rango (`time set 25;`, `time set 25:99;`) avisa `Invalid time …` y deja el reloj intacto.
+
+---
+
+## 11. Disparadores Temporales (`at` / `every`)
+
+Bloques que se ejecutan por el **reloj de juego** (el mismo bloque de acciones que los triggers de
+eventos: terminado en `;`, sin anidar). El primer disparo es siempre la siguiente ocurrencia
+**estrictamente posterior** al registro.
+
+| Comando | Descripción | Ejemplo |
+| :--- | :--- | :--- |
+| `at <HH[:MM]> { ... }` | Ejecuta el bloque cada día a esa hora de juego. | `at 6:30 { semaphore 1 open; }` |
+| `every <n>m { ... }` | Cada `n` minutos de juego, en la rejilla anclada a 00:00. | `every 30m { semaphore 1 open; }` |
+| `every <n>h { ... }` | Cada `n` horas de juego, en punto. | `every 2h { semaphore 1 close; }` |
+| `every <n>d { ... }` | Cada `n` días de juego a las 00:00 (o a la hora de `from`). | `every 1d { semaphore 1 close; }` |
+| `every <n>m from <HH[:MM]> { ... }` | Ancla la rejilla a `from` en vez de a 00:00. | `every 30m from 6:15 { semaphore 1 open; }` |
+| `train <id> <acción>;` | Acción de tren dentro del bloque (referencia explícita obligatoria). | `train 5 set engine on;` |
+| `train at station <id\|"nombre"> <acción>;` | Apunta al tren que esté en el sitio cuando el bloque se dispara. | `train at station "Mina" load;` |
+
+> Una acción de tren genérica y sin referencia (`train set speed 5;`) **no está permitida** en un
+> disparador temporal: avisa de forma visible cuando el bloque se dispara y se ignora. Máximo 64
+> disparadores activos (los duplicados avisan). Al cargar una partida no se recuperan las horas
+> perdidas: un `at` ya pasado espera al día siguiente y `every` continúa en su siguiente punto de
+> rejilla. La pausa de edición congela el reloj, así que los disparos no se acumulan. Sintaxis
+> completa en **[grammar_es.md](grammar_es.md)** §4.
+
+---
+
+## 12. Información de la App
+
+| Comando | Descripción | Ejemplo |
+| :--- | :--- | :--- |
+| `version;` | Muestra la versión del build en ejecución (la misma que el título de la ventana). | `version;` |

@@ -17,7 +17,9 @@ import java.util.regex.Pattern;
  * # LeTrain scenario v1
  * seed 123
  * configuration {
- *   threshold.WATER=130
+ *   terrain.waterPercent=25
+ *   terrain.mountainPercent=10
+ *   world.latitude=40.0
  * }
  * on build {
  *   go 0,0; face e; write 5;

@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import letrain.itinerary.AutoPilot;
 import letrain.mvp.Model.GameMode;
 import letrain.mvp.Model.GameModeMenuOption;
 import letrain.mvp.impl.Model;
@@ -29,11 +30,11 @@ public final class ModelReportService {
 
     public static List<GameModeMenuOption> createMenuModel(Model model) {
         return Arrays.asList(new GameModeMenuOption("&Rails",
-                "[⏴⏵⏶⏷/hjkl]:Move [Shift]:Add rail [Ctrl]:Remove rail [Ins]:Add sensor [Home]:Add sem [Del]:Add speed [End]:Add station [#]:Steps [Space]:Reset steps",
+                "[⏴⏵⏶⏷/hjkl]:Move [Shift]:Add rail [a]:Add mode [#]:Steps [Space]:Reset steps",
                 () -> true, () -> (model.getEffectiveMode() == GameMode.RAILS),
                 () -> (GameMode.RAILS)),
                 new GameModeMenuOption("&Add",
-                        "[n]:Station [e]:Sensor [s]:Semaphore [g]:Speed Signal", () -> true,
+                        "[n]:Station [e]:Sensor [s]:Semaphore [g]:Speed signal", () -> true,
                         () -> model.getEffectiveMode() == GameMode.ADD, () -> GameMode.ADD),
                 new GameModeMenuOption("&Drive",
                         "[⏴⏵/hl]:Select [o]:Locate [m]:Motor [⏶/k]:Accel [⏷/j]:Decel [Space]:Rev [Enter]:Load [#]:ID",
@@ -57,8 +58,7 @@ public final class ModelReportService {
                         () -> !model.getSpeedSignals().isEmpty(),
                         () -> model.getEffectiveMode() == GameMode.SPEED_SIGNALS,
                         () -> GameMode.SPEED_SIGNALS),
-                new GameModeMenuOption("&Trains",
-                        "[A-Z]: LOCOMOTIVE | [a-z]: WAGON | [ENTER]: FINISH",
+                new GameModeMenuOption("&Trains", "[A-Z]:Locomotive | [a-z]:Wagon | [Enter]:Finish",
                         () -> model.getCursorRailTrack() != null,
                         () -> model.getEffectiveMode() == GameMode.TRAINS, () -> GameMode.TRAINS),
                 new GameModeMenuOption("&Couple",
@@ -69,9 +69,10 @@ public final class ModelReportService {
                         "[⏶⏷/kj]:Front/Back [⏴⏵/hl]:Sel wagons [o]:Locate [Space]:Uncouple",
                         () -> model.canEnterUnlinkMode(),
                         () -> model.getEffectiveMode() == GameMode.UNLINK, () -> GameMode.UNLINK),
-                new GameModeMenuOption("&Program",
-                        "Scenario editor (Save/Load/Export/Import/Close)", () -> true,
-                        () -> model.getEffectiveMode() == GameMode.PROGRAM, () -> GameMode.PROGRAM),
+                new GameModeMenuOption("&Programming",
+                        "Scenario editor (Reload from game/Apply program/Rebuild world)",
+                        () -> true, () -> model.getEffectiveMode() == GameMode.PROGRAM,
+                        () -> GameMode.PROGRAM),
                 new GameModeMenuOption("Statio&ns", "[⏴⏵/hl]:Select [o]:Locate [#]:ID",
                         () -> !model.getStations().isEmpty(),
                         () -> model.getEffectiveMode() == GameMode.STATIONS,
@@ -135,15 +136,7 @@ public final class ModelReportService {
                     sb.append("  Speed: ").append(train.getDirectorLinker().getSpeed())
                             .append("\n");
                 }
-                if (train.getLogisticsManager().isLoading()) {
-                    sb.append("  State: LOADING at Station ")
-                            .append(train.getLogisticsManager().getStationAtTrain().getId())
-                            .append("\n");
-                } else if (train.isStalled()) {
-                    sb.append("  State: STALLED\n");
-                } else {
-                    sb.append("  State: CRUIZING\n");
-                }
+                sb.append("  State: ").append(describeTrainState(train)).append("\n");
                 for (Linker linker : train.getLinkers()) {
                     if (linker instanceof Wagon) {
                         Wagon w = (Wagon) linker;
@@ -180,6 +173,72 @@ public final class ModelReportService {
                     .append(" (").append(s.isOpen() ? "OPEN" : "CLOSED").append(")\n");
         }
         return sb.toString();
+    }
+
+    /**
+     * Operational state of a train for the {@code info} report, derived from the real runtime flags
+     * (issue #701). Fixed priority:
+     *
+     * <ol>
+     * <li>{@code LOADING at Station N} — loading/unloading
+     * <li>{@code STALLED} — collision/dead-end stall
+     * <li>{@code WAITING FOR BLOCK} — the safety layer is holding the train for its next canton
+     * <li>{@code HOLDING FOR DEPARTURE} — autopilot waiting for a scheduled departure
+     * <li>{@code PARKED} (engine off with autopilot armed) / {@code ENGINE OFF} (engine off,
+     * manual)
+     * <li>{@code BRAKING} — rolling with a full-stop order (target speed 0)
+     * <li>autopilot modes: {@code CRUISING} (following and moving), {@code IDLE},
+     * {@code REVERSING}, {@code ERROR}
+     * <li>{@code STOPPED (MANUAL)} — fallback
+     * </ol>
+     *
+     * <p>
+     * Package-private so the mapping can be unit-tested without going through the whole report.
+     */
+    static String describeTrainState(Train train) {
+        if (train.getLogisticsManager() != null && train.getLogisticsManager().isLoading()) {
+            Station station = train.getLogisticsManager().getStationAtTrain();
+            return station != null ? "LOADING at Station " + station.getId() : "LOADING";
+        }
+        if (train.isStalled()) {
+            return "STALLED";
+        }
+        if (train.getSafetyManager() != null && train.getSafetyManager().isWaitingForBlock()) {
+            return "WAITING FOR BLOCK";
+        }
+        if (train.isHeldBySchedule()) {
+            return "HOLDING FOR DEPARTURE";
+        }
+
+        Locomotive locomotive = train.getDirectorLinker() instanceof Locomotive
+                ? (Locomotive) train.getDirectorLinker()
+                : null;
+        // An engine-off train is parked (autopilot armed) or simply switched off (manual). The
+        // check runs before the autopilot modes: a train told to stop the engine must never be
+        // reported as following/cruising even if the speed counter has not settled to zero yet.
+        if (locomotive != null && !locomotive.isEngineOn()) {
+            return train.isAutoMode() ? "PARKED" : "ENGINE OFF";
+        }
+        if (locomotive != null && locomotive.isBraking() && locomotive.getTargetSpeed() == 0) {
+            return "BRAKING";
+        }
+
+        AutoPilot autopilot = train.getAutopilot();
+        AutoPilot.Mode mode = autopilot != null ? autopilot.mode() : AutoPilot.Mode.IDLE;
+        boolean stopped = train.isStopped();
+        switch (mode) {
+            case FOLLOWING:
+                return stopped ? "IDLE" : "CRUISING";
+            case WAITING:
+                return "HOLDING FOR DEPARTURE";
+            case REVERSING:
+                return "REVERSING";
+            case ERROR:
+                return "ERROR";
+            case IDLE:
+            default:
+                return stopped ? "STOPPED (MANUAL)" : "CRUISING";
+        }
     }
 
     public static String generateRailwayGraphReport(Model model) {

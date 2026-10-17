@@ -29,7 +29,7 @@ El lenguaje es **sensible a mayúsculas en todos los puntos de entrada** (consol
 
 ## ⚙️ Estructura del Lenguaje
 
-El lenguaje admite tres tipos principales de sentencias: comandos directos, creación/asignación de itinerarios (Autopilot) y bloques disparados por eventos (*triggers*).
+El lenguaje admite cuatro tipos principales de sentencias: comandos directos, creación/asignación de itinerarios (Autopilot), bloques disparados por eventos (*triggers*) y bloques disparados por el reloj (`at` / `every`).
 
 ### 1. Comandos Directos
 Se ejecutan inmediatamente. **Requieren punto y coma (`;`) al final**.
@@ -117,7 +117,7 @@ create itinerary "RutaCarbon" {
 - **Dirección de `uncouple`**: `uncouple forward` desengancha por el **lado de la cabeza** y `uncouple backward` por la cola. Con la locomotora en cabeza tirando de los vagones, los vagones van detrás: el run-around se escribe `uncouple backward 1` (sin número desengancha todos los de ese lado, igual que `couple`).
 - `arrival` se mide al llegar al waypoint; `departure` es la hora programada de salida: al llegar se ejecutan las acciones, el tren espera hasta ella y la salida programada arranca el motor. La estancia es `departure − arrival` en tiempo de juego. Las horas se leen en secuencia: una hora menor que la anterior pertenece al día siguiente (`arrival 23:50, departure 00:10`). Si el tren llega tarde, sale de inmediato y se mide el desfase. Sin horas, el waypoint se comporta exactamente como antes.
 - `park` frena, apaga el motor y **mantiene el autopilot activo** (a diferencia de `stop`, que frena y desactiva el autopilot). También existe como orden directa (`train N park;`). La siguiente salida programada arranca el motor y recupera la velocidad de crucero, de modo que un servicio diario que se repite puede terminar con `park` y volver a salir a la mañana siguiente. Un `park` **sin salida programada posterior** deja el tren aparcado (motor apagado, plan conservado): no vuelve a moverse hasta que una salida programada lo arranque o lo conduzcas manualmente.
-- El tren muestra su puntualidad en `info train N`: desfases de llegada y salida por parada en minutos de juego (`+` = tarde, `−` = adelantado), más el desfase actual, medio y máximo. Un tren sin horas no muestra nada.
+- El tren muestra su puntualidad en `info train N`: desfases de llegada y salida por parada en minutos de juego (`+` = tarde, `−` = adelantado), más el desfase actual, medio y máximo. La línea de estado del tren seleccionado/en conducción del HUD muestra además el desfase **actual** como sufijo firmado compacto (`| Punct: +2`), idéntico al valor `Current` de `info train N`. Un tren sin horas no muestra nada.
 - La seguridad manda: la retención nunca pisa los cantones; si el bloque siguiente está ocupado, el tren espera y el retraso aparece en la siguiente medida.
 - Las horas se validan, se guardan y se exportan.
 - La sintaxis vieja sin comas (p. ej. `add station 2 reverse unload`) se **rechaza en todos los puntos de entrada** (juego, editor y `letrain-check`) con un diagnóstico: esta beta no migra los itinerarios antiguos.
@@ -148,14 +148,73 @@ Responde a eventos del juego en tiempo real.
 - Accidentes: `train 1 on crash`, `train on contact forward`.
 
 **Acciones especiales dentro de bloques (terminan en `;`):**
-- *Semáforos:* `semaphore [ID] open;` / `semaphore [ID] close|closed;` / `semaphore [ID] set open|closed;` / `semaphore [ID] invert;`
+- *Semáforos:* `semaphore [ID] open;` / `semaphore [ID] close|closed;` / `semaphore [ID] set open|closed;` / `semaphore [ID] toggle;` / `semaphore [ID] invert;` (`toggle` conmuta el estado de la luz; `invert` cambia la dirección)
 - *Cambios de Aguja (Forks):* `fork [ID] set straight;` / `fork [ID] set curved;` / `fork [ID] set <dirección>;` / `fork [ID] set flip;` / `fork [ID] flip;` (mismo comportamiento que en consola y en waypoints: la dirección mapea a la ruta que sale hacia ella y, si no existe, avisa)
 - *Tren Condicional:* Puedes usar `train at station [ID|"nombre"]`, `train at sensor [ID|"nombre"]`, `train at fork [ID]`, o `train at semaphore [ID]` en lugar de usar un número fijo de tren para aplicar acciones al tren que disparó el evento o que se encuentre allí. El sitio se resuelve cuando la acción se ejecuta; un nombre desconocido avisa y no se ejecuta nada.
 - Si el selector del trigger (sensor/aguja/semáforo/estación) no existe al registrarlo, se avisa y el trigger no se instala.
 
+**Triggers temporales:** `at [HH:MM] { … }` ejecuta el bloque cada día a esa hora del reloj de juego; `every [N]m|h|d [from [HH:MM]] { … }` lo ejecuta periódicamente. Las acciones son las mismas que en los triggers de evento, así que una luz puede parpadear sola:
+
+```letrain
+# Parpadea la luz del cruce cada media hora
+every 30m {
+    semaphore 1 toggle;
+}
+```
+
 **Comentarios:** `#` inicia un comentario de línea en cualquier punto del lenguaje (consola, `program { … }`, triggers y escenarios). Todo lo que sigue al `#` hasta el final de la línea se ignora.
 
-### 4. Comandos del Juego y Editor (Consola)
+### 4. Automatización por Reloj (`at` / `every`)
+
+Ejecuta bloques de acciones según el **reloj de juego** en lugar de según eventos. La sintaxis se acepta en `program { … }` y en la consola, igual que los triggers de eventos, y el bloque es el **mismo bloque de acciones** que los triggers de eventos (terminado en `;`, sin anidar).
+
+**Estructura Base:**
+```letrain
+at 6:30 {
+    semaphore 1 open;
+}
+
+every 30m {
+    semaphore 1 invert;
+}
+```
+
+- `at HH[:MM]` se dispara **cada día** a esa hora del reloj de juego. La hora usa el mismo formato que `arrival`/`departure`: `at 6` es 06:00 y `at 6:30` es 06:30; medianoche es `at 0:00`.
+- `every <cantidad>m|h|d` se dispara **periódicamente**: `m` minutos de juego, `h` horas de juego, `d` días de juego (`30m`, `2h`, `1d`).
+  - **Rejilla**: se dispara en una rejilla fija anclada a las 00:00 del reloj de juego (`every 30m` → 00:00, 00:30, 01:00…; `every 1h` → en punto). Si se registra a mitad de tramo, el primer disparo es el siguiente punto de la rejilla: creado a las 10:07, `every 30m` se dispara por primera vez a las 10:30.
+  - **Ancla `from` (opcional)**: `every 30m from 6:00` se dispara a las 6:00, 6:30, 7:00…; `every 30m from 6:15` a las 6:15, 6:45, 7:15…; si el periodo no divide el día, la rejilla sigue desplazándose de un día al siguiente (`every 45m from 6:15` → 6:15, 7:00, 7:45, 8:30…).
+- **Acciones**: el mismo conjunto que los triggers de eventos (ver sección 3): acciones de semáforo y aguja, y acciones de tren con **referencia explícita** (`train [ID] …` o `train at station|sensor|fork|semaphore [REF] …`). Una acción de tren genérica **sin referencia** (`train set speed 5;`) no tiene sentido en un bloque temporal (el ámbito es **global**): avisa de forma visible cuando el trigger se dispara y se ignora, mientras el resto del bloque sigue ejecutándose.
+- **Límites**: como máximo **64** triggers temporales activos. Un duplicado exacto (`at 6:30` registrado dos veces) avisa y se ignora, y un trigger que supera el límite también avisa y se ignora. De un duplicado solo llega a ejecutarse el primer bloque registrado.
+- **Guardado/carga (sin puesta al día)**: al cargar se reaplica el programa guardado. Una hora `at` ya pasada se programa para el **día siguiente**, y `every` continúa desde el reloj actual (su siguiente punto de rejilla): las horas que el juego estuvo cerrado no se recuperan de golpe.
+- **Reemplazo de programa**: al aplicar un programa (editor o sentencia `program`) se limpia el registro global y se re-registran los triggers del nuevo programa; los disparos ya armados del programa sustituido son no-ops inofensivos.
+- **Determinista**: los disparos se calculan con ticks de simulación, nunca con el reloj de pared, así que el replay y el undo reproducen las mismas horas de juego. La **pausa de edición congela el reloj**: los disparos no se acumulan en pausa; se reanudan donde quedó el reloj.
+
+Ejemplo: apertura y cierre diarios, servicio horario de mercancías y una orden de carga periódica para el tren que esté en la mina:
+
+```letrain
+# Apertura y cierre diarios de la línea
+at 6:30 {
+    semaphore 1 open;
+}
+at 21:00 {
+    semaphore 1 close;
+}
+
+# Servicio horario de mercancías
+every 1h {
+    train 5 set engine on;
+}
+
+# Cada 30 minutos desde las 06:15: carga el tren que esté en la mina
+every 30m from 6:15 {
+    train at station "Mine" load;
+}
+```
+
+> `station N load` no es una acción de trigger: `load`/`unload` siempre pertenecen a un **tren**,
+> así que escribe `train N load;` o `train at station N load;`.
+
+### 5. Comandos del Juego y Editor (Consola)
 Puedes teclear estos comandos directamente en el CLI para gestionar el estado del juego, el cursor y los archivos.
 
 **Estado del Juego y Archivos:**
@@ -165,6 +224,7 @@ Puedes teclear estos comandos directamente en el CLI para gestionar el estado de
 
 **Información y Ayuda:**
 - `help;` - Muestra todos los grupos de comandos (`CONSOLE`, `BUILD`, `PROGRAM`, `CONFIG`). Fíltralo con `help console;`, `help build;`, `help program;`, `help config;`, o un tema suelto como `help ls;`.
+- `version;` - Consulta la versión del **build en ejecución** (p. ej. `LeTrain v1.0.0`), la misma que aparece en el título de la ventana. Es salida de datos: abre el panel de mensajes y **no** se graba en el diario. Úsalo para comprobar que no estás probando una copia obsoleta del juego.
 - `ls;` - Lista todas las entidades. `ls [tipoEntidad];` lista un tipo (ej., `ls station;`).
 - `info;` - Muestra una vista general de todo el mundo. `info [tipoEntidad];` lista ese tipo; `info [tipoEntidad] [ID|nombre];` detalla una entidad concreta. `info [ID];` sin tipo avisa de que el número se ignora (indica el tipo: `info train 5;`).
 
@@ -188,7 +248,7 @@ Puedes teclear estos comandos directamente en el CLI para gestionar el estado de
 
 **Acciones de Infraestructura (Directas):**
 Puedes dar comandos directos a la infraestructura fuera de los bloques de eventos:
-- `semaphore [ID] set open;` / `semaphore [ID] set closed;` / `semaphore [ID] invert;`
+- `semaphore [ID] set open;` / `semaphore [ID] set closed;` / `semaphore [ID] toggle;` / `semaphore [ID] invert;` (`toggle` conmuta el estado de la luz; `invert` cambia la dirección)
 - `fork [ID] set straight;` / `fork [ID] set curved;` / `fork [ID] set <dirección>;` / `fork [ID] set flip;` / `fork [ID] flip;`
 - `signal [ID] set limit [NUM];` / `signal [ID] set mode (max|min);` / `signal [ID] invert;`
 - `station [ID] invert;` - Invertir la orientación de una estación para que mire en sentido contrario a lo largo de la vía (el andén cambia de lado, igual que Espacio en modo STATIONS).
@@ -238,6 +298,11 @@ train 1 set autopilot true;
 sensor "Entrada" on train enter {
     fork 2 set straight;
     semaphore 1 set open;
+}
+
+# Abrimos la línea cada mañana con el reloj de juego
+at 6:30 {
+    semaphore 1 open;
 }
 ```
 

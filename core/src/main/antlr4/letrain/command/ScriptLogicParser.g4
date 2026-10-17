@@ -7,9 +7,10 @@ scriptStart : statement+ EOF;
 // funnels every typed line through PlayerCommandExecutor, which appends one when the text does not
 // end with ';', and users may type it explicitly. Without SEMI? the console could never create an
 // itinerary ("extraneous input ';'").
-statement : trigger commandBlock SEMI?    // event-driven automation
-          | createItinerary SEMI?         // } terminates the block; the ; after it is optional
-          | directCommand SEMI            // other immediate commands need ;
+statement : trigger commandBlock SEMI?         // event-driven automation
+          | temporalTrigger commandBlock SEMI? // time-driven automation (ADR-022 phase 3, D1-D7)
+          | createItinerary SEMI?              // } terminates the block; the ; after it is optional
+          | directCommand SEMI                 // other immediate commands need ;
           ;
 
 directCommand : assignItinerary
@@ -94,6 +95,25 @@ trigger :
     ;
 
 /**
+ * ADR-022 phase 3 (contract D1-D7, frozen): time-driven automation. `at` fires every day at that
+ * time of the game clock (D1/D2); `every` fires periodically on the fixed grid anchored at 00:00
+ * of the game clock with an optional `from` (D7). The block is the event-trigger action block
+ * (D6: same actions, `;`-terminated, no nesting).
+ *
+ * <p>
+ * A period glues number and unit into one alphanumeric token (`30m` is a single ID), so both the
+ * glued (`ID`) and the spaced (`NUMBER unit`) forms are accepted and the command manager validates
+ * amount and unit at parse time: an unknown unit (`30x`) is a visible warning instead of a syntax
+ * error.
+ */
+temporalTrigger : atTrigger | everyTrigger ;
+atTrigger       : AT triggerTime ;
+everyTrigger    : EVERY period (FROM triggerTime)? ;
+period          : ID | NUMBER unit ;
+unit            : M | ID ;
+triggerTime     : TIME | NUMBER ;
+
+/**
  * U4: sensor and station references accept a number or an exact quoted name (strict case). Forks,
  * semaphores and signals have no name and stay numeric. The name is resolved when the trigger is
  * registered / the `train at` order runs; an unknown name warns and the trigger is not installed.
@@ -123,7 +143,7 @@ commandItem : (
 trainExtractor : TRAIN AT placeSelector;
 placeSelector  : forkSelector | semaphoreSelector | stationSelector | sensorSelector;
 
-semaphoreAction : OPEN | CLOSED | CLOSE | SET semaphoreStatus | INVERT ;
+semaphoreAction : OPEN | CLOSED | CLOSE | SET semaphoreStatus | INVERT | TOGGLE ;
 forkAction      : SET forkDirection | FLIP ;
 engineAction    : SET ENGINE (ON | OFF);
 trainAction     : SET trainSense | ACCELERATE | DECELERATE | SET SPEED trainSpeed | INVERT | PARK | STOP | coupleAction | uncoupleAction | SET NAME STRING | LOAD | UNLOAD | engineAction | stopOrder;

@@ -408,40 +408,51 @@ public class RailTrackMaker {
         dir = presenter.getModel().getCursor().getDir();
         Point actualCursorPosition = presenter.getModel().getCursor().getPosition();
 
-        // Check if we can resume from oldTrack
+        // Resume is only legal when the previous piece is still placed in the map, the cursor is
+        // adjacent to it and the entry angle honours the 45-degree rule that makeTrack enforces.
+        // A deleted anchor (delete+rebuild, #708) or a piece sitting *ahead* of the cursor (walking
+        // back along the rail) would make every placement abort while the cursor stays adjacent,
+        // locking it until the player moves more than 1.5 cells away. Instead of keeping a resume
+        // that cannot succeed, start a fresh piece.
         boolean canResume = false;
-        if (oldTrack != null && oldTrack.getPosition() != null) {
-            double dist = Point.distance(oldTrack.getPosition(), actualCursorPosition);
-            if (dist <= 1.5) { // Adjacent (ortho or diag)
-                canResume = true;
-            }
-        }
-
-        if (canResume) {
-            oldDir = actualCursorPosition.locate(oldTrack.getPosition());
-            if (oldDir == null) {
-                // If locate returns null, it means we are on the same tile.
-                // We cannot resume drawing a new track piece on the same tile.
-                oldTrack = null;
-                oldDir = dir;
-                canResume = false;
-                degreesOfRotation = 0;
-            } else {
+        if (oldTrack != null && oldTrack.getPosition() != null
+                && Point.distance(oldTrack.getPosition(), actualCursorPosition) <= 1.5) {
+            Dir resumeDir = actualCursorPosition.locate(oldTrack.getPosition());
+            if (resumeDir != null && isOldTrackStillPlaced()
+                    && Math.abs(resumeDir.inverse().angularDistance(dir)) <= 1) {
+                oldDir = resumeDir;
                 oldGroundType =
                         presenter.getModel().getGroundMap().getValueAt(oldTrack.getPosition());
                 // ADR-005 / Infrastructure rule: Initialize rotation degrees based on entry angle
                 degreesOfRotation = oldDir.inverse().angularDistance(dir);
+                canResume = true;
             }
         }
 
         if (!canResume) {
-            oldTrack = null;
-            oldDir = dir;
-            oldGroundType = null;
-            degreesOfRotation = 0;
+            clearResumeState();
         }
 
         reversed = false;
+    }
+
+    /**
+     * True when {@link #oldTrack} is still the piece placed at its position in the rail map. A
+     * removed or replaced piece must not be used as a chaining anchor (issue #708).
+     */
+    private boolean isOldTrackStillPlaced() {
+        if (oldTrack == null || oldTrack.getPosition() == null) {
+            return false;
+        }
+        return presenter.getModel().getRailMap().getTrackAt(oldTrack.getPosition()) == oldTrack;
+    }
+
+    /** Drops the chaining anchor and all resume state derived from it. */
+    private void clearResumeState() {
+        oldTrack = null;
+        oldDir = dir;
+        oldGroundType = null;
+        degreesOfRotation = 0;
     }
 
     public void removeTrack(boolean moveCursor) {
@@ -455,6 +466,11 @@ public class RailTrackMaker {
                 return;
             }
             presenter.getModel().removeTrack(position);
+            // A delete must not leave a dangling resume anchor (#708): if the removed piece was
+            // the one the next build would chain from, drop the chaining state right away.
+            if (track == oldTrack || !isOldTrackStillPlaced()) {
+                clearResumeState();
+            }
             // Keyboard erase of one tile, journaled as a canonical self-positioned delete.
             journalKeyboardEdit(new Point(position), presenter.getModel().getCursor().getDir(),
                     "del 1");

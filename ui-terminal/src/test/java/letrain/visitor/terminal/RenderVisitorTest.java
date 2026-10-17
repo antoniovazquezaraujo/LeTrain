@@ -6,6 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.googlecode.lanterna.TextColor;
 import java.util.List;
+import letrain.economy.EconomyManager;
+import letrain.ground.Ground;
+import letrain.ground.GroundMap;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.mvp.Model;
@@ -14,6 +17,7 @@ import letrain.segments.BlockManager;
 import letrain.segments.RailwayGraph;
 import letrain.segments.Segment;
 import letrain.track.rail.RailTrack;
+import letrain.vehicle.Cursor;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
 import org.junit.jupiter.api.DisplayName;
@@ -55,6 +59,73 @@ class RenderVisitorTest {
     }
 
     @Test
+    @DisplayName("visitRailTrack keeps the rail colour when blocked-track highlighting is off")
+    void visitRailTrack_shouldKeepRailColor_whenHighlightingIsOff() {
+        TerminalView view = mock(TerminalView.class);
+        RenderVisitor visitor =
+                new RenderVisitor(view, new TerminalPalette(TerminalPalette.Depth.TRUECOLOR));
+
+        Model model = mock(Model.class);
+        EconomyManager economy = mock(EconomyManager.class);
+        RailwayGraph graph = mock(RailwayGraph.class);
+        BlockManager blockManager = mock(BlockManager.class);
+        Segment segment = mock(Segment.class);
+        Train train = mock(Train.class);
+        Locomotive loco = new Locomotive(1, "A", "GREEN_BRIGHT");
+
+        when(economy.isHighlightBlockedTracks()).thenReturn(false);
+        when(model.getEconomyManager()).thenReturn(economy);
+        when(train.getDirectorLinker()).thenReturn(loco);
+
+        RailTrack track = new RailTrack();
+        track.setPosition(new Point(5, 5));
+
+        when(model.getRailwayGraph()).thenReturn(graph);
+        when(model.getBlockManager()).thenReturn(blockManager);
+        when(graph.getSegment(track)).thenReturn(segment);
+        when(blockManager.getOwners(segment)).thenReturn(List.of(train));
+
+        visitor.visitModel(model);
+        visitor.visitRailTrack(track);
+
+        // No train livery: the reserved segment falls back to the normal rail colour
+        verify(view, never()).setFgColor(TextColor.ANSI.GREEN_BRIGHT);
+        verify(view, atLeastOnce()).setFgColor(new TextColor.RGB(50, 50, 55));
+    }
+
+    @Test
+    @DisplayName("visitRailTrack paints the livery when blocked-track highlighting is on")
+    void visitRailTrack_shouldPaintWithLocomotiveColor_whenHighlightingIsOn() {
+        TerminalView view = mock(TerminalView.class);
+        RenderVisitor visitor = new RenderVisitor(view);
+
+        Model model = mock(Model.class);
+        EconomyManager economy = mock(EconomyManager.class);
+        RailwayGraph graph = mock(RailwayGraph.class);
+        BlockManager blockManager = mock(BlockManager.class);
+        Segment segment = mock(Segment.class);
+        Train train = mock(Train.class);
+        Locomotive loco = new Locomotive(1, "A", "GREEN_BRIGHT");
+
+        when(economy.isHighlightBlockedTracks()).thenReturn(true);
+        when(model.getEconomyManager()).thenReturn(economy);
+        when(train.getDirectorLinker()).thenReturn(loco);
+
+        RailTrack track = new RailTrack();
+        track.setPosition(new Point(5, 5));
+
+        when(model.getRailwayGraph()).thenReturn(graph);
+        when(model.getBlockManager()).thenReturn(blockManager);
+        when(graph.getSegment(track)).thenReturn(segment);
+        when(blockManager.getOwners(segment)).thenReturn(List.of(train));
+
+        visitor.visitModel(model);
+        visitor.visitRailTrack(track);
+
+        verify(view, atLeastOnce()).setFgColor(TextColor.ANSI.GREEN_BRIGHT);
+    }
+
+    @Test
     @DisplayName("visitRailTrack should paint rail with standard color when segment is not locked")
     void visitRailTrack_shouldPaintWithStandardColor_whenSegmentIsNotLocked() {
         TerminalView view = mock(TerminalView.class);
@@ -79,6 +150,31 @@ class RenderVisitorTest {
 
         // day rail token of the light family
         verify(view, atLeastOnce()).setFgColor(new TextColor.RGB(50, 50, 55));
+    }
+
+    @Test
+    @DisplayName("dead ends paint the square glyph on horizontal and vertical stubs")
+    void visitRailTrack_shouldPaintSquareDeadEnd_whenTrackIsDisconnected() {
+        assertSquareDeadEnd(Dir.E, Dir.W);
+        assertSquareDeadEnd(Dir.N, Dir.S);
+    }
+
+    private void assertSquareDeadEnd(Dir first, Dir second) {
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        RenderVisitor visitor = new RenderVisitor(view, palette);
+
+        RailTrack stub = new RailTrack();
+        stub.setPosition(new Point(5, 5));
+        stub.addRoute(first, second);
+
+        visitor.visitRailTrack(stub);
+
+        verify(view).set(5, 5, "■");
+        // dead-end token of the light (day) family
+        TextColor expected =
+                palette.colorOf(TerminalPalette.rgbFor(0f).get(TerminalPalette.Token.DEAD_END));
+        verify(view, atLeastOnce()).setFgColor(expected);
     }
 
     @Test
@@ -559,5 +655,181 @@ class RenderVisitorTest {
 
         verify(view, never()).setBgColor(litBoard(palette, 1, 0));
         verify(view, atLeastOnce()).setBgColor(litBoard(palette, 2, 1));
+    }
+
+    @Test
+    @DisplayName("visitGround paints the sea backdrop under the water cell")
+    void visitGround_shouldPaintSeaBackdrop_whenWater() {
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        RenderVisitor visitor = new RenderVisitor(view, palette);
+
+        Ground ground = mock(Ground.class);
+        when(ground.getType()).thenReturn(GroundMap.WATER);
+        when(ground.getPosition()).thenReturn(new Point(2, 3));
+
+        visitor.visitModel(mock(Model.class));
+        visitor.visitGround(ground);
+
+        int seaBg = TerminalPalette.rgbFor(0f).get(TerminalPalette.Token.WATER_BG);
+        verify(view, atLeastOnce()).setBgColor(palette.colorOf(seaBg));
+    }
+
+    @Test
+    @DisplayName("visitGround paints the mountain backdrop under the rock cell")
+    void visitGround_shouldPaintMountainBackdrop_whenRock() {
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        RenderVisitor visitor = new RenderVisitor(view, palette);
+
+        Ground ground = mock(Ground.class);
+        when(ground.getType()).thenReturn(GroundMap.ROCK);
+        when(ground.getPosition()).thenReturn(new Point(4, 1));
+
+        visitor.visitModel(mock(Model.class));
+        visitor.visitGround(ground);
+
+        int rockBg = TerminalPalette.rgbFor(0f).get(TerminalPalette.Token.ROCK_BG);
+        verify(view, atLeastOnce()).setBgColor(palette.colorOf(rockBg));
+    }
+
+    @Test
+    @DisplayName("a rail over water keeps the sea backdrop, not the green field")
+    void visitRailTrack_shouldKeepSeaBackdrop_whenOverWater() {
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        RenderVisitor visitor = new RenderVisitor(view, palette);
+
+        Model model = mock(Model.class);
+        letrain.ground.GroundMap groundMap = mock(letrain.ground.GroundMap.class);
+        when(model.getGroundMap()).thenReturn(groundMap);
+        when(groundMap.getValueAt(5, 5)).thenReturn(letrain.ground.GroundMap.WATER);
+
+        RailTrack track = new RailTrack();
+        track.setPosition(new Point(5, 5));
+
+        visitor.visitModel(model);
+        visitor.visitRailTrack(track);
+
+        int seaBg = TerminalPalette.rgbFor(0f).get(TerminalPalette.Token.WATER_BG);
+        verify(view, atLeastOnce()).setBgColor(palette.colorOf(seaBg));
+    }
+
+    @Test
+    @DisplayName("a rail over water uses a light colour that stands out from the sea")
+    void visitRailTrack_shouldLightenRail_whenOverWater() {
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        RenderVisitor visitor = new RenderVisitor(view, palette);
+
+        Model model = mock(Model.class);
+        GroundMap groundMap = mock(GroundMap.class);
+        when(model.getGroundMap()).thenReturn(groundMap);
+        when(groundMap.getValueAt(5, 5)).thenReturn(GroundMap.WATER);
+
+        RailTrack track = new RailTrack();
+        track.setPosition(new Point(5, 5));
+
+        visitor.visitModel(model);
+        visitor.visitRailTrack(track);
+
+        int seaBg = TerminalPalette.rgbFor(0f).get(TerminalPalette.Token.WATER_BG);
+        int rail = TerminalPalette
+                .lightenOn(TerminalPalette.rgbFor(0f).get(TerminalPalette.Token.RAIL), seaBg);
+        verify(view, atLeastOnce()).setFgColor(palette.colorOf(rail));
+
+        // Sobre el campo la vía se queda como la resolvió la paleta (sin aclarar).
+        RailTrack onLand = new RailTrack();
+        onLand.setPosition(new Point(9, 9));
+        visitor.visitRailTrack(onLand);
+        verify(view, atLeastOnce()).setFgColor(
+                palette.colorOf(TerminalPalette.rgbFor(0f).get(TerminalPalette.Token.RAIL)));
+    }
+
+    @Test
+    @DisplayName("a blocked-track livery is adjusted so it does not vanish into the sea")
+    void visitRailTrack_shouldAdjustBlockedLivery_whenOverWater() {
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        RenderVisitor visitor = new RenderVisitor(view, palette);
+
+        Model model = mock(Model.class);
+        GroundMap groundMap = mock(GroundMap.class);
+        when(model.getGroundMap()).thenReturn(groundMap);
+        when(groundMap.getValueAt(5, 5)).thenReturn(GroundMap.WATER);
+
+        RailwayGraph graph = mock(RailwayGraph.class);
+        BlockManager blockManager = mock(BlockManager.class);
+        Segment segment = mock(Segment.class);
+        Train train = mock(Train.class);
+        Locomotive loco = new Locomotive(1, "B", "BLUE");
+        when(train.getDirectorLinker()).thenReturn(loco);
+        when(model.getRailwayGraph()).thenReturn(graph);
+        when(model.getBlockManager()).thenReturn(blockManager);
+
+        RailTrack track = new RailTrack();
+        track.setPosition(new Point(5, 5));
+        when(graph.getSegment(track)).thenReturn(segment);
+        when(blockManager.getOwners(segment)).thenReturn(List.of(train));
+
+        visitor.visitModel(model);
+        visitor.visitRailTrack(track);
+
+        int seaBg = TerminalPalette.rgbFor(0f).get(TerminalPalette.Token.WATER_BG);
+        int livery = TextColor.ANSI.BLUE.toColor().getRGB() & 0xFFFFFF;
+        verify(view, atLeastOnce())
+                .setFgColor(palette.colorOf(TerminalPalette.contrastOn(livery, seaBg)));
+    }
+
+    @Test
+    @DisplayName("an active locate ping paints a bright-white cross on the four cells around the cursor")
+    void visitCursor_shouldPaintLocateCross_whenPinging() {
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        long[] now = {1_000L};
+        RenderVisitor visitor = new RenderVisitor(view, palette, () -> now[0]);
+
+        Cursor cursor = new Cursor();
+        cursor.setPosition(new Point(5, 5));
+        cursor.setDir(Dir.E);
+        cursor.ping(now[0]);
+
+        visitor.visitCursor(cursor);
+
+        org.mockito.InOrder ordered = inOrder(view);
+        ordered.verify(view).setFgColor(TextColor.ANSI.WHITE_BRIGHT);
+        ordered.verify(view).set(4, 5, "─");
+        ordered.verify(view).set(6, 5, "─");
+        ordered.verify(view).set(5, 4, "│");
+        ordered.verify(view).set(5, 6, "│");
+
+        // The cursor cell keeps its own aspect; the flash never draws a line over it.
+        verify(view).set(5, 5, ">");
+        verify(view, never()).set(5, 5, "─");
+        verify(view, never()).set(5, 5, "│");
+    }
+
+    @Test
+    @DisplayName("an expired locate ping paints no cross at all")
+    void visitCursor_shouldNotPaintLocateCross_whenPingExpired() {
+        TerminalView view = mock(TerminalView.class);
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        long[] now = {1_000L};
+        RenderVisitor visitor = new RenderVisitor(view, palette, () -> now[0]);
+
+        Cursor cursor = new Cursor();
+        cursor.setPosition(new Point(5, 5));
+        cursor.setDir(Dir.E);
+        cursor.ping(now[0]);
+        now[0] += Cursor.PING_DURATION_MS;
+
+        visitor.visitCursor(cursor);
+
+        verify(view, never()).setFgColor(TextColor.ANSI.WHITE_BRIGHT);
+        verify(view, never()).set(4, 5, "─");
+        verify(view, never()).set(6, 5, "─");
+        verify(view, never()).set(5, 4, "│");
+        verify(view, never()).set(5, 6, "│");
+        verify(view).set(5, 5, ">");
     }
 }

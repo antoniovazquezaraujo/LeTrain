@@ -12,6 +12,7 @@ Bienvenido a la documentación técnica de **LeTrain**. Esta wiki está diseñad
 - [[architecture/PresenterSymmetryProposal|Propuesta de Simetría en Presentadores y Vistas]]
 - [[architecture/TrainMovementManagerStudy|Estudio de Relación Train y TrainMovementManager]]
 - [[architecture/ClassIndex|Índice de Clases (generado automáticamente)]]
+- [[systems/SettingsApply|Aplicación de Ajustes en partida (S3a: apply-by-state, escenario y defaults)]]
 
 ## 🛤️ Infraestructura Ferroviaria
 - [[infrastructure/TrackTypes|Jerarquía de Vías (Forks, Puentes, Túneles, TrackComponent)]]
@@ -64,6 +65,7 @@ Bienvenido a la documentación técnica de **LeTrain**. Esta wiki está diseñad
 - [[adr/ADR-023-Soundscape-Isolation|ADR-023: Decorado Sonoro como Componente Aislado]]
 - [[adr/ADR-028-Sound-Packs-Externos-Cifrados|ADR-028: Packs de Sonido Externos Cifrados (contenido propietario bajo EULA)]]
 - [[adr/ADR-029-Modelo-Sonido-Tren|ADR-029: Modelo de Sonido del Tren (materiales por marcha y transiciones)]]
+- [[adr/ADR-030-Catalogo-Unico-de-Ajustes|ADR-030: Catálogo único de ajustes (Nueva partida, Settings y escenarios)]]
 
 ## 📦 Release y Distribución
 - [[release/Release_Process|Proceso de Release y Despliegue]]

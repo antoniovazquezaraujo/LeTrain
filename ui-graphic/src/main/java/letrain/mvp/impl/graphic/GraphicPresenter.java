@@ -14,11 +14,11 @@ import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
-import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import letrain.mvp.input.InputEvent;
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import letrain.map.Point;
 import letrain.mvp.Model.GameModeMenuOption;
@@ -33,6 +33,8 @@ import letrain.vehicle.rail.CoreTrainEventListener;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
 import letrain.visitor.gdx3d.Gdx3DRenderer;
+import letrain.visitor.gdx3d.HeadlightGlowRenderer;
+import letrain.visitor.gdx3d.HeadlightGlows;
 import letrain.visitor.gdx3d.Headlights;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,14 +91,13 @@ public class GraphicPresenter extends ApplicationAdapter
     private final VisualPalette palette = new VisualPalette();
     private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute ambientAttribute;
     private com.badlogic.gdx.graphics.g3d.environment.DirectionalLight sunLight;
-    /** Real lights for the nearest locomotive headlights (ADR-022 phase 1e). */
-    private static final int HEADLIGHT_POOL = 4;
-
-    private static final float HEADLIGHT_INTENSITY = 25f;
-    private final com.badlogic.gdx.graphics.g3d.environment.PointLight[] headlightLights =
-            new com.badlogic.gdx.graphics.g3d.environment.PointLight[HEADLIGHT_POOL];
+    /**
+     * Draws the soft ground pools of the nearest locomotive headlights (ADR-022 phase 1e, #690).
+     * Replaces the raw {@code PointLight}s, whose per-vertex lighting over the 1x1 ground cells
+     * showed up as square patches that traced the cell grid.
+     */
+    private HeadlightGlowRenderer headlightGlowRenderer;
     private final Color headlightColor = new Color();
-    private final Vector3 headlightPosition = new Vector3();
     private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute tableDiffuse;
     private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute gridDiffuse;
     private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute boxDiffuse;
@@ -164,6 +165,21 @@ public class GraphicPresenter extends ApplicationAdapter
     private Gdx3DInputHandler inputHandler;
     private final SoundscapeAmbience ambience;
 
+    /**
+     * Title cover (issue #743): shown at startup, any key continues. Kept in the presenter so the
+     * key that dismisses the cover is consumed and never reaches the game.
+     */
+    private boolean coverActive = false;
+    private boolean coverEnabled = true;
+
+    /**
+     * Interactive boot (D8, #777): mirrors {@link letrain.mvp.impl.terminal.TerminalPresenter}.
+     * False while the 3D client sits on the cover/File menu before a game started; New/Load set it
+     * true. {@code setCoverEnabled(false)} leaves it true, so a headless/direct-scenario run keeps
+     * the world without a boot.
+     */
+    private boolean gameStarted = true;
+
     public GraphicPresenter(letrain.mvp.Model model) {
         this(model, null);
     }
@@ -227,6 +243,8 @@ public class GraphicPresenter extends ApplicationAdapter
     public void create() {
         resourceContext.init();
         renderer.init();
+        headlightGlowRenderer = new HeadlightGlowRenderer();
+        headlightGlowRenderer.init();
         modelBatch = new ModelBatch();
         environment = new Environment();
         ambientAttribute = new ColorAttribute(ColorAttribute.AmbientLight, 0.5f, 0.5f, 0.5f, 1f);
@@ -234,10 +252,6 @@ public class GraphicPresenter extends ApplicationAdapter
         sunLight = new DirectionalLight();
         sunLight.set(0.8f, 0.8f, 0.8f, -1f, -0.8f, -0.2f);
         environment.add(sunLight);
-        for (int i = 0; i < headlightLights.length; i++) {
-            headlightLights[i] = new com.badlogic.gdx.graphics.g3d.environment.PointLight();
-            environment.add(headlightLights[i]);
-        }
 
         cam = cameraController.init(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
@@ -276,6 +290,10 @@ public class GraphicPresenter extends ApplicationAdapter
         font.getData().markupEnabled = true;
 
         hud = new Gdx3DHud(model, this);
+        // 2D parity: start with the full menu/help panel visible (Tab cycles it). The level is
+        // kept in the model so both clients share one source of truth.
+        model.setHelpLevel(HudHelp.FULL);
+        hud.setHelpLevel(model.getHelpLevel());
         createCompassModel();
         updateDayNight();
 
@@ -284,9 +302,17 @@ public class GraphicPresenter extends ApplicationAdapter
         multiplexer.addProcessor(inputHandler);
         Gdx.input.setInputProcessor(multiplexer);
 
+        // Cover first: the world waits behind the title until the player presses any key.
+        // Dismissing the cover enters the interactive boot File menu instead of auto-starting the
+        // world (D8).
+        if (coverEnabled) {
+            gameStarted = false;
+            showCover();
+        }
+
         // The app starts fullscreen (no maximize animation), but switch to a normal maximized
         // window
-        // right away so the OS/window behaviour (Esc exit menu, etc.) is the usual one.
+        // right away so the OS/window behaviour (Esc file menu, etc.) is the usual one.
         com.badlogic.gdx.Graphics.DisplayMode dm = Gdx.graphics.getDisplayMode();
         Gdx.graphics.setWindowedMode(dm.width, dm.height);
         if (Gdx.graphics instanceof com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics) {
@@ -307,8 +333,67 @@ public class GraphicPresenter extends ApplicationAdapter
 
     private com.badlogic.gdx.graphics.g3d.ModelInstance tableInstance;
 
+    /**
+     * Skips the title cover. Used by headless runs and direct scenario launches that must land on
+     * the world without a splash (issue #743).
+     */
+    public void setCoverEnabled(boolean enabled) {
+        this.coverEnabled = enabled;
+    }
+
+    /** True while the title cover is on screen waiting for any key. */
+    public boolean isCoverActive() {
+        return coverActive;
+    }
+
+    /**
+     * True once New/Load started a game; the boot File menu disables Save until then (D8, #777).
+     */
+    @Override
+    public boolean hasActiveGame() {
+        return gameStarted;
+    }
+
+    /** Shows the cover; {@code create()} calls this unless the cover was disabled. */
+    public void showCover() {
+        coverActive = true;
+        if (hud != null) {
+            hud.showCover();
+        }
+    }
+
+    /**
+     * Dismisses the cover (any key continues). During the interactive boot (no game yet) it then
+     * opens the File menu, exactly like the 2D {@code startupMenuStep} (D8, #777).
+     */
+    public void dismissCover() {
+        endCover();
+        if (!gameStarted) {
+            showFileMenu();
+        }
+    }
+
+    /** Ends the title cover without re-entering the boot menu (also used when a game starts). */
+    private void endCover() {
+        coverActive = false;
+        if (hud != null) {
+            hud.hideCover();
+        }
+    }
+
     @Override
     public void render() {
+        if (coverActive) {
+            // Title cover: a plain dark frame with the shared title and prompt; the world does not
+            // simulate nor render until the player continues.
+            Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+            Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
+            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
+            if (hud != null) {
+                hud.render(Gdx.graphics.getDeltaTime());
+            }
+            return;
+        }
         // Bucle de lógica del juego (aprox 20 tps como en el Presenter original)
         stateTime += Gdx.graphics.getDeltaTime();
         if (stateTime > 0.05f) {
@@ -381,7 +466,6 @@ public class GraphicPresenter extends ApplicationAdapter
         // Actualizar instancias desde el modelo
         renderer.clear();
         renderer.visitModel(model, cam);
-        updateHeadlights(dayNightRatio());
         modelBatch.begin(cam);
         modelBatch.render(renderer.getInstances(), environment);
         // Render the background table slightly below ground level
@@ -391,6 +475,9 @@ public class GraphicPresenter extends ApplicationAdapter
         }
         modelBatch.render(tableInstance, environment);
         modelBatch.end();
+
+        // Ground pools of the headlights: alpha-blended and unlit, after the lit scene.
+        renderHeadlightGlows(dayNightRatio());
 
         // Renderizado de Etiquetas 3D (Decals)
         if (!renderer.getLabels().isEmpty()) {
@@ -579,12 +666,16 @@ public class GraphicPresenter extends ApplicationAdapter
 
     /**
      * Tab parity with the 2D terminal: cycles the HUD bottom panel between full, compact and
-     * hidden, so the map can be seen without the panel.
+     * hidden, so the map can be seen without the panel. The level lives in the model (as in the 2D
+     * presenter) so both clients share one source of truth.
      */
     public void cycleHelpLevel() {
-        if (hud != null) {
-            hud.cycleHelpLevel();
+        if (hud == null) {
+            return;
         }
+        int next = HudHelp.cycle(model.getHelpLevel());
+        model.setHelpLevel(next);
+        hud.setHelpLevel(next);
     }
 
     /**
@@ -619,6 +710,7 @@ public class GraphicPresenter extends ApplicationAdapter
         if (newModel == null) {
             return;
         }
+        int helpLevel = model.getHelpLevel();
         boolean wasPaused = model.isPauseEditing();
         this.model = newModel;
         // The sink is wired after the new HUD exists (see applyLoadedModel): wiring flushes the
@@ -642,6 +734,9 @@ public class GraphicPresenter extends ApplicationAdapter
             hud.dispose();
         }
         this.hud = new Gdx3DHud(newModel, this);
+        // The panel visibility survives the model swap, like the 2D view keeps its help level.
+        newModel.setHelpLevel(helpLevel);
+        hud.setHelpLevel(helpLevel);
         wireUserMessageSink();
         com.badlogic.gdx.InputMultiplexer multiplexer =
                 Gdx.input.getInputProcessor() instanceof com.badlogic.gdx.InputMultiplexer
@@ -716,7 +811,119 @@ public class GraphicPresenter extends ApplicationAdapter
 
     @Override
     public void onNewGame() {
-        // Not used in 3D view (handled by presenter/model directly).
+        Map<String, String> currentSettings =
+                model.getEconomyManager() != null ? model.getEconomyManager().effectiveConfig()
+                        : Map.of();
+        onNewGame(currentSettings);
+    }
+
+    /**
+     * New Game flow with explicit prefill (File → New and the console {@code new game;}, D1). With
+     * a game in progress it first confirms the discard; at boot (no game yet) it opens the dialog
+     * straight away (S4, #777).
+     */
+    void onNewGame(Map<String, String> prefill) {
+        if (gameStarted) {
+            if (hud == null) {
+                return;
+            }
+            hud.showConfirmDialog(letrain.mvp.NewGameText.CONFIRM_TITLE,
+                    letrain.mvp.NewGameText.CONFIRM_MESSAGE, letrain.mvp.NewGameText.START,
+                    () -> openNewGameDialog(prefill));
+            return;
+        }
+        openNewGameDialog(prefill);
+    }
+
+    /** Opens the 3D New Game dialog with a form prefilled from the effective configuration. */
+    private void openNewGameDialog(Map<String, String> prefill) {
+        if (hud == null) {
+            return;
+        }
+        letrain.settings.NewGameForm form =
+                letrain.settings.NewGameForm.forNewGame(prefill, new java.util.Random());
+        hud.showNewGameDialog(form, this::startNewGame, this::onBootFlowCancelled);
+    }
+
+    /** A boot flow (New/Load) was cancelled: with no game yet the cover comes back (D8, #777). */
+    void onBootFlowCancelled() {
+        returnToCoverIfBooting();
+    }
+
+    /** Esc on the File menu during the boot returns to the cover; in-game it does nothing (D8). */
+    void onFileMenuDismissed() {
+        returnToCoverIfBooting();
+    }
+
+    private void returnToCoverIfBooting() {
+        if (!gameStarted && !coverActive) {
+            showCover();
+        }
+    }
+
+    /**
+     * File → Settings (S4b, #778): opens the 3D in-game Settings dialog with the current effective
+     * values (plus the world seed), the scenario-locked keys and a port that applies settings to
+     * the running game and writes {@code letrain.cfg} defaults (D4). Choosing "New game" closes the
+     * dialog and re-enters the New Game flow with the form prefilled (same discard confirmation as
+     * 2D, S4a).
+     */
+    @Override
+    public void onSettings() {
+        if (model.getEconomyManager() == null || hud == null) {
+            return;
+        }
+        Map<String, String> current =
+                new java.util.LinkedHashMap<>(model.getEconomyManager().effectiveConfig());
+        current.put(letrain.settings.NewGameForm.SEED_KEY, String.valueOf(model.getSeed()));
+        hud.showSettingsDialog(current, model.getScenarioSettingKeys(),
+                new Gdx3DHud.SettingsPort() {
+                    @Override
+                    public letrain.settings.SettingsApplyResult apply(Map<String, String> values) {
+                        return model.applyLiveSettings(values);
+                    }
+
+                    @Override
+                    public String saveDefaults(Map<String, String> values) {
+                        return saveSettingsAsDefaults(values);
+                    }
+                }, this::onNewGame);
+    }
+
+    /**
+     * Writes the form values into the game's {@code letrain.cfg} (D4); when the game found no file
+     * it creates one in the working directory. Returns {@code null} on success or the failure
+     * message the dialog shows. Shares the write with the 2D presenter through
+     * {@link letrain.settings.ConfigFileWriter#writeDefaultsOrMessage}.
+     */
+    String saveSettingsAsDefaults(Map<String, String> values) {
+        return letrain.settings.ConfigFileWriter
+                .writeDefaultsOrMessage(model.getEconomyManager().getConfigFile(), values);
+    }
+
+    /** Writes the values into {@code target}; {@code null} on success or the failure message. */
+    static String writeDefaults(File target, Map<String, String> values) {
+        return letrain.settings.ConfigFileWriter.writeDefaultsOrMessage(target, values);
+    }
+
+    /**
+     * Builds a fresh world from the dialog settings (S2) and swaps it in, reusing
+     * {@link #applyLoadedModel} so the camera, HUD, input handler and journal rebind exactly like a
+     * load (S4, #777). The seed text goes through the shared
+     * {@link letrain.settings.NewGameForm#resolveSeed(String)}.
+     */
+    void startNewGame(Map<String, String> settings) {
+        int seed = letrain.settings.NewGameForm
+                .resolveSeed(settings.get(letrain.settings.NewGameForm.SEED_KEY));
+        letrain.mvp.impl.Model fresh = letrain.mvp.impl.Model.newGame(seed, settings);
+        applyLoadedModel(fresh, null);
+        gameStarted = true;
+        endCover();
+        model.setMode(letrain.mvp.Model.GameMode.RAILS);
+        letrain.map.Point center = model.getCursor().getPosition();
+        model.getGroundMap().renderBlock(center.getX() - getCols() / 2,
+                center.getY() - getRows() / 2, getCols(), getRows());
+        log.info("New game started (seed {})", seed);
     }
 
     @Override
@@ -880,12 +1087,14 @@ public class GraphicPresenter extends ApplicationAdapter
         return letrain.command.ScenarioExporter.renderWorld(model, commandJournal.appliedEntries());
     }
 
-    /** Generates the scenario's settings section (the model's effective configuration). */
+    /** Generates the scenario's settings section from the settings catalogue. */
     @Override
     public String getConfigurationText() {
-        String section = letrain.command.ScenarioFile.configurationSection(
-                model.getEconomyManager() != null ? model.getEconomyManager().effectiveConfig()
-                        : null);
+        String section =
+                letrain.command.ScenarioFile.configurationSection(letrain.settings.SettingsCatalog
+                        .scenarioConfiguration(model.getEconomyManager() != null
+                                ? model.getEconomyManager().effectiveConfig()
+                                : null));
         return section.isBlank() ? "configuration {\n}\n" : section;
     }
 
@@ -932,9 +1141,10 @@ public class GraphicPresenter extends ApplicationAdapter
                     letrain.command.ScenarioFile.parse(text);
             // Apply the scenario's settings (configuration section) to the fresh world BEFORE any
             // terrain generation, so the scenario reproduces the same terrain and rules regardless
-            // of the local letrain.cfg.
+            // of the local letrain.cfg; the model remembers the keys as scenario-locked (S3a/D10)
+            // and wires the clock with them.
             letrain.mvp.impl.Model fresh = new letrain.mvp.impl.Model(scenario.seed());
-            fresh.getEconomyManager().applyConfig(scenario.configuration());
+            fresh.applyScenarioConfiguration(scenario.configuration());
             applyLoadedModel(fresh, file);
             // Constructor libre: building the scenario costs nothing (ADR-020).
             model.getEconomyManager().setFreeConstruction(true);
@@ -1009,7 +1219,8 @@ public class GraphicPresenter extends ApplicationAdapter
         });
     }
 
-    private void applyLoadedModel(letrain.mvp.impl.Model loadedModel, File file) {
+    void applyLoadedModel(letrain.mvp.impl.Model loadedModel, File file) {
+        int helpLevel = this.model != null ? this.model.getHelpLevel() : HudHelp.FULL;
         this.model = ValidationUtils.requireNonNull(loadedModel, "loadedModel");
         // The message sink is wired only after the new HUD exists: setUserMessageSink flushes the
         // notices queued while the savegame was replayed (D1/O3), and they must reach the visible
@@ -1046,6 +1257,9 @@ public class GraphicPresenter extends ApplicationAdapter
 
         // Re-initialize HUD with new model
         this.hud = new Gdx3DHud(model, this);
+        // The panel visibility survives the load, like the 2D view keeps its help level.
+        model.setHelpLevel(helpLevel);
+        hud.setHelpLevel(helpLevel);
         wireUserMessageSink();
         InputMultiplexer multiplexer = (InputMultiplexer) Gdx.input.getInputProcessor();
         multiplexer.getProcessors().clear();
@@ -1082,6 +1296,9 @@ public class GraphicPresenter extends ApplicationAdapter
         letrain.mvp.impl.Model loadedModel = maybeModel.get();
         try {
             applyLoadedModel(loadedModel, file);
+            // A successful load starts a game too: end the boot flow (S4, #777).
+            gameStarted = true;
+            endCover();
         } catch (Exception e) {
             log.error("Critical error updating model reference after loading game from {}",
                     file != null ? file.getAbsolutePath() : "<null>", e);
@@ -1231,8 +1448,9 @@ public class GraphicPresenter extends ApplicationAdapter
 
     @Override
     public void showLoadDialog() {
+        boolean booting = !gameStarted;
         hud.showFileDialog("Load Game", com.kotcrab.vis.ui.widget.file.FileChooser.Mode.OPEN,
-                DEFAULT_SAVEGAME_FILENAME, (text) -> {
+                DEFAULT_SAVEGAME_FILENAME, new String[] {"json"}, (text) -> {
                     if (text != null && !text.trim().isEmpty()) {
                         File file = new File(text);
                         log.info("Loading game from {}", file.getAbsolutePath());
@@ -1241,6 +1459,12 @@ public class GraphicPresenter extends ApplicationAdapter
                         } else {
                             log.warn("Savegame file not found: {}", text);
                         }
+                    }
+                }, () -> {
+                    // Boot Load cancelled: return to the cover instead of leaving an empty world
+                    // (2D parity, S4 #777).
+                    if (booting) {
+                        onBootFlowCancelled();
                     }
                 });
     }
@@ -1260,10 +1484,15 @@ public class GraphicPresenter extends ApplicationAdapter
         hud.showIDE();
     }
 
+    /**
+     * Opens the File menu (Esc): shared wording/structure with the 2D terminal (issue #743). The 3D
+     * client reaches it from the interactive boot too (cover dismissed, no game yet); Esc there
+     * returns to the cover (D8, #777).
+     */
     @Override
-    public void showExitDialog() {
+    public void showFileMenu() {
         if (hud != null) {
-            hud.showExitMenu();
+            hud.showFileMenu(hasActiveGame(), this::onFileMenuDismissed);
         }
     }
 
@@ -1317,6 +1546,9 @@ public class GraphicPresenter extends ApplicationAdapter
     public void dispose() {
         if (audioController != null) {
             audioController.stop();
+        }
+        if (headlightGlowRenderer != null) {
+            headlightGlowRenderer.dispose();
         }
         if (resourceContext != null) {
             resourceContext.dispose();
@@ -1447,27 +1679,21 @@ public class GraphicPresenter extends ApplicationAdapter
     }
 
     /**
-     * Lights the nearest locomotive headlights; off while the sun is up (phase 1e). Uses the
-     * rendered positions collected by the vehicle renderer this frame, so the light glides with the
-     * train.
+     * Draws the soft ground pools of the nearest locomotive headlights; off while the sun is up
+     * (phase 1e). Positions come from the rendered sources collected by the vehicle renderer this
+     * frame, so the pool glides with the train instead of jumping cell by cell. The falloff is
+     * computed per fragment (#690) and the plane sits above the per-cell ballast boxes, so no cell
+     * structure is visible.
      */
-    private void updateHeadlights(double ratio) {
-        float intensity = HEADLIGHT_INTENSITY * VisualPalette.lightsOnFactor(ratio);
-        setColor(headlightColor, palette.color(VisualPalette.Token.EMISSIVE_HEADLIGHT, ratio));
-        for (com.badlogic.gdx.graphics.g3d.environment.PointLight light : headlightLights) {
-            light.intensity = 0f;
-        }
-        if (cam == null || intensity <= 0f) {
+    private void renderHeadlightGlows(double ratio) {
+        if (headlightGlowRenderer == null || cam == null
+                || VisualPalette.lightsOnFactor(ratio) <= 0f) {
             return;
         }
+        setColor(headlightColor, palette.color(VisualPalette.Token.EMISSIVE_HEADLIGHT, ratio));
         List<Headlights.Source> nearest = Headlights.nearestTo(renderer.getHeadlightSources(),
-                cam.position, headlightLights.length);
-        for (int i = 0; i < nearest.size(); i++) {
-            Headlights.Source source = nearest.get(i);
-            headlightPosition.set(source.x() + source.dirX() * 0.6f, 0.7f,
-                    source.z() + source.dirZ() * 0.6f);
-            headlightLights[i].set(headlightColor, headlightPosition, intensity);
-        }
+                cam.position, HeadlightGlows.MAX_SOURCES);
+        headlightGlowRenderer.render(cam, nearest, headlightColor, ratio);
     }
 
     /**

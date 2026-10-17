@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import letrain.settings.SettingCategory;
+import letrain.settings.SettingDefinition;
+import letrain.settings.SettingsCatalog;
 
 /**
  * Quick-reference trees for the DSL. Commands are grouped by the editor tab they belong to so each
@@ -114,6 +117,7 @@ public class GrammarReference {
 
         root.add(new Node("journal", "journal;"));
         root.add(new Node("undo / redo", "undo; redo;"));
+        root.add(new Node("version", "version;"));
 
         Node time = new Node("time");
         time.add(new Node("show", "time;"));
@@ -122,6 +126,7 @@ public class GrammarReference {
         root.add(time);
         Node recordMode = new Node("record/edit mode (R, Shift+R)");
         root.add(recordMode);
+        root.add(new Node("new game", "new game;"));
         root.add(new Node("save / load", "save backup; load backup;"));
         root.add(new Node("export / import", "export my_network; import my_network;"));
         root.add(new Node("quit", "quit;"));
@@ -170,6 +175,7 @@ public class GrammarReference {
 
         Node ops = new Node("element ops").setExpanded(true);
         ops.add(new Node("invert", "semaphore 1 invert;"));
+        ops.add(new Node("toggle", "semaphore 1 toggle;"));
         ops.add(new Node("fork branch", "fork 1 set curved;"));
         ops.add(new Node("signal limit", "signal 1 set limit 40;"));
         ops.add(new Node("signal mode", "signal 1 set mode max;"));
@@ -296,6 +302,20 @@ public class GrammarReference {
         train.add(trOn);
         root.add(train);
 
+        // ADR-022 phase 3: time-driven triggers (F3a/F3b: parsed, registered, scheduled, executed).
+        Node time = new Node("time").setExpanded(true);
+        Node at = new Node("at (daily)").setExpanded(true);
+        at.add(new Node("hh:mm", "at 6:30 {\n  semaphore 1 open;\n}"));
+        at.add(new Node("hh", "at 6 {\n  train 5 set engine on;\n}"));
+        time.add(at);
+        Node every = new Node("every (period)").setExpanded(true);
+        every.add(new Node("minutes", "every 30m {\n  semaphore 1 open;\n}"));
+        every.add(new Node("hours", "every 2h {\n  \n}"));
+        every.add(new Node("days", "every 1d {\n  \n}"));
+        every.add(new Node("from hh:mm", "every 30m from 6:00 {\n  \n}"));
+        time.add(every);
+        root.add(time);
+
         // ACTIONS
         Node actHeading = new Node("ACTIONS").setHeading(true);
         root.add(actHeading);
@@ -343,6 +363,7 @@ public class GrammarReference {
         Node semAct = new Node("semaphore").setExpanded(true);
         semAct.add(new Node("open", "semaphore # set open;"));
         semAct.add(new Node("closed", "semaphore # set closed;"));
+        semAct.add(new Node("toggle", "semaphore # toggle;"));
         semAct.add(new Node("invert", "semaphore # invert;"));
         root.add(semAct);
 
@@ -371,59 +392,41 @@ public class GrammarReference {
         return root;
     }
 
-    /** Scenario settings: the {@code letrain.cfg} keys, written as {@code key=value}. */
+    /**
+     * Scenario settings generated from the catalogue ({@code key=value} lines), grouped by category
+     * with {@code price.*} / {@code cargo.*} subgroups. Every catalogue key except {@code seed}
+     * appears once, using its default as the example value (issue #782).
+     */
     private static List<Node> configTree() {
         List<Node> root = new ArrayList<>();
         root.add(new Node("CONFIGURATION").setHeading(true));
 
-        Node economy = new Node("economy").setExpanded(true);
-        economy.add(new Node("startingBalance", "startingBalance=0"));
-        economy.add(new Node("fuelCostPerMeter", "fuelCostPerMeter=0.5"));
-        economy.add(new Node("cargoLoadingFee", "cargoLoadingFee=100"));
-        root.add(economy);
-
-        Node prices = new Node("prices");
-        prices.add(new Node("track", "price.CONSTRUCTED_NORMAL_RAIL_TRACK=5"));
-        prices.add(new Node("bridge", "price.CONSTRUCTED_BRIDGE_RAIL_TRACK=20"));
-        prices.add(new Node("tunnel", "price.CONSTRUCTED_TUNNEL_RAIL_TRACK=25"));
-        prices.add(new Node("fork", "price.CONSTRUCTED_FORK=15"));
-        prices.add(new Node("station", "price.CONSTRUCTED_STATION=50"));
-        prices.add(new Node("sensor", "price.CONSTRUCTED_SENSOR=20"));
-        prices.add(new Node("semaphore", "price.CONSTRUCTED_SEMAPHORE=20"));
-        prices.add(new Node("locomotive", "price.CONSTRUCTED_LOCOMOTIVE=100"));
-        prices.add(new Node("wagon", "price.CONSTRUCTED_WAGON=40"));
-        root.add(prices);
-
-        Node cargo = new Node("cargo values");
-        cargo.add(new Node("coal", "cargo.COAL=10"));
-        cargo.add(new Node("gold", "cargo.GOLD=100"));
-        cargo.add(new Node("ruby", "cargo.RUBY=250"));
-        root.add(cargo);
-
-        Node thresholds = new Node("resource thresholds").setExpanded(true);
-        thresholds.add(new Node("gold", "threshold.GOLD=0.30"));
-        thresholds.add(new Node("coal", "threshold.COAL=0.25"));
-        thresholds.add(new Node("ruby", "threshold.RUBY=0.35"));
-        thresholds.add(new Node("water", "threshold.WATER=130"));
-        thresholds.add(new Node("rock", "threshold.ROCK=180"));
-        root.add(thresholds);
-
-        Node map = new Node("map");
-        map.add(new Node("view radius", "map.VIEW_RADIUS=15"));
-        root.add(map);
-
-        Node delays = new Node("construction delays");
-        delays.add(new Node("normal", "delay.NORMAL_TRACK=0"));
-        delays.add(new Node("bridge", "delay.BRIDGE_TRACK=20"));
-        delays.add(new Node("bridge gate", "delay.BRIDGE_GATE_TRACK=20"));
-        delays.add(new Node("tunnel", "delay.TUNNEL_TRACK=30"));
-        delays.add(new Node("tunnel gate", "delay.TUNNEL_GATE_TRACK=30"));
-        root.add(delays);
-
-        Node derail = new Node("derailment");
-        derail.add(new Node("min curve interval", "derail.minCurveInterval=12"));
-        derail.add(new Node("min speed", "derail.minSpeed=3"));
-        root.add(derail);
+        for (SettingCategory category : SettingCategory.values()) {
+            Node categoryNode = new Node(category.displayName()).setExpanded(true);
+            Node prices = new Node("prices");
+            Node cargo = new Node("cargo values");
+            for (SettingDefinition definition : SettingsCatalog.definitions()) {
+                if (definition.category() != category || "seed".equals(definition.key())) {
+                    continue;
+                }
+                Node leaf = new Node(definition.displayName(),
+                        definition.key() + "=" + definition.defaultValue());
+                if (definition.key().startsWith("price.")) {
+                    prices.add(leaf);
+                } else if (definition.key().startsWith("cargo.")) {
+                    cargo.add(leaf);
+                } else {
+                    categoryNode.add(leaf);
+                }
+            }
+            if (!prices.children.isEmpty()) {
+                categoryNode.add(prices);
+            }
+            if (!cargo.children.isEmpty()) {
+                categoryNode.add(cargo);
+            }
+            root.add(categoryNode);
+        }
 
         return root;
     }

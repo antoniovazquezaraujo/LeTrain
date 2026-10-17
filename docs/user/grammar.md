@@ -29,7 +29,7 @@ The language is **case-sensitive in every entry point** (console, triggers and `
 
 ## ⚙️ Language Structure
 
-The language supports three main types of statements: direct commands, itinerary creation/assignment (Autopilot), and event-triggered blocks (*triggers*).
+The language supports four main types of statements: direct commands, itinerary creation/assignment (Autopilot), event-triggered blocks (*triggers*) and time-triggered blocks (`at` / `every`).
 
 ### 1. Direct Commands
 These are executed immediately. **They require a semicolon (`;`) at the end**.
@@ -118,7 +118,7 @@ create itinerary "CoalRoute" {
 - **`uncouple` direction**: `uncouple forward` detaches at the **head side** of the train and `uncouple backward` at the tail. With the locomotive leading and pulling the wagons, the wagons are behind: the run-around is written `uncouple backward 1` (with no count it detaches every vehicle on that side, like `couple`).
 - `arrival` is measured when the waypoint is reached; `departure` is the scheduled leaving time: on arrival the actions run, the train waits until that time and a scheduled departure starts the engine. The dwell is `departure − arrival` in game time. Times are read in sequence: a smaller time than the previous one belongs to the next day (`arrival 23:50, departure 00:10`). If the train arrives late it leaves immediately and the deviation is measured. Without times, a waypoint behaves exactly as before.
 - `park` brakes, switches the engine off and **keeps the autopilot running** (unlike `stop`, which brakes and turns the autopilot off). It also exists as a direct order (`train N park;`). The next scheduled departure starts the engine and resumes the cruise speed, so a repeating daily service can end with `park` and leave again the next morning. A `park` with **no later scheduled departure** simply leaves the train parked (engine off, plan kept): it will not move again until a scheduled departure starts it or you drive it manually.
-- The train reports its punctuality in `info train N`: arrival and departure deltas per stop in game minutes (`+` = late, `−` = early), plus the current, average and maximum deviation. A train without times shows nothing.
+- The train reports its punctuality in `info train N`: arrival and departure deltas per stop in game minutes (`+` = late, `−` = early), plus the current, average and maximum deviation. The selected/driving train's status line in the HUD also shows the **current** deviation as a compact signed suffix (`| Punct: +2`), identical to the `Current` value of `info train N`. A train without times shows nothing.
 - Safety wins: retention never overrides blocks; if the next block is occupied, the train waits and the delay shows up in the next measurement.
 - Times are validated, saved and exported.
 - The old comma-less syntax (e.g. `add station 2 reverse unload`) is **rejected everywhere** (game, editor and `letrain-check`) with a diagnostic: this beta does not migrate old itineraries.
@@ -149,14 +149,73 @@ Responds to game events in real-time.
 - Accidents: `train 1 on crash`, `train on contact forward`.
 
 **Special actions inside blocks (must end with `;`):**
-- *Semaphores:* `semaphore [ID] open;` / `semaphore [ID] close|closed;` / `semaphore [ID] set open|closed;` / `semaphore [ID] invert;`
+- *Semaphores:* `semaphore [ID] open;` / `semaphore [ID] close|closed;` / `semaphore [ID] set open|closed;` / `semaphore [ID] toggle;` / `semaphore [ID] invert;` (`toggle` flips the light state; `invert` flips the direction)
 - *Forks:* `fork [ID] set straight;` / `fork [ID] set curved;` / `fork [ID] set <dir>;` / `fork [ID] set flip;` / `fork [ID] flip;` (same behaviour as the console and waypoints: the direction maps to the route leaving towards it and, if there is none, it warns)
 - *Conditional Train:* You can use `train at station [ID|"name"]`, `train at sensor [ID|"name"]`, `train at fork [ID]`, or `train at semaphore [ID]` instead of a fixed train number to apply actions to the specific train that triggered the event or is located there. The place is resolved when the action runs; an unknown name warns and nothing runs.
 - If a trigger selector (sensor/fork/semaphore/station) does not exist when it is registered, the trigger warns and is not installed.
 
+**Time triggers:** `at [HH:MM] { … }` runs the block every day at that game-clock time; `every [N]m|h|d [from [HH:MM]] { … }` runs it periodically. The actions are the same as in event triggers, so a light can blink on its own:
+
+```letrain
+# Blink the junction light every half hour
+every 30m {
+    semaphore 1 toggle;
+}
+```
+
 **Comments:** `#` starts a line comment anywhere in the language (console, `program { … }`, triggers and scenarios). Everything after the `#` up to the end of the line is ignored.
 
-### 4. Game & Editor Commands (Console)
+### 4. Time-Triggered Automation (`at` / `every`)
+
+Runs action blocks by the **game clock** instead of by game events. The syntax is accepted in `program { … }` and in the console, just like event triggers, and the block is the **same action block** as the event triggers (`;`-terminated, no nesting).
+
+**Base Structure:**
+```letrain
+at 6:30 {
+    semaphore 1 open;
+}
+
+every 30m {
+    semaphore 1 invert;
+}
+```
+
+- `at HH[:MM]` fires **every day** at that time of the game clock. The time uses the same format as `arrival`/`departure`: `at 6` is 06:00 and `at 6:30` is 06:30; midnight is `at 0:00`.
+- `every <amount>m|h|d` fires **periodically**: `m` game minutes, `h` game hours, `d` game days (`30m`, `2h`, `1d`).
+  - **Grid**: fires on a fixed grid anchored at 00:00 of the game clock (`every 30m` → 00:00, 00:30, 01:00…; `every 1h` → on the hour). Registered mid-slot, the first fire is the next grid point: created at 10:07, `every 30m` first fires at 10:30.
+  - **`from` anchor (optional)**: `every 30m from 6:00` fires at 6:00, 6:30, 7:00…; `every 30m from 6:15` at 6:15, 6:45, 7:15…; when the period does not divide the day the grid keeps drifting across midnight (`every 45m from 6:15` → 6:15, 7:00, 7:45, 8:30…).
+- **Actions**: the same set as event triggers (see section 3): semaphore and fork actions, and train actions with an **explicit reference** (`train [ID] …` or `train at station|sensor|fork|semaphore [REF] …`). A generic train action with **no train reference** (`train set speed 5;`) has no meaning in a time block (the scope is **global**): it warns visibly when the trigger fires and is ignored, while the rest of the block still runs.
+- **Limits**: at most **64** active temporal triggers. An exact duplicate (`at 6:30` registered twice) is warned and ignored, and a trigger over the limit is warned and ignored too. Only the first registered block of a duplicate ever runs.
+- **Save/load (no catch-up)**: the stored program is re-applied on load. An `at` time already passed is scheduled for the **next day**, and `every` continues from the current clock (its next grid point): the hours the game was closed are never replayed in a burst.
+- **Program replace**: applying a program (editor or `program` statement) clears the world registry and re-registers the new program's triggers; fires already armed for the replaced program are harmless no-ops.
+- **Deterministic**: fires are computed from simulation ticks, never the wall clock, so replay and undo reproduce the same game times. The **editing pause freezes the clock**: fires do not accumulate while paused; they resume where the clock was left.
+
+Example: a daily opening and closing, an hourly goods call and a periodic loading order for the train resting at the mine:
+
+```letrain
+# Daily opening and closing of the line
+at 6:30 {
+    semaphore 1 open;
+}
+at 21:00 {
+    semaphore 1 close;
+}
+
+# Hourly goods service
+every 1h {
+    train 5 set engine on;
+}
+
+# Every 30 minutes from 06:15: load the train resting at the mine
+every 30m from 6:15 {
+    train at station "Mine" load;
+}
+```
+
+> `station N load` is not a trigger action: `load`/`unload` always belong to a **train**, so write
+> `train N load;` or `train at station N load;`.
+
+### 5. Game & Editor Commands (Console)
 You can type these commands directly into the CLI to manage the game state, cursor, and files.
 
 **Game State & Files:**
@@ -166,6 +225,7 @@ You can type these commands directly into the CLI to manage the game state, curs
 
 **Information & Help:**
 - `help;` - Show every command group (`CONSOLE`, `BUILD`, `PROGRAM`, `CONFIG`). Filter it with `help console;`, `help build;`, `help program;`, `help config;`, or a single topic such as `help ls;`.
+- `version;` - Report the version of the **running build** (e.g. `LeTrain v1.0.0`), the same one shown in the window title. It is data output: it opens the message panel and is **not** recorded in the journal. Use it to check you are not testing a stale copy of the game.
 - `ls;` - List every entity. `ls [entityType];` lists one type (e.g. `ls station;`).
 - `info;` - Show an overview of the whole world. `info [entityType];` lists that type; `info [entityType] [ID|name];` details a single entity. `info [ID];` without a type warns that the number is ignored (name the type: `info train 5;`).
 
@@ -189,7 +249,7 @@ You can type these commands directly into the CLI to manage the game state, curs
 
 **Infrastructure Actions (Direct):**
 You can directly command infrastructure outside of triggers:
-- `semaphore [ID] set open;` / `semaphore [ID] set closed;` / `semaphore [ID] invert;`
+- `semaphore [ID] set open;` / `semaphore [ID] set closed;` / `semaphore [ID] toggle;` / `semaphore [ID] invert;` (`toggle` flips the light state; `invert` flips the direction)
 - `fork [ID] set straight;` / `fork [ID] set curved;` / `fork [ID] set <dir>;` / `fork [ID] set flip;` / `fork [ID] flip;`
 - `signal [ID] set limit [NUM];` / `signal [ID] set mode (max|min);` / `signal [ID] invert;`
 - `station [ID] invert;` - Flip a station to face the opposite direction along the rail (platform side switches, same as Space in STATIONS mode).
@@ -239,6 +299,11 @@ train 1 set autopilot true;
 sensor "Approach" on train enter {
     fork 2 set straight;
     semaphore 1 set open;
+}
+
+# Open the line every morning with the game clock
+at 6:30 {
+    semaphore 1 open;
 }
 ```
 

@@ -38,7 +38,10 @@ Run a single test: `mvn -pl core test -Dtest=ClassName#method`.
 
 - Branch from `develop`: `feature/...` or `fix/...`. **Never commit directly to `develop`** (it is protected); open a PR instead.
 - Keep PRs focused and describe them in **English**.
-- Make sure `mvn clean test` passes before opening or updating a PR.
+- Make sure `mvn clean test` and `mvn spotless:check` pass before opening or updating a PR
+  (`spotless:apply` fixes formatting).
+- If you add or rename classes, run `java tools/GenClassIndex.java` and commit the updated
+  `docs/developer/architecture/ClassIndex.md` (CI checks it on PRs to `develop`/`main`).
 - Small, self-contained changes are easier to review.
 
 ## Coding conventions

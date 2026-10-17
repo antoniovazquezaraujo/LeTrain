@@ -21,6 +21,8 @@ import letrain.track.SensorEventListener;
 import letrain.track.Station;
 import letrain.track.StationEventListener;
 import letrain.track.rail.ForkRailTrack;
+import letrain.time.TemporalTrigger;
+import letrain.time.TemporalTriggerService;
 import letrain.vehicle.Tractor;
 import letrain.vehicle.rail.ScriptTrainEventListener;
 import letrain.vehicle.rail.TrainCouplingManager;
@@ -79,6 +81,15 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
 
     interface ExecutableCommand {
         void execute(Train contextTrain);
+
+        /**
+         * True when the action needs the train that triggered the event: a generic {@code train …}
+         * order with no number and no place. Event triggers always provide that train; a temporal
+         * trigger is global (D5), so the action is rejected with a visible notice and skipped.
+         */
+        default boolean requiresContextTrain() {
+            return false;
+        }
     }
 
     // ── Statement dispatch ─────────────────────────────────────────
@@ -97,6 +108,12 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             // Existing: event-driven
             List<ExecutableCommand> commands = (List<ExecutableCommand>) visit(ctx.commandBlock());
             setupTrigger(ctx.trigger(), commands);
+        } else if (ctx.temporalTrigger() != null) {
+            // ADR-022 phase 3 (F3b): time-driven. The block is visited (and validated) now and runs
+            // through the same deferred runner as the event triggers when the timer fires.
+            @SuppressWarnings("unchecked")
+            List<ExecutableCommand> commands = (List<ExecutableCommand>) visit(ctx.commandBlock());
+            setupTemporalTrigger(ctx.temporalTrigger(), commands);
         } else if (ctx.createItinerary() != null) {
             // create itinerary block — } is the terminator
             visit(ctx.createItinerary());
@@ -141,7 +158,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                                 || (sense.startsWith("b") && !isForward);
                         if ("enter".equals(event) && senseMatch
                                 && (filterTrainId == null || filterTrainId == train.getId())) {
-                            commands.forEach(c -> c.execute(train));
+                            runDeferredBlock(commands, train);
                         }
                     }
 
@@ -151,7 +168,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                                 || (sense.startsWith("b") && !isForward);
                         if ("exit".equals(event) && senseMatch
                                 && (filterTrainId == null || filterTrainId == train.getId())) {
-                            commands.forEach(c -> c.execute(train));
+                            runDeferredBlock(commands, train);
                         }
                     }
                 });
@@ -179,7 +196,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                                             || (sense.startsWith("b") && !isForward);
                             if ("enter".equals(event) && senseMatch
                                     && (filterTrainId == null || filterTrainId == train.getId())) {
-                                commands.forEach(c -> c.execute(train));
+                                runDeferredBlock(commands, train);
                             }
                         }
 
@@ -190,7 +207,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                                             || (sense.startsWith("b") && !isForward);
                             if ("exit".equals(event) && senseMatch
                                     && (filterTrainId == null || filterTrainId == train.getId())) {
-                                commands.forEach(c -> c.execute(train));
+                                runDeferredBlock(commands, train);
                             }
                         }
                     });
@@ -220,7 +237,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                                             || (sense.startsWith("b") && !isForward);
                             if ("enter".equals(event) && senseMatch
                                     && (filterTrainId == null || filterTrainId == train.getId())) {
-                                commands.forEach(c -> c.execute(train));
+                                runDeferredBlock(commands, train);
                             }
                         }
 
@@ -231,7 +248,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                                             || (sense.startsWith("b") && !isForward);
                             if ("exit".equals(event) && senseMatch
                                     && (filterTrainId == null || filterTrainId == train.getId())) {
-                                commands.forEach(c -> c.execute(train));
+                                runDeferredBlock(commands, train);
                             }
                         }
                     });
@@ -260,7 +277,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                                             || (sense.startsWith("b") && !isForward);
                             if ("enter".equals(event) && senseMatch
                                     && (filterTrainId == null || filterTrainId == train.getId())) {
-                                commands.forEach(c -> c.execute(train));
+                                runDeferredBlock(commands, train);
                             }
                         }
 
@@ -271,7 +288,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                                             || (sense.startsWith("b") && !isForward);
                             if ("exit".equals(event) && senseMatch
                                     && (filterTrainId == null || filterTrainId == train.getId())) {
-                                commands.forEach(c -> c.execute(train));
+                                runDeferredBlock(commands, train);
                             }
                         }
                     });
@@ -295,7 +312,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                                 || (sense.startsWith("b") && !isForward);
                         if ("enter".equals(event) && senseMatch
                                 && (filterTrainId == null || filterTrainId == train.getId())) {
-                            commands.forEach(c -> c.execute(train));
+                            runDeferredBlock(commands, train);
                         }
                     }
 
@@ -305,7 +322,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                                 || (sense.startsWith("b") && !isForward);
                         if ("exit".equals(event) && senseMatch
                                 && (filterTrainId == null || filterTrainId == train.getId())) {
-                            commands.forEach(c -> c.execute(train));
+                            runDeferredBlock(commands, train);
                         }
                     }
                 });
@@ -316,7 +333,7 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                     public void onCrash(Train train, letrain.map.Point pos, int speed) {
                         if ("crash".equals(event)
                                 && (filterTrainId == null || filterTrainId == train.getId())) {
-                            commands.forEach(c -> c.execute(train));
+                            runDeferredBlock(commands, train);
                         }
                     }
 
@@ -324,11 +341,127 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                     public void onContact(Train train, letrain.map.Point pos, int speed) {
                         if ("contact".equals(event)
                                 && (filterTrainId == null || filterTrainId == train.getId())) {
-                            commands.forEach(c -> c.execute(train));
+                            runDeferredBlock(commands, train);
                         }
                     }
                 });
             }
+        }
+    }
+
+    /**
+     * ADR-022 phase 3 (contract D1-D7): registers an {@code at}/{@code every} trigger in the world
+     * registry, which arms its next fire on the scheduler. An invalid hour/period, an exact
+     * duplicate and the active limit are visible warnings; the trigger is then ignored. The block
+     * runs through the same deferred runner as the event triggers when the timer fires (F3b).
+     */
+    private void setupTemporalTrigger(ScriptLogicParser.TemporalTriggerContext ctx,
+            List<ExecutableCommand> commands) {
+        TemporalTrigger trigger = buildTemporalTrigger(ctx);
+        if (trigger == null) {
+            return; // invalid: the specific warning was already reported
+        }
+        TemporalTriggerService service = model.getTemporalTriggerService();
+        TemporalTriggerService.Registration result =
+                service.register(trigger, () -> runDeferredBlock(commands, null));
+        switch (result) {
+            case DUPLICATE -> warnUser("Trigger",
+                    "Duplicate temporal trigger '" + trigger.describe() + "'; ignored");
+            case LIMIT_REACHED -> warnUser("Trigger",
+                    "Too many temporal triggers (limit " + TemporalTriggerService.MAX_TRIGGERS
+                            + "); '" + trigger.describe() + "' ignored");
+            case REGISTERED -> log.info("[DSL] temporal trigger {} registered", trigger.describe());
+        }
+    }
+
+    private TemporalTrigger buildTemporalTrigger(ScriptLogicParser.TemporalTriggerContext ctx) {
+        if (ctx.atTrigger() != null) {
+            LocalTime at = parseTriggerTime(ctx.atTrigger().triggerTime(), "at");
+            return at == null ? null : TemporalTrigger.at(at);
+        }
+        ScriptLogicParser.EveryTriggerContext every = ctx.everyTrigger();
+        Integer period = parsePeriod(every.period());
+        if (period == null) {
+            return null;
+        }
+        LocalTime from = null;
+        if (every.triggerTime() != null) {
+            from = parseTriggerTime(every.triggerTime(), "from");
+            if (from == null) {
+                return null;
+            }
+        }
+        return TemporalTrigger.every(period, from);
+    }
+
+    /**
+     * U8-style parsing for trigger times: {@code at 9} is 09:00 and {@code at 9:20} the full form;
+     * TIME is already limited to 00:00..23:59, so only a bare number out of 0..23 is rejected, with
+     * a visible warning.
+     */
+    private LocalTime parseTriggerTime(ScriptLogicParser.TriggerTimeContext ctx, String keyword) {
+        String text = ctx.getText();
+        String[] parts = text.split(":");
+        int hour = Integer.parseInt(parts[0]);
+        int minute = parts.length > 1 ? Integer.parseInt(parts[1]) : 0;
+        if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+            warnUser("Trigger", "'" + keyword + " " + text
+                    + "' is out of range (expected 0..23 hours); trigger ignored");
+            return null;
+        }
+        return LocalTime.of(hour, minute);
+    }
+
+    /**
+     * ADR-022 phase 3 (D3): period units {@code m} (game minutes), {@code h} and {@code d}. The
+     * period may arrive glued into one token ({@code 30m} is an ID) or spaced ({@code 30 m}), so
+     * the text is split here. {@code 0m}, negative amounts, unknown units and oversized periods are
+     * rejected with a visible warning; the trigger is then ignored.
+     */
+    private Integer parsePeriod(ScriptLogicParser.PeriodContext ctx) {
+        String text = ctx.getText();
+        int split = 0;
+        if (split < text.length() && (text.charAt(split) == '-' || text.charAt(split) == '+')) {
+            split++;
+        }
+        int digitsStart = split;
+        while (split < text.length() && Character.isDigit(text.charAt(split))) {
+            split++;
+        }
+        if (split == digitsStart) {
+            warnUser("Trigger",
+                    "Invalid period '" + text + "'; expected <amount>m|h|d; trigger ignored");
+            return null;
+        }
+        long amount;
+        try {
+            amount = Long.parseLong(text.substring(0, split));
+        } catch (NumberFormatException e) {
+            warnUser("Trigger", "Period '" + text + "' is too large; trigger ignored");
+            return null;
+        }
+        if (amount <= 0) {
+            warnUser("Trigger", "Invalid period '" + text
+                    + "': the amount must be greater than 0; trigger ignored");
+            return null;
+        }
+        String unit = text.substring(split);
+        int factor;
+        switch (unit) {
+            case "m" -> factor = 1;
+            case "h" -> factor = 60;
+            case "d" -> factor = 1440;
+            default -> {
+                warnUser("Trigger", "Unknown period unit '" + unit + "' in '" + text
+                        + "' (expected m, h or d); trigger ignored");
+                return null;
+            }
+        }
+        try {
+            return Math.multiplyExact(Math.toIntExact(amount), factor);
+        } catch (ArithmeticException e) {
+            warnUser("Trigger", "Period '" + text + "' is too large; trigger ignored");
+            return null;
         }
     }
 
@@ -342,6 +475,18 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                     RailSemaphore s = model.getSemaphore(id);
                     if (s != null) {
                         s.setCreationDir(s.getCreationDir().inverse());
+                    } else {
+                        warnDeferred("Semaphore", "Semaphore " + id + " not found; action ignored");
+                    }
+                };
+            }
+            // Issue #736: `toggle` flips the light state and leaves the direction alone (that is
+            // what `invert` does).
+            if (act.TOGGLE() != null) {
+                return (ExecutableCommand) (contextTrain) -> {
+                    RailSemaphore s = model.getSemaphore(id);
+                    if (s != null) {
+                        s.setOpen(!s.isOpen());
                     } else {
                         warnDeferred("Semaphore", "Semaphore " + id + " not found; action ignored");
                     }
@@ -397,9 +542,20 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
                         }
                     };
                 } else {
-                    return (ExecutableCommand) (contextTrain) -> {
-                        if (contextTrain != null) {
-                            baseAction.execute(contextTrain);
+                    // A generic `train …` order runs on the train that triggered the event. A
+                    // temporal trigger has no triggering train (global scope, D5): the runner
+                    // rejects it with a visible notice instead of silently using null.
+                    return new ExecutableCommand() {
+                        @Override
+                        public void execute(Train contextTrain) {
+                            if (contextTrain != null) {
+                                baseAction.execute(contextTrain);
+                            }
+                        }
+
+                        @Override
+                        public boolean requiresContextTrain() {
+                            return true;
                         }
                     };
                 }
@@ -725,6 +881,25 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
         }
     }
 
+    /**
+     * Runs a deferred command block: an event trigger firing or a temporal trigger firing share
+     * this single path, so their actions behave identically. A generic {@code train …} order needs
+     * the triggering train; a temporal trigger has none (global scope, D5), so it is rejected with
+     * a visible notice and skipped while the rest of the block still runs.
+     */
+    private void runDeferredBlock(List<ExecutableCommand> commands, Train contextTrain) {
+        for (ExecutableCommand command : commands) {
+            if (contextTrain == null && command.requiresContextTrain()) {
+                warnDeferred("Trigger",
+                        "Action without a train reference is not allowed in a temporal trigger"
+                                + " (use 'train <id> ...' or 'train at <place> ...');"
+                                + " action ignored");
+                continue;
+            }
+            command.execute(contextTrain);
+        }
+    }
+
     // ── Direct command visitors ──────────────────────────────────────
 
     @Override
@@ -1012,6 +1187,10 @@ public class CommandManager extends ScriptLogicParserBaseVisitor<Object> {
             if (act.INVERT() != null) {
                 sem.setCreationDir(sem.getCreationDir().inverse());
                 log.info("[DSL] Direct semaphore {} inverted", id);
+            } else if (act.TOGGLE() != null) {
+                sem.setOpen(!sem.isOpen());
+                log.info("[DSL] Direct semaphore {} toggled to {}", id,
+                        sem.isOpen() ? "open" : "closed");
             } else if (act.OPEN() != null || (act.semaphoreStatus() != null
                     && "open".equalsIgnoreCase(act.semaphoreStatus().getText()))) {
                 sem.setOpen(true);

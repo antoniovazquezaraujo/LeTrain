@@ -1,6 +1,6 @@
 # ADR-022: Tiempo de Juego (Reloj, Día/Noche y Horarios)
 
-## Estado: PROPUESTO — fase 0 implementada (reloj, HUD y comando `time set`); fase 2a implementada (gramática y modelo de horarios); fase 2b implementada (retención, `park` y métrica de puntualidad en core; el HUD llega en 2c); saneo de sintaxis del lote 2 aplicado (`time set HH`, `park`/`stop` directos, `invert`≡`reverse`, sin auto-giro, comas del plan, comentarios `#`); enmienda de física: el arranque 0→1 cuesta `START_STEP_TICKS` (100 ticks), igual que un tramo completo
+## Estado: PROPUESTO — fase 0 implementada (reloj, HUD y comando `time set`); fase 2 **completa** (#621–#626 y #645): gramática y modelo de horarios (2a), retención/`park`/puntualidad en core (2b), desviación firmada en el HUD 2D/3D (2c), maniobras de waypoint, `stop on contact` y arbitraje FIFO de cantones; fase 3 (disparadores temporales `at`/`every`, #563) con **contrato congelado** (D1–D7, ver *Disparadores temporales (fase 3)*): **F3a implementada** (gramática, registro y scheduling) y **F3b implementada** (ejecución por el mismo runner que los triggers de eventos, avisos de acciones rechazadas, save/load sin catch-up y replay determinista); saneo de sintaxis del lote 2 aplicado (`time set HH`, `park`/`stop` directos, `invert`≡`reverse`, sin auto-giro, comas del plan, comentarios `#`); enmienda de física: el arranque 0→1 cuesta `START_STEP_TICKS` (100 ticks), igual que un tramo completo
 
 ## Contexto
 
@@ -28,10 +28,10 @@ elegida en cada punto:
 | Origen del tiempo | Ticks lógicos | Ticks lógicos (se congela en pausa) | Ticks lógicos; la pausa de edición (ADR-020) congela el reloj |
 | Servicio | `GameClock` (interfaz + impl) | `SimulationClock` | `GameClock` en `letrain.time`, avanza desde `SimulationController.tick()` |
 | Escala | `time.scale` (s de juego/tick), default 1 | `time.dayDurationSeconds` (segundos reales por día de juego), default 1440 (día = 24 min reales) | Adoptar `time.dayDurationSeconds = 1440` (más legible); equivale a 3 s de juego/tick |
-| Hora inicial | 06:00 | 08:00, Día 1 | 08:00, Día 1 (arranque de jornada) |
+| Hora inicial | 06:00 | 08:00, Día 1 | 08:00, Día 1 (arranque de jornada); configurable por partida desde S2b |
 | Interpolación visual | `isNight()` | `isNight()` + `getDayNightRatio()` (0..1) | Ambas: `isNight()` para lógica y `getDayNightRatio()` para luces/cielo |
 | Eventos | Listeners de hora/día + `SimulationScheduler` | Uso directo desde servicios/presenters | Listeners + scheduler; nada de polling en `tick()` |
-| Persistencia | `elapsedTicks` (long) | campo `gameTime` opcional en `Model` | Long simple (`elapsedTicks`) y `GameTime` derivado; saves viejos → 08:00 Día 1 |
+| Persistencia | `elapsedTicks` (long) | campo `gameTime` opcional en `Model` | Long simple (`elapsedTicks`) y `GameTime` derivado; saves viejos → 08:00 Día 1. Desde S2b el origen viaja en `settings` (`time.startDay`/`time.startTime`) |
 | `WAIT n` | Sigue en segundos de simulación | No lo redefine | Se mantiene por compatibilidad; horarios con `DEPART`/`UNTIL` |
 | DSL horarios | `DEPART hh:mm`, `UNTIL hh:mm`, `on time` | `DEPART AT hh:mm`, `WAIT UNTIL hh:mm`, `AT "07:00" DO`, `EVERY 30m` | **Horas por parada**: `arrival HH:MM` (medida) / `departure HH:MM` (retención) como atributos del waypoint (ver *Horarios*); `EVERY` entra en la fase 3 |
 | Día/noche | Visual en fase 1 | Sol/luna/cielo, faros, farolas, tinte 2D | Igual: visual primero, `isNight()` disponible para gameplay futuro |
@@ -52,23 +52,35 @@ elegida en cada punto:
    3 segundos de juego por tick. La escala se fija al crear la partida y no se cambia en caliente
    (ver *Escala temporal* más abajo).
 4. **Hora inicial**: 08:00 del Día 1, día de 24 h. Sin fechas ni estaciones del año en esta fase;
-   el modelo queda preparado para añadirlas.
+   el modelo queda preparado para añadirlas. **S2b (#759)**: el origen es configurable por partida
+   con los ajustes `time.startDay` (1..366) y `time.startTime` (`HH:MM`, 00:00..23:59), ambos de
+   estado NEW_GAME; los defaults (Día 1, 08:00) conservan el comportamiento histórico. El origen se
+   aplica al crear la partida (`Model.newGame`) o al importar un escenario; una partida cargada
+   **no** salta al origen: conserva su `elapsedTicks` y el origen solo reancla ese contador al
+   instante guardado (saves anteriores a S2b, sin las claves, cargan con el origen por defecto).
 5. **Serialización**: contador `elapsedTicks` (long) en `Model`; `GameTime` se deriva. Los guardados
-   antiguos cargan con el valor por defecto (08:00, Día 1) sin romperse.
+   antiguos cargan con el valor por defecto (08:00, Día 1) sin romperse. Desde S2b el origen
+   (`time.startDay`/`time.startTime`) viaja en la sección `settings` del savegame y del escenario;
+   `Model.newGame` lo aplica al reloj antes del primer tick. **#761**: al cargar, el reloj en marcha
+   se re-sincroniza también con `time.dayDurationSeconds` y `world.latitude` de esa sección (solo
+   las claves que la sección traiga), de modo que una partida jugada con otra escala o latitud no
+   hereda las del `letrain.cfg` local; sin esas claves se mantiene el fallback a cfg/defaults y el
+   contador `elapsedTicks` nunca se toca.
 6. Los **eventos de tiempo** (cambio de hora, día/noche, horarios) se despachan vía
    `SimulationScheduler`; nada de lógica nueva en bucles periódicos.
 7. **`WAIT n` se mantiene en segundos de simulación** para no romper escenarios existentes. Los
    horarios se expresan en tiempo de juego como atributos del waypoint (`arrival HH:MM` /
-   `departure HH:MM`, ver *Horarios*); los disparadores temporales (`at "HH:mm"` / `every 30m`)
-   llegan en la fase 3.
+   `departure HH:MM`, ver *Horarios*); los disparadores temporales (`at HH:MM` / `every <periodo>`,
+   contrato congelado en *Disparadores temporales (fase 3)*) llegan en la fase 3.
 8. **Día/noche es visual** en esta fase (paleta del terminal y luz/faros en 3D); `isNight()` y
    `getDayNightRatio()` quedan disponibles para un futuro efecto sobre el gameplay.
 9. **Comando de consola del reloj**: `time;` muestra la hora actual (`Día 1 08:00`);
    `time set HH:MM;` o `time set HH;` fija la hora del día actual **sin diálogo de confirmación**
    (el cambio ya se ve en el reloj del HUD). Una hora fuera de rango (`time set 25:99`, `time set
    25`) se rechaza con aviso y **el reloj queda intacto**. El salto es determinista y se journaliza,
-   así que el replay reproduce la misma hora. Los instantes anteriores al origen (Día 1, 08:00)
-   ruedan al día siguiente; no se toca la duración del día (esa escala se fija al crear la partida).
+   así que el replay reproduce la misma hora. Los instantes anteriores al origen (Día 1, 08:00 por
+   defecto; el configurado en S2b) ruedan hacia delante día a día; no se toca la duración del día
+   (esa escala se fija al crear la partida).
 10. **Ciclo solar por latitud** (fase 1): `SolarModel` (core) calcula amanecer/atardecer y
     elevación/acimut del sol a partir del día del año, la hora y la latitud. `getDayNightRatio()`
     se deriva de la elevación con una banda de crepúsculo de 18°, y `world.latitude`
@@ -190,11 +202,12 @@ Métrica (fase 2, solo medir; la economía horaria es la fase 4):
   un servicio todo adelantado imprime el menos adelantado (`Max: −1 min`).
 - `arrivalDelta` se mide al entrar en el waypoint; `departureDelta`, cuando termina la retención
   (a la hora programada, o antes si llegó tarde: sale de inmediato y el desfase es positivo).
-- Se muestra en **`info train N`** (detalle: una línea por parada más actual/media/máximo) y, en
-  la fase 2c, en el **HUD** con un simple número con signo referido al tren seleccionado/en
-  conducción; si el itinerario no tiene horas, o aún no se ha medido ninguna parada, no se muestra
-  nada. La historia vive en memoria (no viaja en el guardado): al cargar, el servicio se reanuda y
-  la vuelve a medir.
+- Se muestra en **`info train N`** (detalle: una línea por parada más actual/media/máximo) y en el
+  **HUD** 2D/3D como sufijo `| Punct: +2` de la línea de estado del tren seleccionado/en
+  conducción; el valor es el desfase actual firmado y sale de `Punctuality.compact()`, la misma
+  fuente que la línea `Current` de `info train N`. Si el itinerario no tiene horas, o aún no se ha
+  medido ninguna parada, no se muestra nada. La historia vive en memoria (no viaja en el guardado):
+  al cargar, el servicio se reanuda y la vuelve a medir.
 
 Compatibilidad (**decidida**): la sintaxis nueva es **estricta en todos los puntos de entrada**
 (consola, editor, escenarios, partidas guardadas, journals y `letrain-check`): las acciones sin
@@ -437,24 +450,20 @@ Consecuencias:
   cantón, justo delante de la frontera**, el cruce completo. No puede "avanzar hasta el apartadero"
   porque, para los cantones, ese apartadero no delimita nada: es el mismo segmento.
 
-**Hoy (a sustituir por la decisión de abajo)**: cuando el cantón se libera, `Model` avisa a los que
-esperan **recorriendo `model.getLocomotives()` en orden**, y el primero de esa lista que está
-esperando el cantón reintenta el lock en el acto (`tryLock` es síncrono) y se lo queda. No es
-aleatorio —es determinista y reproducible—, pero **no es FIFO por llegada**: `locomotives` es el
-registro de locomotoras del mundo en **orden de creación** (o el del guardado, al cargar) y **no se
-reordena con el tráfico**, así que gana la locomotora más veterana de las que esperan, aunque haya
-llegado más tarde. El que pierde reintenta en la siguiente liberación (no hay inanición, aunque
-puede encadenar esperas). Además, antes de esperar el tren intenta `tryAlternativeSegment`: si
-existe un cantón paralelo entre los mismos nodos (p. ej. la vía de apartado) y no tiene paradas
-pendientes en el bloqueado, lo toma y evita la espera.
-
-**Decidido (a implementar)**: la prioridad debe ser **FIFO por llegada al cantón**, no el orden del
-registro de locomotoras. Plan: al empezar a esperar, el tren pide un **turno** monótono
-(determinista, sin reloj de pared, mantenido en el `BlockManager`); al liberarse el cantón, `Model`
-ordena a los que esperan por ese turno (empate: id de locomotora) y el primero que lo reclama se lo
-lleva; el turno se limpia al dejar de esperar. Hoy gana la más veterana; pasar a FIFO es pequeño y
-hay `BlockManagerTest`, `BlockReleaseIntegrationTest` y `TrainSafetyManagerTest` para cubrirlo. El
-PR de implementación sustituirá el párrafo *Hoy* de arriba por la descripción del FIFO.
+**FIFO por llegada (implementado)**: al empezar a esperar un cantón, el tren pide un **turno**
+monótono al `BlockManager` (`requestWaitTurn`), asignado en orden de petición y **sin reloj de
+pared** (determinista y reproducible en journal/replay). Mientras espera conserva su turno (la
+petición es idempotente: no lo pierde si se reevalúa la espera). Cuando el cantón se libera, `Model`
+recoge a todos los trenes que esperan ese cantón y **los ordena por turno** (empate: id de
+locomotora; un tren con varias locomotoras cuenta una vez); el primero de la cola reintenta el lock
+en el acto (`tryLock` es síncrono) y se lo queda. El turno se limpia al dejar de esperar, así que la
+siguiente espera del mismo tren pide un turno nuevo y va al final de la cola. El que pierde
+reintenta en la siguiente liberación (no hay inanición, aunque puede encadenar esperas). Cada
+espera pide su turno en el momento en que empieza (`scheduleStopAtBoundary`), también cuando un
+cruce se resuelve por `tryAlternativeSegment`. Además, antes de esperar el tren intenta
+`tryAlternativeSegment`: si existe un cantón paralelo entre los mismos nodos (p. ej. la vía de
+apartado) y no tiene paradas pendientes en el bloqueado, lo toma y evita la espera. Cubierto por
+`BlockManagerTest`, `BlockReleaseIntegrationTest` y `TrainSafetyManagerTest`.
 
 **Prioridades (diseño previsto, para cuando lleguen los trenes de pasajeros)**: la cola se ordenará
 por la clave **`(clase, turno)`** — clases tipo **pasajeros > mercancías > maniobras**, FIFO dentro
@@ -495,6 +504,109 @@ horario) en lugar de confiar en el plan.
 Punto abierto: fijar el parámetro de la antiinanición (X minutos de espera o N cesiones
 consecutivas) cuando existan los trenes de pasajeros.
 
+### Disparadores temporales (fase 3): `at` / `every` — contrato congelado
+
+Issue **#563**. Acciones automatizadas que se disparan por el **reloj de juego**, complementando los
+triggers de eventos ya existentes (`sensor 1 on train enter { … }`). El contrato está **congelado**
+(decisiones D1–D7); la implementación llega en las rebanadas F3a–F3d.
+
+**Sintaxis** (dentro de `program { … }` y en scripts de escenario):
+
+```letrain
+at 6:30 {
+    semaphore 1 open;
+}
+
+every 30m {
+    semaphore 1 invert;
+}
+```
+
+- `at <hora>` — se dispara **cada día** a esa hora del reloj de juego (`HH:MM`, misma forma que
+  `arrival`/`departure`; medianoche incluida).
+- `every <periodo>` — se dispara **periódicamente**; unidades `m` (minutos de juego), `h` (horas) y
+  `d` (días). Ej.: `30m`, `2h`, `1d`.
+  - **Anclaje (D7)**: rejilla fija del reloj desde las 00:00 del día de juego (`30m` → 00:00, 00:30,
+    01:00…; `1h` → en punto). Si se registra a mitad de tramo, el primer disparo es el siguiente
+    punto de la rejilla (creado a las 10:07 con `30m` → primer disparo 10:30).
+  - Azúcar opcional: `every 30m from 6:00` → 6:00, 6:30, 7:00…; `every 30m from 6:15` → 6:15, 6:45,
+    7:15…; `every 1h from 5:30` → 5:30, 6:30…; si el periodo no encaja en el día, sigue de un día al
+    siguiente (`every 45m from 6:15` → 6:15, 7:00, 7:45, 8:30…).
+- Los bloques van entre llaves, terminan sus acciones con `;` y no se anidan.
+- Sin selectores: el ámbito es **global** (el mundo), no por tren, en esta fase.
+
+**Semántica**:
+
+- **Determinista**: se calcula desde los **ticks** (`GameClock`, 20 TPS), nunca reloj de pared.
+  Replay/undo/escenarios reproducen los mismos disparos (ADR-020).
+- **Ejecución**: en el tick en que el reloj cruza el umbral (o el primero siguiente si la simulación
+  está pausada). La pausa de edición congela el reloj: no se acumulan disparos.
+- **Ámbito**: `program { … }` y consola. Registro en el mundo; un `create`/reemplazo del programa los
+  re-registra.
+- **Acciones permitidas**: las mismas que los triggers de eventos actuales (semáforos, forks,
+  acciones con selector `train at …`), más los comandos directos ya admitidos en trigger. Lo no
+  permitido: **aviso visible** y no se ejecuta.
+- **Carga de partida**: los `at` de horas ya pasadas **no se recuperan** (se programan para el día
+  siguiente); `every` continúa desde el reloj actual, sin catch-up. Decisión de simplicidad; evita
+  ráfagas al cargar.
+- **Límite**: máximo N temporizadores activos (p. ej. 64) con aviso; duplicados exactos advertidos.
+
+Casos de uso que validan la sintaxis:
+
+```letrain
+at 6:30  { semaphore 1 open; }                  # apertura matinal de la línea
+at 21:00 { semaphore 1 close; }                 # cierre nocturno
+every 1h { train 5 set engine on; }             # servicio horario de mercancías
+```
+
+**Decisiones congeladas (D1–D7)**:
+
+| # | Decisión | Congelada |
+|---|---|---|
+| D1 | Forma de la hora | `at 7:00` (coherente con `arrival`/`departure`) |
+| D2 | Recurrencia de `at` | diaria |
+| D3 | Unidades de `every` | `m`/`h`/`d` |
+| D4 | Al cargar partida | saltar eventos pasados (sin catch-up) |
+| D5 | Ámbito | global |
+| D6 | Acciones dentro | las mismas que los triggers de eventos |
+| D7 | Anclaje de `every` | rejilla fija del reloj anclada a 00:00 + `from HH:MM` opcional |
+
+**Implementación F3a** (issue #731): la sintaxis vive en `ScriptLogicParser`
+(`temporalTrigger`: `at`/`every`, `from` opcional, bloques `commandBlock` sin anidar) y el modelo
+en `letrain.time.TemporalTrigger` (tipo AT/EVERY, hora/periodo/from; `nextFire(GameTime)` devuelve
+la primera ocurrencia **estrictamente posterior**, con rejilla absoluta D7 —el ancla se conserva
+aunque el periodo no divida el día— y rollover de medianoche). El mundo mantiene el registro
+global (`letrain.time.TemporalTriggerService`: máximo 64 activos, duplicados exactos y periodos
+inválidos/`0m`/unidades desconocidas avisan por el canal visible) y cada trigger arma su siguiente
+disparo con `GameClock.ticksUntil(...)` en el `SimulationScheduler`; al reemplazar el programa,
+`AutomationEngine` limpia el registro y lo repuebla (`create`/reasignación).
+
+**Implementación F3b** (issue #732, esta entrega): cuando el reloj cruza el umbral,
+`TemporalTriggerServiceImpl.onDue` ejecuta el bloque a través del **mismo runner diferido que los
+triggers de eventos** (`CommandManager.runDeferredBlock`), así que acciones y avisos son idénticos
+en ambos caminos; las acciones genéricas de tren sin referencia (`train set speed …`) no tienen
+tren de contexto en un ámbito global (D5) y se rechazan con **aviso visible** mientras el resto del
+bloque sigue. Un fallo de acción se registra y no tumba el tick; el temporizador se re-arma salvo
+que el programa se reemplace mientras la acción corre. **Save/load**: `postLoadInit` reaplica el
+programa y `nextFire` calcula desde el reloj restaurado, así que un `at` ya pasado se programa para
+el día siguiente y `every` continúa en el siguiente punto de rejilla (sin catch-up). **Replay/undo**:
+el re-registro por generación deja los disparos del programa sustituido como no-ops, y un snapshot
+restaurado (`GameSaveService`/undo) reproduce los mismos disparos al mismo tiempo de juego. La
+pausa de edición congela scheduler y reloj: los disparos no se acumulan. Tests:
+`TemporalTriggerExecutionTest` (ejecución, pausa, duplicados, acción rechazada, load sin catch-up,
+snapshot y replay de journal); docs de usuario actualizadas (`grammar*.md`, `cheatsheet*.md`,
+`manual*.md`), validadas por `DslDocumentationSyntaxTest`.
+
+**Plan por rebanadas**:
+
+- **F3a** — gramática + modelo + scheduling por `ticksUntil(GameTime)`; `help`; tests deterministas.
+- **F3b** — **implementada** (issue #732): ejecución en el tick por el runner de eventos, replay/undo/save-load, avisos de acciones rechazadas y docs de usuario.
+- **F3c** — demanda por franjas (se apoya en la economía de la fase 4).
+- **F3d** — integración con trenes de pasajeros (después del diseño de `PassengerTrains_Design.md`).
+
+**Fuera de alcance (fase 3)**: pasajeros como entidades individuales (el diseño ya propone
+intercambio abstracto) y triggers por fecha/estación del año (posible fase posterior).
+
 ### Contrato (implementado en la fase 0)
 
 ```java
@@ -525,15 +637,17 @@ public interface GameClock {
 |---|---|---|
 | 0 | Reloj de juego: `GameClock`, `time.dayDurationSeconds`, serialización, reloj en HUD 2D/3D y comando `time set` | Sin efecto en gameplay; tests deterministas |
 | 1 | Día/noche: paleta 2D, sol/luna/cielo, luz ambiental, faros y farolas en 3D usando `isNight()`/`getDayNightRatio()` | Visual; coordinar con #480 |
-| 2 | Horarios: `arrival` / `departure` por parada en los itinerarios y puntualidad básica; cruces en vía única y apartaderos | El autopilot retiene hasta la salida programada; se mide el delta |
-| 3 | Triggers temporales (`at`/`every`) y demanda por franjas; integración con trenes de pasajeros | Engancha con `PassengerTrains_Design.md` |
+| 2 | Horarios: `arrival` / `departure` por parada en los itinerarios y puntualidad básica; cruces en vía única y apartaderos | **Completa** (#621–#626 y #645): el autopilot retiene hasta la salida programada; se mide el delta |
+| 3 | Triggers temporales (`at`/`every`) y demanda por franjas; integración con trenes de pasajeros. **Contrato congelado** (#563, D1–D7; ver *Disparadores temporales (fase 3)*) | Rebanadas F3a–F3d; engancha con `PassengerTrains_Design.md` |
 | 4 | Economía horaria: mantenimiento diario, turnos de producción, tarifas por franja y bonus/multa por puntualidad | Reglas de negocio |
 
 ## Decisiones pendientes
 
-- Fase 2 diseñada (ver *Horarios* y *Cruces en vía única*): solo queda fijar el parámetro de la
-  antiinanición (X minutos de espera o N cesiones consecutivas) cuando existan los trenes de
-  pasajeros.
+- Fase 2 **implementada** (ver *Horarios* y *Cruces en vía única*): el único fleco abierto es fijar
+  el parámetro de la antiinanición (X minutos de espera o N cesiones consecutivas) cuando existan
+  los trenes de pasajeros.
+- Fase 3 con **contrato congelado** (D1–D7, ver *Disparadores temporales (fase 3)*): sin decisiones
+  abiertas; F3a y F3b implementadas y quedan las rebanadas F3c–F3d.
 
 ## Alternativas consideradas
 

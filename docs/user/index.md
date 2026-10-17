@@ -39,7 +39,7 @@
 
 - **Advanced Automation & IDE:**
   - Includes a built-in programming language (parsed via ANTLR4) for true automation.
-  - A tabbed in-game editor (**Scenario / Program / Config**) with a per-tab quick reference, error navigation and a headless validator (`letrain-check`).
+  - A tabbed in-game editor (**Scenario / Programming / Config**) with a per-tab quick reference, error navigation and a headless validator (`letrain-check`).
   - Automate switches, set up autopilot routes with timetables (`arrival`/`departure` and punctuality), and manage complex itineraries with shunting maneuvers.
 
 - **Record, Undo & Scenarios:** Freeze the world and record every edit (`R`), undo/redo deterministically (`u` / `Ctrl+R`), and export your whole network as a small `.ltr` text recipe you can share, import and replay. The same seed rebuilds the same world — no savegame needed.
@@ -106,7 +106,7 @@ You can run either the modern 3D version or the classic 2D version:
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/iVHsKuj0Xm8" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/mYqpJxpBA3k" frameborder="0" allowfullscreen></iframe></div>
 </div>
-- **Remove Rails:** To remove rails, use the `Ctrl` key with the arrow keys (or `Ctrl + h, j, k, l`), both forward and backward. The cursor will automatically follow the track as you delete it.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Remove Rails:** To remove rails, open the console (`:`) and use the `del` command (e.g. `del 1;` removes the track under the cursor and advances). The cursor automatically follows the track as it deletes.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/TDF-26e1wqI" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/L_FrO48OlZY" frameborder="0" allowfullscreen></iframe></div>
 </div>
@@ -158,11 +158,11 @@ You can run either the modern 3D version or the classic 2D version:
 </div>
 
 ### Safety & Automation
-- **Create Semaphores:** Semaphores are created when the cursor is over the track using the `Home` key. In `semaphores` mode, they are selected with the horizontal arrows, their state is toggled using the 'm' key, and their direction is inverted using the spacebar.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Create Semaphores:** Semaphores are created in **Add Mode** (`a`) with the cursor over the track (press `s`). In `semaphores` mode, they are selected with the horizontal arrows, their state is toggled using the 'm' key, and their direction is inverted using the spacebar.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/VMJCvCAxExM" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/UiT4tzuuw9A" frameborder="0" allowfullscreen></iframe></div>
 </div>
-- **Create Sensors:** Sensors allow you to automate tasks, such as stopping a train when it passes over it, changing a fork's direction, or toggling a semaphore. They are created when the cursor is over the track using the `Insert` key.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Create Sensors:** Sensors allow you to automate tasks, such as stopping a train when it passes over it, changing a fork's direction, or toggling a semaphore. They are created in **Add Mode** (`a`) with the cursor over the track (press `e`).<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/twaJryI_fKs" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/0R8XAXsHmt8" frameborder="0" allowfullscreen></iframe></div>
 </div>
@@ -170,7 +170,7 @@ You can run either the modern 3D version or the classic 2D version:
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/p7L3IR3CbWI" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/26AmqDbMsUk" frameborder="0" allowfullscreen></iframe></div>
 </div>
-- **Program IDE:** In `program` mode, you have access to a simple IDE that allows you to program actions and events. Itineraries can be created and assigned to trains. An itinerary can contain several stations or sensors, so when the train passes them, it performs specific tasks automatically, such as loading, unloading, reversing direction, or stopping.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
+- **Programming IDE:** In `program` mode, you have access to a simple IDE that allows you to program actions and events. Itineraries can be created and assigned to trains. An itinerary can contain several stations or sensors, so when the train passes them, it performs specific tasks automatically, such as loading, unloading, reversing direction, or stopping.<br><div style="display: flex; gap: 10px; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 300px;"><strong>3D Engine</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/ke0XuMDk3iM" frameborder="0" allowfullscreen></iframe></div>
   <div style="flex: 1; min-width: 300px;"><strong>2D Terminal</strong><br><iframe width="100%" height="315" src="https://www.youtube.com/embed/z6CGDnxDqa0" frameborder="0" allowfullscreen></iframe></div>
 </div>
