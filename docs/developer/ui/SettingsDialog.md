@@ -89,6 +89,19 @@ foco, así que el diálogo fija el foco al footer.
 
 ## Layout
 
+- **Ventana centrada y acotada** (#742 polish): a diferencia de Nueva Partida (página a pantalla
+  completa), Settings 2D se dibuja como una caja sobre la partida en curso, igual que el diálogo 3D.
+  La ventana usa `CENTERED` + `NO_DECORATIONS` + `FIXED_SIZE`: `DefaultWindowManager` la centra en
+  ambos ejes y el tamaño fijo evita que la caja cambie al pasar de Terrain a Economy.
+- **Geometría** (`dialogSize(screen)`, función pura): ancho `clamp(screen.columns / 2,
+  MIN_COLUMNS=70, MAX_COLUMNS=100)` recortado a `screen.columns - 2*MARGIN_COLUMNS` (2 columnas);
+  alto `clamp(available rows, MIN_ROWS=22, MAX_ROWS=30)` con `MARGIN_ROWS=1`. A **80×24** sale
+  **70×22** (cinco botones en una fila y preview visible); en un terminal grande la caja no pasa de
+  **100×30**, con la partida alrededor. En terminales más pequeños que el mínimo se recorta al
+  espacio disponible y el pie vuelve a dos filas.
+- La columna Terrain recibe `terrainSize(dialog, footerRows)` (el alto del diálogo menos las filas
+  extra del pie: leyenda y feedback), no el tamaño del terminal; el preview se calcula con ese
+  tamaño para que ninguna fila quede oculta tras el marco.
 - Fila de pestañas + línea en blanco + una columna de margen, como Nueva Partida (#757). En el pie,
   de arriba a abajo: filas de botones, **leyenda de colores** y línea de feedback (#767).
 - Footer adaptativo (`footerRows(columns)`, función pura): con la etiqueta corta `New game`, los

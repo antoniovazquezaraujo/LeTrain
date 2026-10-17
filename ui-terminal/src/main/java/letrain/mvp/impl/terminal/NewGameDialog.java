@@ -144,7 +144,15 @@ final class NewGameDialog {
      * area — so it no longer takes over the dialog (#754).
      */
     static PreviewPlan previewPlan(int columns, int rows) {
-        if (columns < MIN_COLUMNS || rows < MIN_ROWS) {
+        return previewPlan(columns, rows, MIN_COLUMNS, MIN_ROWS);
+    }
+
+    /**
+     * Same plan with explicit minimums: the Settings dialog sizes the preview against its effective
+     * box (smaller than the 80x24 whole-terminal minimum) and passes zeroes (#742 polish).
+     */
+    static PreviewPlan previewPlan(int columns, int rows, int minColumns, int minRows) {
+        if (columns < minColumns || rows < minRows || columns <= PREVIEW_MARGIN_COLUMNS) {
             return null;
         }
         int previewTextRows = sectionRows(rows) - TERRAIN_CHROME_ROWS;
@@ -554,6 +562,15 @@ final class NewGameDialog {
 
         TerrainControls(int seed, int waterPercent, int mountainPercent, TerminalPalette palette,
                 TerminalSize screen) {
+            this(seed, waterPercent, mountainPercent, palette, screen, MIN_COLUMNS, MIN_ROWS);
+        }
+
+        /**
+         * Variant for the in-game Settings dialog: {@code area} is the dialog's effective content
+         * box, so the preview adapts to it instead of requiring the 80x24 New Game terminal.
+         */
+        TerrainControls(int seed, int waterPercent, int mountainPercent, TerminalPalette palette,
+                TerminalSize area, int minColumns, int minRows) {
             int column = valueColumn(List.of(NewGameText.SEED_LABEL, NewGameText.WATER_LABEL,
                     NewGameText.MOUNTAIN_LABEL));
             seedHost = new Panel(new LinearLayout(Direction.VERTICAL));
@@ -577,7 +594,7 @@ final class NewGameDialog {
             gap = new EmptySpace(new TerminalSize(1, 1));
             previewPanel = new TerrainPreviewPanel(palette);
             noPreview = new Label(NewGameText.NO_PREVIEW);
-            plan = previewPlan(screen.getColumns(), screen.getRows());
+            plan = previewPlan(area.getColumns(), area.getRows(), minColumns, minRows);
             setValues(seed, waterPercent, mountainPercent);
         }
 

@@ -46,6 +46,10 @@ import letrain.visitor.terminal.TerminalPalette;
  * switching tabs.
  *
  * <p>
+ * Since the #742 polish the window is a bounded, centered box over the running game (like the 3D
+ * Settings), sized once by {@link #dialogSize(TerminalSize)} so swapping tabs does not resize it.
+ *
+ * <p>
  * Every field carries its apply-state mark: green {@code ●} for LIVE, yellow {@code ●} for REAPPLY
  * (both editable) and red {@code ●} for NEW_GAME (disabled). Scenario-locked keys stay disabled
  * without a colour of their own. Since #767 there is no inline reason text and the small colour
@@ -68,10 +72,56 @@ final class SettingsDialog {
     static final int TAB_ROWS = 1;
     /** Rows the footer legend takes (moved to the footer in #767). */
     static final int LEGEND_ROWS = 1;
+    /** Rows the footer feedback line takes (under the legend since #767). */
+    static final int FEEDBACK_ROWS = 1;
     /** Blank row between the tabs and the first field of every section (#754 convention). */
     static final int SECTION_TOP_ROWS = 1;
     /** Columns the state glyph and its trailing space take at the left of every row (#764). */
     static final int STATE_COLUMNS = 2;
+
+    /**
+     * Margins kept around the centered dialog when the terminal has room: the 2D Settings is a box
+     * over the running game, like the 3D one (#742 polish).
+     */
+    static final int MARGIN_COLUMNS = 2;
+    static final int MARGIN_ROWS = 1;
+    /** Narrowest dialog: the five footer buttons in one row (65 cells) plus a little slack. */
+    static final int MIN_COLUMNS = 70;
+    /** Widest dialog, so large terminals show the game around it instead of a full-screen page. */
+    static final int MAX_COLUMNS = 100;
+    /** Shortest dialog: tabs, a usable section body and the three footer rows. */
+    static final int MIN_ROWS = 22;
+    /** Tallest dialog, keeping a bounded box on tall terminals. */
+    static final int MAX_ROWS = 30;
+
+    /**
+     * Size of the centered Settings box for a terminal: wide enough for the footer and the Terrain
+     * sliders, at most half the terminal (capped at {@link #MAX_COLUMNS}), and never larger than
+     * the screen minus {@link #MARGIN_COLUMNS}/{@link #MARGIN_ROWS}. Pure maths so the 80x24 and
+     * large terminal cases are pinned by tests (#742 polish).
+     */
+    static TerminalSize dialogSize(TerminalSize screen) {
+        int availableColumns = Math.max(1, screen.getColumns() - 2 * MARGIN_COLUMNS);
+        int width = Math.max(MIN_COLUMNS, screen.getColumns() / 2);
+        width = Math.min(width, Math.min(MAX_COLUMNS, availableColumns));
+
+        int availableRows = Math.max(1, screen.getRows() - 2 * MARGIN_ROWS);
+        int height = Math.min(Math.max(MIN_ROWS, availableRows), MAX_ROWS);
+        height = Math.min(height, Math.max(1, screen.getRows()));
+
+        return new TerminalSize(width, height);
+    }
+
+    /**
+     * Size handed to the shared Terrain block (seed, sliders, bar and preview): the dialog box
+     * minus the footer rows the New Game preview planner does not know about (Settings adds the
+     * legend and feedback lines under the button row), so the whole preview fits without hidden
+     * rows.
+     */
+    static TerminalSize terrainSize(TerminalSize dialog, int footerButtonRows) {
+        int extraRows = footerButtonRows - NewGameDialog.FOOTER_ROWS + LEGEND_ROWS + FEEDBACK_ROWS;
+        return new TerminalSize(dialog.getColumns(), Math.max(1, dialog.getRows() - extraRows));
+    }
 
     /** Where the values start: the state mark plus the page's own column (#764). */
     static int valueColumn(List<String> names) {
@@ -213,8 +263,13 @@ final class SettingsDialog {
         Map<String, String> baseline = baselineOf(currentSettings);
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
         gui.setTheme(NewGameDialog.darkTheme(gui.getTheme()));
+        // A bounded, centered box over the running game, like the 3D Settings (#742 polish): the
+        // fixed size keeps it stable while the tabs swap their section.
+        TerminalSize box = dialogSize(screen.getTerminalSize());
+        List<List<ActionButton>> footerLayout = footerRows(box.getColumns());
         BasicWindow window = new BasicWindow();
-        window.setHints(List.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS));
+        window.setHints(List.of(Window.Hint.CENTERED, Window.Hint.NO_DECORATIONS));
+        window.setFixedSize(box);
         window.setCloseWindowWithEscape(true);
 
         final Action[] result = {new Action.Close()};
@@ -228,8 +283,8 @@ final class SettingsDialog {
         final List<SettingCategory> tabs = List.of(SettingCategory.TERRAIN, SettingCategory.WORLD,
                 SettingCategory.ECONOMY, SettingCategory.CONSTRUCTION, SettingCategory.UI);
         Map<SettingCategory, Panel> sections = new EnumMap<>(SettingCategory.class);
-        sections.put(SettingCategory.TERRAIN,
-                terrainSection(baseline, TerminalPalette.detect(), screen.getTerminalSize()));
+        sections.put(SettingCategory.TERRAIN, terrainSection(baseline, TerminalPalette.detect(),
+                terrainSize(box, footerLayout.size())));
         for (SettingCategory category : tabs) {
             if (category != SettingCategory.TERRAIN) {
                 sections.put(category,
@@ -308,7 +363,7 @@ final class SettingsDialog {
         actions.put(CLOSE_ID, closeAction);
 
         Panel footer = new Panel(new LinearLayout(Direction.VERTICAL));
-        for (List<ActionButton> rowButtons : footerRows(screen.getTerminalSize().getColumns())) {
+        for (List<ActionButton> rowButtons : footerLayout) {
             Panel row = new Panel(new LinearLayout(Direction.HORIZONTAL));
             for (ActionButton action : rowButtons) {
                 row.addComponent(NewGameDialog.mnemonicButton(action.label(), action.mnemonic(),
@@ -480,7 +535,7 @@ final class SettingsDialog {
                                 SettingsCatalog.DEFAULT_WATER_PERCENT),
                         parseInt(baseline.get("terrain.mountainPercent"),
                                 SettingsCatalog.DEFAULT_MOUNTAIN_PERCENT),
-                        palette, screen);
+                        palette, screen, 0, 0);
         controls.setEnabled(false);
         NewGameDialog.ScrollColumn column = new NewGameDialog.ScrollColumn();
         controls.addTo(column);

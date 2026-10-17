@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.googlecode.lanterna.TerminalSize;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -144,6 +145,57 @@ class SettingsDialogTest {
         assertEquals(Map.of("startingBalance", "10", "seed", "7"),
                 SettingsDialog.collect(readers, editable, false),
                 "the new-game prefill keeps the disabled fields too");
+    }
+
+    @Test
+    @DisplayName("80x24 gets a 70x22 box, one footer row and a preview that fits (#742 polish)")
+    void should_SizeTheDialogAt80x24() {
+        TerminalSize screen = new TerminalSize(80, 24);
+        TerminalSize dialog = SettingsDialog.dialogSize(screen);
+
+        assertEquals(new TerminalSize(70, 22), dialog);
+        assertTrue(dialog.getColumns() <= screen.getColumns() - 2 * SettingsDialog.MARGIN_COLUMNS,
+                "horizontal margins stay visible");
+        assertEquals(1, SettingsDialog.footerRows(dialog.getColumns()).size(),
+                "the five buttons still fit in one row at 70 columns");
+        assertTrue(dialog.getRows() <= screen.getRows() - 2 * SettingsDialog.MARGIN_ROWS,
+                "vertical margins stay visible");
+
+        TerminalSize terrain = SettingsDialog.terrainSize(dialog,
+                SettingsDialog.footerRows(dialog.getColumns()).size());
+        assertEquals(new TerminalSize(70, 20), terrain);
+        // Settings lifts New Game's whole-terminal minimums: the plan is computed for the box.
+        NewGameDialog.PreviewPlan plan =
+                NewGameDialog.previewPlan(terrain.getColumns(), terrain.getRows(), 0, 0);
+        assertNotNull(plan, "the preview still has room at the common terminal size");
+        int sectionBody =
+                dialog.getRows() - SettingsDialog.TAB_ROWS - SettingsDialog.SECTION_TOP_ROWS - 1
+                        - SettingsDialog.LEGEND_ROWS - SettingsDialog.FEEDBACK_ROWS;
+        assertTrue(NewGameDialog.TERRAIN_CHROME_ROWS + plan.textRows() <= sectionBody,
+                "no preview row is hidden behind the fixed frame");
+    }
+
+    @Test
+    @DisplayName("large and tall terminals keep a bounded, centered box (#742 polish)")
+    void should_CapTheDialogOnLargeTerminals() {
+        TerminalSize large = SettingsDialog.dialogSize(new TerminalSize(200, 60));
+        assertEquals(new TerminalSize(100, 30), large);
+        assertTrue(large.getColumns() <= SettingsDialog.MAX_COLUMNS,
+                "the width stays capped instead of reaching the screen edges");
+        assertTrue(large.getRows() <= SettingsDialog.MAX_ROWS,
+                "the height stays capped on tall terminals");
+
+        // 120x30: the minimum width and the available height minus the vertical margins.
+        assertEquals(new TerminalSize(70, 28),
+                SettingsDialog.dialogSize(new TerminalSize(120, 30)));
+        // Half-width caps the box between the minimum and MAX_COLUMNS.
+        assertEquals(80, SettingsDialog.dialogSize(new TerminalSize(160, 30)).getColumns());
+
+        // A terminal below the minimum still gets a box no larger than the screen.
+        TerminalSize tiny = SettingsDialog.dialogSize(new TerminalSize(60, 20));
+        assertEquals(new TerminalSize(56, 20), tiny);
+        assertTrue(SettingsDialog.footerRows(tiny.getColumns()).size() > 1,
+                "narrow dialogs wrap the footer instead of shrinking the frame");
     }
 
     @Test
