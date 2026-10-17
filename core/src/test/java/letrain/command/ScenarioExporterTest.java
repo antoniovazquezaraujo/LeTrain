@@ -153,4 +153,50 @@ class ScenarioExporterTest {
         assertEquals(45, rebuilt.getEconomyManager().getWaterPercent());
         assertEquals(5, rebuilt.getEconomyManager().getMountainPercent());
     }
+
+    @Test
+    @DisplayName("world and economy keys survive the generate -> parse -> replay round-trip (#782)")
+    void configuration_roundTripsWorldAndEconomyKeys() {
+        letrain.mvp.impl.Model source = new letrain.mvp.impl.Model(1);
+        source.getEconomyManager().applyConfig(Map.of("world.latitude", "12.5",
+                "time.dayDurationSeconds", "600", "startingBalance", "750.0"));
+
+        String text = ScenarioExporter.render(source, List.of("go 0,0; face e; write 1;"));
+
+        ScenarioFile.Scenario scenario = ScenarioFile.parse(text);
+        letrain.mvp.impl.Model rebuilt = new letrain.mvp.impl.Model(scenario.seed());
+        rebuilt.applyScenarioConfiguration(scenario.configuration());
+
+        assertEquals(12.5, rebuilt.getEconomyManager().getLatitude(), 1e-9);
+        assertEquals(600, rebuilt.getEconomyManager().getDayDurationSeconds());
+        assertEquals(750.0f, rebuilt.getEconomyManager().getBalance(), 0.001f);
+    }
+
+    @Test
+    @DisplayName("a legacy terrain model exports the catalogue defaults, not its legacy thresholds (#782)")
+    void configuration_legacyTerrainModelExportsCatalogueDefaults() {
+        letrain.mvp.impl.Model source = new letrain.mvp.impl.Model(1);
+        source.getEconomyManager()
+                .applyConfig(Map.of("threshold.WATER", "130", "threshold.ROCK", "180"));
+        assertFalse(source.getEconomyManager().isTerrainPercentEnabled(),
+                "legacy thresholds switch the terrain to calibration mode");
+
+        String text = ScenarioExporter.render(source, List.of("go 0,0; face e; write 1;"));
+
+        assertTrue(text.contains("terrain.waterPercent=25"),
+                "a legacy snapshot has no percent keys, so the catalogue default fills in: "
+                        + text);
+        assertTrue(text.contains("terrain.mountainPercent=10"), text);
+        assertFalse(text.contains("threshold."),
+                "legacy thresholds are no longer exported: " + text);
+
+        ScenarioFile.Scenario scenario = ScenarioFile.parse(text);
+        letrain.mvp.impl.Model rebuilt = new letrain.mvp.impl.Model(scenario.seed());
+        rebuilt.applyScenarioConfiguration(scenario.configuration());
+
+        assertTrue(rebuilt.getEconomyManager().isTerrainPercentEnabled(),
+                "replaying a generated block always turns percent mode back on");
+        assertEquals(25, rebuilt.getEconomyManager().getWaterPercent());
+        assertEquals(10, rebuilt.getEconomyManager().getMountainPercent());
+    }
 }

@@ -231,4 +231,48 @@ class SettingsCatalogTest {
         assertFalse(configuration.containsKey("threshold.WATER"),
                 "keys outside the catalogue are dropped");
     }
+
+    @Test
+    @DisplayName("scenarioConfiguration() drops the seed even when the effective map carries it (#782)")
+    void scenarioConfiguration_dropsSeedFromEffective() {
+        Map<String, String> effective = new LinkedHashMap<>();
+        effective.put("seed", "12345");
+        effective.put("terrain.waterPercent", "40");
+
+        Map<String, String> configuration = SettingsCatalog.scenarioConfiguration(effective);
+
+        assertFalse(configuration.containsKey("seed"),
+                "the scenario writes its own seed line; the block must not repeat it");
+        assertEquals("40", configuration.get("terrain.waterPercent"));
+    }
+
+    @Test
+    @DisplayName("scenarioConfiguration() keeps the form order regardless of the effective map order (#782)")
+    void scenarioConfiguration_keepsFormOrder() {
+        Map<String, String> effective = new LinkedHashMap<>();
+        effective.put("ui.highlightBlockedTracks", "false");
+        effective.put("terrain.waterPercent", "40");
+        effective.put("startingBalance", "10.0");
+
+        Map<String, String> configuration = SettingsCatalog.scenarioConfiguration(effective);
+
+        List<String> expected = SettingsCatalog.definitions().stream().map(SettingDefinition::key)
+                .filter(key -> !"seed".equals(key)).toList();
+        assertEquals(expected, List.copyOf(configuration.keySet()));
+        assertEquals("false", configuration.get("ui.highlightBlockedTracks"));
+        assertEquals("40", configuration.get("terrain.waterPercent"));
+        assertEquals("10.0", configuration.get("startingBalance"));
+    }
+
+    @Test
+    @DisplayName("scenarioConfiguration() passes values through verbatim without validating (#782)")
+    void scenarioConfiguration_doesNotValidateValues() {
+        Map<String, String> effective = new LinkedHashMap<>();
+        effective.put("terrain.waterPercent", "not-a-number");
+
+        Map<String, String> configuration = SettingsCatalog.scenarioConfiguration(effective);
+
+        assertEquals("not-a-number", configuration.get("terrain.waterPercent"),
+                "generation is a formatting step; the apply path rejects malformed values later");
+    }
 }

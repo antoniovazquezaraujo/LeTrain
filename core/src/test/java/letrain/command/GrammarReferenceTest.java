@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
+import letrain.settings.SettingDefinition;
+import letrain.settings.SettingsCatalog;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -64,6 +66,22 @@ class GrammarReferenceTest {
         assertFalse(anyContains(snippets, "seed="), "the seed is not a configuration key");
         assertFalse(anyContains(snippets, "new st;"));
         assertFalse(anyContains(snippets, "create itinerary"));
+    }
+
+    @Test
+    @DisplayName("the config help lists every catalogue key except seed and no legacy thresholds (#782)")
+    void configGroup_coversTheWholeCatalogue() {
+        String help = GrammarReference.helpText("config");
+
+        for (SettingDefinition definition : SettingsCatalog.definitions()) {
+            if ("seed".equals(definition.key())) {
+                assertFalse(help.contains("seed="), "the seed is not a configuration key: " + help);
+            } else {
+                assertTrue(help.contains(definition.key() + "="),
+                        "missing catalogue key in config help: " + definition.key());
+            }
+        }
+        assertFalse(help.contains("threshold."), "legacy thresholds are gone: " + help);
     }
 
     @Test
