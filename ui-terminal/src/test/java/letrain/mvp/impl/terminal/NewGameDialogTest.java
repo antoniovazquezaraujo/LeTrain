@@ -7,6 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
@@ -21,6 +24,7 @@ import com.googlecode.lanterna.gui2.Label;
 import com.googlecode.lanterna.gui2.LinearLayout;
 import com.googlecode.lanterna.gui2.Panel;
 import com.googlecode.lanterna.gui2.TextBox;
+import com.googlecode.lanterna.gui2.TextGUIGraphics;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
 import java.util.Comparator;
@@ -214,9 +218,51 @@ class NewGameDialogTest {
 
         // Settings passes the three marks: the value moves STATE_COLUMNS right.
         NewGameDialog.ScrollColumn markedBlock = new NewGameDialog.ScrollColumn();
-        new NewGameDialog.TerrainControls(7, 25, 10, palette, new TerminalSize(120, 30), 0, 0, mark,
-                mark, mark).addTo(markedBlock);
+        NewGameDialog.TerrainControls markedControls = new NewGameDialog.TerrainControls(7, 25, 10,
+                palette, new TerminalSize(120, 30), 0, 0, mark, mark, mark);
+        markedControls.addTo(markedBlock);
         assertEquals(TERRAIN_COLUMN + SettingsDialog.STATE_COLUMNS, seedValueColumn(markedBlock));
+        assertEquals(
+                TERRAIN_COLUMN + 1 + NewGameDialog.SLIDER_BAR_WIDTH + 2 + 5
+                        + SettingsDialog.STATE_COLUMNS,
+                markedControls.water().getPreferredSize().getColumns(),
+                "Water keeps the mark and shifts its value");
+        assertEquals(
+                TERRAIN_COLUMN + 1 + NewGameDialog.SLIDER_BAR_WIDTH + 2 + 5
+                        + SettingsDialog.STATE_COLUMNS,
+                markedControls.mountain().getPreferredSize().getColumns(),
+                "Mountain keeps the mark and shifts its value");
+    }
+
+    @Test
+    @DisplayName("a marked slider draws the glyph at x=0 and shifts label/bar by the mark (#742 polish)")
+    void should_DrawTheMarkBeforeTheSliderLabel() {
+        NewGameDialog.StateMark mark = new NewGameDialog.StateMark("●", TextColor.ANSI.RED);
+        NewGameDialog.PercentSlider slider = new NewGameDialog.PercentSlider(
+                NewGameText.WATER_LABEL, TERRAIN_COLUMN, 25, mark, () -> {
+                });
+        TextGUIGraphics graphics = mock(TextGUIGraphics.class);
+        when(graphics.getSize()).thenReturn(new TerminalSize(70, 1));
+
+        slider.getRenderer().drawComponent(graphics, slider);
+
+        // Arrange: the glyph opens the row; label and bar must start after its two columns.
+        verify(graphics).putString(0, 0, "● ");
+        verify(graphics).putString(SettingsDialog.STATE_COLUMNS, 0,
+                NewGameDialog.alignedLabel(NewGameText.WATER_LABEL, TERRAIN_COLUMN));
+        verify(graphics).putString(SettingsDialog.STATE_COLUMNS + TERRAIN_COLUMN, 0, "[");
+
+        NewGameDialog.PercentSlider plain =
+                new NewGameDialog.PercentSlider(NewGameText.WATER_LABEL, TERRAIN_COLUMN, 25, () -> {
+                });
+        TextGUIGraphics plainGraphics = mock(TextGUIGraphics.class);
+        when(plainGraphics.getSize()).thenReturn(new TerminalSize(70, 1));
+
+        plain.getRenderer().drawComponent(plainGraphics, plain);
+
+        verify(plainGraphics).putString(0, 0,
+                NewGameDialog.alignedLabel(NewGameText.WATER_LABEL, TERRAIN_COLUMN));
+        verify(plainGraphics).putString(TERRAIN_COLUMN, 0, "[");
     }
 
     /** Lays out the seed row of a terrain block and returns the column of its text box. */

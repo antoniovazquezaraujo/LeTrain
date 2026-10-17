@@ -60,6 +60,16 @@ class SettingsDialogTest {
                     SettingsDialog.fieldState(definition, Set.of(key)),
                     key + " pinned by a scenario");
             assertFalse(SettingsDialog.fieldState(definition, Set.of(key)).editable(), key);
+
+            // The mark handed to the shared Terrain block carries that state, not a hard-coded
+            // LIVE dot (the row would otherwise lose its red/grey tone while the unit test above
+            // still passed).
+            NewGameDialog.StateMark newGame = SettingsDialog.terrainMark(key, Set.of());
+            assertEquals(SettingsDialog.FieldState.NEW_GAME.glyph(), newGame.glyph(), key);
+            assertEquals(SettingsDialog.FieldState.NEW_GAME.color(), newGame.color(), key);
+            NewGameDialog.StateMark scenario = SettingsDialog.terrainMark(key, Set.of(key));
+            assertEquals(SettingsDialog.FieldState.SCENARIO.glyph(), scenario.glyph(), key);
+            assertEquals(SettingsDialog.FieldState.SCENARIO.color(), scenario.color(), key);
         }
     }
 

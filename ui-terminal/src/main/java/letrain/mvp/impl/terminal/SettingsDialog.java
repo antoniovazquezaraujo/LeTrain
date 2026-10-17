@@ -519,7 +519,7 @@ final class SettingsDialog {
     /**
      * State mark of one terrain key: NEW_GAME red, grey when the scenario pins it (#742 polish).
      */
-    private static NewGameDialog.StateMark terrainMark(String key, Set<String> scenarioKeys) {
+    static NewGameDialog.StateMark terrainMark(String key, Set<String> scenarioKeys) {
         FieldState state = fieldState(SettingsCatalog.definition(key).orElseThrow(), scenarioKeys);
         return new NewGameDialog.StateMark(state.glyph(), state.color());
     }
