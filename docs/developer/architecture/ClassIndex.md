@@ -68,6 +68,7 @@
 - [[letrain.ground.NoiseGenerator|NoiseGenerator]] (core)
 - [[letrain.ground.PerlinNoise|PerlinNoise]] (core)
 - [[letrain.ground.TerrainCalibrator|TerrainCalibrator]] (core)
+- [[letrain.ground.TerrainPreview|TerrainPreview]] (core)
 - [[letrain.ground.ZoneSensor|ZoneSensor]] (core)
 - [[letrain.ground.impl.GroundMap|GroundMap]] (core)
 - [[letrain.ground.impl.Terrain2D|Terrain2D]] (core)
@@ -107,12 +108,15 @@
 - [[letrain.map.impl.SimpleRouter|SimpleRouter]] (core)
 
 ## letrain.mvp
+- [[letrain.mvp.CoverArt|CoverArt]] (core)
 - [[letrain.mvp.EditorText|EditorText]] (core)
 - [[letrain.mvp.FileMenuText|FileMenuText]] (core)
 - [[letrain.mvp.GameViewListener|GameViewListener]] (core)
 - [[letrain.mvp.MenuText|MenuText]] (core)
 - [[letrain.mvp.Model|Model]] (core)
+- [[letrain.mvp.NewGameText|NewGameText]] (core)
 - [[letrain.mvp.Presenter|Presenter]] (core)
+- [[letrain.mvp.SettingsText|SettingsText]] (core)
 - [[letrain.mvp.View|View]] (core)
 - [[letrain.mvp.impl.AutoPilotMixin|AutoPilotMixin]] (core)
 - [[letrain.mvp.impl.EventLogManager|EventLogManager]] (core)
@@ -138,6 +142,10 @@
 - [[letrain.mvp.impl.services.ModelSelectionService|ModelSelectionService]] (core)
 - [[letrain.mvp.impl.services.SimulationService|SimulationService]] (core)
 - [[letrain.mvp.impl.services.TrackElementMovementService|TrackElementMovementService]] (core)
+- [[letrain.mvp.impl.terminal.CoverArtPainter|CoverArtPainter]] (ui-terminal)
+- [[letrain.mvp.impl.terminal.CoverStyle|CoverStyle]] (ui-terminal)
+- [[letrain.mvp.impl.terminal.NewGameDialog|NewGameDialog]] (ui-terminal)
+- [[letrain.mvp.impl.terminal.SettingsDialog|SettingsDialog]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.TerminalPresenter|TerminalPresenter]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.TerminalView|TerminalView]] (ui-terminal)
 - [[letrain.mvp.input.InputEvent|InputEvent]] (core)
@@ -163,10 +171,14 @@
 - [[letrain.segments.impl.TopologyServiceImpl|TopologyServiceImpl]] (core)
 
 ## letrain.settings
+- [[letrain.settings.ConfigFileWriter|ConfigFileWriter]] (core)
+- [[letrain.settings.NewGameForm|NewGameForm]] (core)
 - [[letrain.settings.SettingApplyState|SettingApplyState]] (core)
 - [[letrain.settings.SettingCategory|SettingCategory]] (core)
 - [[letrain.settings.SettingDefinition|SettingDefinition]] (core)
+- [[letrain.settings.SettingFieldState|SettingFieldState]] (core)
 - [[letrain.settings.SettingValueType|SettingValueType]] (core)
+- [[letrain.settings.SettingsApplyResult|SettingsApplyResult]] (core)
 - [[letrain.settings.SettingsCatalog|SettingsCatalog]] (core)
 
 ## letrain.soundscape
