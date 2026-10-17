@@ -46,7 +46,7 @@ class TerminalPresenterScenarioEditorTest {
     }
 
     @Test
-    @DisplayName("getConfigurationText returns the settings section (edited in the Config tab)")
+    @DisplayName("getConfigurationText returns the catalogue section (edited in the Config tab)")
     void getConfigurationText_returnsSection() {
         Model model = new Model(1);
         TerminalPresenter presenter = presenterWith(model);
@@ -54,7 +54,9 @@ class TerminalPresenterScenarioEditorTest {
         String text = presenter.getConfigurationText();
 
         assertTrue(text.startsWith("configuration {"), text);
-        assertTrue(text.contains("threshold.WATER="), text);
+        assertTrue(text.contains("terrain.waterPercent="), text);
+        assertFalse(text.contains("threshold."),
+                "the Config tab must come from the catalogue: " + text);
     }
 
     @Test

@@ -183,6 +183,19 @@ class GraphicPresenterSettingsTest {
     }
 
     @Test
+    @DisplayName("getConfigurationText renders the settings catalogue (edited in the Config tab)")
+    void getConfigurationText_comesFromTheCatalogue() {
+        doCallRealMethod().when(presenter).getConfigurationText();
+
+        String text = presenter.getConfigurationText();
+
+        assertTrue(text.startsWith("configuration {"), text);
+        assertTrue(text.contains("terrain.waterPercent="), text);
+        assertFalse(text.contains("threshold."),
+                "the Config tab must come from the catalogue: " + text);
+    }
+
+    @Test
     @DisplayName("New game keeps the S4a discard confirmation with a game running")
     void newGameShortcut_withGame_confirmsFirst() {
         doCallRealMethod().when(presenter).onNewGame(anyMap());
