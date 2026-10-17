@@ -187,6 +187,48 @@ class NewGameDialogTest {
     }
 
     @Test
+    @DisplayName("a state mark opens the terrain rows and shifts their values two columns (#742 polish)")
+    void should_ShiftTheMarkedTerrainRows() {
+        TerminalPalette palette = new TerminalPalette(TerminalPalette.Depth.TRUECOLOR);
+        NewGameDialog.StateMark mark = new NewGameDialog.StateMark("●", TextColor.ANSI.RED);
+
+        NewGameDialog.PercentSlider plain =
+                new NewGameDialog.PercentSlider(NewGameText.WATER_LABEL, TERRAIN_COLUMN, 25, () -> {
+                });
+        NewGameDialog.PercentSlider marked = new NewGameDialog.PercentSlider(
+                NewGameText.WATER_LABEL, TERRAIN_COLUMN, 25, mark, () -> {
+                });
+        assertEquals(TERRAIN_COLUMN + 1 + NewGameDialog.SLIDER_BAR_WIDTH + 2 + 5,
+                plain.getPreferredSize().getColumns());
+        assertEquals(plain.getPreferredSize().getColumns() + SettingsDialog.STATE_COLUMNS,
+                marked.getPreferredSize().getColumns(),
+                "the glyph adds its own two columns; the bar keeps its width");
+        assertEquals(SettingsDialog.STATE_COLUMNS, NewGameDialog.stateColumns(mark));
+        assertEquals(0, NewGameDialog.stateColumns(null));
+
+        // New Game keeps the base column: no marks, no shift.
+        NewGameDialog.ScrollColumn plainBlock = new NewGameDialog.ScrollColumn();
+        new NewGameDialog.TerrainControls(7, 25, 10, palette, new TerminalSize(120, 30))
+                .addTo(plainBlock);
+        assertEquals(TERRAIN_COLUMN, seedValueColumn(plainBlock));
+
+        // Settings passes the three marks: the value moves STATE_COLUMNS right.
+        NewGameDialog.ScrollColumn markedBlock = new NewGameDialog.ScrollColumn();
+        new NewGameDialog.TerrainControls(7, 25, 10, palette, new TerminalSize(120, 30), 0, 0, mark,
+                mark, mark).addTo(markedBlock);
+        assertEquals(TERRAIN_COLUMN + SettingsDialog.STATE_COLUMNS, seedValueColumn(markedBlock));
+    }
+
+    /** Lays out the seed row of a terrain block and returns the column of its text box. */
+    private static int seedValueColumn(NewGameDialog.ScrollColumn block) {
+        Panel seedHost = assertInstanceOf(Panel.class, block.getChildrenList().get(0));
+        Panel seedRow = assertInstanceOf(Panel.class, seedHost.getChildrenList().get(0));
+        seedRow.getLayoutManager().doLayout(new TerminalSize(40, 1), seedRow.getChildrenList());
+        return seedRow.getChildrenList().get(seedRow.getChildrenList().size() - 1).getPosition()
+                .getColumn();
+    }
+
+    @Test
     @DisplayName("every section starts one blank row and one empty column inside (#754/#757)")
     void should_ReserveABlankRowUnderTheTabs() {
         assertEquals(1, NewGameDialog.SECTION_TOP_ROWS);

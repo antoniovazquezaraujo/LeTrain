@@ -64,7 +64,18 @@ Desde #767 la pestaña Terrain muestra el **bloque compartido de Nueva Partida**
 (`NewGameDialog.TerrainControls`): seed, sliders de Water/Mountain, la **barra de tres colores** y
 el **preview** debajo, con los parámetros actuales del mundo y todo en **read-only**
 (`setEnabled(false)`: mismo aspecto, fuera del ciclo de foco). Los campos de terreno del catálogo
-(seed/water/mountain) ya no se listan como filas; su estado NEW_GAME queda implícito en el bloque.
+(seed/water/mountain) ya no se listan como filas.
+
+Desde el pulido de #742 el bloque recibe las **tres marcas de estado** opcionales
+(`NewGameDialog.StateMark`): cada fila (seed, Water y Mountain) abre con el glifo `●` y un espacio,
+igual que el resto de páginas y que el Settings 3D. Sin escenario son NEW_GAME (rojo); si el
+escenario fija la clave, gris `SCENARIO` (sin color propio). El glifo ocupa `STATE_COLUMNS` (2)
+celdas y por eso el valor se alinea dos columnas más a la derecha (`valueColumn = 2 +
+NewGameDialog.valueColumn`): seed, Water y Mountain siguen coincidiendo en la columna. La barra
+apilada y el preview **no** llevan glifo: la barra sigue empezando en x=0 y conserva su ancho (el
+bloque pasa la columna base a `StackedBar`, no la efectiva). A 80×24 el contenido es 70×20 y la
+fila marcada mide 2 + 10 + 1 + 40 + 2 + 5 = **60** celdas, así que cabe y el preview sigue sin
+filas ocultas.
 
 En 3D (#778) la página Terrain reproduce el mismo bloque con widgets scene2d
 (`Gdx3DHud.fillSettingsTerrain`): `TextField` y sliders deshabilitados (el estilo *disabled* del skin

@@ -90,6 +90,10 @@ constructor de 5 argumentos conserva el mínimo 80×24 para compatibilidad y tes
 - La **barra apilada** ocupa la fila completa del slider: empieza en el borde izquierdo y acaba
   donde termina el porcentaje (`valueColumn + bar + 8`, 58 celdas a 70 columnas) con
   `stackedBarWidth()`, compartiendo `sliderBarWidth()` con el slider.
+- **Nueva Partida no muestra glifos**: no aplica estados (todo el formulario es de partida nueva),
+  así que usa los mismos `TerrainControls` con las tres marcas `StateMark` a `null` y conserva la
+  geometría original (seed, Water y Mountain en la columna 10; barra y preview desde x=0). Settings
+  sí pasa las marcas y desplaza el valor 2 columnas, sin ensanchar la barra ni mover el preview.
 
 ## Secciones
 

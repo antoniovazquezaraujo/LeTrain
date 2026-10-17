@@ -49,6 +49,35 @@ class SettingsDialogTest {
     }
 
     @Test
+    @DisplayName("the Terrain page marks seed, water and mountain like the other pages (#742 polish)")
+    void should_MarkTheTerrainFields() {
+        List<String> keys = List.of("seed", "terrain.waterPercent", "terrain.mountainPercent");
+        for (String key : keys) {
+            SettingDefinition definition = SettingsCatalog.definition(key).orElseThrow();
+            assertEquals(SettingsDialog.FieldState.NEW_GAME,
+                    SettingsDialog.fieldState(definition, Set.of()), key + " without a scenario");
+            assertEquals(SettingsDialog.FieldState.SCENARIO,
+                    SettingsDialog.fieldState(definition, Set.of(key)),
+                    key + " pinned by a scenario");
+            assertFalse(SettingsDialog.fieldState(definition, Set.of(key)).editable(), key);
+        }
+    }
+
+    @Test
+    @DisplayName("the marked Terrain block still fits the 70-column box at 80x24 (#742 polish)")
+    void should_FitTheMarkedTerrainBlock() {
+        TerminalSize dialog = DialogWindow.dialogSize(new TerminalSize(80, 24));
+        int base = NewGameDialog.valueColumn(NewGameDialog.fieldNames(SettingCategory.TERRAIN));
+        int row = SettingsDialog.STATE_COLUMNS + base + 1 + NewGameDialog.SLIDER_BAR_WIDTH + 2 + 5;
+
+        assertEquals(new TerminalSize(70, 20), dialog);
+        assertEquals(60, row, "2 glyph columns + the 10-cell label + the 40-cell bar and value");
+        assertTrue(row < dialog.getColumns(), "the marked slider row fits the content box");
+        // The stacked bar keeps the width it had without marks: it still starts at x=0.
+        assertEquals(58, NewGameDialog.stackedBarWidth(dialog.getColumns(), base));
+    }
+
+    @Test
     @DisplayName("the scenario lock wins over the catalogue state, with no colour of its own (#764/#767)")
     void should_LockScenarioKeys() {
         Set<String> scenario = Set.of("startingBalance");

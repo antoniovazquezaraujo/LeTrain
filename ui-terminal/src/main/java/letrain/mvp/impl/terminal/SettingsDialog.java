@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import letrain.mvp.SettingsText;
+import letrain.settings.NewGameForm;
 import letrain.settings.SettingCategory;
 import letrain.settings.SettingDefinition;
 import letrain.settings.SettingFieldState;
@@ -58,7 +59,8 @@ import letrain.visitor.terminal.TerminalPalette;
  *
  * <p>
  * The Terrain page shows the shared New Game terrain block (seed, water/mountain sliders, the
- * three-colour bar and the preview) with the running world's parameters, read-only.
+ * three-colour bar and the preview) with the running world's parameters, read-only, and opens every
+ * field with the same state mark as the other pages (#742 polish).
  *
  * <p>
  * Actions: <b>Apply</b> sends the editable values to {@link SettingsPort#apply} (confirming first
@@ -252,7 +254,7 @@ final class SettingsDialog {
                 SettingCategory.ECONOMY, SettingCategory.CONSTRUCTION, SettingCategory.UI);
         Map<SettingCategory, Panel> sections = new EnumMap<>(SettingCategory.class);
         sections.put(SettingCategory.TERRAIN, terrainSection(baseline, TerminalPalette.detect(),
-                terrainSize(box, footerLayout.size())));
+                terrainSize(box, footerLayout.size()), scenarioKeys));
         for (SettingCategory category : tabs) {
             if (category != SettingCategory.TERRAIN) {
                 sections.put(category,
@@ -493,21 +495,33 @@ final class SettingsDialog {
 
     /**
      * Terrain page: the New Game terrain block (seed, water/mountain sliders, three-colour bar and
-     * preview) with the running world's parameters, read-only (#767).
+     * preview) with the running world's parameters, read-only (#767). Seed, water and mountain get
+     * the same state marks as the other pages (#742 polish): red NEW_GAME, or grey when a scenario
+     * pins them; the value moves {@link #STATE_COLUMNS} right to make room for the glyph.
      */
     private static Panel terrainSection(Map<String, String> baseline, TerminalPalette palette,
-            TerminalSize screen) {
+            TerminalSize screen, Set<String> scenarioKeys) {
         NewGameDialog.TerrainControls controls =
-                new NewGameDialog.TerrainControls(parseInt(baseline.get("seed"), 0),
-                        parseInt(baseline.get("terrain.waterPercent"),
+                new NewGameDialog.TerrainControls(parseInt(baseline.get(NewGameForm.SEED_KEY), 0),
+                        parseInt(baseline.get(NewGameForm.WATER_KEY),
                                 SettingsCatalog.DEFAULT_WATER_PERCENT),
-                        parseInt(baseline.get("terrain.mountainPercent"),
+                        parseInt(baseline.get(NewGameForm.MOUNTAIN_KEY),
                                 SettingsCatalog.DEFAULT_MOUNTAIN_PERCENT),
-                        palette, screen, 0, 0);
+                        palette, screen, 0, 0, terrainMark(NewGameForm.SEED_KEY, scenarioKeys),
+                        terrainMark(NewGameForm.WATER_KEY, scenarioKeys),
+                        terrainMark(NewGameForm.MOUNTAIN_KEY, scenarioKeys));
         controls.setEnabled(false);
         NewGameDialog.ScrollColumn column = new NewGameDialog.ScrollColumn();
         controls.addTo(column);
         return column;
+    }
+
+    /**
+     * State mark of one terrain key: NEW_GAME red, grey when the scenario pins it (#742 polish).
+     */
+    private static NewGameDialog.StateMark terrainMark(String key, Set<String> scenarioKeys) {
+        FieldState state = fieldState(SettingsCatalog.definition(key).orElseThrow(), scenarioKeys);
+        return new NewGameDialog.StateMark(state.glyph(), state.color());
     }
 
     private static int parseInt(String text, int fallback) {
