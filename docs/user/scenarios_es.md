@@ -19,7 +19,9 @@ Ambos artefactos son autocontenidos y nunca se mezclan.
 # LeTrain scenario v1
 seed 123
 configuration {
-  threshold.WATER=130
+  terrain.waterPercent=25
+  terrain.mountainPercent=10
+  world.latitude=40.0
 }
 on build {
   go 0,0; face e; write 5;
@@ -34,8 +36,9 @@ program {
 ```
 
 - `seed <n>` — **obligatorio**. La semilla del terreno; la misma semilla reproduce el mismo terreno.
-- `configuration { ... }` — ajustes como `clave=valor` (las mismas claves que `letrain.cfg`). El
-  escenario lleva sus propias reglas y **tienen preferencia sobre** el fichero `letrain.cfg` local.
+- `configuration { ... }` — ajustes como `clave=valor` (el catálogo de ajustes; ejecuta `help config`
+  en la consola para listar todas las claves). El escenario lleva sus propias reglas y **tienen
+  preferencia sobre** el fichero `letrain.cfg` local.
 - `on build { ... }` — los comandos de construcción (vías, elementos, trenes). Se reproducen una vez,
   primero.
 - `on start { ... }` — condiciones iniciales opcionales aplicadas justo después de construir: estado

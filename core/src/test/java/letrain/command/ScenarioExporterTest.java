@@ -1,9 +1,11 @@
 package letrain.command;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Map;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.mvp.Model;
@@ -119,5 +121,36 @@ class ScenarioExporterTest {
 
         assertTrue(text.contains("program {"), text);
         assertTrue(text.contains(program), text);
+    }
+
+    @Test
+    @DisplayName("the exported configuration comes from the catalogue, not the raw snapshot (#782)")
+    void configuration_comesFromCatalogue() {
+        letrain.mvp.impl.Model model = new letrain.mvp.impl.Model(1);
+
+        String text = ScenarioExporter.render(model, List.of("go 0,0; face e; write 1;"));
+
+        assertTrue(text.contains("configuration {"), text);
+        assertTrue(text.contains("terrain.waterPercent=25"), text);
+        assertTrue(text.contains("world.latitude=40.0"), text);
+        assertFalse(text.contains("threshold."), "legacy thresholds must be gone: " + text);
+    }
+
+    @Test
+    @DisplayName("an exported configuration round-trips into the rebuilt world's terrain (#782)")
+    void configuration_roundTripsIntoModel() {
+        letrain.mvp.impl.Model source = new letrain.mvp.impl.Model(1);
+        source.getEconomyManager()
+                .applyConfig(Map.of("terrain.waterPercent", "45", "terrain.mountainPercent", "5"));
+
+        String text = ScenarioExporter.render(source, List.of("go 0,0; face e; write 1;"));
+
+        ScenarioFile.Scenario scenario = ScenarioFile.parse(text);
+        letrain.mvp.impl.Model rebuilt = new letrain.mvp.impl.Model(scenario.seed());
+        rebuilt.applyScenarioConfiguration(scenario.configuration());
+
+        assertTrue(rebuilt.getEconomyManager().isTerrainPercentEnabled());
+        assertEquals(45, rebuilt.getEconomyManager().getWaterPercent());
+        assertEquals(5, rebuilt.getEconomyManager().getMountainPercent());
     }
 }

@@ -200,4 +200,35 @@ class SettingsCatalogTest {
         assertEquals("random", defaults.get("seed"));
         assertEquals(SettingsCatalog.definitions().size(), defaults.size());
     }
+
+    @Test
+    @DisplayName("scenarioConfiguration() = every catalogue key but seed, in form order (#782)")
+    void scenarioConfiguration_coversCatalogueExceptSeed() {
+        Map<String, String> configuration = SettingsCatalog.scenarioConfiguration(null);
+
+        List<String> expected = SettingsCatalog.definitions().stream().map(SettingDefinition::key)
+                .filter(key -> !"seed".equals(key)).toList();
+        assertEquals(expected, List.copyOf(configuration.keySet()), "form order, no seed");
+        assertFalse(configuration.containsKey("seed"));
+        for (SettingDefinition def : SettingsCatalog.definitions()) {
+            if (!"seed".equals(def.key())) {
+                assertEquals(def.defaultValue(), configuration.get(def.key()), def.key());
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("scenarioConfiguration() lets effective values win, falls back to defaults (#782)")
+    void scenarioConfiguration_effectiveWinsAndDropsUnknownKeys() {
+        Map<String, String> effective = new LinkedHashMap<>();
+        effective.put("terrain.waterPercent", "40");
+        effective.put("threshold.WATER", "130"); // legacy key: not in the catalogue
+
+        Map<String, String> configuration = SettingsCatalog.scenarioConfiguration(effective);
+
+        assertEquals("40", configuration.get("terrain.waterPercent"), "effective value wins");
+        assertEquals("10", configuration.get("terrain.mountainPercent"), "missing key -> default");
+        assertFalse(configuration.containsKey("threshold.WATER"),
+                "keys outside the catalogue are dropped");
+    }
 }

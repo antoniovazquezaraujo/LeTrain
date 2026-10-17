@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import letrain.settings.SettingCategory;
+import letrain.settings.SettingDefinition;
+import letrain.settings.SettingsCatalog;
 
 /**
  * Quick-reference trees for the DSL. Commands are grouped by the editor tab they belong to so each
@@ -389,59 +392,41 @@ public class GrammarReference {
         return root;
     }
 
-    /** Scenario settings: the {@code letrain.cfg} keys, written as {@code key=value}. */
+    /**
+     * Scenario settings generated from the catalogue ({@code key=value} lines), grouped by category
+     * with {@code price.*} / {@code cargo.*} subgroups. Every catalogue key except {@code seed}
+     * appears once, using its default as the example value (issue #782).
+     */
     private static List<Node> configTree() {
         List<Node> root = new ArrayList<>();
         root.add(new Node("CONFIGURATION").setHeading(true));
 
-        Node economy = new Node("economy").setExpanded(true);
-        economy.add(new Node("startingBalance", "startingBalance=0"));
-        economy.add(new Node("fuelCostPerMeter", "fuelCostPerMeter=0.5"));
-        economy.add(new Node("cargoLoadingFee", "cargoLoadingFee=100"));
-        root.add(economy);
-
-        Node prices = new Node("prices");
-        prices.add(new Node("track", "price.CONSTRUCTED_NORMAL_RAIL_TRACK=5"));
-        prices.add(new Node("bridge", "price.CONSTRUCTED_BRIDGE_RAIL_TRACK=20"));
-        prices.add(new Node("tunnel", "price.CONSTRUCTED_TUNNEL_RAIL_TRACK=25"));
-        prices.add(new Node("fork", "price.CONSTRUCTED_FORK=15"));
-        prices.add(new Node("station", "price.CONSTRUCTED_STATION=50"));
-        prices.add(new Node("sensor", "price.CONSTRUCTED_SENSOR=20"));
-        prices.add(new Node("semaphore", "price.CONSTRUCTED_SEMAPHORE=20"));
-        prices.add(new Node("locomotive", "price.CONSTRUCTED_LOCOMOTIVE=100"));
-        prices.add(new Node("wagon", "price.CONSTRUCTED_WAGON=40"));
-        root.add(prices);
-
-        Node cargo = new Node("cargo values");
-        cargo.add(new Node("coal", "cargo.COAL=10"));
-        cargo.add(new Node("gold", "cargo.GOLD=100"));
-        cargo.add(new Node("ruby", "cargo.RUBY=250"));
-        root.add(cargo);
-
-        Node thresholds = new Node("resource thresholds").setExpanded(true);
-        thresholds.add(new Node("gold", "threshold.GOLD=0.30"));
-        thresholds.add(new Node("coal", "threshold.COAL=0.25"));
-        thresholds.add(new Node("ruby", "threshold.RUBY=0.35"));
-        thresholds.add(new Node("water", "threshold.WATER=130"));
-        thresholds.add(new Node("rock", "threshold.ROCK=180"));
-        root.add(thresholds);
-
-        Node map = new Node("map");
-        map.add(new Node("view radius", "map.VIEW_RADIUS=15"));
-        root.add(map);
-
-        Node delays = new Node("construction delays");
-        delays.add(new Node("normal", "delay.NORMAL_TRACK=0"));
-        delays.add(new Node("bridge", "delay.BRIDGE_TRACK=20"));
-        delays.add(new Node("bridge gate", "delay.BRIDGE_GATE_TRACK=20"));
-        delays.add(new Node("tunnel", "delay.TUNNEL_TRACK=30"));
-        delays.add(new Node("tunnel gate", "delay.TUNNEL_GATE_TRACK=30"));
-        root.add(delays);
-
-        Node derail = new Node("derailment");
-        derail.add(new Node("min curve interval", "derail.minCurveInterval=12"));
-        derail.add(new Node("min speed", "derail.minSpeed=3"));
-        root.add(derail);
+        for (SettingCategory category : SettingCategory.values()) {
+            Node categoryNode = new Node(category.displayName()).setExpanded(true);
+            Node prices = new Node("prices");
+            Node cargo = new Node("cargo values");
+            for (SettingDefinition definition : SettingsCatalog.definitions()) {
+                if (definition.category() != category || "seed".equals(definition.key())) {
+                    continue;
+                }
+                Node leaf = new Node(definition.displayName(),
+                        definition.key() + "=" + definition.defaultValue());
+                if (definition.key().startsWith("price.")) {
+                    prices.add(leaf);
+                } else if (definition.key().startsWith("cargo.")) {
+                    cargo.add(leaf);
+                } else {
+                    categoryNode.add(leaf);
+                }
+            }
+            if (!prices.children.isEmpty()) {
+                categoryNode.add(prices);
+            }
+            if (!cargo.children.isEmpty()) {
+                categoryNode.add(cargo);
+            }
+            root.add(categoryNode);
+        }
 
         return root;
     }

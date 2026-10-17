@@ -57,8 +57,11 @@ class GrammarReferenceTest {
     void configGroup() {
         List<String> snippets = snippets(GrammarReference.Group.CONFIG);
 
-        assertTrue(anyContains(snippets, "threshold.WATER=130"));
+        assertTrue(anyContains(snippets, "terrain.waterPercent=25"));
         assertTrue(anyContains(snippets, "startingBalance=0"));
+        assertTrue(anyContains(snippets, "price.CONSTRUCTED_STATION=100000.0"));
+        assertFalse(anyContains(snippets, "threshold."), "legacy thresholds are gone (#782)");
+        assertFalse(anyContains(snippets, "seed="), "the seed is not a configuration key");
         assertFalse(anyContains(snippets, "new st;"));
         assertFalse(anyContains(snippets, "create itinerary"));
     }
@@ -71,7 +74,7 @@ class GrammarReferenceTest {
 
         assertTrue(anyContains(full, "new st;"));
         assertTrue(anyContains(full, "create itinerary"));
-        assertTrue(anyContains(full, "threshold.WATER=130"));
+        assertTrue(anyContains(full, "terrain.waterPercent=25"));
     }
 
     @Test
@@ -100,7 +103,7 @@ class GrammarReferenceTest {
         assertFalse(console.contains("ITINERARY DSL"), console);
 
         assertTrue(GrammarReference.helpText("ls").contains("ls;"));
-        assertTrue(GrammarReference.helpText("configuration").contains("threshold.WATER"));
+        assertTrue(GrammarReference.helpText("configuration").contains("terrain.waterPercent"));
         assertTrue(GrammarReference.helpText("nonsense").contains("No help"));
     }
 

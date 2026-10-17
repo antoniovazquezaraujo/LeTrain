@@ -195,6 +195,26 @@ public final class SettingsCatalog {
     }
 
     /**
+     * The {@code configuration { }} block of an exported scenario (issue #782): every catalogue key
+     * except {@code seed} (the scenario already writes its own {@code seed} line), in form order.
+     * Each value comes from {@code effective} when present, otherwise the definition's default, so
+     * the block is always complete and deterministic even when {@code effective} is null. Consumed
+     * by {@link letrain.command.ScenarioExporter} and the Config tab of both presenters;
+     * {@code ScenarioFile.configurationSection} sorts the keys when writing.
+     */
+    public static Map<String, String> scenarioConfiguration(Map<String, String> effective) {
+        Map<String, String> configuration = new LinkedHashMap<>();
+        for (SettingDefinition definition : DEFINITIONS) {
+            if ("seed".equals(definition.key())) {
+                continue;
+            }
+            String value = effective == null ? null : effective.get(definition.key());
+            configuration.put(definition.key(), value != null ? value : definition.defaultValue());
+        }
+        return configuration;
+    }
+
+    /**
      * Apply state the field shows in the in-game Settings dialog (S3b, #764): the scenario lock
      * wins over the catalogue state (D10), otherwise REAPPLY/NEW_GAME map straight through and
      * anything else is LIVE.
