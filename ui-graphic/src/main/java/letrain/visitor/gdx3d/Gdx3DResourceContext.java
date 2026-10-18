@@ -153,16 +153,9 @@ public class Gdx3DResourceContext implements Disposable {
     public Model headlightModel;
     /** The same lamp unlit: shown by day and with the engine stopped. */
     public Model headlightOffModel;
-    /** Emissive red tail lamp (#796), lit at night while the train rolls. */
-    public Model tailLampModel;
-    /** The same red lamp unlit: static red circles by day or with the engine stopped. */
-    public Model tailLampOffModel;
 
     /** Unlit lamp colour: neutral warm grey, readable against most liveries. */
     static final int LAMP_OFF_RGB = 0xB8B2A6;
-
-    /** Tail lamp colour: the red of the position lamps, day and night. */
-    public static final int LAMP_RED_RGB = 0xE0201C;
 
     public final com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute blackDiffuseAttribute =
             com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
@@ -344,10 +337,6 @@ public class Gdx3DResourceContext implements Disposable {
                     palette.color(VisualPalette.Token.EMISSIVE_HEADLIGHT, dayNightRatio), true));
             // Same lamp unlit (day, or engine stopped): plain diffuse, always visible
             headlightOffModel = register(createHeadlightModel(LAMP_OFF_RGB, false));
-
-            // Red tail lamps (#796): emissive at night, static red diffuse by day/engine stopped.
-            tailLampModel = register(createHeadlightModel(LAMP_RED_RGB, true));
-            tailLampOffModel = register(createHeadlightModel(LAMP_RED_RGB, false));
 
             // Consumer Models
             goldConsumerModel = register(createConsumerModel(

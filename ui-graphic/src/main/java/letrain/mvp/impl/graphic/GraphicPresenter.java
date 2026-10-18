@@ -32,12 +32,10 @@ import letrain.utils.ValidationUtils;
 import letrain.vehicle.rail.CoreTrainEventListener;
 import letrain.vehicle.rail.impl.Locomotive;
 import letrain.vehicle.rail.impl.Train;
-import letrain.visitor.gdx3d.Gdx3DResourceContext;
 import letrain.visitor.gdx3d.Gdx3DRenderer;
 import letrain.visitor.gdx3d.HeadlightGlowRenderer;
 import letrain.visitor.gdx3d.HeadlightGlows;
 import letrain.visitor.gdx3d.Headlights;
-import letrain.visitor.gdx3d.TailLamps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,7 +98,6 @@ public class GraphicPresenter extends ApplicationAdapter
      */
     private HeadlightGlowRenderer headlightGlowRenderer;
     private final Color headlightColor = new Color();
-    private final Color tailLampColor = new Color();
     private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute tableDiffuse;
     private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute gridDiffuse;
     private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute boxDiffuse;
@@ -481,8 +478,6 @@ public class GraphicPresenter extends ApplicationAdapter
 
         // Ground pools of the headlights: alpha-blended and unlit, after the lit scene.
         renderHeadlightGlows(dayNightRatio());
-        // Red pools of the lit tail lamps (#796), their own colour and cap.
-        renderTailLampGlows(dayNightRatio());
 
         // Renderizado de Etiquetas 3D (Decals)
         if (!renderer.getLabels().isEmpty()) {
@@ -1699,23 +1694,6 @@ public class GraphicPresenter extends ApplicationAdapter
         List<Headlights.Source> nearest = Headlights.nearestTo(renderer.getHeadlightSources(),
                 cam.position, HeadlightGlows.MAX_SOURCES);
         headlightGlowRenderer.render(cam, nearest, headlightColor, ratio);
-    }
-
-    /**
-     * Draws the red ground pools of the lit tail lamps (#796), reusing the headlight pool renderer
-     * with a red tint and its own cap. The sources only exist while a lamp is lit and blinking on,
-     * so the pool glides and vanishes with its lamp; off by day, like the headlights.
-     */
-    private void renderTailLampGlows(double ratio) {
-        List<Headlights.Source> sources = renderer.getTailLampSources();
-        if (headlightGlowRenderer == null || cam == null || sources.isEmpty()
-                || VisualPalette.lightsOnFactor(ratio) <= 0f) {
-            return;
-        }
-        setColor(tailLampColor, Gdx3DResourceContext.LAMP_RED_RGB);
-        List<Headlights.Source> nearest =
-                Headlights.nearestTo(sources, cam.position, TailLamps.MAX_SOURCES);
-        headlightGlowRenderer.render(cam, nearest, tailLampColor, ratio);
     }
 
     /**

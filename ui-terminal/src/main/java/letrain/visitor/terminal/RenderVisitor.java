@@ -133,7 +133,7 @@ public class RenderVisitor implements Visitor {
 
     private void addHeadlight(Locomotive locomotive) {
         if (locomotive.getDir() == null || !locomotive.isEngineOn()
-                || !isHeadlightLocomotive(locomotive) || isHiddenInTunnel(locomotive)) {
+                || !locomotive.isHeadLocomotive() || isHiddenInTunnel(locomotive)) {
             return;
         }
         int cx = locomotive.getPosition().getX();
@@ -154,16 +154,6 @@ public class RenderVisitor implements Visitor {
                 }
             }
         }
-    }
-
-    /**
-     * Whether this locomotive must show the white beam (#618): the train's only locomotive (it
-     * keeps them on even while pushing) or the one at the physical front. A lone locomotive with no
-     * train is its own head.
-     */
-    private boolean isHeadlightLocomotive(Locomotive locomotive) {
-        Train train = locomotive.getTrain();
-        return train == null || train.getHeadlightLocomotive() == locomotive;
     }
 
     /**

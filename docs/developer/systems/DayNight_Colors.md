@@ -1,7 +1,7 @@
 # Mapa de colores día/noche (fase 1 de ADR-022)
 
 Estado: **implementado** — fase 1: **1a, 1b, 1c y 1d completas**; **1e parcial** (faros de
-locomotora y faroles rojos de cola; farolas/ventanas y niebla fina pendientes).
+locomotora; farolas/ventanas y niebla fina pendientes).
 
 Relacionado: [[ADR-022-Game-Time]] (fase 1), [[ADR-013]] (modo noche/día), issue #480
 (paridad 2D/3D).
@@ -57,26 +57,9 @@ Lo que hay en `develop` a día de hoy; el detalle por fase está al final de la 
   `RenderVisitor` simula el cono (`Headlight`). Los charcos sustituyen a los `PointLight` originales,
   que sobre el suelo de un quad por celda se veían como manchas **cuadradas** siguiendo la rejilla
   (#690); su plano se pinta por encima del balasto (y por debajo de vía y tren) para que las cajas
-  por celda del balasto no lo recorten. Las luces alumbran la **única locomotora del tren** o la que
-  ocupa el **frente físico** (`Train.getHeadlightLocomotive()`, #618): en push-pull la luz se
-  intercambia de extremo al invertir, con una sola locomotora se mantiene encendida aunque empuje
-  desde atrás, y con varias locomotoras y el frente en un vagón no alumbra ninguna (el frente va a
-  oscuras). Siguen exigiéndose el motor en marcha (`isEngineOn()`), la noche y, en 3D, no estar
-  descarrilada (`isDestroying()`).
-- **Faroles rojos de cola** (**solo 3D**, excepción consciente a la paridad 2D/3D, #796): dos esferas
-  rojas en el vehículo del **extremo opuesto** a la locomotora blanca (vale vagón o locomotora),
-  fijas al material. Con la **cola de vagón** quedan clavadas en su cara: al invertir no se mueven,
-  aunque ese vagón pase a liderar; en **push-pull** se intercambian blanco↔rojo entre las dos
-  locomotoras; una **loco suelta** lleva blancas delante y rojas detrás. La elección del vehículo, el
-  signo de su cara libre y la fase de parpadeo son lógica pura en
-  `ui-graphic/.../gdx3d/TailLamps` (cubierta por `TailLampsTest`; `Train.getHeadlightLocomotive()`
-  por `HeadlightLocomotiveTest`). De día o con el motor parado son **círculos rojos estáticos**
-  (modelo rojo sin `emissive`, `tailLampOffModel`); de noche son emisivos y **parpadean por ticks de
-  juego** (`Model.getElapsedTicks()`, ciclo de 20: lámpara A en las fases 0–5, ambas apagadas en
-  6–13, lámpara B en 14–19), determinista y nunca con reloj real. Cada lámpara encendida proyecta
-  **su propio charco rojo** reutilizando `HeadlightGlows` + `HeadlightGlowRenderer` con tinte
-  (`Gdx3DResourceContext.LAMP_RED_RGB`), y el charco se apaga y se va con su lámpara. Comparte
-  visibilidad con los faros: sin luz en túnel ni con el tren destruido.
+  por celda del balasto no lo recorten. En ambos clientes las luces y el haz solo se encienden con el
+  motor en marcha (`isEngineOn()`) y en la locomotora de cabeza (`isHeadLocomotive()`); en 3D tampoco
+  durante el descarrilamiento (`isDestroying()`).
 
 ## Cómo funcionaba antes de implementar (histórico)
 
@@ -240,10 +223,9 @@ esferas (la activa a color, la otra muy oscura). Limpieza pendiente: en 2D `SEMA
    resaltados conservan color y contraste de noche (son información de juego, no decorado).
 4. **Colores de jugador**: solo atenuación global (≤ 45 % de noche); no se re-mapean a variantes.
 5. **Emisivos**: los faros de locomotora son el token `EMISSIVE_HEADLIGHT`, que no se atenúa
-   (implementado); los **faroles rojos de cola** usan su propio emisivo `LAMP_RED_RGB` (3D, #796), y
-   farolas y ventanas iluminadas se añadirán como tokens emisivos (1e pendiente). Lámpara y luz se
-   encienden a la vez: umbral compartido `VisualPalette.LIGHTS_ON_RATIO` (0,1) y rampa
-   `lightsOnFactor` en 3D y 2D.
+   (implementado); farolas y ventanas iluminadas se añadirán como tokens emisivos (1e pendiente).
+   Lámpara y luz se encienden a la vez: umbral compartido `VisualPalette.LIGHTS_ON_RATIO` (0,1) y
+   rampa `lightsOnFactor` en 3D y 2D.
 6. **Rendimiento**: en 3D la paleta se interpola una vez por tick (no por instancia) y los
    materiales actualizan su `ColorAttribute` solo cuando el color cambia; en 2D la paleta se resuelve
    al cruzar un escalón, no en cada frame.
@@ -256,7 +238,7 @@ esferas (la activa a color, la otra muy oscura). Limpieza pendiente: en 2D `SEMA
 | 1b | Terreno (campos, agua, montaña, balasto, túnel, pared) | Tokens de terreno en `VisualPalette` y materiales del `Gdx3DResourceContext`/`GroundRenderer` | Hecha |
 | 1c | Elementos, vía y trenes | Tokens de vía/trenes base + atenuación de colores de jugador; avisos intactos | Hecha |
 | 1d | 2D: paleta día/noche del terminal (familia clara) | `TerminalPalette` + wiring del `RenderVisitor` | Hecha |
-| 1e | Emisivos (faros/farolas) y niebla/cielo fino | **Faros de locomotora y faroles rojos de cola** (charco aditivo en 3D + haz simulado en 2D; rojos solo 3D) | Parcial: farolas/ventanas y niebla pendientes; coordinar con #480 |
+| 1e | Emisivos (faros/farolas) y niebla/cielo fino | **Faros de locomotora** (charco aditivo en 3D + haz simulado en 2D) | Parcial: farolas/ventanas y niebla pendientes; coordinar con #480 |
 
 Pendiente de 1e: farolas/ventanas, acabado de cielo y niebla fina. El resto de la fase 1 está en
 `develop`.
@@ -328,10 +310,8 @@ Pendiente de 1e: farolas/ventanas, acabado de cielo y niebla fina. El resto de l
   recortaban el charco en agujeros alineados con la rejilla. El charco usa la
   posición **renderizada** (interpolada) que el `VehicleRenderer` publica cada frame
   (`Gdx3DRenderer.getHeadlightSources()`), así se desliza con el tren en vez de saltar de celda en
-  celda. Luces y haz solo se encienden con el motor en marcha (`Locomotive.isEngineOn()`) y por
-  encima del umbral compartido, y alumbran la locomotora del **frente físico**
-  (`Train.getHeadlightLocomotive()`, #618): única locomotora o, en push-pull, la que va delante, de
-  modo que el extremo se intercambia al invertir. En 2D el
+  celda. Luces y haz solo se encienden con el motor en marcha (`Locomotive.isEngineOn()`), en la
+  locomotora de cabeza (`isHeadLocomotive()`) y por encima del umbral compartido. En 2D el
   `RenderVisitor` simula el haz: `Headlight.factor(dx, dy, dir)` da el cono (alcance 3 celdas,
   semiángulo 40°, tope `MAX_LIGHT`), y las celdas que ilumina se pintan mezclando su color nocturno
   con el diurno, **incluido el fondo**, así que el haz "aclara" vía y terreno. El túnel oculto (fuera
@@ -339,16 +319,6 @@ Pendiente de 1e: farolas/ventanas, acabado de cielo y niebla fina. El resto de l
   proyecta haz y las celdas de túnel no se iluminan. Todo el sistema enciende con el mismo umbral
   (`VisualPalette.LIGHTS_ON_RATIO`) y rampa (`lightsOnFactor`), para que lámpara, resplandor y haz
   aparezcan a la vez en ambos clientes.
-- Faroles rojos de cola (1e parcial, **solo 3D**, #796): `TailLamps` (lógica pura, en
-  `ui-graphic/.../gdx3d`) elige el vehículo del extremo opuesto a la locomotora blanca (o el fondo
-  físico como *fallback*), el signo de su cara libre y la fase de parpadeo, y el `VehicleRenderer`
-  pinta dos lámparas rojas igual que las blancas. Modelos `tailLampModel`/`tailLampOffModel` en
-  `Gdx3DResourceContext`: emisivos de noche y círculos rojos estáticos de día o con el motor parado.
-  De noche parpadean por ticks de juego (`Model.getElapsedTicks()`, ciclo de 20 ticks) y cada lámpara
-  encendida publica su propia fuente en `Gdx3DRenderer.getTailLampSources()`, que el presentador
-  dibuja como charco rojo (`HeadlightGlowRenderer.render(..., tailLampColor, ratio)`) con su propio
-  tope. Son fijas al material: la cola de vagón conserva sus rojos al invertir y solo en push-pull se
-  intercambian blanco↔rojo; una loco suelta lleva blancas delante y rojas detrás.
 
 ## Decisiones pendientes
 
