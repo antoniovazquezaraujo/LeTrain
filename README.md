@@ -58,9 +58,11 @@ LeTrain has evolved! While maintaining its terminal roots, it now features a **h
 - **Visual Polish**: Dynamic transparency for mountains, semantic color-coded stations, and high-resolution typography.
 
 <p align="center">
-  <img width="49%" alt="The 3D world by day: a letter train spelling 'letrainisverycool'" src="docs/user/images/landscape3D.png" />
-  <img width="49%" alt="The same 3D world at night, lit by locomotive headlights" src="docs/user/images/night.png" />
+  <img width="32%" alt="The same world in the classic 2D terminal" src="docs/user/images/landscape2D.png" />
+  <img width="32%" alt="The 3D world by day: a letter train spelling 'letrainisverycool'" src="docs/user/images/landscape3D.png" />
+  <img width="32%" alt="The 3D world at night, lit by locomotive headlights" src="docs/user/images/night.png" />
 </p>
+<p align="center"><sub>Classic 2D terminal · 3D by day · 3D by night</sub></p>
 
 ## 🎬 Record, Undo & Scenarios
 The editing workflow is now first-class — in both the 2D and 3D clients:
