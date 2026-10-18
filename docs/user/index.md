@@ -46,7 +46,12 @@
 
 - **Economy & Logistics:** Build tracks, manage resources, and balance your budget. The central economy system reacts to your decisions.
 
-![The LeTrain Editor with the Config tab selected](images/config-editor.png)
+<p align="center">
+  <img width="49%" alt="The 3D world by day: a letter train spelling 'letrainisverycool'" src="images/landscape3D.png" />
+  <img width="49%" alt="The same 3D world at night, lit by locomotive headlights" src="images/night.png" />
+</p>
+
+![The LeTrain editor with the Programming tab selected](images/programming.png)
 
 ## 🚀 Quick Start
 
