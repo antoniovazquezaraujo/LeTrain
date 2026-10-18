@@ -24,6 +24,8 @@ public class Gdx3DRenderer implements Visitor {
     private final List<VehicleLabel> labels = new ArrayList<>();
     /** Rendered locomotive positions of the frame, used to place the headlight ground pools. */
     private final List<Headlights.Source> headlightSources = new ArrayList<>();
+    /** Rendered positions of the lit red tail lamps, used to place their own ground pools. */
+    private final List<Headlights.Source> tailLampSources = new ArrayList<>();
     private final com.badlogic.gdx.utils.Pool<VehicleLabel> labelPool =
             new com.badlogic.gdx.utils.Pool<VehicleLabel>() {
                 @Override
@@ -67,7 +69,7 @@ public class Gdx3DRenderer implements Visitor {
         this.trackRenderer =
                 new TrackRenderer(resourceContext, instances, transparentInstances, labels);
         this.vehicleRenderer = new VehicleRenderer(resourceContext, instances, transparentInstances,
-                labels, headlightSources);
+                labels, headlightSources, tailLampSources);
         this.infrastructureRenderer = new InfrastructureRenderer(resourceContext, instances,
                 transparentInstances, labels, trackRenderer);
         this.groundRenderer =
@@ -141,6 +143,7 @@ public class Gdx3DRenderer implements Visitor {
         instances.clear();
         transparentInstances.clear();
         headlightSources.clear();
+        tailLampSources.clear();
         for (VehicleLabel l : labels) {
             labelPool.free(l);
         }
@@ -151,6 +154,11 @@ public class Gdx3DRenderer implements Visitor {
     /** Rendered headlight sources of the last {@code visitModel}: interpolated positions. */
     public List<Headlights.Source> getHeadlightSources() {
         return headlightSources;
+    }
+
+    /** Rendered positions of the lit red tail lamps of the last {@code visitModel}. */
+    public List<Headlights.Source> getTailLampSources() {
+        return tailLampSources;
     }
 
     public void visitGroundPlane(ModelInstance ground) {

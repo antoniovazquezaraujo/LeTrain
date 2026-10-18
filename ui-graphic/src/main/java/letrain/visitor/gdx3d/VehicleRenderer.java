@@ -19,13 +19,17 @@ public class VehicleRenderer extends BaseSubRenderer {
 
     public VehicleRenderer(Gdx3DResourceContext resourceContext, List<ModelInstance> instances,
             List<ModelInstance> transparentInstances, List<Gdx3DRenderer.VehicleLabel> labels,
-            List<Headlights.Source> headlightSources) {
+            List<Headlights.Source> headlightSources, List<Headlights.Source> tailLampSources) {
         super(resourceContext, instances, transparentInstances, labels);
         this.headlightSources = headlightSources;
+        this.tailLampSources = tailLampSources;
     }
 
     /** Rendered headlight positions collected during the frame, for the ground pools. */
     private final List<Headlights.Source> headlightSources;
+
+    /** Rendered positions of the lit red tail lamps, so each lamp gets its own ground pool. */
+    private final List<Headlights.Source> tailLampSources;
 
     @Override
     public void visitLocomotive(Locomotive locomotive) {
@@ -151,7 +155,7 @@ public class VehicleRenderer extends BaseSubRenderer {
         Model locoModelToUse = resourceContext.locomotiveModel;
 
         boolean headlightsOn = !locomotive.isDestroying() && locomotive.isEngineOn()
-                && locomotive.isHeadLocomotive()
+                && isHeadlightLocomotive(locomotive)
                 && VisualPalette.lightsOnFactor(resourceContext.getDayNightRatio()) > 0f;
 
         // Headlight source at the rendered (interpolated) position, so the ground pool glides with
@@ -224,6 +228,10 @@ public class VehicleRenderer extends BaseSubRenderer {
                 instances.add(lamp);
             }
         }
+
+        // Red tail lamps (#796): only on the trailing vehicle, fixtures that do not follow the
+        // sense of march.
+        renderTailLamps(locomotive, train, renderX, renderY, renderTangent);
 
         // Green line (direction marker) - ONLY for selected locomotive
         boolean isSelected = (modelRef != null && modelRef.getSelectedLocomotive() == locomotive);
@@ -499,6 +507,64 @@ public class VehicleRenderer extends BaseSubRenderer {
             v2.set(-perpXW, 0, -perpZW).nor();
             addLabel(v1, wagon.getAspect(), v2, null,
                     resourceContext.attenuatePlayerColor(Color.WHITE), 1.0f);
+        }
+
+        // Red tail lamps (#796): a wagon at the tail carries them too, fixed to its own face.
+        renderTailLamps(wagon, train, renderX, renderY, renderTangent);
+    }
+
+    /**
+     * Whether this locomotive must show the white lamps (#618): the train's only locomotive (it
+     * keeps them on even while pushing) or the one at the physical front. A lone locomotive with no
+     * train is its own head.
+     */
+    private static boolean isHeadlightLocomotive(Locomotive locomotive) {
+        Train train = locomotive.getTrain();
+        return train == null || train.getHeadlightLocomotive() == locomotive;
+    }
+
+    /**
+     * Draws the two red tail lamps (#796) when {@code vehicle} is the trailing vehicle of its
+     * train. By day, or with the engine stopped, they are static red circles; at night they are
+     * emissive, blink alternately from the game tick counter (deterministic) and each adds its own
+     * red ground pool that glides and vanishes with it. Lamps are fixtures: reversing the train
+     * does not move them off the same face except when the headlight locomotive itself swaps ends.
+     */
+    private void renderTailLamps(Linker vehicle, Train train, float renderX, float renderY,
+            Vector3 renderTangent) {
+        if (train == null || resourceContext.tailLampModel == null
+                || resourceContext.tailLampOffModel == null) {
+            return;
+        }
+        if (TailLamps.tailVehicle(train) != vehicle || vehicle.isDestroying()) {
+            return;
+        }
+        boolean lit = TailLamps.engineRunning(train)
+                && VisualPalette.lightsOnFactor(resourceContext.getDayNightRatio()) > 0f;
+        long ticks = modelRef == null || modelRef.getGameClock() == null ? 0L
+                : modelRef.getGameClock().elapsedTicks();
+
+        v1.set(renderTangent).nor();
+        float dx = v1.x;
+        float dz = v1.z;
+        float perpX = dz * 0.2f;
+        float perpZ = -dx * 0.2f;
+        float sign = TailLamps.outwardSign(train, vehicle);
+        Model lampModel = lit ? resourceContext.tailLampModel : resourceContext.tailLampOffModel;
+        for (int side = -1; side <= 1; side += 2) {
+            int lamp = side < 0 ? 0 : 1;
+            if (lit && !TailLamps.lampOn(ticks, lamp)) {
+                continue;
+            }
+            float lampX = renderX + dx * 0.42f * sign + perpX * side;
+            float lampZ = renderY + dz * 0.42f * sign + perpZ * side;
+            ModelInstance instance = resourceContext.getModelInstance(lampModel);
+            instance.transform.setToTranslation(lampX, 0.5f, lampZ);
+            instances.add(instance);
+            if (lit) {
+                // Outward direction so the red pool spreads away from the train.
+                tailLampSources.add(new Headlights.Source(lampX, lampZ, dx * sign, dz * sign));
+            }
         }
     }
 
