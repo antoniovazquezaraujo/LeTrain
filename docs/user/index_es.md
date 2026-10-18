@@ -46,9 +46,11 @@
 - **Economía y Logística:** Construye vías, gestiona recursos y equilibra tu presupuesto. El sistema de economía central reacciona a tus decisiones.
 
 <p align="center">
-  <img width="49%" alt="El mundo 3D de día: un tren de letras deletreando 'letrainisverycool'" src="images/landscape3D.png" />
-  <img width="49%" alt="El mismo mundo 3D de noche, iluminado por los faros de las locomotoras" src="images/night.png" />
+  <img width="32%" alt="El mismo mundo en la terminal 2D clásica" src="images/landscape2D.png" />
+  <img width="32%" alt="El mundo 3D de día: un tren de letras deletreando 'letrainisverycool'" src="images/landscape3D.png" />
+  <img width="32%" alt="El mundo 3D de noche, iluminado por los faros de las locomotoras" src="images/night.png" />
 </p>
+<p align="center"><sub>Terminal 2D clásica · 3D de día · 3D de noche</sub></p>
 
 ![El editor de LeTrain con la pestaña Programming seleccionada](images/programming.png)
 

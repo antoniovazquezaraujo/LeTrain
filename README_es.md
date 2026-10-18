@@ -58,9 +58,11 @@
 - **Acabado visual pulido**: Transparencias dinámicas en montañas, estaciones codificadas semánticamente por colores y tipografía de alta resolución.
 
 <p align="center">
-  <img width="49%" alt="El mundo 3D de día: un tren de letras deletreando 'letrainisverycool'" src="docs/user/images/landscape3D.png" />
-  <img width="49%" alt="El mismo mundo 3D de noche, iluminado por los faros de las locomotoras" src="docs/user/images/night.png" />
+  <img width="32%" alt="El mismo mundo en la terminal 2D clásica" src="docs/user/images/landscape2D.png" />
+  <img width="32%" alt="El mundo 3D de día: un tren de letras deletreando 'letrainisverycool'" src="docs/user/images/landscape3D.png" />
+  <img width="32%" alt="El mundo 3D de noche, iluminado por los faros de las locomotoras" src="docs/user/images/night.png" />
 </p>
+<p align="center"><sub>Terminal 2D clásica · 3D de día · 3D de noche</sub></p>
 
 ## 🎬 Grabar, Deshacer y Escenarios
 El flujo de trabajo de edición es de primer nivel, tanto en el cliente 2D como en el 3D:
