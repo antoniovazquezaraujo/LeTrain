@@ -1,4 +1,8 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "default_agent": "dani-coordinator"
+  "default_agent": "dani-coordinator",
+  "permissions": [
+    { "action": "shell", "resource": "gh pr merge *", "effect": "ask" },
+    { "action": "shell", "resource": "git push * develop*", "effect": "ask" }
+  ]
 }
