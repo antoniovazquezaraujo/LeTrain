@@ -158,11 +158,16 @@ public class VehicleRenderer extends BaseSubRenderer {
                 && isHeadlightLocomotive(locomotive)
                 && VisualPalette.lightsOnFactor(resourceContext.getDayNightRatio()) > 0f;
 
+        // White lamps are fixtures on the locomotive's outward face, not on the sense of march, so
+        // reversing a train does not flip them (#796).
+        float headlightSign = TailLamps.headlightSign(train, locomotive);
+
         // Headlight source at the rendered (interpolated) position, so the ground pool glides with
         // the locomotive instead of jumping cell by cell.
         if (headlightsOn) {
             v1.set(renderTangent).nor();
-            headlightSources.add(new Headlights.Source(renderX, renderY, v1.x, v1.z));
+            headlightSources.add(new Headlights.Source(renderX, renderY, v1.x * headlightSign,
+                    v1.z * headlightSign));
         }
 
         ModelInstance instance = resourceContext.getModelInstance(locoModelToUse);
@@ -223,8 +228,9 @@ public class VehicleRenderer extends BaseSubRenderer {
             float perpZL = -dxL * 0.2f;
             for (int side = -1; side <= 1; side += 2) {
                 ModelInstance lamp = resourceContext.getModelInstance(lampModel);
-                lamp.transform.setToTranslation(renderX + dxL * 0.42f + perpXL * side, 0.5f,
-                        renderY + dzL * 0.42f + perpZL * side);
+                lamp.transform.setToTranslation(
+                        renderX + dxL * 0.42f * headlightSign + perpXL * side, 0.5f,
+                        renderY + dzL * 0.42f * headlightSign + perpZL * side);
                 instances.add(lamp);
             }
         }

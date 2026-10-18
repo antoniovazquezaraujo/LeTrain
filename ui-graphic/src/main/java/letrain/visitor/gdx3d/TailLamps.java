@@ -25,10 +25,13 @@ public final class TailLamps {
     public static final int BLINK_PERIOD = 20;
 
     /**
-     * Lamp A is lit during ticks {@code [0, A_END)} and lamp B during {@code [B_START, PERIOD)}.
+     * Lamp A (left) is lit during ticks {@code [0, A_END)}, lamp B (right) during
+     * {@code [B_START, B_END)}; both are off in between. Cadence retuned after the first in-game
+     * review (#796): ≈200 ms on each, ≈400 ms off, well under the old 600 ms.
      */
-    public static final int A_END = 6;
-    public static final int B_START = 14;
+    public static final int A_END = 4;
+    public static final int B_START = 12;
+    public static final int B_END = 16;
 
     /** Each lamp carries its own ground pool; cap how many are drawn like the headlights do. */
     public static final int MAX_SOURCES = 4;
@@ -44,7 +47,22 @@ public final class TailLamps {
         if (lamp == 0) {
             return phase < A_END;
         }
-        return phase >= B_START;
+        return phase >= B_START && phase < B_END;
+    }
+
+    /**
+     * Sign, along a locomotive's own travel tangent, of the face that carries its <em>white</em>
+     * headlights: {@code +1} when it is the physical front (lone locomotive, pulling, or the
+     * leading loco of a push-pull) and {@code -1} when it drags its composition behind (a single
+     * locomotive pushing). A locomotive with no train keeps {@code +1}, its own front. The lamps
+     * are fixtures: deriving the sign from the composition instead of the sense of march is what
+     * stops them from hopping to the opposite face when the train is reversed (#796).
+     */
+    public static float headlightSign(Train train, Locomotive locomotive) {
+        if (train == null) {
+            return 1f;
+        }
+        return locomotive == train.getPhysicalFront() ? 1f : -1f;
     }
 
     /**
