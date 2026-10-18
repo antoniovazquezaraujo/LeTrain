@@ -133,14 +133,17 @@ public class RenderVisitor implements Visitor {
 
     private void addHeadlight(Locomotive locomotive) {
         if (locomotive.getDir() == null || !locomotive.isEngineOn()
-                || !locomotive.isHeadLocomotive() || isHiddenInTunnel(locomotive)) {
+                || !isHeadlightLocomotive(locomotive) || isHiddenInTunnel(locomotive)) {
             return;
         }
+        // The beam is a fixture of the locomotive's outward face, not of the sense of march:
+        // reversing a train must not swing it to the other end (#796).
+        Dir beamDir = beamDir(locomotive);
         int cx = locomotive.getPosition().getX();
         int cy = locomotive.getPosition().getY();
         for (int dx = -Headlight.RADIUS; dx <= Headlight.RADIUS; dx++) {
             for (int dy = -Headlight.RADIUS; dy <= Headlight.RADIUS; dy++) {
-                float factor = Headlight.factor(dx, dy, locomotive.getDir());
+                float factor = Headlight.factor(dx, dy, beamDir);
                 if (factor <= 0f) {
                     continue;
                 }
@@ -154,6 +157,29 @@ public class RenderVisitor implements Visitor {
                 }
             }
         }
+    }
+
+    /**
+     * Whether this locomotive must show the white beam (#618): the train's only locomotive (it
+     * keeps them on even while pushing) or the one at the physical front. A lone locomotive with no
+     * train is its own head.
+     */
+    private boolean isHeadlightLocomotive(Locomotive locomotive) {
+        Train train = locomotive.getTrain();
+        return train == null || train.getHeadlightLocomotive() == locomotive;
+    }
+
+    /**
+     * Direction of the white beam: the locomotive's own front (its {@code getDir()}) when it leads
+     * the composition, reversed when it drags it (single locomotive pushing), so the beam stays on
+     * the outward face instead of following the sense of march (#796).
+     */
+    private Dir beamDir(Locomotive locomotive) {
+        Train train = locomotive.getTrain();
+        if (train != null && locomotive != train.getPhysicalFront()) {
+            return locomotive.getDir().inverse();
+        }
+        return locomotive.getDir();
     }
 
     /**
