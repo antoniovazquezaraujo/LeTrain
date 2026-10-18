@@ -41,7 +41,7 @@
 </p>
 
 <p align="center">
-  <img width="80%" alt="promoLeTrain2D" src="https://github.com/user-attachments/assets/4b435726-b68f-47bb-9487-84a61a3ea568" />
+  <img width="80%" alt="La portada de LeTrain" src="docs/user/images/start.png" />
 </p>
 
 **LeTrain** es un simulador ferroviario procedural que fusiona la estética clásica de caracteres ASCII con un motor 3D moderno. Construye extensas redes de vías a lo largo de un mundo infinito, gestiona una economía dinámica y domina el arte de la eficiencia logística.
@@ -57,6 +57,11 @@
 - **Alma clásica**: Las zonas industriales y los trenes conservan su encanto icónico basado en caracteres, ahora proyectados como esculturas físicas tridimensionales.
 - **Acabado visual pulido**: Transparencias dinámicas en montañas, estaciones codificadas semánticamente por colores y tipografía de alta resolución.
 
+<p align="center">
+  <img width="49%" alt="El mundo 3D de día: un tren de letras deletreando 'letrainisverycool'" src="docs/user/images/landscape3D.png" />
+  <img width="49%" alt="El mismo mundo 3D de noche, iluminado por los faros de las locomotoras" src="docs/user/images/night.png" />
+</p>
+
 ## 🎬 Grabar, Deshacer y Escenarios
 El flujo de trabajo de edición es de primer nivel, tanto en el cliente 2D como en el 3D:
 - **Modo grabación/edición (`R`)**: Congela el mundo, construye al instante y registra cada cambio en un diario de acciones.
@@ -66,7 +71,7 @@ El flujo de trabajo de edición es de primer nivel, tanto en el cliente 2D como 
 - **Modo experimento (`X`)**: Guarda una instantánea del mundo en vivo, prueba cualquier idea audaz y restáurala con una sola pulsación.
 
 <p align="center">
-  <img width="80%" alt="El editor de LeTrain con la pestaña de configuración seleccionada" src="docs/user/images/config-editor.png" />
+  <img width="80%" alt="El editor de LeTrain con la pestaña Programming seleccionada" src="docs/user/images/programming.png" />
 </p>
 
 ## 💰 Economía e Industria Profunda
@@ -81,6 +86,10 @@ El juego incluye un sistema financiero totalmente integrado:
 - **Potenciador de entropía**: Cada partida nueva comienza en coordenadas aleatorias únicas (de ±10k a ±100k unidades) para garantizar exploración fresca siempre.
 - **Paisajes procedurales**: Navega por lagos, bosques y altas montañas generadas por ruido de Perlin multicapa.
 - **Frustum Culling**: Motor de renderizado optimizado para gestionar mapas inmensos procesando únicamente lo que está a la vista.
+
+<p align="center">
+  <img width="80%" alt="El diálogo de Settings, pestaña Terrain: deslizadores de semilla, agua y montaña con vista previa del mapa" src="docs/user/images/settings.png" />
+</p>
 
 ---
 
