@@ -61,8 +61,10 @@ Lo que hay en `develop` a día de hoy; el detalle por fase está al final de la 
   ocupa el **frente físico** (`Train.getHeadlightLocomotive()`, #618): en push-pull la luz se
   intercambia de extremo al invertir, con una sola locomotora se mantiene encendida aunque empuje
   desde atrás, y con varias locomotoras y el frente en un vagón no alumbra ninguna (el frente va a
-  oscuras). Siguen exigiéndose el motor en marcha (`isEngineOn()`), la noche y, en 3D, no estar
-  descarrilada (`isDestroying()`).
+  oscuras). Las lámparas van **siempre en la cara exterior** de la locomotora, no "a la marcha"
+  (`TailLamps.headlightSign(train, loco)` en 3D y `beamDir` en 2D): **al invertir no se mueven**; en
+  push-pull solo se intercambian porque la locomotora blanca cambia de extremo. Siguen exigiéndose
+  el motor en marcha (`isEngineOn()`), la noche y, en 3D, no estar descarrilada (`isDestroying()`).
 - **Faroles rojos de cola** (**solo 3D**, excepción consciente a la paridad 2D/3D, #796): dos esferas
   rojas en el vehículo del **extremo opuesto** a la locomotora blanca (vale vagón o locomotora),
   fijas al material. Con la **cola de vagón** quedan clavadas en su cara: al invertir no se mueven,
@@ -72,8 +74,9 @@ Lo que hay en `develop` a día de hoy; el detalle por fase está al final de la 
   `ui-graphic/.../gdx3d/TailLamps` (cubierta por `TailLampsTest`; `Train.getHeadlightLocomotive()`
   por `HeadlightLocomotiveTest`). De día o con el motor parado son **círculos rojos estáticos**
   (modelo rojo sin `emissive`, `tailLampOffModel`); de noche son emisivos y **parpadean por ticks de
-  juego** (`Model.getElapsedTicks()`, ciclo de 20: lámpara A en las fases 0–5, ambas apagadas en
-  6–13, lámpara B en 14–19), determinista y nunca con reloj real. Cada lámpara encendida proyecta
+  juego** (`Model.getElapsedTicks()`, ciclo de 20: lámpara A en las fases 0–3, ambas apagadas en
+  4–11, lámpara B en 12–15, ambas apagadas en 16–19), determinista y nunca con reloj real. Cada
+  lámpara encendida proyecta
   **su propio charco rojo** reutilizando `HeadlightGlows` + `HeadlightGlowRenderer` con tinte
   (`Gdx3DResourceContext.LAMP_RED_RGB`), y el charco se apaga y se va con su lámpara. Comparte
   visibilidad con los faros: sin luz en túnel ni con el tren destruido.
@@ -331,7 +334,10 @@ Pendiente de 1e: farolas/ventanas, acabado de cielo y niebla fina. El resto de l
   celda. Luces y haz solo se encienden con el motor en marcha (`Locomotive.isEngineOn()`) y por
   encima del umbral compartido, y alumbran la locomotora del **frente físico**
   (`Train.getHeadlightLocomotive()`, #618): única locomotora o, en push-pull, la que va delante, de
-  modo que el extremo se intercambia al invertir. En 2D el
+  modo que el extremo se intercambia al invertir. La lámpara y su charco se colocan en la **cara
+  exterior** de la locomotora con `TailLamps.headlightSign(train, loco)` (en 2D el haz usa el mismo
+  criterio con `beamDir`), no a lo largo de la marcha: una locomotora que empuja mantiene sus blancas
+  en la misma cara al invertir. En 2D el
   `RenderVisitor` simula el haz: `Headlight.factor(dx, dy, dir)` da el cono (alcance 3 celdas,
   semiángulo 40°, tope `MAX_LIGHT`), y las celdas que ilumina se pintan mezclando su color nocturno
   con el diurno, **incluido el fondo**, así que el haz "aclara" vía y terreno. El túnel oculto (fuera
@@ -344,11 +350,12 @@ Pendiente de 1e: farolas/ventanas, acabado de cielo y niebla fina. El resto de l
   físico como *fallback*), el signo de su cara libre y la fase de parpadeo, y el `VehicleRenderer`
   pinta dos lámparas rojas igual que las blancas. Modelos `tailLampModel`/`tailLampOffModel` en
   `Gdx3DResourceContext`: emisivos de noche y círculos rojos estáticos de día o con el motor parado.
-  De noche parpadean por ticks de juego (`Model.getElapsedTicks()`, ciclo de 20 ticks) y cada lámpara
-  encendida publica su propia fuente en `Gdx3DRenderer.getTailLampSources()`, que el presentador
-  dibuja como charco rojo (`HeadlightGlowRenderer.render(..., tailLampColor, ratio)`) con su propio
-  tope. Son fijas al material: la cola de vagón conserva sus rojos al invertir y solo en push-pull se
-  intercambian blanco↔rojo; una loco suelta lleva blancas delante y rojas detrás.
+  De noche parpadean por ticks de juego (`Model.getElapsedTicks()`, ciclo de 20 ticks: A en [0,4),
+  ambas apagadas [4,12), B en [12,16), ambas apagadas [16,20)) y cada lámpara encendida publica su
+  propia fuente en `Gdx3DRenderer.getTailLampSources()`, que el presentador dibuja como charco rojo
+  (`HeadlightGlowRenderer.render(..., tailLampColor, ratio)`) con su propio tope. Son fijas al
+  material: la cola de vagón conserva sus rojos al invertir y solo en push-pull se intercambian
+  blanco↔rojo; una loco suelta lleva blancas delante y rojas detrás.
 
 ## Decisiones pendientes
 

@@ -72,10 +72,12 @@ latitud mundial). El detalle de tokens y fases está en
   del charco se pinta por encima del balasto (y por debajo de vía y tren) para que las cajas por
   celda del balasto no lo recorten. Luces y haz solo se encienden por encima de
   `VisualPalette.LIGHTS_ON_RATIO` (0,1) y con el motor en marcha (`isEngineOn()`); alumbran la
-  locomotora del frente físico (`Train.getHeadlightLocomotive()`), de modo que en push-pull se
-  intercambian al invertir (#618). En 3D se añaden los **faroles rojos de cola** (#796): sólo 3D,
-  fijos al material, fijos en un vagón de cola y parpadeando por ticks de juego, con su propio
-  charco rojo. En 2D el túnel oculto también apaga el haz. Reglas completas en
+  locomotora del frente físico (`Train.getHeadlightLocomotive()`) desde su **cara exterior**
+  (`TailLamps.headlightSign`), así que **la inversión no mueve ninguna luz**: sólo en push-pull se
+  intercambian porque cambia la locomotora blanca (#618). En 3D se añaden los **faroles rojos de
+  cola** (#796): sólo 3D, fijos al material, fijos en un vagón de cola, y de noche parpadean por
+  ticks de juego (ciclo 20: A [0,4), B [12,16), apagadas el resto) con su propio charco rojo. En 2D
+  el túnel oculto también apaga el haz. Reglas completas en
   [DayNight_Colors.md](../systems/DayNight_Colors.md) (#618, #796).
 
 ## Menú de modos: paridad 2D/3D (#710)
