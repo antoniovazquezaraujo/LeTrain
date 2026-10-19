@@ -2,6 +2,7 @@ package letrain.mvp.impl.graphic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -229,5 +230,97 @@ class FileDialogEntriesTest {
         assertTrue(FileDialogEntries.accepts("anything", new String[0]));
         assertTrue(FileDialogEntries.accepts(null, new String[] {"json"}),
                 "a null name is tolerated by the pure filter");
+    }
+
+    @Test
+    @DisplayName("matches treats a null, empty or blank query as match-all")
+    void should_MatchEverythingWithABlankQuery() {
+        assertTrue(FileDialogEntries.matches("game.json", null));
+        assertTrue(FileDialogEntries.matches("game.json", ""));
+        assertTrue(FileDialogEntries.matches("game.json", "   "));
+        assertTrue(FileDialogEntries.matches("game.json", "\t\n"));
+    }
+
+    @Test
+    @DisplayName("matches is a case-insensitive substring, accents included case-only")
+    void should_MatchCaseInsensitiveSubstrings() {
+        assertTrue(FileDialogEntries.matches("Game.JSON", "json"));
+        assertTrue(FileDialogEntries.matches("game.json", "ME.J"));
+        assertTrue(FileDialogEntries.matches("game.json", "  json  "), "the query is trimmed");
+        assertTrue(FileDialogEntries.matches("José", "JOSÉ"), "Locale.ROOT folds Unicode case");
+        assertFalse(FileDialogEntries.matches("José", "jose"),
+                "accent folding is not part of the contract: only case is ignored");
+        assertFalse(FileDialogEntries.matches("game.json", "yaml"));
+    }
+
+    @Test
+    @DisplayName("matches tolerates a null name exactly as implemented")
+    void should_TolerateANullName() {
+        assertFalse(FileDialogEntries.matches(null, null));
+        assertFalse(FileDialogEntries.matches(null, ""));
+        assertFalse(FileDialogEntries.matches(null, "json"));
+    }
+
+    @Test
+    @DisplayName("filter always keeps the parent and matches the rest by file/folder name")
+    void should_KeepTheParentAndFilterTheRest(@TempDir Path tempDir) throws IOException {
+        mkdir(tempDir, "jsonFolder");
+        mkdir(tempDir, "docs");
+        create(tempDir, "game.json");
+        create(tempDir, "other.txt");
+        List<Entry> entries = FileDialogEntries.entries(tempDir.toFile(), new String[] {"json"});
+
+        List<Entry> filtered = FileDialogEntries.filter(entries, "json");
+
+        assertEquals(List.of("..", "jsonFolder/", "game.json"), labels(filtered),
+                "parent always survives; folders and files match by their own name");
+        assertTrue(filtered.get(0).parent(), "the parent row is the same '..' entry");
+        assertEquals(entries.get(0), filtered.get(0));
+    }
+
+    @Test
+    @DisplayName("an empty query returns every row, only the parent remains without matches")
+    void should_ReturnEveryRowOrJustTheParent(@TempDir Path tempDir) throws IOException {
+        create(tempDir, "game.json");
+        create(tempDir, "other.txt");
+        List<Entry> entries = FileDialogEntries.entries(tempDir.toFile(), new String[] {"json"});
+        List<String> all = labels(entries);
+
+        assertEquals(all, labels(FileDialogEntries.filter(entries, null)));
+        assertEquals(all, labels(FileDialogEntries.filter(entries, "")));
+        assertEquals(all, labels(FileDialogEntries.filter(entries, "  ")));
+
+        assertEquals(List.of(".."), labels(FileDialogEntries.filter(entries, "zzz")));
+    }
+
+    @Test
+    @DisplayName("filter preserves the order and never mutates the input list")
+    void should_PreserveTheOrderAndNotMutateTheInput(@TempDir Path tempDir) throws IOException {
+        mkdir(tempDir, "beta");
+        create(tempDir, "alpha.json");
+        create(tempDir, "gamma.json");
+        List<Entry> entries = FileDialogEntries.entries(tempDir.toFile(), new String[] {"json"});
+        List<String> snapshot = labels(entries);
+
+        List<Entry> filtered = FileDialogEntries.filter(entries, "a");
+        List<Entry> all = FileDialogEntries.filter(entries, "");
+
+        assertNotSame(entries, filtered);
+        assertNotSame(entries, all);
+        assertEquals(snapshot, labels(entries), "the source list is left untouched");
+        assertEquals(List.of("..", "beta/", "alpha.json", "gamma.json"), labels(filtered),
+                "the catalogue order is preserved");
+    }
+
+    @Test
+    @DisplayName("filter handles a null/empty input and a list without a parent row")
+    void should_HandleEdgeInputs() {
+        assertTrue(FileDialogEntries.filter(null, "json").isEmpty());
+        assertTrue(FileDialogEntries.filter(List.of(), "json").isEmpty());
+
+        Entry file = new Entry(new File("game.json"), "game.json", false, false);
+        assertTrue(FileDialogEntries.filter(List.of(file), "yaml").isEmpty(),
+                "no parent row and no match leaves nothing");
+        assertEquals(List.of(file), FileDialogEntries.filter(List.of(file), "json"));
     }
 }
