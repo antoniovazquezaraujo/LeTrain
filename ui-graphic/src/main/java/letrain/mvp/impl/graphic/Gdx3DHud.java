@@ -1513,11 +1513,15 @@ public class Gdx3DHud {
                 for (Actor widget : focusable) {
                     if (widget instanceof Slider) {
                         paintSliderFocus((Slider) widget, focused == widget);
-                    } else if (widget instanceof TextButton) {
-                        paintButtonFocus((TextButton) widget, focused == widget);
                     } else if (widget instanceof CheckBox) {
+                        // libGDX 1.14.2: CheckBox extends TextButton, so this branch
+                        // must run before the TextButton one, or paintButtonFocus
+                        // would hand it a TextButtonStyle, which CheckBox.setStyle
+                        // rejects (#808).
                         ((CheckBox) widget).getImage()
                                 .setColor(focused == widget ? Color.CYAN : Color.WHITE);
+                    } else if (widget instanceof TextButton) {
+                        paintButtonFocus((TextButton) widget, focused == widget);
                     }
                 }
             };
