@@ -3424,8 +3424,7 @@ public class Gdx3DHud {
                 letrain.command.ScenarioCompiler.Result result =
                         letrain.command.ScenarioCompiler.compile(full);
                 showDiagnostics.accept(result);
-                showFileDialog("Export Scenario",
-                        com.kotcrab.vis.ui.widget.file.FileChooser.Mode.SAVE, "scenario.ltr",
+                showFileDialog("Export Scenario", Gdx3DFileDialog.Mode.SAVE, "scenario.ltr",
                         new String[] {"ltr"}, path -> {
                             if (path != null && !path.trim().isEmpty()) {
                                 view.onExportScenarioText(new java.io.File(path), full);
@@ -3433,8 +3432,7 @@ public class Gdx3DHud {
                         });
             };
             final Runnable importAction = () -> showFileDialog("Open Scenario",
-                    com.kotcrab.vis.ui.widget.file.FileChooser.Mode.OPEN, "scenario.ltr",
-                    new String[] {"ltr"}, path -> {
+                    Gdx3DFileDialog.Mode.OPEN, "scenario.ltr", new String[] {"ltr"}, path -> {
                         if (path == null || path.trim().isEmpty()) {
                             return;
                         }
@@ -3792,108 +3790,25 @@ public class Gdx3DHud {
         }
     }
 
-    public void showFileDialog(String title, com.kotcrab.vis.ui.widget.file.FileChooser.Mode mode,
-            String defaultText, Consumer<String> onResult) {
+    public void showFileDialog(String title, Gdx3DFileDialog.Mode mode, String defaultText,
+            Consumer<String> onResult) {
         showFileDialog(title, mode, defaultText, new String[] {"json"}, onResult);
     }
 
-    public void showFileDialog(String title, com.kotcrab.vis.ui.widget.file.FileChooser.Mode mode,
-            String defaultText, String[] extensions, Consumer<String> onResult) {
+    public void showFileDialog(String title, Gdx3DFileDialog.Mode mode, String defaultText,
+            String[] extensions, Consumer<String> onResult) {
         showFileDialog(title, mode, defaultText, extensions, onResult, null);
     }
 
     /**
-     * @param onCancel run when the player closes the chooser without picking a file (used by the
+     * Opens the keyboard-first 3D file dialog (#484).
+     *
+     * @param onCancel run when the player closes the dialog without picking a file (used by the
      *        boot Load so it returns to the cover instead of leaving an empty world, S4 #777)
      */
-    public void showFileDialog(String title, com.kotcrab.vis.ui.widget.file.FileChooser.Mode mode,
-            String defaultText, String[] extensions, Consumer<String> onResult, Runnable onCancel) {
-        Gdx.app.postRunnable(() -> {
-            if (!com.kotcrab.vis.ui.VisUI.isLoaded()) {
-                com.kotcrab.vis.ui.VisUI.load();
-                com.kotcrab.vis.ui.widget.file.FileChooser
-                        .setDefaultPrefsName("letrain.filechooser");
-
-                // Override VisUI fonts with our monospace font to keep aesthetic
-                // consistency
-                com.badlogic.gdx.scenes.scene2d.ui.Skin visSkin =
-                        com.kotcrab.vis.ui.VisUI.getSkin();
-                com.badlogic.gdx.graphics.g2d.BitmapFont font =
-                        letrain.utils.FontManager.loadFont("JuliaMono-Regular", 18);
-
-                for (com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle style : visSkin
-                        .getAll(com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle.class)
-                        .values()) {
-                    style.font = font;
-                }
-                for (com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle style : visSkin
-                        .getAll(com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle.class)
-                        .values()) {
-                    style.font = font;
-                }
-                for (com.badlogic.gdx.scenes.scene2d.ui.Window.WindowStyle style : visSkin
-                        .getAll(com.badlogic.gdx.scenes.scene2d.ui.Window.WindowStyle.class)
-                        .values()) {
-                    style.titleFont = font;
-                }
-                for (com.badlogic.gdx.scenes.scene2d.ui.TextField.TextFieldStyle style : visSkin
-                        .getAll(com.badlogic.gdx.scenes.scene2d.ui.TextField.TextFieldStyle.class)
-                        .values()) {
-                    style.font = font;
-                }
-                for (com.badlogic.gdx.scenes.scene2d.ui.List.ListStyle style : visSkin
-                        .getAll(com.badlogic.gdx.scenes.scene2d.ui.List.ListStyle.class).values()) {
-                    style.font = font;
-                }
-                for (com.badlogic.gdx.scenes.scene2d.ui.SelectBox.SelectBoxStyle style : visSkin
-                        .getAll(com.badlogic.gdx.scenes.scene2d.ui.SelectBox.SelectBoxStyle.class)
-                        .values()) {
-                    style.font = font;
-                }
-            }
-            // Keyboard-first file dialog (#484): VisUI's scroll focus is not keyboard focus and its
-            // Tab only walks the text fields. Keep the keyboard in the file-name field on open and
-            // add VisFileChooserKeyboard, which cycles fields + tree + Open/Cancel and navigates
-            // the tree with the arrows.
-            com.kotcrab.vis.ui.widget.file.FileChooser.focusFileScrollPaneOnShow = true;
-            com.kotcrab.vis.ui.widget.file.FileChooser.focusSelectedFileTextFieldOnShow = true;
-            com.kotcrab.vis.ui.widget.file.FileChooser fileChooser =
-                    new com.kotcrab.vis.ui.widget.file.FileChooser(title, mode);
-            VisFileChooserKeyboard.install(fileChooser);
-            fileChooser.setSelectionMode(
-                    com.kotcrab.vis.ui.widget.file.FileChooser.SelectionMode.FILES);
-
-            // Filter by the requested extensions (json for savegames, ltr for scenarios).
-            com.kotcrab.vis.ui.widget.file.FileTypeFilter filter =
-                    new com.kotcrab.vis.ui.widget.file.FileTypeFilter(true);
-            for (String ext : extensions) {
-                filter.addRule(ext.toUpperCase() + " files (*." + ext + ")", ext);
-            }
-            fileChooser.setFileTypeFilter(filter);
-
-            fileChooser.setDirectory(Gdx.files.local("."));
-
-            fileChooser.setListener(new com.kotcrab.vis.ui.widget.file.FileChooserAdapter() {
-                @Override
-                public void selected(
-                        com.badlogic.gdx.utils.Array<com.badlogic.gdx.files.FileHandle> files) {
-                    if (files.size > 0) {
-                        onResult.accept(files.get(0).file().getAbsolutePath());
-                    }
-                }
-
-                @Override
-                public void canceled() {
-                    if (onCancel != null) {
-                        onCancel.run();
-                    }
-                }
-            });
-
-            fileChooser.setSize(750, 500);
-            fileChooser.centerWindow();
-            stage.addActor(fileChooser.fadeIn());
-        });
+    public void showFileDialog(String title, Gdx3DFileDialog.Mode mode, String defaultText,
+            String[] extensions, Consumer<String> onResult, Runnable onCancel) {
+        Gdx3DFileDialog.show(stage, skin, title, mode, defaultText, extensions, onResult, onCancel);
     }
 
     public void render(float delta) {
