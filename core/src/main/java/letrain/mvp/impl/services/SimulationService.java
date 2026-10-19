@@ -30,14 +30,18 @@ public class SimulationService {
 
     public void moveVehicles() {
         EconomyManager economyManager = model.getEconomyManager();
-        model.getLocomotives().forEach(locomotive -> {
+        for (Locomotive locomotive : model.getLocomotives()) {
+            // Distance is measured per advance: each successful rail move adds one unit (see
+            // Locomotive.getDistanceTraveled()), so the delta is the distance moved this tick.
+            int distanceBefore = locomotive.getDistanceTraveled();
             if (locomotive.update()) {
                 if (locomotive.isDirectorLinker()) {
                     economyManager.onTrainMoved(locomotive.getTrain());
-                    economyManager.chargeFuel(locomotive.getTrain());
+                    economyManager.chargeFuel(locomotive.getTrain(),
+                            locomotive.getDistanceTraveled() - distanceBefore);
                 }
             }
-        });
+        }
     }
 
     public void handleIndustrialActions() {

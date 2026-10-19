@@ -1678,9 +1678,9 @@ public class Model implements letrain.mvp.Model {
     }
 
     /**
-     * Seeded RNG for simulation-time randomness (cargo, future stochastic gameplay). Lazily
-     * reseeds from {@link #seed} if needed, so callers always get a deterministic stream. See the
-     * field javadoc for the savegame/replay contract.
+     * Seeded RNG for simulation-time randomness (cargo, future stochastic gameplay). Lazily reseeds
+     * from {@link #seed} if needed, so callers always get a deterministic stream. See the field
+     * javadoc for the savegame/replay contract.
      */
     @Override
     public java.util.Random getSimulationRandom() {
