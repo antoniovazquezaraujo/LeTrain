@@ -3,6 +3,7 @@ package letrain.mvp.impl.graphic;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.scenes.scene2d.Action;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
@@ -17,6 +18,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle;
 import com.badlogic.gdx.scenes.scene2d.ui.TextField;
 import com.badlogic.gdx.scenes.scene2d.ui.Window;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.utils.Align;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -51,6 +53,10 @@ public final class Gdx3DFileDialog {
 
     private static final float CONTENT_WIDTH = 640f;
     private static final float LIST_HEIGHT = 300f;
+    /** Row height of the file list; also the page length used by PgUp/PgDn. */
+    private static final float ROW_HEIGHT = 28f;
+    /** PgUp/PgDn fallback when the ScrollPane has not been laid out yet. */
+    private static final int DEFAULT_PAGE = 10;
 
     /** Only one instance at a time, like the rest of the modal dialogs. */
     private static boolean active;
@@ -75,12 +81,18 @@ public final class Gdx3DFileDialog {
     private Label statusLabel;
 
     private File currentDirectory;
+    /** Every row of the directory; {@link #entries} is the type-to-filtered view. */
+    private final List<Entry> allEntries = new ArrayList<>();
     private final List<Entry> entries = new ArrayList<>();
     private final List<TextButton> rows = new ArrayList<>();
+    private final StringBuilder filter = new StringBuilder();
     private int selected;
     private int area = AREA_LIST;
     private boolean nameEdited;
     private boolean updatingName;
+    private int repeatStep;
+    private float repeatElapsed;
+    private boolean repeatBurst;
 
     private Gdx3DFileDialog(Stage stage, Skin skin, String title, Mode mode, String defaultText,
             String[] extensions, Consumer<String> onResult, Runnable onCancel) {
@@ -175,10 +187,33 @@ public final class Gdx3DFileDialog {
                 cancel();
             }
         });
+        // Key auto-repeat (#804 pattern): hold Up/Down/PgUp/PgDn and the selection keeps moving
+        // after the shared initial delay, ticked by the frame clock. The name field keeps its own
+        // TextField repeat; this only arms while the list is focused.
+        dialog.addAction(new Action() {
+            @Override
+            public boolean act(float delta) {
+                return repeatTick(delta);
+            }
+        });
         dialog.addCaptureListener(new InputListener() {
             @Override
             public boolean keyDown(InputEvent event, int keycode) {
                 return handleKey(event, keycode);
+            }
+
+            @Override
+            public boolean keyUp(InputEvent event, int keycode) {
+                if (keycode == Input.Keys.UP || keycode == Input.Keys.DOWN
+                        || keycode == Input.Keys.PAGE_UP || keycode == Input.Keys.PAGE_DOWN) {
+                    stopRepeat();
+                }
+                return false;
+            }
+
+            @Override
+            public boolean keyTyped(InputEvent event, char character) {
+                return handleTyped(event, character);
             }
         });
 
@@ -206,7 +241,12 @@ public final class Gdx3DFileDialog {
 
     private boolean handleKey(InputEvent event, int keycode) {
         if (keycode == Input.Keys.ESCAPE) {
-            cancel();
+            // Esc first clears the type-to-filter; only an empty filter cancels the dialog.
+            if (filter.length() > 0) {
+                clearFilter();
+            } else {
+                cancel();
+            }
             event.stop();
             return true;
         }
@@ -233,11 +273,27 @@ public final class Gdx3DFileDialog {
         if (area == AREA_LIST) {
             switch (keycode) {
                 case Input.Keys.UP:
-                    moveSelection(-1);
+                    startRepeat(-1);
                     event.stop();
                     return true;
                 case Input.Keys.DOWN:
-                    moveSelection(1);
+                    startRepeat(1);
+                    event.stop();
+                    return true;
+                case Input.Keys.PAGE_UP:
+                    startRepeat(-pageSize());
+                    event.stop();
+                    return true;
+                case Input.Keys.PAGE_DOWN:
+                    startRepeat(pageSize());
+                    event.stop();
+                    return true;
+                case Input.Keys.HOME:
+                    select(0);
+                    event.stop();
+                    return true;
+                case Input.Keys.END:
+                    select(Math.max(0, entries.size() - 1));
                     event.stop();
                     return true;
                 case Input.Keys.ENTER:
@@ -246,8 +302,16 @@ public final class Gdx3DFileDialog {
                     event.stop();
                     return true;
                 case Input.Keys.LEFT:
-                case Input.Keys.BACKSPACE:
                     goToParent();
+                    event.stop();
+                    return true;
+                case Input.Keys.BACKSPACE:
+                    // Backspace edits the type-to-filter; with an empty filter it goes up a folder.
+                    if (filter.length() > 0) {
+                        removeLastFilterChar();
+                    } else {
+                        goToParent();
+                    }
                     event.stop();
                     return true;
                 default:
@@ -275,7 +339,28 @@ public final class Gdx3DFileDialog {
         return false;
     }
 
+    /**
+     * Type-to-filter while the list is focused: letters, digits and {@code - _ .} narrow the list
+     * to names containing the typed text (case-insensitive). The name field is untouched: outside
+     * the list every character goes to the focused widget.
+     */
+    private boolean handleTyped(InputEvent event, char character) {
+        if (area == AREA_LIST && isFilterChar(character)) {
+            filter.append(character);
+            applyFilter();
+            event.stop();
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean isFilterChar(char character) {
+        return Character.isLetterOrDigit(character) || character == '-' || character == '_'
+                || character == '.';
+    }
+
     private void focusArea(int next) {
+        stopRepeat();
         area = next;
         switch (next) {
             case AREA_LIST:
@@ -311,6 +396,99 @@ public final class Gdx3DFileDialog {
         }
         int next = Math.max(0, Math.min(entries.size() - 1, selected + step));
         select(next);
+    }
+
+    /** Applies one step now and arms the auto-repeat; the frame action applies the rest. */
+    private void startRepeat(int step) {
+        moveSelection(step);
+        if (entries.isEmpty()) {
+            stopRepeat();
+            return;
+        }
+        repeatStep = step;
+        repeatElapsed = 0f;
+        repeatBurst = false;
+    }
+
+    private void stopRepeat() {
+        repeatStep = 0;
+    }
+
+    private boolean repeatTick(float delta) {
+        if (repeatStep == 0 || area != AREA_LIST) {
+            repeatStep = 0;
+            return false;
+        }
+        float delay = Gdx3DInputHandler.INITIAL_REPEAT_DELAY_MS / 1000f;
+        float interval = Gdx3DInputHandler.REPEAT_INTERVAL_MS / 1000f;
+        repeatElapsed += delta;
+        if (!repeatBurst) {
+            if (repeatElapsed < delay) {
+                return false;
+            }
+            repeatBurst = true;
+            repeatElapsed -= delay;
+        }
+        while (repeatElapsed >= interval) {
+            repeatElapsed -= interval;
+            moveSelection(repeatStep);
+        }
+        return false;
+    }
+
+    /**
+     * Rows a PgUp/PgDn moves: the visible height divided by the row pitch, with a safe fallback.
+     */
+    private int pageSize() {
+        float height = listScroll.getHeight();
+        if (height <= 0f) {
+            return DEFAULT_PAGE;
+        }
+        return Math.max(1, (int) (height / ROW_HEIGHT));
+    }
+
+    /** Rebuilds the visible rows from the type-to-filter and keeps a sensible selection. */
+    private void applyFilter() {
+        Entry previous = selectedEntry();
+        entries.clear();
+        entries.addAll(FileDialogEntries.filter(allEntries, filter.toString()));
+        rebuildRows();
+        int index;
+        if (filter.length() > 0) {
+            index = firstContentIndex();
+        } else if (previous != null) {
+            index = indexOfFile(previous.file());
+        } else {
+            index = selected;
+        }
+        selected = Math.max(0, Math.min(Math.max(0, entries.size() - 1), index));
+        select(selected);
+        showFilterStatus();
+    }
+
+    /** The filter rides in the status line, in the neutral tone (errors are red). */
+    private void showFilterStatus() {
+        statusLabel.setColor(Color.LIGHT_GRAY);
+        statusLabel.setText(filter.length() > 0 ? "Filter: \"" + filter + "\"" : "");
+    }
+
+    private int firstContentIndex() {
+        if (entries.isEmpty()) {
+            return 0;
+        }
+        return entries.get(0).parent() && entries.size() > 1 ? 1 : 0;
+    }
+
+    private void clearFilter() {
+        filter.setLength(0);
+        applyFilter();
+    }
+
+    private void removeLastFilterChar() {
+        if (filter.length() > 0) {
+            filter.setLength(filter.length() - 1);
+            applyFilter();
+        }
     }
 
     private void select(int index) {
@@ -382,9 +560,13 @@ public final class Gdx3DFileDialog {
         }
         currentDirectory = target;
         pathLabel.setText(target.getAbsolutePath());
+        // A new directory starts with a clean type-to-filter.
+        filter.setLength(0);
         status("");
+        allEntries.clear();
+        allEntries.addAll(FileDialogEntries.entries(target, extensions));
         entries.clear();
-        entries.addAll(FileDialogEntries.entries(target, extensions));
+        entries.addAll(allEntries);
         rebuildRows();
         int index = indexOfFile(selectAfter);
         selected = index < 0 ? 0 : index;
@@ -400,7 +582,11 @@ public final class Gdx3DFileDialog {
             final int index = i;
             TextButton row = new TextButton(entry.label(), skin, "menu-button");
             row.setProgrammaticChangeEvents(false);
+            // Names read from the left; the button background (the selection highlight) spans the
+            // whole scroll width.
+            row.getLabel().setAlignment(Align.left);
             row.getLabel().setEllipsis(true);
+            row.getLabelCell().padLeft(8f);
             row.addListener(new ClickListener() {
                 @Override
                 public void clicked(InputEvent event, float x, float y) {
@@ -411,11 +597,12 @@ public final class Gdx3DFileDialog {
                     }
                 }
             });
-            listTable.add(row).growX().left().padBottom(2).row();
+            listTable.add(row).growX().left().height(ROW_HEIGHT).row();
             rows.add(row);
         }
         if (!FileDialogEntries.hasContent(entries)) {
-            listTable.add(new Label("(empty)", skin, "small")).left().pad(6).row();
+            String marker = filter.length() > 0 ? "(no matches)" : "(empty)";
+            listTable.add(new Label(marker, skin, "small")).left().pad(6).row();
         }
     }
 
@@ -513,6 +700,7 @@ public final class Gdx3DFileDialog {
     }
 
     private void status(String message) {
+        statusLabel.setColor(new Color(1f, 0.4f, 0.4f, 1f));
         statusLabel.setText(message == null ? "" : message);
     }
 

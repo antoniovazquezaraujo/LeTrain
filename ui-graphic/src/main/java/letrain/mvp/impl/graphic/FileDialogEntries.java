@@ -56,6 +56,37 @@ public final class FileDialogEntries {
         return rows;
     }
 
+    /**
+     * Type-to-filter match: case-insensitive substring of {@code name}. An empty query matches
+     * everything, so the helper can be used for both the raw list and the filtered one.
+     */
+    public static boolean matches(String name, String query) {
+        if (name == null) {
+            return false;
+        }
+        if (query == null || query.isBlank()) {
+            return true;
+        }
+        return name.toLowerCase(Locale.ROOT).contains(query.trim().toLowerCase(Locale.ROOT));
+    }
+
+    /**
+     * Rows that survive the type-to-filter: the parent row is always kept, the rest match their
+     * file name with {@link #matches(String, String)}. An empty query returns all rows.
+     */
+    public static List<Entry> filter(List<Entry> entries, String query) {
+        List<Entry> result = new ArrayList<>();
+        if (entries == null) {
+            return result;
+        }
+        for (Entry entry : entries) {
+            if (entry.parent() || matches(entry.file().getName(), query)) {
+                result.add(entry);
+            }
+        }
+        return result;
+    }
+
     /** Whether {@code entries} holds anything besides the parent row. */
     public static boolean hasContent(List<Entry> entries) {
         for (Entry entry : entries) {
