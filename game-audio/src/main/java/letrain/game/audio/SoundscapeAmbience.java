@@ -13,8 +13,6 @@ import letrain.soundscape.SoundscapeStyle;
 import letrain.soundscape.audio.AmbientPlayer;
 import letrain.soundscape.impl.SoundscapeEngineImpl;
 import letrain.soundscape.impl.TextStyleLoader;
-import letrain.time.GameClock;
-import letrain.time.GameClockListener;
 import letrain.time.GameTime;
 import letrain.weather.ClimateCalendar;
 import letrain.weather.WeatherGenerator;
@@ -27,6 +25,13 @@ import org.slf4j.LoggerFactory;
  * Glue between the game and the zone ambience (ADR-025 + ADR-027): loads the bundled style, asks
  * the core {@link ZoneAmbience} for the focus weights, generates the weather from the style
  * calendar and the game clock, composes the mix and pushes it to the player.
+ *
+ * <p>
+ * The ambience instance is built once by the launchers and reused across games, so it must never
+ * capture world state: the terrain comes from the model passed to {@link #update(Model, float)}
+ * (via {@link ZoneAmbience}) and the weather is re-derived from that same model's clock (issue
+ * #805). This is what makes a New Game with a fresh {@code GroundMap}/clock sound correct without
+ * rebuilding the audio glue.
  */
 public class SoundscapeAmbience implements AutoCloseable {
 
@@ -42,23 +47,24 @@ public class SoundscapeAmbience implements AutoCloseable {
     private final ZoneAmbience zoneAmbience;
     private final AmbientPlayer player;
     private final ClimateCalendar calendar;
-    private final WeatherGenerator weather = new WeatherGenerator(SEED);
+    private WeatherGenerator weather = new WeatherGenerator(SEED);
     private WeatherState weatherState = WeatherState.CLEAR;
+    /** Model whose clock currently drives the weather (detects New Game/model swaps). */
+    private Model weatherModel;
+    private int weatherDay = -1;
+    private int weatherHour = -1;
     private boolean playing;
 
+    /**
+     * @param model boot model only; it is deliberately not retained. Terrain and weather are
+     *        resolved from the model passed to each {@link #update(Model, float)} so a New Game
+     *        keeps working with the same ambience instance (issue #805).
+     */
     public SoundscapeAmbience(Model model) throws IOException {
         this.style = new TextStyleLoader().loadResource(DEFAULT_STYLE);
-        this.zoneAmbience = new ZoneAmbience(model.getGroundMap(), SENSOR_RADIUS, SENSOR_STRIDE);
+        this.zoneAmbience = new ZoneAmbience(SENSOR_RADIUS, SENSOR_STRIDE);
         this.player = new AmbientPlayer(style, SEED);
         this.calendar = calendarOf(style);
-        GameClock clock = model.getGameClock();
-        clock.addListener(new GameClockListener() {
-            @Override
-            public void onHourChanged(GameTime time) {
-                weatherState = weather.update(calendar, dayOfYear(time), time.hour());
-            }
-        });
-        this.weatherState = weather.update(calendar, dayOfYear(clock.now()), clock.now().hour());
     }
 
     public void start() {
@@ -76,11 +82,40 @@ public class SoundscapeAmbience implements AutoCloseable {
     public void update(Model model, float height) {
         ZoneAmbience.Update update = zoneAmbience.update(model);
         GameTime now = model.getGameClock().now();
+        refreshWeather(model, now);
         CompositionInput input =
                 new CompositionInput(LocalTime.of(now.hour(), now.minute()), update.weights(),
                         height, weatherState.rain(), weatherState.wind(), weatherState.storm());
         Composition composition = engine.compose(style, input);
         player.updateTargets(composition, update.focusChanged());
+    }
+
+    /**
+     * Derives the hourly weather from the <b>current</b> model's clock (issue #805). We
+     * deliberately do not register a {@code GameClockListener}: the ambience is built once by the
+     * launchers with the boot model, so a listener would stay bound to the old clock after a New
+     * Game and keep the old model alive. Advancing only when the (day, hour) pair changes keeps one
+     * weather step per game hour, as the previous listener did.
+     *
+     * <p>
+     * A model swap (New Game / load) resets the generator, so weather from the previous world never
+     * leaks into the new one. The generator is deterministic (fixed seed), so the new world starts
+     * the same reproducible sequence as a fresh boot.
+     */
+    private void refreshWeather(Model model, GameTime now) {
+        int day = dayOfYear(now);
+        int hour = now.hour();
+        if (model != weatherModel) {
+            weather = new WeatherGenerator(SEED);
+            weatherModel = model;
+            weatherDay = -1;
+            weatherHour = -1;
+        }
+        if (day != weatherDay || hour != weatherHour) {
+            weatherState = weather.update(calendar, day, hour);
+            weatherDay = day;
+            weatherHour = hour;
+        }
     }
 
     @Override
