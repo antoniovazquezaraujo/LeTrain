@@ -47,7 +47,8 @@ class ZoneAmbienceTest {
         when(map.getValueAt(anyInt(), anyInt()))
                 .thenAnswer(invocation -> cells[clamp(invocation.getArgument(1))][clamp(
                         invocation.getArgument(0))]);
-        return new ZoneAmbience(map, 8, 1);
+        when(model.getGroundMap()).thenReturn(map);
+        return new ZoneAmbience(8, 1);
     }
 
     private int clamp(int value) {
