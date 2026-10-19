@@ -124,8 +124,12 @@ public class Gdx3DResourceContext implements Disposable {
     public Model selectedForkBoxModel;
     public Model tunnelPortalModel;
     public Model terrainWallModel;
+    /** Night variants: the lit lamp is emissive green (open) or red (closed). */
     public Model semaphoreOpenModel;
     public Model semaphoreClosedModel;
+    /** Day variants: same shapes and colours, no emissive, unchanged daytime look (#807). */
+    public Model semaphoreOpenOffModel;
+    public Model semaphoreClosedOffModel;
     public Model speedSignalMaxModel;
     public Model speedSignalMinModel;
     public Model baseModel;
@@ -272,10 +276,12 @@ public class Gdx3DResourceContext implements Disposable {
                                     GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA)),
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 
-            // Semáforo Abierto
-            semaphoreOpenModel = register(createSemaphoreModel(true));
+            // Semáforo Abierto (night lit / day off variants, #807)
+            semaphoreOpenModel = register(createSemaphoreModel(true, true));
+            semaphoreOpenOffModel = register(createSemaphoreModel(true, false));
 
-            semaphoreClosedModel = register(createSemaphoreModel(false));
+            semaphoreClosedModel = register(createSemaphoreModel(false, true));
+            semaphoreClosedOffModel = register(createSemaphoreModel(false, false));
             speedSignalMaxModel = register(createSpeedSignalModel(true));
             speedSignalMinModel = register(createSpeedSignalModel(false));
 
@@ -491,7 +497,7 @@ public class Gdx3DResourceContext implements Disposable {
         return mb.end();
     }
 
-    private Model createSemaphoreModel(boolean isOpen) {
+    private Model createSemaphoreModel(boolean isOpen, boolean lit) {
         ModelBuilder mb = new ModelBuilder();
         mb.begin();
         // Poste
@@ -515,20 +521,25 @@ public class Gdx3DResourceContext implements Disposable {
         com.badlogic.gdx.graphics.g3d.utils.shapebuilders.BoxShapeBuilder.build(mpbSem, 0.2f, 0.4f,
                 0.05f);
 
-        // Luces (esferas asomando)
+        // Luces (esferas asomando). The lit lamp is emissive at night (#807) so it reads as "on"
+        // when the palette dims the world; the dark lamp stays plain diffuse. The day model (lit =
+        // false) keeps exactly the previous look.
         com.badlogic.gdx.graphics.Color topColor =
                 isOpen ? com.badlogic.gdx.graphics.Color.valueOf("440000")
                         : com.badlogic.gdx.graphics.Color.RED;
         com.badlogic.gdx.graphics.Color bottomColor = isOpen ? com.badlogic.gdx.graphics.Color.GREEN
                 : com.badlogic.gdx.graphics.Color.valueOf("004400");
+        com.badlogic.gdx.graphics.Color topEmissive =
+                !isOpen && lit ? com.badlogic.gdx.graphics.Color.RED : null;
+        com.badlogic.gdx.graphics.Color bottomEmissive =
+                isOpen && lit ? com.badlogic.gdx.graphics.Color.GREEN : null;
 
         Node node3 = mb.node();
         node3.id = "lightTop";
         node3.translation.set(0, 0.6f, 0.05f);
         mpbSem = mb.part("lightTop", GL20.GL_TRIANGLES,
                 VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal,
-                new Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                        .createDiffuse(topColor)));
+                lampMaterial(topColor, topEmissive));
         com.badlogic.gdx.graphics.g3d.utils.shapebuilders.SphereShapeBuilder.build(mpbSem, 0.12f,
                 0.12f, 0.04f, 10, 10);
 
@@ -537,12 +548,22 @@ public class Gdx3DResourceContext implements Disposable {
         node4.translation.set(0, 0.4f, 0.05f);
         mpbSem = mb.part("lightBottom", GL20.GL_TRIANGLES,
                 VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal,
-                new Material(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                        .createDiffuse(bottomColor)));
+                lampMaterial(bottomColor, bottomEmissive));
         com.badlogic.gdx.graphics.g3d.utils.shapebuilders.SphereShapeBuilder.build(mpbSem, 0.12f,
                 0.12f, 0.04f, 10, 10);
 
         return mb.end();
+    }
+
+    /**
+     * Semaphore lamp material: diffuse only, plus emissive when the lamp is lit at night (#807).
+     */
+    private static Material lampMaterial(Color diffuse, Color emissive) {
+        if (emissive == null) {
+            return new Material(ColorAttribute.createDiffuse(diffuse));
+        }
+        return new Material(ColorAttribute.createDiffuse(diffuse),
+                ColorAttribute.createEmissive(emissive));
     }
 
     private Model createConsumerModel(Color color) {
