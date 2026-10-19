@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -71,8 +72,8 @@ class TerminalPresenterNewGameTest {
     }
 
     @Test
-    @DisplayName("boot menu: no game yet; Esc there returns to the cover instead of a world")
-    void bootMenu_returnsToCoverWithoutAGame() {
+    @DisplayName("boot menu: dismissing the menu without a game returns to the cover")
+    void bootMenu_dismiss_returnsToCoverWithoutAGame() {
         presenter.beginStartup();
 
         assertFalse(presenter.hasActiveGame(), "the boot menu has no game to save");
@@ -80,8 +81,22 @@ class TerminalPresenterNewGameTest {
 
         assertFalse(started);
         verify(view).showFileMenu();
-        assertTrue(presenter.isCoverActive(), "Esc on the boot menu goes back to the cover");
+        assertTrue(presenter.isCoverActive(), "dismissing the boot menu goes back to the cover");
         verify(view, org.mockito.Mockito.atLeastOnce()).setCoverVisible(true);
+    }
+
+    @Test
+    @DisplayName("boot menu: Esc now quits (#803), so a quit request does not repaint the cover")
+    void bootMenu_quit_doesNotShowTheCoverAgain() {
+        presenter.beginStartup();
+        when(view.isEndOfGame(any())).thenReturn(true);
+
+        boolean started = presenter.startupMenuStep();
+
+        assertFalse(started);
+        verify(view).showFileMenu();
+        // beginStartup painted the cover once; a quit must not bring it back.
+        verify(view, times(1)).setCoverVisible(true);
     }
 
     @Test

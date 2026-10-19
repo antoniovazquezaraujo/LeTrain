@@ -96,6 +96,40 @@ public final class FileMenuText {
     }
 
     /**
+     * Alt access key of a row (#803): {@code N/L/S/E/Q}. Settings takes {@code E}
+     * (s<em>e</em>ttings) because {@code S} already belongs to Save; the clients tint the matching
+     * letter like the rest of their dialogs.
+     */
+    public static char mnemonic(Command command) {
+        ValidationUtils.requireNonNull(command, "command must not be null");
+        switch (command) {
+            case NEW:
+                return 'N';
+            case LOAD:
+                return 'L';
+            case SAVE:
+                return 'S';
+            case SETTINGS:
+                return 'E';
+            case QUIT:
+                return 'Q';
+            default:
+                return '?';
+        }
+    }
+
+    /** Command whose Alt access key is {@code key} (case-insensitive), empty for any other. */
+    public static java.util.Optional<Command> byHotkey(char key) {
+        char letter = Character.toUpperCase(key);
+        for (Command command : Command.values()) {
+            if (mnemonic(command) == letter) {
+                return java.util.Optional.of(command);
+            }
+        }
+        return java.util.Optional.empty();
+    }
+
+    /**
      * What the player reads: always the bare label. The disabled state is enough; the lock reason
      * stays in {@link Item#disabledReason()} for the clients that can show it on hover (the 3D
      * tooltip, #802) and the terminal simply greys the row out.

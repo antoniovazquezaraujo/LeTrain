@@ -1183,12 +1183,18 @@ public class Gdx3DHud {
             // disabled with the parity reason until S4b.
             final List<TextButton> focusable = new ArrayList<>();
             final java.util.Map<TextButton, Runnable> actions = new java.util.HashMap<>();
+            final java.util.Map<Character, Runnable> hotkeyActions = new java.util.HashMap<>();
             for (FileMenuText.Item item : FileMenuText
                     .items(FileMenuText.MenuState.graphic(hasGame))) {
-                final TextButton button = new TextButton(fileMenuButtonText(item), skin);
+                // Alt access key in the label, tinted like every other dialog (#803).
+                final TextButton button =
+                        new TextButton(settingsHotkeyLabel(fileMenuButtonText(item),
+                                FileMenuText.mnemonic(item.command())), skin);
                 final Runnable action = fileMenuAction(item, close);
                 if (item.enabled()) {
                     focusable.add(button);
+                    hotkeyActions.put(Character.toLowerCase(FileMenuText.mnemonic(item.command())),
+                            action);
                 } else {
                     button.setDisabled(true);
                     button.getLabel().setColor(Color.GRAY);
@@ -1237,6 +1243,15 @@ public class Gdx3DHud {
                         paintFocus.run();
                         return true;
                     }
+                    // Alt+letter jumps to a row (#803), tinted in the label like the rest.
+                    if (isAltPressed() && keycode >= Input.Keys.A && keycode <= Input.Keys.Z) {
+                        char letter = (char) ('A' + keycode - Input.Keys.A);
+                        Runnable action = hotkeyActions.get(Character.toLowerCase(letter));
+                        if (action != null) {
+                            action.run();
+                            return true;
+                        }
+                    }
                     if (keycode == Input.Keys.ENTER || keycode == Input.Keys.NUMPAD_ENTER
                             || keycode == Input.Keys.SPACE) {
                         Runnable action = actions.get(stage.getKeyboardFocus());
@@ -1246,7 +1261,14 @@ public class Gdx3DHud {
                         return true;
                     }
                     if (keycode == Input.Keys.ESCAPE) {
-                        dismiss.run();
+                        // #803 (owner decision): at the boot menu Esc quits like the Quit row; with
+                        // a
+                        // game running it just closes the menu (D11).
+                        if (hasGame) {
+                            dismiss.run();
+                        } else {
+                            Gdx.app.exit();
+                        }
                         return true;
                     }
                     return true;
@@ -1376,8 +1398,12 @@ public class Gdx3DHud {
             message.setWrap(true);
             dialog.getContentTable().pad(10, 48, 24, 48).add(message).width(560f);
 
-            TextButton confirmButton = new TextButton(confirmLabel, skin);
-            TextButton cancelButton = new TextButton("Cancel", skin);
+            // Every dialog button gets a visible Alt hotkey (#803): the confirm action takes its
+            // first letter (avoiding Cancel's C) and Cancel keeps C, tinted in the label.
+            final char confirmKey = confirmMnemonic(confirmLabel);
+            TextButton confirmButton =
+                    new TextButton(settingsHotkeyLabel(confirmLabel, confirmKey), skin);
+            TextButton cancelButton = new TextButton(settingsHotkeyLabel("Cancel", 'C'), skin);
             dialog.getButtonTable().defaults().space(24).minWidth(140).minHeight(50);
             dialog.button(confirmButton, Boolean.TRUE);
             dialog.button(cancelButton, Boolean.FALSE);
@@ -1400,6 +1426,18 @@ public class Gdx3DHud {
                                 focused == confirmButton ? cancelButton : confirmButton);
                         paintFocus.run();
                         return true;
+                    }
+                    // Alt+letter reaches either button (#803): the confirm key or C for Cancel.
+                    if (isAltPressed() && keycode >= Input.Keys.A && keycode <= Input.Keys.Z) {
+                        char letter = (char) ('A' + keycode - Input.Keys.A);
+                        if (Character.toLowerCase(letter) == Character.toLowerCase(confirmKey)) {
+                            activate(true);
+                            return true;
+                        }
+                        if (Character.toLowerCase(letter) == 'c') {
+                            activate(false);
+                            return true;
+                        }
                     }
                     if (keycode == Input.Keys.ENTER || keycode == Input.Keys.NUMPAD_ENTER
                             || keycode == Input.Keys.SPACE) {
@@ -2812,6 +2850,23 @@ public class Gdx3DHud {
         style.label = skin.get("small", Label.LabelStyle.class);
         style.background = skin.newDrawable("white", new Color(0f, 0f, 0f, 0.85f));
         return new TextTooltip(text, style);
+    }
+
+    /**
+     * Alt key of a confirmation's confirm button (#803): its first alphabetic letter, skipping
+     * {@code C} so it never collides with Cancel. Falls back to {@code Y} for a label with no other
+     * letter.
+     */
+    static char confirmMnemonic(String label) {
+        if (label != null) {
+            for (int i = 0; i < label.length(); i++) {
+                char c = label.charAt(i);
+                if (Character.isLetter(c) && Character.toUpperCase(c) != 'C') {
+                    return Character.toUpperCase(c);
+                }
+            }
+        }
+        return 'Y';
     }
 
     /** One button listener that fires its action. */
