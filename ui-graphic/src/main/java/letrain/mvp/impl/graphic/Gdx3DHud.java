@@ -49,6 +49,7 @@ import letrain.itinerary.Punctuality;
 import letrain.mvp.EditorText;
 import letrain.mvp.FileMenuText;
 import letrain.mvp.MenuText;
+import letrain.mvp.CoverArt;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameModeMenuOption;
 import letrain.mvp.NewGameText;
@@ -161,6 +162,8 @@ public class Gdx3DHud {
 
     /** Full-screen image of the title cover; null when there is no capture to paint. */
     private Image coverImage;
+    /** "The Letter Train Simulator" overlay on the 3D cover (#801). */
+    private Label coverTagline;
 
     private Window messageWindow;
     private ScrollPane messageScroll;
@@ -1050,6 +1053,11 @@ public class Gdx3DHud {
             WidgetGroup coverLayer = new WidgetGroup();
             coverLayer.setFillParent(true);
             coverLayer.addActor(coverImage);
+            // 2D parity (#801): the same subtitle the braille art carries, as a monospace overlay
+            // so the capture stays untouched. Positioned and scaled in layoutCoverImage.
+            coverTagline = new Label(CoverArt.TAGLINE, skin, "monospace");
+            coverTagline.setColor(Color.WHITE);
+            coverLayer.addActor(coverTagline);
             coverTable.add(coverLayer).grow();
             layoutCoverImage(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         } else {
@@ -1088,6 +1096,15 @@ public class Gdx3DHud {
         float height = imageHeight * scale;
         coverImage.setSize(width, height);
         coverImage.setPosition(coverOffset(width, screenWidth), coverOffset(height, screenHeight));
+        if (coverTagline != null) {
+            // Legible at any window size: the monospace label scales with the height and stays
+            // centred near the bottom, just under the capture.
+            float fontScale = Math.max(0.8f, Math.min(2.4f, screenHeight / 720f));
+            coverTagline.setFontScale(fontScale);
+            coverTagline.pack();
+            coverTagline.setPosition((screenWidth - coverTagline.getWidth()) / 2f,
+                    Math.max(12f, screenHeight * 0.055f));
+        }
     }
 
     /**
@@ -1120,6 +1137,7 @@ public class Gdx3DHud {
         coverTable.remove();
         coverTable = null;
         coverImage = null;
+        coverTagline = null;
         if (coverTexture != null) {
             coverTexture.dispose();
             coverTexture = null;
