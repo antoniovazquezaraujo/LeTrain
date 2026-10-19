@@ -269,7 +269,14 @@ public class Station extends Sensor {
         return storage;
     }
 
-    public void regenerateCargo() {
+    /**
+     * Advances the station's stock by one regeneration step (producer) or one consumption roll
+     * (consumer). The random roll uses the world's seeded RNG (#811) instead of {@code Math.random}
+     * so a game with the same seed evolves identically and can be replayed (ADR-020).
+     *
+     * @param random seeded RNG owned by the world model; never {@code null} on simulation paths
+     */
+    public void regenerateCargo(java.util.Random random) {
         if (role == CargoTypes.StationRole.PRODUCER && storage < maxStorage) {
             // Regeneration scales with density: Base + bonus per block
             int increment = BASE_REGEN_RATE + (industryCount / REGEN_RATE_PER_INDUSTRY_DIVISOR);
@@ -284,8 +291,8 @@ public class Station extends Sensor {
         // If we want they to "need" more, we could decrease storage (demand) over time?
         // Wait, storage for consumer = current STOCK received.
         // If storage is high, they are "full".
-        if (role == CargoTypes.StationRole.CONSUMER && storage > 0) {
-            if (Math.random() < CONSUMER_CONSUMPTION_CHANCE) {
+        if (role == CargoTypes.StationRole.CONSUMER && storage > 0 && random != null) {
+            if (random.nextDouble() < CONSUMER_CONSUMPTION_CHANCE) {
                 storage--;
             }
         }

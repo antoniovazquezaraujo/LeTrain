@@ -28,6 +28,21 @@ public class SegmentImpl implements Segment {
         return "Segment[" + id + "]";
     }
 
+    /**
+     * Two segments are the same logical canton iff they share the same {@link #getId() id}.
+     *
+     * <p>
+     * Identity is deliberately <b>id-only</b> and NOT derived from the ports: a canton is a
+     * <em>routing</em> unit and two different segments (e.g. two parallel tracks between the same
+     * two nodes, see {@code TrainSafetyManager.tryAlternativeSegment}) can expose the very same
+     * pair of ports. Comparing by ports would collapse those distinct cantons into one, breaking
+     * block exclusivity. Ids are unique within a graph and generated deterministically by
+     * {@link letrain.segments.impl.TopologyServiceImpl}, so they stay stable across a rebuild of
+     * the same world (scenario replay / savegame reload). The previous "id or ports" compromise
+     * also violated the {@code equals}/{@code hashCode} contract: equal objects could hash to
+     * different buckets, which is unsafe because {@link Segment} is a key of a
+     * {@code ConcurrentHashMap} in {@link letrain.segments.impl.BlockManagerImpl}.
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -37,28 +52,11 @@ public class SegmentImpl implements Segment {
             return false;
         }
         SegmentImpl segment = (SegmentImpl) o;
-        // Same ID → same logical segment
-        if (id != null && id.equals(segment.id)) {
-            return true;
-        }
-        // Compare by ports (order-independent)
-        if (ports == null || segment.ports == null) {
-            return false;
-        }
-        return (java.util.Objects.equals(ports.getFirst(), segment.ports.getFirst())
-                && java.util.Objects.equals(ports.getSecond(), segment.ports.getSecond()))
-                || (java.util.Objects.equals(ports.getFirst(), segment.ports.getSecond())
-                        && java.util.Objects.equals(ports.getSecond(), segment.ports.getFirst()));
+        return java.util.Objects.equals(id, segment.id);
     }
 
     @Override
     public int hashCode() {
-        if (ports == null) {
-            return 0;
-        }
-        int h1 = ports.getFirst() != null ? ports.getFirst().hashCode() : 0;
-        int h2 = ports.getSecond() != null ? ports.getSecond().hashCode() : 0;
-        // Hash independent of ports order
-        return h1 + h2;
+        return java.util.Objects.hashCode(id);
     }
 }

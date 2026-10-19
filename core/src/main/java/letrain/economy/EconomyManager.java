@@ -100,7 +100,15 @@ public interface EconomyManager {
 
     void onTrainCrashed(Train train);
 
-    void chargeFuel(Train train);
+    /**
+     * Charges fuel for a distance actually travelled (one successful rail advance = one unit, see
+     * {@code Locomotive.getDistanceTraveled()}), applying {@code fuelCostPerMeter} per unit (#812).
+     *
+     * @param train the moving train (context for logging/future per-train pricing)
+     * @param distanceTravelled distance moved since the previous charge; negative values are
+     *        clamped to zero
+     */
+    void chargeFuel(Train train, int distanceTravelled);
 
     void onLoadCargo(Wagon wagon);
 

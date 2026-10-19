@@ -57,6 +57,13 @@ public class EconomyManager implements letrain.economy.EconomyManager {
         constructionDelays.put(Presenter.TrackType.TUNNEL_GATE_TRACK, 30);
     }
 
+    /**
+     * Fuel cost per unit of distance travelled (one successful rail advance counts as one unit, see
+     * {@link letrain.vehicle.rail.impl.Locomotive#getDistanceTraveled()}). It is charged once per
+     * advance against the distance the director locomotive actually moved since the previous charge
+     * (#812). The config/savegame key stays {@code fuelCostPerMeter} for backwards compatibility;
+     * use {@code SettingsCatalog} to change it live.
+     */
     @com.fasterxml.jackson.annotation.JsonProperty("fuelCostPerMeter")
     private float fuelCostPerMeter = 0.5f;
 
@@ -182,12 +189,23 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     @com.fasterxml.jackson.annotation.JsonProperty("destroyedWagons")
     int destroyedWagons = 0;
 
+    /**
+     * Jackson/deserialization constructor. It must populate the same defaults as the live
+     * constructor so a savegame that omits {@code prices}/{@code cargoBaseValues} (older save
+     * shapes, hand-written scenarios) still yields a usable economist instead of NPE-ing on the
+     * first {@code spend}/{@code earn}/{@code getCost} (#812).
+     */
     protected EconomyManager() {
-        initDefaultConstructionDelays();
+        initDefaults();
     }
 
     public EconomyManager(letrain.mvp.impl.EventLogManager eventLogManager) {
         this.eventLogManager = eventLogManager;
+        initDefaults();
+    }
+
+    /** Builds the default price table, cargo values and construction delays. */
+    private void initDefaults() {
         initDefaultConstructionDelays();
 
         prices.put(ExpenseType.CONSTRUCTED_NORMAL_RAIL_TRACK, 100f);
@@ -222,7 +240,7 @@ public class EconomyManager implements letrain.economy.EconomyManager {
 
     @Override
     public float getCost(ExpenseType type) {
-        return prices.get(type);
+        return prices.getOrDefault(type, 0f);
     }
 
     @Override
@@ -230,7 +248,7 @@ public class EconomyManager implements letrain.economy.EconomyManager {
         if (freeConstruction) {
             return;
         }
-        Float amount = prices.get(type);
+        float amount = prices.getOrDefault(type, 0f);
         totalExpenses += amount;
         balance -= amount;
     }
@@ -240,7 +258,7 @@ public class EconomyManager implements letrain.economy.EconomyManager {
         if (freeConstruction) {
             return;
         }
-        Float price = prices.get(type);
+        float price = prices.getOrDefault(type, 0f);
         float total = price * amount;
         totalExpenses += total;
         balance -= total;
@@ -258,17 +276,17 @@ public class EconomyManager implements letrain.economy.EconomyManager {
 
     @Override
     public void earn(ExpenseType type) {
-        Float price = prices.get(type);
+        float price = prices.getOrDefault(type, 0f);
         totalIncome += price;
         balance += price;
     }
 
     @Override
     public void earn(ExpenseType type, int amount) {
-        Float price = prices.get(type);
+        float price = prices.getOrDefault(type, 0f);
         float total = price * amount;
-        totalIncome += (total);
-        balance += (total);
+        totalIncome += total;
+        balance += total;
     }
 
     @Override
@@ -390,8 +408,12 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     }
 
     @Override
-    public void chargeFuel(Train train) {
-        float cost = Math.abs(fuelCostPerMeter * train.getLinkers().size());
+    public void chargeFuel(Train train, int distanceTravelled) {
+        // Honest, distance-based cost (#812): price per unit distance × distance actually moved
+        // since the previous charge. One successful rail advance counts as one unit (see
+        // Locomotive.getDistanceTraveled()). No per-linker multiplier: fuel no longer scales with
+        // consist length, only with distance travelled.
+        float cost = Math.abs(fuelCostPerMeter) * Math.max(0, distanceTravelled);
         totalExpenses += cost;
         balance -= cost;
     }
@@ -420,7 +442,14 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     @Override
     public void onTrainCrashed(Train train) {
         spend(ExpenseType.TRAIN_CRASHED);
-        eventLogManager.addEntry("CRASH! Train " + train.getId() + " crashed!");
+        // eventLogManager is absent on a bare/deserialized economist (#812): never let the crash
+        // notification NPE and abort the crash pipeline.
+        if (eventLogManager != null) {
+            eventLogManager.addEntry("CRASH! Train " + train.getId() + " crashed!");
+        } else {
+            log.warn("CRASH! Train {} crashed (no event log wired)",
+                    train != null ? train.getId() : -1);
+        }
     }
 
     public int getConstructedNormalRailTracks() {

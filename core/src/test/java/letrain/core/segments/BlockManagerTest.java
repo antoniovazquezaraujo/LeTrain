@@ -102,4 +102,27 @@ class BlockManagerTest {
         assertEquals(0, blockManager.requestWaitTurn(trainB),
                 "tabula rasa restarts the deterministic turn counter");
     }
+
+    @Test
+    void parallelSegmentsBetweenTheSamePortsAreDistinctCantonKeys() {
+        // Arrange: two real segments between the same pair of ports but with different ids.
+        Port portA = Mockito.mock(Port.class);
+        Port portB = Mockito.mock(Port.class);
+        Segment first = new letrain.segments.impl.SegmentImpl("S1", portA, portB);
+        Segment parallel = new letrain.segments.impl.SegmentImpl("S2", portA, portB);
+
+        // Act: each train locks its own canton.
+        boolean firstLocked = blockManager.tryLock(trainA, first);
+        boolean parallelLocked = blockManager.tryLock(trainB, parallel);
+
+        // Assert: both cantons exist independently; the map must not collapse them by ports.
+        assertTrue(firstLocked);
+        assertTrue(parallelLocked);
+        assertTrue(blockManager.getOwners(first).contains(trainA));
+        assertTrue(blockManager.getOwners(parallel).contains(trainB));
+        assertEquals(2, blockManager.getAllLockedSegments().size(),
+                "parallel segments are two distinct keys, not one");
+        assertFalse(blockManager.tryLock(trainB, first),
+                "the first canton is still exclusively owned by train A");
+    }
 }

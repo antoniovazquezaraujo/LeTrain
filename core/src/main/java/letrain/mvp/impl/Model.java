@@ -202,6 +202,22 @@ public class Model implements letrain.mvp.Model {
     LocalDateTime lastSaveTime = null;
 
     /**
+     * Seeded RNG for simulation-time randomness (cargo consumption/regeneration, and any future
+     * stochastic gameplay). It is the single source of chance for the world so a game is
+     * reproducible: same {@link #seed seed} ⇒ same sequence of events (ADR-020 journal/replay and
+     * scenario rebuilds).
+     *
+     * <p>
+     * It is {@code transient} and NOT serialized: the state is re-derived from {@link #seed} on
+     * load ({@link #postLoadInit()}) and on world creation. A savegame therefore resumes the
+     * <em>same</em> deterministic stream as a fresh replay of its world, which is exactly what
+     * ADR-020 needs; it does not continue the mid-air RNG state it had when saved. Do not hold a
+     * reference to this object across a reseed/load: always call {@link #getSimulationRandom()}.
+     */
+    @JsonIgnore
+    private transient java.util.Random simulationRandom;
+
+    /**
      * Settings snapshot read from a savegame's {@code settings} section (concept §6); applied to
      * the economy manager in {@link #postLoadInit()}. Null on live models and on savegames written
      * before the section existed.
@@ -440,6 +456,7 @@ public class Model implements letrain.mvp.Model {
         if (seed == 0) {
             seed = 1 + (int) (Math.random() * 255);
         }
+        reseedSimulationRandom();
         this.groundMap = new letrain.ground.impl.GroundMap(seed, this.economyManager);
         this.cursor = new Cursor();
         this.cursor.setDir(Dir.E);
@@ -515,6 +532,9 @@ public class Model implements letrain.mvp.Model {
         // predating the "settings" section fall back to their serialized legacy thresholds.
         applySavedSettings();
         rebuildTrackConnections();
+        // Re-derive the simulation RNG from the restored seed: a loaded world replays the same
+        // deterministic chance stream as a fresh build of that seed (ADR-020).
+        reseedSimulationRandom();
         if (nextSpeedSignalId == 0) {
             for (Sensor s : getSensors()) {
                 if (s instanceof letrain.track.SpeedSignal && s.getId() > nextSpeedSignalId) {
@@ -1650,10 +1670,29 @@ public class Model implements letrain.mvp.Model {
 
     public void setSeed(int seed) {
         this.seed = seed;
+        reseedSimulationRandom();
     }
 
     public int getSeed() {
         return seed;
+    }
+
+    /**
+     * Seeded RNG for simulation-time randomness (cargo, future stochastic gameplay). Lazily reseeds
+     * from {@link #seed} if needed, so callers always get a deterministic stream. See the field
+     * javadoc for the savegame/replay contract.
+     */
+    @Override
+    public java.util.Random getSimulationRandom() {
+        if (simulationRandom == null) {
+            reseedSimulationRandom();
+        }
+        return simulationRandom;
+    }
+
+    /** Re-derives the simulation RNG from {@link #seed}; called on creation and on load. */
+    private void reseedSimulationRandom() {
+        this.simulationRandom = new java.util.Random(seed);
     }
 
     /**
@@ -1664,6 +1703,7 @@ public class Model implements letrain.mvp.Model {
     public Model(int seed) {
         this();
         this.seed = seed;
+        reseedSimulationRandom();
         this.groundMap = new letrain.ground.impl.GroundMap(seed, this.economyManager);
     }
 
