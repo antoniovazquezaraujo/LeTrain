@@ -3779,6 +3779,11 @@ public class Gdx3DHud {
                     style.font = font;
                 }
             }
+            // Keyboard-first file dialog (#484): focus the file tree when the chooser opens, so the
+            // arrows work immediately. VisUI focuses the selected-file text field afterwards by
+            // default, which would steal that focus; only the tree keeps the keyboard usable.
+            com.kotcrab.vis.ui.widget.file.FileChooser.focusFileScrollPaneOnShow = true;
+            com.kotcrab.vis.ui.widget.file.FileChooser.focusSelectedFileTextFieldOnShow = false;
             com.kotcrab.vis.ui.widget.file.FileChooser fileChooser =
                     new com.kotcrab.vis.ui.widget.file.FileChooser(title, mode);
             fileChooser.setSelectionMode(
