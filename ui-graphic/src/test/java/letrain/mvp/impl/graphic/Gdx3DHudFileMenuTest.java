@@ -18,14 +18,14 @@ import org.junit.jupiter.api.Test;
 class Gdx3DHudFileMenuTest {
 
     @Test
-    @DisplayName("every shared row shows the same words as 2D, lock reasons included")
+    @DisplayName("every shared row shows the same bare words as 2D (#802)")
     void should_ShowTheSharedLabels() {
         List<FileMenuText.Item> items = FileMenuText.items(FileMenuText.MenuState.graphic(false));
 
         assertEquals("New", Gdx3DHud.fileMenuButtonText(items.get(0)));
         assertEquals("Load", Gdx3DHud.fileMenuButtonText(items.get(1)));
-        assertEquals("Save (no game in progress)", Gdx3DHud.fileMenuButtonText(items.get(2)));
-        assertEquals("Settings (no game in progress)", Gdx3DHud.fileMenuButtonText(items.get(3)));
+        assertEquals("Save", Gdx3DHud.fileMenuButtonText(items.get(2)));
+        assertEquals("Settings", Gdx3DHud.fileMenuButtonText(items.get(3)));
         assertEquals("Quit", Gdx3DHud.fileMenuButtonText(items.get(4)));
     }
 

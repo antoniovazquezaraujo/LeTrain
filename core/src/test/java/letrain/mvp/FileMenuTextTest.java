@@ -27,9 +27,8 @@ class FileMenuTextTest {
     }
 
     @Test
-    @DisplayName("the menu is File, with New/Load/Save/Settings/Quit in this order")
+    @DisplayName("the menu has New/Load/Save/Settings/Quit in this order, with no window title")
     void should_DefineTheMenuStructure() {
-        assertEquals("File", FileMenuText.TITLE);
         assertEquals(
                 List.of(Command.NEW, Command.LOAD, Command.SAVE, Command.SETTINGS, Command.QUIT),
                 terminalItems(true).stream().map(Item::command).toList());
@@ -99,18 +98,22 @@ class FileMenuTextTest {
     }
 
     @Test
-    @DisplayName("the player reads the label, and the reason in parentheses while locked")
+    @DisplayName("the player reads the bare label; the lock reason stays in the item")
     void should_RenderTheDisplayLabels() {
         List<Item> items = terminalItems(false);
 
         assertEquals("New", FileMenuText.displayLabel(items.get(0)));
         assertEquals("Load", FileMenuText.displayLabel(items.get(1)));
-        assertEquals("Save (no game in progress)", FileMenuText.displayLabel(items.get(2)));
-        assertEquals("Settings (no game in progress)", FileMenuText.displayLabel(items.get(3)));
+        assertEquals("Save", FileMenuText.displayLabel(items.get(2)));
+        assertEquals("Settings", FileMenuText.displayLabel(items.get(3)));
         assertEquals("Quit", FileMenuText.displayLabel(items.get(4)));
 
-        assertEquals("Settings (no game in progress)",
+        assertEquals("Settings",
                 FileMenuText.displayLabel(FileMenuText.items(MenuState.graphic(false)).get(3)));
+
+        // #802: the reason no longer rides in the label, but it is still available to the clients.
+        assertEquals(FileMenuText.SAVE_NO_GAME_REASON, items.get(2).disabledReason());
+        assertEquals(FileMenuText.SAVE_NO_GAME_REASON, items.get(3).disabledReason());
     }
 
     @Test
@@ -125,7 +128,7 @@ class FileMenuTextTest {
 
         assertEquals(FileMenuText.SAVE_NO_GAME_REASON, boot.get(2).disabledReason(),
                 "the boot Save reason is the shared one, exactly like 2D");
-        assertEquals("Save (no game in progress)", FileMenuText.displayLabel(boot.get(2)));
+        assertEquals("Save", FileMenuText.displayLabel(boot.get(2)));
 
         assertTrue(inGame.get(2).enabled(), "Save works while a game is running");
         assertEquals("Save", FileMenuText.displayLabel(inGame.get(2)));

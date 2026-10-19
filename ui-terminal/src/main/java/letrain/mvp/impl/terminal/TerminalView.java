@@ -1576,7 +1576,8 @@ public class TerminalView implements letrain.mvp.View {
     @Override
     public void showFileMenu() {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
-        BasicWindow window = new BasicWindow(FileMenuText.TITLE);
+        // No window title (#802): the menu is compact and the rows already say it all.
+        BasicWindow window = new BasicWindow();
         window.setHints(Arrays.asList(Window.Hint.CENTERED));
         window.setCloseWindowWithEscape(true);
         Panel contentPanel = new Panel();

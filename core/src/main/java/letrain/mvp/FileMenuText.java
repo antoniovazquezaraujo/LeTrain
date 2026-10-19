@@ -18,9 +18,6 @@ import letrain.utils.ValidationUtils;
  */
 public final class FileMenuText {
 
-    /** Window title of the menu in both clients. */
-    public static final String TITLE = "File";
-
     /** What a row does when the player picks it. */
     public enum Command {
         NEW, LOAD, SAVE, SETTINGS, QUIT
@@ -98,13 +95,14 @@ public final class FileMenuText {
                 new Item(Command.QUIT, QUIT_LABEL, true, ""));
     }
 
-    /** What the player reads: the label, plus the lock reason in parentheses while disabled. */
+    /**
+     * What the player reads: always the bare label. The disabled state is enough; the lock reason
+     * stays in {@link Item#disabledReason()} for the clients that can show it on hover (the 3D
+     * tooltip, #802) and the terminal simply greys the row out.
+     */
     public static String displayLabel(Item item) {
         ValidationUtils.requireNonNull(item, "item must not be null");
-        if (item.enabled() || item.disabledReason().isBlank()) {
-            return item.label();
-        }
-        return item.label() + " (" + item.disabledReason() + ")";
+        return item.label();
     }
 
     private FileMenuText() {}

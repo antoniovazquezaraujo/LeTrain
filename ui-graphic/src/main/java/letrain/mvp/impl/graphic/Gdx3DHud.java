@@ -25,6 +25,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.SplitPane;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.ui.TextField;
+import com.badlogic.gdx.scenes.scene2d.ui.TextTooltip;
 import com.badlogic.gdx.scenes.scene2d.ui.Tree;
 import com.badlogic.gdx.scenes.scene2d.ui.WidgetGroup;
 import com.badlogic.gdx.scenes.scene2d.ui.Window;
@@ -1156,8 +1157,10 @@ public class Gdx3DHud {
                 }
             });
 
+            // No window title (#802): the menu reads better compact, and the rows already say it
+            // all.
             final com.badlogic.gdx.scenes.scene2d.ui.Dialog dialog =
-                    new com.badlogic.gdx.scenes.scene2d.ui.Dialog(FileMenuText.TITLE,
+                    new com.badlogic.gdx.scenes.scene2d.ui.Dialog("",
                             skin.get("dialog", Window.WindowStyle.class));
 
             // close just hides the menu (a row acted); dismiss also notifies the boot flow when the
@@ -1189,6 +1192,11 @@ public class Gdx3DHud {
                 } else {
                     button.setDisabled(true);
                     button.getLabel().setColor(Color.GRAY);
+                    // The reason no longer rides in the label (#802); the terminal just greys the
+                    // row out, the 3D client can explain it on hover.
+                    if (!item.disabledReason().isBlank()) {
+                        button.addListener(newTooltip(item.disabledReason()));
+                    }
                 }
                 button.addListener(new ChangeListener() {
                     @Override
@@ -1199,7 +1207,9 @@ public class Gdx3DHud {
                     }
                 });
                 actions.put(button, action);
-                dialog.getContentTable().add(button).width(560f).pad(6).row();
+                // Text-sized buttons (#802): the single column takes the longest label, which keeps
+                // the stack tidy without the old fixed 560 px.
+                dialog.getContentTable().add(button).pad(6).row();
             }
 
             // Keyboard navigation: Tab/arrows move the focus between the enabled rows, Enter/Space
@@ -1251,12 +1261,11 @@ public class Gdx3DHud {
                 button.addListener(navigation);
             }
 
-            // Reserve enough top padding so the title fits inside the title bar (Window sizes
-            // the title table to `padTop`).
-            dialog.padTop(46);
+            // Compact, title-less menu (#802): only a small top pad and no forced wide/tall box.
+            dialog.padTop(16f);
             dialog.pack();
-            dialog.setWidth(Math.max(dialog.getWidth(), 620f));
-            dialog.setHeight(Math.max(dialog.getHeight(), 420f));
+            dialog.setWidth(Math.max(dialog.getWidth(), 320f));
+            dialog.setHeight(Math.max(dialog.getHeight(), 260f));
             dialog.setPosition((stage.getWidth() - dialog.getWidth()) / 2,
                     (stage.getHeight() - dialog.getHeight()) / 2);
 
@@ -2791,6 +2800,18 @@ public class Gdx3DHud {
             row.add(valueLabel).width(240f).left();
         }
         return row;
+    }
+
+    /**
+     * Hover tooltip for a disabled File menu row (#802): the terminal has no tooltips, so the 3D
+     * client is where the lock reason can still be read. The code-built skin has no tooltip style,
+     * so it is assembled here from the small label style and a translucent background.
+     */
+    private TextTooltip newTooltip(String text) {
+        TextTooltip.TextTooltipStyle style = new TextTooltip.TextTooltipStyle();
+        style.label = skin.get("small", Label.LabelStyle.class);
+        style.background = skin.newDrawable("white", new Color(0f, 0f, 0f, 0.85f));
+        return new TextTooltip(text, style);
     }
 
     /** One button listener that fires its action. */
