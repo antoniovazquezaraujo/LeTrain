@@ -1317,8 +1317,9 @@ public class Gdx3DHud {
     }
 
     /**
-     * Row text of the File menu: the shared label, plus the lock reason while the row is disabled.
-     * The 2D terminal shows the exact same words (issue #743).
+     * Row text of the File menu: the shared bare label. The lock reason stays on the item and is
+     * shown as a hover tooltip while the row is disabled (#802); the 2D terminal shows the exact
+     * same words (issue #743).
      */
     static String fileMenuButtonText(FileMenuText.Item item) {
         return FileMenuText.displayLabel(item);

@@ -39,6 +39,34 @@ class Gdx3DHudFileMenuTest {
     }
 
     @Test
+    @DisplayName("#803: every 3D row tints the shared N/L/S/E/Q mnemonic")
+    void should_TintTheSharedMnemonics() {
+        List<FileMenuText.Item> items = FileMenuText.items(FileMenuText.MenuState.graphic(false));
+        List<String> expected = List.of("[GREEN]N[]ew", "[GREEN]L[]oad", "[GREEN]S[]ave",
+                "S[GREEN]e[]ttings", "[GREEN]Q[]uit");
+
+        for (int i = 0; i < items.size(); i++) {
+            FileMenuText.Item item = items.get(i);
+            assertEquals(expected.get(i),
+                    Gdx3DHud.settingsHotkeyLabel(Gdx3DHud.fileMenuButtonText(item),
+                            FileMenuText.mnemonic(item.command())),
+                    item.command() + " mnemonic");
+        }
+    }
+
+    @Test
+    @DisplayName("#803: confirm buttons take their first non-C letter, C stays Cancel")
+    void should_ChooseConfirmMnemonics() {
+        assertEquals('D', Gdx3DHud.confirmMnemonic("Discard changes?"));
+        assertEquals('R', Gdx3DHud.confirmMnemonic("Rebuild world"));
+        assertEquals('A', Gdx3DHud.confirmMnemonic("Cancel"),
+                "C is reserved for the Cancel button");
+        assertEquals('Y', Gdx3DHud.confirmMnemonic("CCC"), "no usable letter falls back to Y");
+        assertEquals('Y', Gdx3DHud.confirmMnemonic(""));
+        assertEquals('Y', Gdx3DHud.confirmMnemonic(null));
+    }
+
+    @Test
     @DisplayName("the old Exit-only dialog is gone, not just hidden")
     void should_NotKeepTheOldExitDialog() {
         assertThrows(NoSuchMethodException.class,
