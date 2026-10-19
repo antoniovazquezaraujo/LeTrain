@@ -21,6 +21,9 @@ import letrain.vehicle.rail.impl.Wagon;
 public class SimulationService {
     private final Model model;
 
+    /** Probability per tick that the stations regenerate/consume cargo (seeded, see #811). */
+    private static final double CARGO_REGENERATION_CHANCE = 0.05;
+
     public SimulationService(Model model) {
         this.model = model;
     }
@@ -40,9 +43,13 @@ public class SimulationService {
     public void handleIndustrialActions() {
         EconomyManager economyManager = model.getEconomyManager();
 
-        // Regenerate cargo at all stations
-        if (Math.random() < 0.05) {
-            model.getStations().forEach(Station::regenerateCargo);
+        // Regenerate cargo at all stations. The roll uses the world's seeded RNG (#811) so the
+        // same game seed produces the same cargo evolution (ADR-020); the polling itself is kept
+        // for now — making it event-driven is a separate refactor (ADR-005 spirit).
+        if (model.getSimulationRandom().nextDouble() < CARGO_REGENERATION_CHANCE) {
+            for (Station station : model.getStations()) {
+                station.regenerateCargo(model.getSimulationRandom());
+            }
         }
 
         Map<Wagon, CargoState> wagonsPrevState = new HashMap<>();

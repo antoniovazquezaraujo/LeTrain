@@ -461,6 +461,14 @@ public interface Model {
     /** Terrain seed of this model; a scenario stores it to rebuild an identical world. */
     int getSeed();
 
+    /**
+     * Seeded RNG that owns all simulation-time randomness (cargo consumption/regeneration, future
+     * stochastic gameplay). It is derived from {@link #getSeed()} so the same seed yields the same
+     * sequence (ADR-020 determinism/replay) and re-derived on load. Callers must not cache the
+     * returned instance across a world swap or reload.
+     */
+    java.util.Random getSimulationRandom();
+
     String getGameObjectsReport();
 
     String getRailwayGraphReport();
