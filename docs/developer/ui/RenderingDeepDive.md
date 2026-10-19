@@ -230,17 +230,24 @@ palabras no pueden divergir entre clientes:
   menú (`view.showFileMenu()` en ambos presentadores) y `Esc` de nuevo lo cierra.
 - **Diálogo Nueva Partida 3D** (#777, V1): `Gdx3DHud.showNewGameDialog(form, onStart, onCancel)`
   reutiliza `NewGameForm` (semilla + sliders de agua/montaña, con la regla cruzada del catálogo) y
-  valida con `form.toSettings()`, mostrando el mensaje del catálogo en línea si falla. El skin
-  code-built no tenía `Slider`, así que añade un `Slider.SliderStyle` "default-horizontal" (ver
+  valida con `form.toSettings()`, mostrando el mensaje del catálogo en el panel de mensajes si falla.
+  El skin code-built no tenía `Slider`, así que añade un `Slider.SliderStyle` "default-horizontal" (ver
   *Estilo de controles* más abajo). El campo de semilla lleva un `TextFieldFilter` que descarta los
   caracteres de control (#780, ver *Caracteres de control*). Desde el feedback S4b (#780) el bloque
   de terreno es **vivo**: bajo los sliders van la barra tricolor del 100 % y el preview cuadrado
   (`TerrainPreviewView`, 88x88 a 2x) y ambos se recalculan al mover cualquier slider y al editar la
   semilla cuando parsea a entero (se guarda la última semilla válida, como el 2D); el botón "new"
   desapareció, así que la semilla se sortea al abrir y a mano después. El foco se pinta en vivo
-  (`paintNewGameFocus`): los sliders cambian al estilo "focused-horizontal" (knob cian) y Start/Cancel
-  al estilo "focused" (fondo `SELECTED_BG`); las flechas no roban el caret a los `TextField`. Las
-  pestañas del catálogo llegan en S4c.
+  (`paintNewGameFocus`): los sliders cambian al estilo "focused-horizontal" (knob cian) y
+  Start/Cancel al estilo "focused" (fondo `SELECTED_BG`); las flechas no roban el caret a los
+  `TextField`. Las pestañas del catálogo ya están (#808): las cinco páginas
+  (Terrain/Game/Economy/Build/UI) se construyen desde `SettingsCatalog` con la misma maquinaria que
+  el Settings 3D (`settingsTabLetter`/`settingsTabHotkey`, `settingsCycleTab`,
+  `settingsHotkeyLabel`), `Alt+T/G/E/B/U` saltan de página, `Ctrl+Tab` cicla y `Tab`/flechas
+  recorren la página activa más Start/Cancel (`Alt+S`/`Alt+C`). Las páginas no-Terrain son una
+  columna con scroll de filas del catálogo enlazadas **en vivo** al `NewGameForm`; en Start,
+  `form.toSettings()` valida y el error sale con `NewGameText.INVALID_TITLE` en el panel de
+  mensajes, sin cerrar el diálogo.
 - **Diálogo Settings 3D** (#778, `Gdx3DHud.showSettingsDialog`): espejo del 2D con las mismas
   palabras y semántica. Un selector de categorías (una página a la vez) y, por cada
   `SettingDefinition`, una fila con el glifo de estado —● verde LIVE, ● amarillo REAPPLY, ● rojo
