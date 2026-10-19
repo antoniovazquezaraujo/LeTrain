@@ -36,6 +36,13 @@ class CoverArtTest {
     }
 
     @Test
+    @DisplayName("#801: the shared tagline keeps the 2D cover wording")
+    void should_ShareTheTaglineWording() {
+        assertEquals("The Letter Train Simulator", CoverArt.TAGLINE);
+        assertFalse(CoverArt.TAGLINE.isBlank(), "the 3D overlay needs a visible subtitle");
+    }
+
+    @Test
     @DisplayName("every cell carries a printable codepoint and at least one colour")
     void should_DefineUsableCells() {
         CoverArt art = CoverArt.load();
