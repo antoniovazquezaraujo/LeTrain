@@ -1442,14 +1442,23 @@ public class Gdx3DHud {
     }
 
     /**
-     * New Game dialog (S4, #777): the 3D counterpart of the 2D dialog, V1 slice with the seed and
-     * the two terrain proportions (Settings tabs and the catalog preview arrive in S4b/S4c). The
-     * form owns the catalogue rules; {@code Start} validates through
-     * {@link NewGameForm#toSettings()} and, on failure, shows the catalogue message inline without
-     * closing. Tab/arrows move the focus, left/right move the focused slider, Enter/Space activate
-     * the focused button and Esc cancels (2D parity).
+     * New Game dialog (S4, #777; five pages #808): the 3D counterpart of the 2D dialog. It shows
+     * the same five catalogue pages as the 2D {@code NewGameDialog} — Terrain, Game, Economy, Build
+     * and UI — in the shared order, read from {@link SettingCategory} and the catalogue, nothing
+     * hardcoded. The Terrain page keeps its live block (seed, water/mountain sliders, 100 % bar and
+     * map preview); the other pages are one scrolling column of catalogue fields bound to the
+     * {@link NewGameForm}, exactly the rows the Settings dialog reads.
      *
-     * @param form the prefilled form (seed + terrain) owned by the presenter
+     * <p>
+     * Keyboard (2D parity, S4b #778/#780): <b>Alt+T/G/E/B/U</b> jump to a page (mnemonic tinted
+     * like the Settings tabs), <b>Ctrl+Tab</b>/<b>Ctrl+Shift+Tab</b> cycle them, <b>Tab</b>/arrows
+     * walk the active page's fields plus Start/Cancel (Shift+Tab reverses),
+     * <b>Alt+S</b>/<b>Alt+C</b> start/cancel, Left/Right move a focused slider, Enter/Space
+     * activate a focused button and Esc cancels. The form owns the catalogue rules; {@code Start}
+     * validates through {@link NewGameForm#toSettings()} and, on failure, shows the catalogue
+     * message inline without closing.
+     *
+     * @param form the prefilled form (seed + catalogue values) owned by the presenter
      * @param onStart receives the validated settings when the player starts
      * @param onCancel run when the dialog is cancelled
      */
@@ -1474,123 +1483,50 @@ public class Gdx3DHud {
                     new com.badlogic.gdx.scenes.scene2d.ui.Dialog(NewGameText.TITLE,
                             skin.get("dialog", Window.WindowStyle.class));
 
-            final TextField seedField = new TextField(form.value(NewGameForm.SEED_KEY), skin);
-            // The dialog owns Tab/arrow navigation, so the field must not consume Tab itself.
-            seedField.setFocusTraversal(false);
-            // LWJGL3 synthesises keyTyped('\t') on Tab and hasGlyph lies for the missing glyph: a
-            // plain field would type the "?" placeholder, so only accept printable characters.
-            seedField.setTextFieldFilter((f, c) -> c >= 32);
+            // One scrolling column shared by every page (the Settings dialog pattern): the Terrain
+            // block or the catalogue field rows are swapped in place (#808). The terrain previews
+            // are disposed when the page is left or the dialog closes.
+            final Table pageTable = new Table();
+            pageTable.top().left();
+            pageTable.padLeft(SETTINGS_LEFT_GUTTER);
+            final ScrollPane pageScroll = new ScrollPane(pageTable, skin);
+            pageScroll.setFadeScrollBars(false);
 
-            final Slider waterSlider =
-                    new Slider(0, SettingsCatalog.MAX_TERRAIN_PERCENT, 1, false, skin);
-            final Slider mountainSlider =
-                    new Slider(0, SettingsCatalog.MAX_TERRAIN_PERCENT, 1, false, skin);
-            waterSlider.setValue(form.waterPercent());
-            mountainSlider.setValue(form.mountainPercent());
-            final Label waterValue = new Label(form.waterPercent() + " %", skin, "small");
-            final Label mountainValue = new Label(form.mountainPercent() + " %", skin, "small");
+            final List<Actor> pageFields = new ArrayList<>();
+            final List<Actor> focusable = new ArrayList<>();
+            final List<TerrainPreviewView> terrainPreviews = new ArrayList<>();
+            final SettingCategory[] active = {SettingCategory.TERRAIN};
+            final Map<SettingCategory, TextButton> categoryButtons = new LinkedHashMap<>();
+            final Table categoryBar = new Table();
 
-            final Label validation = new Label("", skin, "small");
-            validation.setColor(new Color(1f, 0.4f, 0.4f, 1f));
-            validation.setWrap(true);
+            // Start/Cancel carry their Alt mnemonic in the label (2D parity: Alt+S / Alt+C).
+            final TextButton startButton =
+                    new TextButton(settingsHotkeyLabel(NewGameText.START, 'S'), skin);
+            final TextButton cancelButton =
+                    new TextButton(settingsHotkeyLabel(NewGameText.CANCEL, 'C'), skin);
+            final List<TextButton> footerButtons = List.of(startButton, cancelButton);
 
-            // Live terrain block: the three-colour 100 % bar and the map preview refresh on every
-            // slider move and on every valid seed edit (2D parity), reusing the Settings helpers
-            // and the shared TerrainPreviewView.
-            final Table bar = terrainBarTable(form.waterPercent(), form.mountainPercent());
-            final TerrainPreviewView preview = new TerrainPreviewView();
-            preview.setValues(form.seed(), form.waterPercent(), form.mountainPercent());
-            final Runnable refreshTerrain = () -> {
-                updateTerrainBar(bar, form.waterPercent(), form.mountainPercent());
-                preview.setValues(form.seed(), form.waterPercent(), form.mountainPercent());
-            };
-
-            seedField.setTextFieldListener((field, c) -> {
-                int previous = form.seed();
-                form.setSeed(field.getText());
-                // Keep the last valid seed for the preview when the text does not parse (form
-                // ignores the malformed value); only repaint when the seed actually moved.
-                if (form.seed() != previous) {
-                    refreshTerrain.run();
-                }
-            });
-            waterSlider.addListener(new ChangeListener() {
-                @Override
-                public void changed(ChangeEvent event, Actor actor) {
-                    form.setWaterPercent((int) waterSlider.getValue());
-                    waterValue.setText(form.waterPercent() + " %");
-                    // The cross-field rule may have clamped the mountain side: refresh it too.
-                    mountainSlider.setValue(form.mountainPercent());
-                    mountainValue.setText(form.mountainPercent() + " %");
-                    refreshTerrain.run();
-                }
-            });
-            mountainSlider.addListener(new ChangeListener() {
-                @Override
-                public void changed(ChangeEvent event, Actor actor) {
-                    form.setMountainPercent((int) mountainSlider.getValue());
-                    mountainValue.setText(form.mountainPercent() + " %");
-                    waterSlider.setValue(form.waterPercent());
-                    waterValue.setText(form.waterPercent() + " %");
-                    refreshTerrain.run();
-                }
-            });
-
-            final float labelWidth = 90f;
-            final float valueWidth = 80f;
-
-            Table content = dialog.getContentTable();
-            content.pad(24, 48, 8, 48);
-            content.defaults().space(12);
-            Table block = new Table();
-            block.top().left();
-            block.defaults().space(6);
-
-            Table seedRow = new Table();
-            seedRow.left();
-            seedRow.add(new Label(NewGameText.SEED_LABEL, skin, "small")).width(labelWidth).left();
-            seedRow.add(seedField).width(280f).height(38f).left();
-            block.add(seedRow).left().row();
-
-            block.add(terrainSliderRow(NewGameText.WATER_LABEL, waterSlider, waterValue, labelWidth,
-                    valueWidth)).left().row();
-            block.add(terrainSliderRow(NewGameText.MOUNTAIN_LABEL, mountainSlider, mountainValue,
-                    labelWidth, valueWidth)).left().row();
-
-            // Bar under the sliders, then a gap and the map: same order as the 2D terrain block.
-            block.add(bar).left().padLeft(labelWidth).row();
-            block.add().height(8f).row();
-            block.add(preview).left().padLeft(labelWidth).row();
-
-            content.add(block).left().row();
-            content.add(validation).width(520f).left();
-
-            final TextButton startButton = new TextButton(NewGameText.START, skin);
-            final TextButton cancelButton = new TextButton(NewGameText.CANCEL, skin);
-            dialog.getButtonTable().defaults().space(24).minWidth(140).minHeight(50);
-            // Plain table cells, not Dialog.button(...): that path auto-hides on click, which would
-            // close the dialog even when Start must show a validation message and stay open.
-            dialog.getButtonTable().add(startButton);
-            dialog.getButtonTable().add(cancelButton);
-
-            final List<Actor> focusable =
-                    List.of(seedField, waterSlider, mountainSlider, startButton, cancelButton);
-
-            // Focus highlight (owner feedback S4b): sliders swap to the cyan-knob style and the
-            // Start/Cancel buttons to the SELECTED_BG background. Refreshed after every navigation.
-            final Runnable paintNewGameFocus = () -> {
+            // Focus highlight (S4b, #780): sliders swap to the cyan-knob style, buttons to the
+            // SELECTED_BG background and checkboxes are tinted cyan. Refreshed after navigation.
+            final Runnable paintFocus = () -> {
                 Actor focused = stage.getKeyboardFocus();
-                paintSliderFocus(waterSlider, focused == waterSlider);
-                paintSliderFocus(mountainSlider, focused == mountainSlider);
-                paintButtonFocus(startButton, focused == startButton);
-                paintButtonFocus(cancelButton, focused == cancelButton);
+                for (Actor widget : focusable) {
+                    if (widget instanceof Slider) {
+                        paintSliderFocus((Slider) widget, focused == widget);
+                    } else if (widget instanceof TextButton) {
+                        paintButtonFocus((TextButton) widget, focused == widget);
+                    } else if (widget instanceof CheckBox) {
+                        ((CheckBox) widget).getImage()
+                                .setColor(focused == widget ? Color.CYAN : Color.WHITE);
+                    }
+                }
             };
 
             final Runnable finish = () -> {
                 newGameDialogOpen = false;
                 blocker.remove();
                 dialog.hide(null);
-                preview.dispose();
+                disposeTerrainPreviews(terrainPreviews);
             };
             final Runnable start = () -> {
                 try {
@@ -1600,8 +1536,9 @@ public class Gdx3DHud {
                         onStart.accept(settings);
                     }
                 } catch (IllegalArgumentException e) {
-                    // The catalogue message is what the player reads under the form.
-                    validation.setText(e.getMessage());
+                    // 2D parity: the catalogue message, titled like the 2D dialog, and the New Game
+                    // dialog stays open so the player can fix the field (S4b #780 error channel).
+                    showMessage(NewGameText.INVALID_TITLE, e.getMessage());
                 }
             };
             final Runnable cancel = () -> {
@@ -1610,23 +1547,88 @@ public class Gdx3DHud {
                     onCancel.run();
                 }
             };
-            startButton.addListener(new ChangeListener() {
-                @Override
-                public void changed(ChangeEvent event, Actor actor) {
-                    start.run();
-                }
-            });
-            cancelButton.addListener(new ChangeListener() {
-                @Override
-                public void changed(ChangeEvent event, Actor actor) {
-                    cancel.run();
-                }
-            });
 
-            InputListener navigation = new InputListener() {
+            // Swaps the visible page and refreshes the Tab cycle: the active page's fields plus
+            // Start/Cancel (the tab selector stays out of it, like 2D #757). The Terrain page is
+            // the
+            // live block, the rest are catalogue field rows bound to the form (#808).
+            final Consumer<SettingCategory> showCategory = category -> {
+                active[0] = category;
+                disposeTerrainPreviews(terrainPreviews);
+                pageTable.clear();
+                pageFields.clear();
+                if (category == SettingCategory.TERRAIN) {
+                    fillNewGameTerrain(pageTable, pageFields, form, terrainPreviews);
+                } else {
+                    fillNewGameCategory(category, pageTable, pageFields, form);
+                }
+                for (Map.Entry<SettingCategory, TextButton> entry : categoryButtons.entrySet()) {
+                    entry.getValue().setChecked(entry.getKey() == category);
+                }
+                focusable.clear();
+                focusable.addAll(pageFields);
+                focusable.addAll(footerButtons);
+                pageScroll.setScrollY(0);
+                // Always pin the focus: with a null focus Stage sends keyDown to the root and this
+                // dialog never hears it, so Tab/Enter/Esc would be dead (#778).
+                focusAndSelect(pageFields.isEmpty() ? focusable.get(0) : pageFields.get(0));
+                paintFocus.run();
+            };
+            for (SettingCategory category : SETTINGS_CATEGORIES) {
+                final TextButton tab = new TextButton(
+                        settingsHotkeyLabel(category.displayName(), settingsTabLetter(category)),
+                        skin, "toggle");
+                // ClickListener (not ChangeListener): showCategory re-syncs every tab's checked
+                // state, so reacting to ChangeEvent would ping-pong the programmatic setChecked
+                // back into this listener and recurse until StackOverflowError (#778).
+                tab.addListener(new ClickListener() {
+                    @Override
+                    public void clicked(InputEvent event, float x, float y) {
+                        if (active[0] == category) {
+                            tab.setChecked(true);
+                            return;
+                        }
+                        showCategory.accept(category);
+                    }
+                });
+                categoryButtons.put(category, tab);
+                categoryBar.add(tab).pad(4);
+            }
+
+            startButton.addListener(fireAction(start));
+            cancelButton.addListener(fireAction(cancel));
+
+            // Keyboard: Ctrl+Tab cycles, Alt+letter reaches a page or Start/Cancel, Tab/arrows walk
+            // the active page and the two buttons, Enter/Space activate a focused button, Left/
+            // Right move a focused slider (or the caret in a text field) and Esc cancels. Text
+            // fields keep the arrows for the caret and the space for typing.
+            dialog.addListener(new InputListener() {
                 @Override
                 public boolean keyDown(InputEvent event, int keycode) {
                     Actor focused = stage.getKeyboardFocus();
+                    if (keycode == Input.Keys.TAB && isCtrlPressed()) {
+                        // Ctrl+Tab / Ctrl+Shift+Tab cycles the pages and never triggers the normal
+                        // Tab navigation.
+                        showCategory.accept(settingsCycleTab(active[0], isShiftPressed()));
+                        return true;
+                    }
+                    if (isAltPressed() && keycode >= Input.Keys.A && keycode <= Input.Keys.Z) {
+                        char letter = (char) ('A' + keycode - Input.Keys.A);
+                        Optional<SettingCategory> tab = settingsTabHotkey(letter);
+                        if (tab.isPresent()) {
+                            showCategory.accept(tab.get());
+                            return true;
+                        }
+                        char lower = Character.toLowerCase(letter);
+                        if (lower == 's') {
+                            start.run();
+                            return true;
+                        }
+                        if (lower == 'c') {
+                            cancel.run();
+                            return true;
+                        }
+                    }
                     if ((keycode == Input.Keys.LEFT || keycode == Input.Keys.RIGHT)
                             && focused instanceof Slider) {
                         Slider slider = (Slider) focused;
@@ -1641,27 +1643,21 @@ public class Gdx3DHud {
                             || keycode == Input.Keys.DOWN
                             || ((keycode == Input.Keys.LEFT || keycode == Input.Keys.RIGHT)
                                     && !(focused instanceof TextField))) {
-                        int index = focusable.indexOf(focused);
                         // Shift+Tab walks the ring backwards, like Shift+Up/Shift+Left.
                         int step = (keycode == Input.Keys.UP || keycode == Input.Keys.LEFT
                                 || (keycode == Input.Keys.TAB && isShiftPressed())) ? -1 : 1;
-                        int next = Math.floorMod(index + step, focusable.size());
-                        focusAndSelect(focusable.get(next));
-                        paintNewGameFocus.run();
+                        navigateSettingsFocus(step, focusable, pageScroll, pageTable);
+                        paintFocus.run();
                         return true;
                     }
-                    if (keycode == Input.Keys.ENTER || keycode == Input.Keys.NUMPAD_ENTER) {
-                        if (focused == startButton) {
-                            start.run();
+                    if (keycode == Input.Keys.ENTER || keycode == Input.Keys.NUMPAD_ENTER
+                            || keycode == Input.Keys.SPACE) {
+                        // libGDX 1.14.2: CheckBox extends TextButton, so this branch runs first.
+                        if (focused instanceof CheckBox) {
+                            CheckBox checkBox = (CheckBox) focused;
+                            checkBox.setChecked(!checkBox.isChecked());
                             return true;
                         }
-                        if (focused == cancelButton) {
-                            cancel.run();
-                            return true;
-                        }
-                        return false;
-                    }
-                    if (keycode == Input.Keys.SPACE) {
                         if (focused == startButton) {
                             start.run();
                             return true;
@@ -1682,26 +1678,190 @@ public class Gdx3DHud {
 
                 @Override
                 public boolean keyTyped(InputEvent event, char character) {
-                    // Never swallow: the seed field must receive its typed characters.
+                    // Never swallow: the seed field and the catalogue fields must receive theirs.
                     return false;
                 }
-            };
-            dialog.addListener(navigation);
+            });
+
+            Table content = dialog.getContentTable();
+            content.pad(24, 40, 10, 40);
+            content.defaults().space(10);
+            content.add(categoryBar).left().row();
+            content.add(pageScroll).width(660f).height(340f).row();
+
+            Table buttons = dialog.getButtonTable();
+            buttons.defaults().space(24).minWidth(140).minHeight(50);
+            // Plain table cells, not Dialog.button(...): that path auto-hides on click, which would
+            // close the dialog even when Start must show a validation message and stay open.
+            for (TextButton button : footerButtons) {
+                buttons.add(button);
+            }
 
             dialog.padTop(46);
             dialog.pack();
-            dialog.setWidth(Math.max(dialog.getWidth(), 640f));
-            dialog.setHeight(Math.max(dialog.getHeight(), 460f));
+            dialog.setWidth(Math.max(dialog.getWidth(), 760f));
+            dialog.setHeight(Math.max(dialog.getHeight(), 620f));
             dialog.setPosition((stage.getWidth() - dialog.getWidth()) / 2,
                     (stage.getHeight() - dialog.getHeight()) / 2);
 
             stage.addActor(blocker);
             stage.addActor(dialog);
-            // The seed field starts focused with its whole value selected, so the first keystroke
-            // replaces the drawn seed, like the 2D dialog's select-on-focus (#757).
-            focusAndSelect(seedField);
-            paintNewGameFocus.run();
+            // The Terrain page opens first with its seed focused and selected, so the first
+            // keystroke replaces the drawn seed, like the 2D dialog's select-on-focus (#757).
+            showCategory.accept(SettingCategory.TERRAIN);
         });
+    }
+
+    /**
+     * Fills the New Game content with the live Terrain block (#808): seed, water/mountain sliders,
+     * the three-colour 100 % bar and the map preview, all wired to the {@link NewGameForm} so Start
+     * collects them like the 2D dialog. The widgets are rebuilt when the page is shown; the form
+     * (kept in sync live) owns the values, so switching pages never loses an edit.
+     */
+    private void fillNewGameTerrain(Table fieldsTable, List<Actor> categoryFields, NewGameForm form,
+            List<TerrainPreviewView> previews) {
+        fieldsTable.clear();
+        categoryFields.clear();
+
+        final TextField seedField = new TextField(form.value(NewGameForm.SEED_KEY), skin);
+        // The dialog owns Tab/arrow navigation, so the field must not consume Tab itself.
+        seedField.setFocusTraversal(false);
+        // LWJGL3 synthesises keyTyped('\t') on Tab and hasGlyph lies for the missing glyph: a plain
+        // field would type the "?" placeholder, so only accept printable characters.
+        seedField.setTextFieldFilter((f, c) -> c >= 32);
+
+        final Slider waterSlider =
+                new Slider(0, SettingsCatalog.MAX_TERRAIN_PERCENT, 1, false, skin);
+        final Slider mountainSlider =
+                new Slider(0, SettingsCatalog.MAX_TERRAIN_PERCENT, 1, false, skin);
+        waterSlider.setValue(form.waterPercent());
+        mountainSlider.setValue(form.mountainPercent());
+        final Label waterValue = new Label(form.waterPercent() + " %", skin, "small");
+        final Label mountainValue = new Label(form.mountainPercent() + " %", skin, "small");
+
+        // Live terrain block: the three-colour 100 % bar and the map preview refresh on every
+        // slider move and on every valid seed edit (2D parity), reusing the Settings helpers.
+        final Table bar = terrainBarTable(form.waterPercent(), form.mountainPercent());
+        final TerrainPreviewView preview = new TerrainPreviewView();
+        preview.setValues(form.seed(), form.waterPercent(), form.mountainPercent());
+        previews.add(preview);
+        final Runnable refreshTerrain = () -> {
+            updateTerrainBar(bar, form.waterPercent(), form.mountainPercent());
+            preview.setValues(form.seed(), form.waterPercent(), form.mountainPercent());
+        };
+
+        seedField.setTextFieldListener((field, c) -> {
+            int previous = form.seed();
+            form.setSeed(field.getText());
+            // Keep the last valid seed for the preview when the text does not parse (form ignores
+            // the malformed value); only repaint when the seed actually moved.
+            if (form.seed() != previous) {
+                refreshTerrain.run();
+            }
+        });
+        waterSlider.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                form.setWaterPercent((int) waterSlider.getValue());
+                waterValue.setText(form.waterPercent() + " %");
+                // The cross-field rule may have clamped the mountain side: refresh it too.
+                mountainSlider.setValue(form.mountainPercent());
+                mountainValue.setText(form.mountainPercent() + " %");
+                refreshTerrain.run();
+            }
+        });
+        mountainSlider.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                form.setMountainPercent((int) mountainSlider.getValue());
+                mountainValue.setText(form.mountainPercent() + " %");
+                waterSlider.setValue(form.waterPercent());
+                waterValue.setText(form.waterPercent() + " %");
+                refreshTerrain.run();
+            }
+        });
+
+        final float labelWidth = 90f;
+        final float valueWidth = 80f;
+
+        Table block = new Table();
+        block.top().left();
+        block.defaults().space(6);
+
+        Table seedRow = new Table();
+        seedRow.left();
+        seedRow.add(new Label(NewGameText.SEED_LABEL, skin, "small")).width(labelWidth).left();
+        seedRow.add(seedField).width(280f).height(38f).left();
+        block.add(seedRow).left().row();
+
+        block.add(terrainSliderRow(NewGameText.WATER_LABEL, waterSlider, waterValue, labelWidth,
+                valueWidth)).left().row();
+        block.add(terrainSliderRow(NewGameText.MOUNTAIN_LABEL, mountainSlider, mountainValue,
+                labelWidth, valueWidth)).left().row();
+
+        // Bar under the sliders, then a gap and the map: same order as the 2D terrain block.
+        block.add(bar).left().padLeft(labelWidth).row();
+        block.add().height(8f).row();
+        block.add(preview).left().padLeft(labelWidth).row();
+
+        fieldsTable.add(block).growX().left().top();
+
+        categoryFields.add(seedField);
+        categoryFields.add(waterSlider);
+        categoryFields.add(mountainSlider);
+    }
+
+    /**
+     * Fills the New Game content with one row per catalogue field of {@code category}, in catalogue
+     * order and bound to the {@link NewGameForm} (the 3D counterpart of the 2D
+     * {@code NewGameDialog.buildSection}, #808). No state glyphs: New Game edits every field, so
+     * the Settings page's apply-state column would only add noise.
+     */
+    private void fillNewGameCategory(SettingCategory category, Table fieldsTable,
+            List<Actor> categoryFields, NewGameForm form) {
+        fieldsTable.clear();
+        categoryFields.clear();
+        for (SettingDefinition definition : SettingsCatalog.definitions()) {
+            if (definition.category() == category) {
+                fieldsTable.add(newGameFieldRow(definition, form, categoryFields)).growX().left()
+                        .padBottom(6).row();
+            }
+        }
+    }
+
+    /**
+     * One New Game field row: label with its unit, and a checkbox (BOOLEAN) or a text field bound
+     * to the form. Editable, so it always enters the Tab cycle.
+     */
+    private Table newGameFieldRow(SettingDefinition definition, NewGameForm form,
+            List<Actor> categoryFields) {
+        Table row = new Table();
+        row.left();
+        row.defaults().space(8);
+        row.add(new Label(settingsFieldLabel(definition), skin, "default")).width(320f).left();
+        String value = form.value(definition.key());
+        if (definition.type() == SettingValueType.BOOLEAN) {
+            CheckBox checkBox = new CheckBox("", skin);
+            checkBox.setChecked(Boolean.parseBoolean(value));
+            checkBox.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    form.setValue(definition.key(), checkBox.isChecked() ? "true" : "false");
+                }
+            });
+            row.add(checkBox).width(240f).height(34f).left();
+            categoryFields.add(checkBox);
+        } else {
+            TextField field = new TextField(value, skin);
+            field.setFocusTraversal(false);
+            field.setTextFieldFilter((f, c) -> c >= 32);
+            // Keep the working form in sync so switching pages never loses an edit; Start
+            // validates.
+            field.setTextFieldListener((f, c) -> form.setValue(definition.key(), f.getText()));
+            row.add(field).width(240f).height(34f);
+            categoryFields.add(field);
+        }
+        return row;
     }
 
     /** Apply-state glyph shared with the 2D Settings dialog (#764). */
