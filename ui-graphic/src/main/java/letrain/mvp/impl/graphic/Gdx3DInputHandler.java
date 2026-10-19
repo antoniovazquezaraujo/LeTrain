@@ -41,8 +41,9 @@ public class Gdx3DInputHandler implements InputProcessor {
     // Multi-digit selection state
     private final com.badlogic.gdx.utils.IntMap<Long> pressedKeys =
             new com.badlogic.gdx.utils.IntMap<>();
-    private static final long INITIAL_REPEAT_DELAY_MS = 400;
-    private static final long REPEAT_INTERVAL_MS = 50;
+    /** Key auto-repeat timings, shared with the New Game slider repeat (#804). */
+    static final long INITIAL_REPEAT_DELAY_MS = 400;
+    static final long REPEAT_INTERVAL_MS = 50;
 
     /**
      * Cover key handling (issue #743): the key that dismisses the title cover and its typed

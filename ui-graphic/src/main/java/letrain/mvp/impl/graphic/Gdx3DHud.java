@@ -1649,6 +1649,42 @@ public class Gdx3DHud {
             startButton.addListener(fireAction(start));
             cancelButton.addListener(fireAction(cancel));
 
+            // Slider key auto-repeat (#804): holding Left/Right keeps the focused slider moving
+            // after an initial delay, reusing the game input's timings for a consistent feel.
+            // libGDX sends discrete keyDown events, so the repeat is driven by the frame clock;
+            // the 2D terminal relies on the OS/terminal key repeat instead.
+            final int[] repeatDirection = {0};
+            final float[] repeatElapsed = {0f};
+            final boolean[] repeatBurst = {false};
+            dialog.addAction(new com.badlogic.gdx.scenes.scene2d.Action() {
+                @Override
+                public boolean act(float delta) {
+                    if (repeatDirection[0] == 0) {
+                        return false;
+                    }
+                    Actor focused = stage.getKeyboardFocus();
+                    if (!(focused instanceof Slider)) {
+                        repeatDirection[0] = 0;
+                        return false;
+                    }
+                    float delay = Gdx3DInputHandler.INITIAL_REPEAT_DELAY_MS / 1000f;
+                    float interval = Gdx3DInputHandler.REPEAT_INTERVAL_MS / 1000f;
+                    repeatElapsed[0] += delta;
+                    if (!repeatBurst[0]) {
+                        if (repeatElapsed[0] < delay) {
+                            return false;
+                        }
+                        repeatBurst[0] = true;
+                        repeatElapsed[0] -= delay;
+                    }
+                    while (repeatElapsed[0] >= interval) {
+                        repeatElapsed[0] -= interval;
+                        stepSlider((Slider) focused, repeatDirection[0]);
+                    }
+                    return false;
+                }
+            });
+
             // Keyboard: Ctrl+Tab cycles, Alt+letter reaches a page or Start/Cancel, Tab/arrows walk
             // the active page and the two buttons, Enter/Space activate a focused button, Left/
             // Right move a focused slider (or the caret in a text field) and Esc cancels. Text
@@ -1682,12 +1718,12 @@ public class Gdx3DHud {
                     }
                     if ((keycode == Input.Keys.LEFT || keycode == Input.Keys.RIGHT)
                             && focused instanceof Slider) {
-                        Slider slider = (Slider) focused;
-                        float step = keycode == Input.Keys.LEFT ? -slider.getStepSize()
-                                : slider.getStepSize();
-                        slider.setValue(
-                                com.badlogic.gdx.math.MathUtils.clamp(slider.getValue() + step,
-                                        slider.getMinValue(), slider.getMaxValue()));
+                        int direction = keycode == Input.Keys.LEFT ? -1 : 1;
+                        stepSlider((Slider) focused, direction);
+                        // Arm the auto-repeat: one step now, then delay + burst while held.
+                        repeatDirection[0] = direction;
+                        repeatElapsed[0] = 0f;
+                        repeatBurst[0] = false;
                         return true;
                     }
                     if (keycode == Input.Keys.TAB || keycode == Input.Keys.UP
@@ -1723,6 +1759,16 @@ public class Gdx3DHud {
                     if (keycode == Input.Keys.ESCAPE) {
                         cancel.run();
                         return true;
+                    }
+                    return false;
+                }
+
+                @Override
+                public boolean keyUp(InputEvent event, int keycode) {
+                    // Stop the slider repeat when the arrow is released (#804).
+                    if ((keycode == Input.Keys.LEFT || keycode == Input.Keys.RIGHT)
+                            && repeatDirection[0] != 0) {
+                        repeatDirection[0] = 0;
                     }
                     return false;
                 }
@@ -2867,6 +2913,13 @@ public class Gdx3DHud {
             }
         }
         return 'Y';
+    }
+
+    /** Moves a slider one step in {@code direction} (-1/+1), clamped to its range (#804). */
+    private static void stepSlider(Slider slider, int direction) {
+        float step = direction * slider.getStepSize();
+        slider.setValue(com.badlogic.gdx.math.MathUtils.clamp(slider.getValue() + step,
+                slider.getMinValue(), slider.getMaxValue()));
     }
 
     /** One button listener that fires its action. */
