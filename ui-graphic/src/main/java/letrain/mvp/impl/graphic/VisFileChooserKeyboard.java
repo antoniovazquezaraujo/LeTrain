@@ -8,10 +8,11 @@ import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
-import com.badlogic.gdx.scenes.scene2d.ui.TextField;
 import com.badlogic.gdx.utils.Array;
 import com.kotcrab.vis.ui.FocusManager;
+import com.kotcrab.vis.ui.Focusable;
 import com.kotcrab.vis.ui.widget.ListView;
+import com.kotcrab.vis.ui.widget.VisTextField;
 import com.kotcrab.vis.ui.widget.file.FileChooser;
 import com.kotcrab.vis.ui.widget.file.internal.FileListAdapter;
 import java.lang.reflect.Field;
@@ -24,7 +25,7 @@ import java.lang.reflect.Method;
  *
  * <p>
  * The wrapper keeps the widget and its look untouched and adds a <em>capture</em> listener to the
- * chooser, so it sees {@code Tab} before the focused {@link TextField} consumes it. The ring is
+ * chooser, so it sees {@code Tab} before the focused {@link VisTextField} consumes it. The ring is
  * path field → file field → file list → Open → Cancel; in the list, Up/Down move the selection,
  * Enter opens a folder or picks a file, Left/Backspace goes to the parent folder, and Esc keeps
  * cancelling through VisUI's own {@code closeOnEscape}. The selection highlight is the focus
@@ -55,8 +56,10 @@ final class VisFileChooserKeyboard {
      */
     static boolean install(FileChooser chooser) {
         ListView<?> listView = (ListView<?>) readField(chooser, "fileListView");
-        TextField pathField = (TextField) readField(chooser, "currentPath");
-        TextField fileField = (TextField) readField(chooser, "selectedFileTextField");
+        // VisUI 1.5.9: the fields are VisTextField, which extends Widget (it paints itself) and NOT
+        // libGDX's TextField; casting to TextField is a runtime ClassCastException.
+        VisTextField pathField = (VisTextField) readField(chooser, "currentPath");
+        VisTextField fileField = (VisTextField) readField(chooser, "selectedFileTextField");
         TextButton openButton = (TextButton) readField(chooser, "confirmButton");
         if (listView == null || pathField == null || fileField == null || openButton == null) {
             Gdx.app.error("LeTrain",
@@ -86,7 +89,7 @@ final class VisFileChooserKeyboard {
 
                 if (keycode == Input.Keys.TAB) {
                     // Capture phase: returning true only marks the event handled, so the event must
-                    // also be stopped or the focused TextField would still run its
+                    // also be stopped or the focused VisTextField would still run its own
                     // text-field-only traversal and skip the tree and the buttons.
                     int slot = listActive[0] ? LIST_SLOT
                             : slotOf(focus, pathField, fileField, openButton, cancelButton);
@@ -144,7 +147,7 @@ final class VisFileChooserKeyboard {
     }
 
     private static void focusSlot(int slot, Stage stage, FileChooser chooser, ListView<?> listView,
-            TextField pathField, TextField fileField, TextButton openButton,
+            VisTextField pathField, VisTextField fileField, TextButton openButton,
             TextButton cancelButton, Array<FileChooser.FileItem> items, boolean[] listActive,
             int[] listIndex) {
         listActive[0] = slot == LIST_SLOT;
@@ -206,7 +209,7 @@ final class VisFileChooserKeyboard {
 
     private static void activate(Stage stage, FileChooser chooser,
             Array<FileChooser.FileItem> items, int[] listIndex, TextButton openButton,
-            TextField pathField, boolean[] listActive) {
+            VisTextField pathField, boolean[] listActive) {
         if (items.size == 0 || listIndex[0] < 0 || listIndex[0] >= items.size) {
             return;
         }
@@ -223,7 +226,7 @@ final class VisFileChooserKeyboard {
         }
     }
 
-    private static void goToParent(Stage stage, FileChooser chooser, TextField pathField,
+    private static void goToParent(Stage stage, FileChooser chooser, VisTextField pathField,
             boolean[] listActive) {
         com.badlogic.gdx.files.FileHandle current = chooser.getCurrentDirectory();
         com.badlogic.gdx.files.FileHandle parent = current == null ? null : current.parent();
@@ -246,13 +249,20 @@ final class VisFileChooserKeyboard {
         stage.setKeyboardFocus(item);
     }
 
-    /** Clears VisUI's focus border and focuses a plain widget (field or button). */
+    /**
+     * Focuses a widget. VisUI's {@link Focusable} widgets (VisTextField, VisTextButton) get the
+     * focus border through the {@link FocusManager}; plain actors only get the scene2d focus.
+     */
     private static void focusWidget(Stage stage, Actor widget) {
-        FocusManager.resetFocus(stage);
+        if (widget instanceof Focusable) {
+            FocusManager.switchFocus(stage, (Focusable) widget);
+        } else {
+            FocusManager.resetFocus(stage);
+        }
         stage.setKeyboardFocus(widget);
     }
 
-    private static int slotOf(Actor focus, TextField pathField, TextField fileField,
+    private static int slotOf(Actor focus, VisTextField pathField, VisTextField fileField,
             TextButton openButton, TextButton cancelButton) {
         if (focus == pathField) {
             return PATH_SLOT;
