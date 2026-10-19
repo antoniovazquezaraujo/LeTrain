@@ -1821,11 +1821,9 @@ public class Gdx3DHud {
             List<Actor> categoryFields, NewGameForm form) {
         fieldsTable.clear();
         categoryFields.clear();
-        for (SettingDefinition definition : SettingsCatalog.definitions()) {
-            if (definition.category() == category) {
-                fieldsTable.add(newGameFieldRow(definition, form, categoryFields)).growX().left()
-                        .padBottom(6).row();
-            }
+        for (SettingDefinition definition : categoryDefinitions(category)) {
+            fieldsTable.add(newGameFieldRow(definition, form, categoryFields)).growX().left()
+                    .padBottom(6).row();
         }
     }
 
@@ -1980,6 +1978,21 @@ public class Gdx3DHud {
     /** Form sections the 3D dialog offers, in display order (shared with 2D). */
     static List<SettingCategory> settingsCategories() {
         return SETTINGS_CATEGORIES;
+    }
+
+    /**
+     * Catalogue fields of one page, in catalogue order: the shared source of the Settings and New
+     * Game page columns (#808). The Terrain page does not use it in either dialog: its live block
+     * (seed, sliders, bar, map) is hand-built for the two clients.
+     */
+    static List<SettingDefinition> categoryDefinitions(SettingCategory category) {
+        List<SettingDefinition> definitions = new ArrayList<>();
+        for (SettingDefinition definition : SettingsCatalog.definitions()) {
+            if (definition.category() == category) {
+                definitions.add(definition);
+            }
+        }
+        return definitions;
     }
 
     /** Field state (scenario lock wins over the catalogue state) both clients show (#764). */
@@ -2503,11 +2516,9 @@ public class Gdx3DHud {
             List<Actor> categoryFields, Map<String, String> form, Set<String> scenarioKeys) {
         fieldsTable.clear();
         categoryFields.clear();
-        for (SettingDefinition definition : SettingsCatalog.definitions()) {
-            if (definition.category() == category) {
-                fieldsTable.add(settingsFieldRow(definition, scenarioKeys, form, categoryFields))
-                        .growX().left().padBottom(6).row();
-            }
+        for (SettingDefinition definition : categoryDefinitions(category)) {
+            fieldsTable.add(settingsFieldRow(definition, scenarioKeys, form, categoryFields))
+                    .growX().left().padBottom(6).row();
         }
     }
 
