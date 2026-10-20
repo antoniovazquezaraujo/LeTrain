@@ -2,11 +2,13 @@ package letrain.itinerary;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.PriorityQueue;
 import java.util.Set;
 import letrain.map.Dir;
 import letrain.segments.BlockManager;
@@ -22,6 +24,19 @@ import org.slf4j.LoggerFactory;
 /**
  * A* pathfinder over the railway segment graph. Explores neighbors from both ends of each segment
  * (circuits).
+ *
+ * <p>
+ * <b>Cost metric.</b> Entering a segment costs its {@link RailwayGraph#getTrackCount(Segment) track
+ * count} (one unit per physical rail, minimum 1); the start segment is not charged. A path cost is
+ * therefore the number of rails the train still has to enter. A blocked canton owned by another
+ * train adds a large penalty (see {@link #segmentCost(Segment)}) so free routes win, but the
+ * heuristic never includes it.
+ *
+ * <p>
+ * <b>Optimality.</b> The heuristic documented on {@link #heuristic(NodeState, Segment)} is
+ * admissible and consistent for that metric, so the first target state popped from the priority
+ * queue is optimal. The open set is a {@link PriorityQueue} with stale-entry discard, giving
+ * {@code O(E log V)} instead of the previous linear min-scan per expansion ({@code O(V^2)}).
  */
 public class AStarPathfinder implements SegmentPathfinder {
 
@@ -42,6 +57,18 @@ public class AStarPathfinder implements SegmentPathfinder {
 
     private record NodeState(Segment segment, Port entryPort) {
     }
+
+    /**
+     * Open-set entry. {@code g} is the g-score this entry was pushed with, so an entry is stale
+     * when a shorter g-score for the same state has been recorded meanwhile. {@code seq} is a
+     * monotonic insertion counter used to break f-score ties deterministically (FIFO among
+     * equal-cost states), keeping the returned route stable across runs and JVMs.
+     */
+    private record QueueEntry(int f, int g, long seq, NodeState state) {
+    }
+
+    private static final Comparator<QueueEntry> QUEUE_ORDER =
+            Comparator.comparingInt(QueueEntry::f).thenComparingLong(QueueEntry::seq);
 
     @Override
     public List<Segment> find(Segment from, Segment to, Optional<Dir> entryDir) {
@@ -64,51 +91,51 @@ public class AStarPathfinder implements SegmentPathfinder {
         Map<NodeState, Integer> gScore = new HashMap<>();
         Map<NodeState, NodeState> cameFrom = new HashMap<>();
         Set<NodeState> closed = new HashSet<>();
-        Map<NodeState, Integer> openMap = new HashMap<>();
+        PriorityQueue<QueueEntry> open = new PriorityQueue<>(QUEUE_ORDER);
+        long nextSequence = 0;
 
         if (fromExitPort.isPresent() && fromExitPort.get() != null) {
             Port entryPort = getOtherPort(from, fromExitPort.get());
             if (entryPort != null) {
                 NodeState startState = new NodeState(from, entryPort);
                 gScore.put(startState, 0);
-                openMap.put(startState, heuristic(from, to));
+                open.add(new QueueEntry(heuristic(startState, to), 0, nextSequence++, startState));
             }
         }
 
-        if (openMap.isEmpty()) {
+        if (open.isEmpty()) {
             var ports = from.getPorts();
             if (ports != null) {
                 for (Port p : new Port[] {ports.getFirst(), ports.getSecond()}) {
                     if (p != null) {
                         NodeState startState = new NodeState(from, p);
                         gScore.put(startState, 0);
-                        openMap.put(startState, heuristic(from, to));
+                        open.add(new QueueEntry(heuristic(startState, to), 0, nextSequence++,
+                                startState));
                     }
                 }
             }
         }
 
-        if (openMap.isEmpty()) {
+        if (open.isEmpty()) {
             return List.of();
         }
 
         int explored = 0;
         NodeState bestTargetState = null;
 
-        while (!openMap.isEmpty()) {
-            NodeState current = null;
-            int bestF = Integer.MAX_VALUE;
-            for (var entry : openMap.entrySet()) {
-                if (entry.getValue() < bestF) {
-                    bestF = entry.getValue();
-                    current = entry.getKey();
-                }
+        while (!open.isEmpty()) {
+            QueueEntry entry = open.poll();
+            NodeState current = entry.state();
+            // Stale entry: a shorter path to this state was queued after this one.
+            Integer currentG = gScore.get(current);
+            if (currentG == null || entry.g() != currentG) {
+                continue;
             }
-            openMap.remove(current);
             explored++;
 
             if (current.segment().equals(to)) {
-                log.info("[A*] FOUND {}→{} explored={}", from.getId(), to.getId(), explored);
+                log.debug("[A*] found {} -> {} explored={}", from.getId(), to.getId(), explored);
                 bestTargetState = current;
                 break;
             }
@@ -150,11 +177,12 @@ public class AStarPathfinder implements SegmentPathfinder {
                     continue;
                 }
 
-                int tentativeG = gScore.get(current) + segmentCost(neighbor);
+                int tentativeG = currentG + segmentCost(neighbor);
                 if (tentativeG < gScore.getOrDefault(neighborState, Integer.MAX_VALUE)) {
                     cameFrom.put(neighborState, current);
                     gScore.put(neighborState, tentativeG);
-                    openMap.put(neighborState, tentativeG + heuristic(neighbor, to));
+                    int f = tentativeG + heuristic(neighborState, to);
+                    open.add(new QueueEntry(f, tentativeG, nextSequence++, neighborState));
                 }
             }
         }
@@ -163,7 +191,7 @@ public class AStarPathfinder implements SegmentPathfinder {
             return reconstructPath(cameFrom, bestTargetState);
         }
 
-        log.warn("[A*] NO ROUTE {}→{} explored={}", from.getId(), to.getId(), explored);
+        log.debug("[A*] no route {} -> {} explored={}", from.getId(), to.getId(), explored);
         return List.of();
     }
 
@@ -192,37 +220,77 @@ public class AStarPathfinder implements SegmentPathfinder {
         return path;
     }
 
-    private int heuristic(Segment a, Segment b) {
-        if (a == null || b == null) {
+    /**
+     * Admissible and consistent lower bound of the remaining cost from {@code state} to
+     * {@code target}, in the same unit as {@link #segmentCost(Segment)}.
+     *
+     * <p>
+     * <b>Cost metric.</b> Entering a segment costs its track count (one unit per physical rail,
+     * minimum 1) and the start segment is not charged, so a path cost counts the rails the train
+     * still has to enter — a number of grid steps.
+     *
+     * <p>
+     * <b>Bound.</b> The eight map directions move at most one cell per axis per rail, so the
+     * Chebyshev distance {@code max(|dx|, |dy|)} between two positions never exceeds the number of
+     * rail steps needed to join them. The train still has to cross its current segment before
+     * leaving it, so the estimate is
+     * {@code max(0, chebyshev(entryNode, nearest target endpoint) - trackCount(current))}. Using
+     * the state's <b>entry port</b> (instead of the segment's first port) keeps the bound valid for
+     * both travel senses and for segments entered from either end on a circuit.
+     *
+     * <p>
+     * The blocked-canton {@code +10000} penalty is deliberately not included, so the bound stays
+     * admissible. It is also consistent: Chebyshev distance obeys the triangle inequality and a
+     * segment is at most {@code trackCount} steps long, hence {@code h(a) <= cost(a -> b) + h(b)}.
+     */
+    private int heuristic(NodeState state, Segment target) {
+        if (state == null || target == null || state.segment().equals(target)) {
             return 0;
         }
-        RailNode aNode = null;
-        RailNode bNode = null;
+        letrain.map.Point from = portPosition(state.entryPort());
+        int distance = distanceToSegment(target, from);
+        if (from == null || distance < 0) {
+            return 0;
+        }
+        return Math.max(0, distance - trackCount(state.segment()));
+    }
 
-        var aPorts = a.getPorts();
-        if (aPorts != null && aPorts.getFirst() != null) {
-            aNode = aPorts.getFirst().getNode();
+    /** Map position of a port's node, or null when the topology/position is unavailable. */
+    private static letrain.map.Point portPosition(Port port) {
+        if (port == null) {
+            return null;
         }
+        RailNode node = port.getNode();
+        if (node == null || node.getTrack() == null) {
+            return null;
+        }
+        return node.getTrack().getPosition();
+    }
 
-        var bPorts = b.getPorts();
-        if (bPorts != null && bPorts.getFirst() != null) {
-            bNode = bPorts.getFirst().getNode();
+    /** Chebyshev distance from {@code from} to the nearest endpoint of {@code target}, or -1. */
+    private static int distanceToSegment(Segment target, letrain.map.Point from) {
+        if (from == null || target.getPorts() == null) {
+            return -1;
         }
+        int best = -1;
+        for (Port port : new Port[] {target.getPorts().getFirst(), target.getPorts().getSecond()}) {
+            letrain.map.Point to = portPosition(port);
+            if (to == null) {
+                continue;
+            }
+            int distance =
+                    Math.max(Math.abs(from.getX() - to.getX()), Math.abs(from.getY() - to.getY()));
+            if (best < 0 || distance < best) {
+                best = distance;
+            }
+        }
+        return best;
+    }
 
-        if (aNode == null || bNode == null) {
-            return 0;
-        }
-        var aTrack = aNode.getTrack();
-        var bTrack = bNode.getTrack();
-        if (aTrack == null || bTrack == null) {
-            return 0;
-        }
-        var aPos = aTrack.getPosition();
-        var bPos = bTrack.getPosition();
-        if (aPos == null || bPos == null) {
-            return 0;
-        }
-        return Math.abs(aPos.getX() - bPos.getX()) + Math.abs(aPos.getY() - bPos.getY());
+    /** Physical rails in a segment, at least 1 so the heuristic's subtraction stays sane. */
+    private int trackCount(Segment segment) {
+        int count = graph != null ? graph.getTrackCount(segment) : 0;
+        return count > 0 ? count : 1;
     }
 
     private int segmentCost(Segment s) {
