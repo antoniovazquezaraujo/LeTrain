@@ -55,7 +55,8 @@ public class AStarPathfinder implements SegmentPathfinder {
         this.train = train;
     }
 
-    private record NodeState(Segment segment, Port entryPort) {
+    /** Package-private for the contract tests (#816): the state the heuristic is defined on. */
+    record NodeState(Segment segment, Port entryPort) {
     }
 
     /**
@@ -243,7 +244,7 @@ public class AStarPathfinder implements SegmentPathfinder {
      * admissible. It is also consistent: Chebyshev distance obeys the triangle inequality and a
      * segment is at most {@code trackCount} steps long, hence {@code h(a) <= cost(a -> b) + h(b)}.
      */
-    private int heuristic(NodeState state, Segment target) {
+    int heuristic(NodeState state, Segment target) {
         if (state == null || target == null || state.segment().equals(target)) {
             return 0;
         }
