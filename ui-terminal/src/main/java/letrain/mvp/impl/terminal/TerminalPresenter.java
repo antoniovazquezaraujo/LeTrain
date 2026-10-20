@@ -2575,11 +2575,6 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     @Override
-    public boolean canExportScenario() {
-        return !commandJournal.appliedEntries().isEmpty();
-    }
-
-    @Override
     public boolean isRecordingCommands() {
         return commandJournal.isRecording() && model.isSimulationPaused();
     }
@@ -2659,9 +2654,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     @Override
-    public void onPlay() {
-        // start();
-    }
+    public void onPlay() {}
 
     String loadProgram(File file) {
         try {

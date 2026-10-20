@@ -178,7 +178,7 @@ implementación.
 | `element.fork` | `WHITE_BRIGHT` (:49) | `GRAY` (:190 / Infra:244) | actual | actual | atenuar ×0.6 |
 | `element.fork.selected` | `RED_BRIGHT` (:50) | `WHITE` (:195/232) | actual | actual | actual |
 | `element.fork.route` | — | `RED` (:222) | actual | actual | actual |
-| `element.semaphore` | `SEMAPHORE_COLOR`/`SELECTED_SEMAPHORE_COLOR` (BLUE/RED_BRIGHT, :56–57) **sin uso** | mástil `GRAY` + placa `BLACK` (:404) | actual | actual | atenuar ×0.6 |
+| `element.semaphore` | `SEMAPHORE_OPEN`/`SEMAPHORE_CLOSED` (:486–488); seleccionado en modo SEMAPHORES: subrayado + `HIGHLIGHT` (:492–500) | mástil `GRAY` + placa `BLACK` (:404) | actual | actual | atenuar ×0.6 |
 | `element.semaphore.open` | `GREEN` (:54) | luz inferior `GREEN`, superior `440000` (:411–415) | actual | actual | actual |
 | `element.semaphore.closed` | `RED` (:55) | luz superior `RED`, inferior `004400` (:411–415) | actual | actual | actual |
 | `element.speedSignal.max` | `RED` (:323) | placa `RED` (:358) | actual | actual | actual |
@@ -190,8 +190,9 @@ implementación.
 | `selection.link` | bg `MAGENTA` + fg `BLACK` (:53, :426) | translúcido amarillo/rojo `(1,1,0,0.75)`/`(1,0,0,0.75)` (:35–36) | actual | actual | actual |
 
 Nota: 2D y 3D coinciden en semántica (abierto = verde, cerrado = rojo); el 3D lo hace con dos
-esferas (la activa a color, la otra muy oscura). Limpieza pendiente: en 2D `SEMAPHORE_COLOR` y
-`SELECTED_SEMAPHORE_COLOR` son constantes muertas.
+esferas (la activa a color, la otra muy oscura). Las antiguas constantes 2D `SEMAPHORE_COLOR` y
+`SELECTED_SEMAPHORE_COLOR` **se eliminaron en el wiring de 1d**; el glifo usa los tokens
+`SEMAPHORE_OPEN`/`SEMAPHORE_CLOSED` y, al seleccionarlo, subrayado + `HIGHLIGHT`.
 
 ### Trenes
 
@@ -302,8 +303,9 @@ Pendiente de 1e: farolas/ventanas, acabado de cielo y niebla fina. El resto de l
   con **su** fondo, no con el campo. La **vía, el puente y demás glifos de vía** se adaptan además
   al fondo **real** de su celda: sobre mar o montaña se aclaran (`lightenOn`, contraste ≥
   `MIN_CONTRAST`), porque `RAIL` está resuelto contra el campo; la **librea** de un tren que bloquea
-  la vía se aclara u oscurece con el mismo criterio (`contrastOn`), conservando su color (la
-  configuración para desactivar ese coloreado la lleva #694). `0x4CA331` es el `TERRAIN_FIELDS` de
+  la vía se aclara u oscurece con el mismo criterio (`contrastOn`), conservando su color. Ese
+  coloreado se desactiva con `ui.highlightBlockedTracks=false` (#694): ambos clientes consultan
+  `EconomyManager.isHighlightBlockedTracks()` y, con `false`, dejan la vía con su color normal. `0x4CA331` es el `TERRAIN_FIELDS` de
   3D (`0x66994C`) con la
   misma luminosidad percibida (136) y el mismo tono (~106°), subiendo solo la saturación lo justo
   para que el fallback de 16 colores caiga en el **verde del tema** y no en el gris brillante
@@ -395,8 +397,9 @@ Pendiente de 1e: farolas/ventanas, acabado de cielo y niebla fina. El resto de l
   adapta al fondo **real** de su celda: sobre mar/montaña lo aclara (`lightenOn`, día `#323237` →
   `#747479` sobre el mar, contraste ≥ `MIN_CONTRAST`); sobre el campo no cambia. La librea del tren
   que bloquea la vía sigue mandando, pero se aclara u oscurece lo justo para no fundirse con el
-  mar/montaña (`contrastOn`). La opción de configuración para desactivar ese coloreado de bloqueo
-  la lleva Alex en #694 (no implementada aquí).
+  mar/montaña (`contrastOn`). La opción para desactivar ese coloreado de bloqueo **está implementada
+  en #694**: `ui.highlightBlockedTracks` (por defecto `true`, `letrain.cfg:63`); con `false` ambos
+  clientes pintan la vía con su color normal (`EconomyManager.isHighlightBlockedTracks()`).
 - **2D: color 24-bit con degradación 256 → 16 ANSI** (detección por `COLORTERM`/`TERM`, sin
   autodetección del fondo del terminal). Las constantes muertas del 2D
   (`SEMAPHORE_COLOR`, `SELECTED_SEMAPHORE_COLOR`, `SELECTED_FORK_COLOR`,
