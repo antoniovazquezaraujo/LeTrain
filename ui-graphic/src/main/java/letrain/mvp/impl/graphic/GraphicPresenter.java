@@ -1333,13 +1333,13 @@ public class GraphicPresenter extends ApplicationAdapter
     /** Undoes {@code steps} editing commands (ADR-020 item 3). */
     public void undo(int steps) {
         if (!model.isSimulationPaused()) {
-            log.info("Undo needs the Record/edit mode (R)");
+            showEditFeedback("Undo", "Undo needs the Record/edit mode (R)");
             return;
         }
         letrain.command.UndoRedoHistory history = getUndoRedoHistory();
         letrain.command.UndoRedoHistory.UndoPlan plan = history.planUndo(steps);
         if (plan == null) {
-            log.info("Nothing to undo");
+            showEditFeedback("Undo", "Nothing to undo");
             return;
         }
         applyPlan(history, plan, true);
@@ -1348,16 +1348,28 @@ public class GraphicPresenter extends ApplicationAdapter
     /** Redoes {@code steps} editing commands (ADR-020 item 3). */
     public void redo(int steps) {
         if (!model.isSimulationPaused()) {
-            log.info("Redo needs the Record/edit mode (R)");
+            showEditFeedback("Redo", "Redo needs the Record/edit mode (R)");
             return;
         }
         letrain.command.UndoRedoHistory history = getUndoRedoHistory();
         letrain.command.UndoRedoHistory.UndoPlan plan = history.planRedo(steps);
         if (plan == null) {
-            log.info("Nothing to redo");
+            showEditFeedback("Redo", "Nothing to redo");
             return;
         }
         applyPlan(history, plan, false);
+    }
+
+    /**
+     * Visible feedback for a no-op undo/redo (#819), with the exact wording the 2D status bar uses.
+     * Uses the HUD message panel (non-modal, does not steal the keyboard); the log line is kept for
+     * diagnostics.
+     */
+    private void showEditFeedback(String title, String message) {
+        log.info(message);
+        if (hud != null) {
+            hud.showMessage(title, message);
+        }
     }
 
     /**
