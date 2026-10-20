@@ -101,6 +101,12 @@ public class GraphicPresenter extends ApplicationAdapter
     private HeadlightGlowRenderer headlightGlowRenderer;
     private final Color headlightColor = new Color();
     private final Color tailLampColor = new Color();
+    // #820: reusable scratch objects for the per-frame decal labels and the glow selection.
+    private final com.badlogic.gdx.math.Vector3 labelHorizontal =
+            new com.badlogic.gdx.math.Vector3();
+    private final com.badlogic.gdx.math.Vector3 labelCharPos = new com.badlogic.gdx.math.Vector3();
+    private final com.badlogic.gdx.math.Vector3 labelLookAt = new com.badlogic.gdx.math.Vector3();
+    private final java.util.List<Headlights.Source> nearestSources = new java.util.ArrayList<>();
     private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute tableDiffuse;
     private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute gridDiffuse;
     private com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute boxDiffuse;
@@ -386,6 +392,9 @@ public class GraphicPresenter extends ApplicationAdapter
 
     @Override
     public void render() {
+        // Same frame time for the HUD, the interpolation accumulator and the camera smoothing, so
+        // the camera response is identical at 60 and 144 Hz (#820).
+        float frameDelta = Gdx.graphics.getDeltaTime();
         if (coverActive) {
             // Title cover: a plain dark frame with the shared title and prompt; the world does not
             // simulate nor render until the player continues.
@@ -393,12 +402,12 @@ public class GraphicPresenter extends ApplicationAdapter
             Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
             Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
             if (hud != null) {
-                hud.render(Gdx.graphics.getDeltaTime());
+                hud.render(frameDelta);
             }
             return;
         }
         // Bucle de lógica del juego (aprox 20 tps como en el Presenter original)
-        stateTime += Gdx.graphics.getDeltaTime();
+        stateTime += frameDelta;
         if (stateTime > 0.05f) {
             // Aseguramos que el terreno bajo el cursor esté renderizado conforme nos
             // movemos
@@ -435,7 +444,7 @@ public class GraphicPresenter extends ApplicationAdapter
         renderer.setAnimationAlpha(alpha);
 
         // 2. ACTUALIZAR CÁMARA ANTES QUE EL AUDIO
-        cameraController.update(alpha);
+        cameraController.update(alpha, frameDelta);
 
         // 3. Sincronizar Audio con la posición REAL de la cámara de este frame
         float camAngle = cameraController.getListenerAngle();
@@ -505,8 +514,8 @@ public class GraphicPresenter extends ApplicationAdapter
                 com.badlogic.gdx.math.Vector3 up =
                         label.up != null ? label.up : com.badlogic.gdx.math.Vector3.Y;
 
-                // Vector horizontal paralelo a la cara
-                com.badlogic.gdx.math.Vector3 horizontal = new com.badlogic.gdx.math.Vector3();
+                // Vector horizontal paralelo a la cara (reutilizado: sin allocar por etiqueta).
+                com.badlogic.gdx.math.Vector3 horizontal = labelHorizontal;
 
                 // Si la normal es vertical (p.ej. número ID en techo), el horizontal debe ser
                 // perpendicular al 'up' vector (que suele ser el forward).
@@ -532,9 +541,9 @@ public class GraphicPresenter extends ApplicationAdapter
 
                         // Posición con desplazamiento horizontal para centrar el texto
                         float offset = startOffset + i * charSpacing;
-                        com.badlogic.gdx.math.Vector3 charPos =
-                                label.pos.cpy().add(horizontal.x * offset, horizontal.y * offset,
-                                        horizontal.z * offset);
+                        com.badlogic.gdx.math.Vector3 charPos = labelCharPos;
+                        charPos.set(label.pos).add(horizontal.x * offset, horizontal.y * offset,
+                                horizontal.z * offset);
                         d.setPosition(charPos);
 
                         // Orientar el decal para que mire hacia afuera de la superficie
@@ -545,7 +554,8 @@ public class GraphicPresenter extends ApplicationAdapter
                         // En ese caso, necesitamos un 'up' que esté en el plano horizontal si
                         // estamos
                         // mirando arriba.
-                        d.lookAt(charPos.cpy().add(label.normal), up);
+                        labelLookAt.set(charPos).add(label.normal);
+                        d.lookAt(labelLookAt, up);
                         decalBatch.add(d);
                     }
                 }
@@ -1333,13 +1343,13 @@ public class GraphicPresenter extends ApplicationAdapter
     /** Undoes {@code steps} editing commands (ADR-020 item 3). */
     public void undo(int steps) {
         if (!model.isSimulationPaused()) {
-            log.info("Undo needs the Record/edit mode (R)");
+            showEditFeedback("Undo", "Undo needs the Record/edit mode (R)");
             return;
         }
         letrain.command.UndoRedoHistory history = getUndoRedoHistory();
         letrain.command.UndoRedoHistory.UndoPlan plan = history.planUndo(steps);
         if (plan == null) {
-            log.info("Nothing to undo");
+            showEditFeedback("Undo", "Nothing to undo");
             return;
         }
         applyPlan(history, plan, true);
@@ -1348,16 +1358,28 @@ public class GraphicPresenter extends ApplicationAdapter
     /** Redoes {@code steps} editing commands (ADR-020 item 3). */
     public void redo(int steps) {
         if (!model.isSimulationPaused()) {
-            log.info("Redo needs the Record/edit mode (R)");
+            showEditFeedback("Redo", "Redo needs the Record/edit mode (R)");
             return;
         }
         letrain.command.UndoRedoHistory history = getUndoRedoHistory();
         letrain.command.UndoRedoHistory.UndoPlan plan = history.planRedo(steps);
         if (plan == null) {
-            log.info("Nothing to redo");
+            showEditFeedback("Redo", "Nothing to redo");
             return;
         }
         applyPlan(history, plan, false);
+    }
+
+    /**
+     * Visible feedback for a no-op undo/redo (#819), with the exact wording the 2D status bar uses.
+     * Uses the HUD message panel (non-modal, does not steal the keyboard); the log line is kept for
+     * diagnostics.
+     */
+    private void showEditFeedback(String title, String message) {
+        log.info(message);
+        if (hud != null) {
+            hud.showMessage(title, message);
+        }
     }
 
     /**
@@ -1697,7 +1719,7 @@ public class GraphicPresenter extends ApplicationAdapter
         }
         setColor(headlightColor, palette.color(VisualPalette.Token.EMISSIVE_HEADLIGHT, ratio));
         List<Headlights.Source> nearest = Headlights.nearestTo(renderer.getHeadlightSources(),
-                cam.position, HeadlightGlows.MAX_SOURCES);
+                cam.position, HeadlightGlows.MAX_SOURCES, nearestSources);
         headlightGlowRenderer.render(cam, nearest, headlightColor, ratio);
     }
 
@@ -1714,7 +1736,7 @@ public class GraphicPresenter extends ApplicationAdapter
         }
         setColor(tailLampColor, Gdx3DResourceContext.LAMP_RED_RGB);
         List<Headlights.Source> nearest =
-                Headlights.nearestTo(sources, cam.position, TailLamps.MAX_SOURCES);
+                Headlights.nearestTo(sources, cam.position, TailLamps.MAX_SOURCES, nearestSources);
         headlightGlowRenderer.render(cam, nearest, tailLampColor, ratio);
     }
 

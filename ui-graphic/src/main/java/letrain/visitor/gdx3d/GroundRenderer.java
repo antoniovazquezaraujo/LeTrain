@@ -3,9 +3,12 @@ package letrain.visitor.gdx3d;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g3d.Model;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
+import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
+import java.util.EnumMap;
 import java.util.List;
 import letrain.ground.Ground;
 import letrain.ground.GroundMap;
+import letrain.palette.VisualPalette;
 import letrain.track.CargoTypes;
 
 public class GroundRenderer extends BaseSubRenderer {
@@ -15,9 +18,36 @@ public class GroundRenderer extends BaseSubRenderer {
         super(resourceContext, instances, transparentInstances, labels);
     }
 
-    private final Color tempColor = new Color();
+    // #820: one attribute per cargo/wall tint, created once instead of per cell. All instances of a
+    // tint share the attribute, which is safe because its colour is constant (walls refresh it only
+    // when the day/night palette changes).
+    private final EnumMap<CargoTypes, ColorAttribute> cargoAttributes =
+            new EnumMap<>(CargoTypes.class);
+    private final ColorAttribute defaultCargoAttribute = ColorAttribute.createDiffuse(Color.WHITE);
+    private final ColorAttribute fieldsWall = ColorAttribute.createDiffuse(Color.WHITE);
+    private final ColorAttribute mountainWall = ColorAttribute.createDiffuse(Color.WHITE);
+    private double lastWallRatio = Double.NaN;
     private final com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute rockXRayBlending =
             new com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute(true, 0.4f);
+
+    private ColorAttribute cargoAttribute(CargoTypes cargo) {
+        if (cargo == null) {
+            return defaultCargoAttribute;
+        }
+        return cargoAttributes.computeIfAbsent(cargo,
+                type -> ColorAttribute.createDiffuse(Color.valueOf(type.getColor())));
+    }
+
+    /** Refreshes the two cached wall tints only when the palette's day/night ratio changed. */
+    private void refreshWallColors() {
+        double ratio = resourceContext.getDayNightRatio();
+        if (ratio == lastWallRatio) {
+            return;
+        }
+        lastWallRatio = ratio;
+        resourceContext.paletteColor(VisualPalette.Token.TERRAIN_MOUNTAIN, mountainWall.color);
+        resourceContext.paletteColor(VisualPalette.Token.TERRAIN_FIELDS, fieldsWall.color);
+    }
 
     @Override
     public void visitGround(Ground ground) {
@@ -49,14 +79,12 @@ public class GroundRenderer extends BaseSubRenderer {
 
         if (type >= 10 && type <= 19) {
             CargoTypes cargo = CargoTypes.IndustryMapper.getCargoForTerrain(type);
-            tempColor.set((cargo != null) ? Color.valueOf(cargo.getColor()) : Color.WHITE);
             float x = ground.getPosition().getX() + 0.5f;
             float z = ground.getPosition().getY() + 0.5f;
 
             ModelInstance jewelBlock =
                     resourceContext.getModelInstance(resourceContext.wagonJewelModel);
-            jewelBlock.materials.get(0).set(com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-                    .createDiffuse(tempColor));
+            jewelBlock.materials.get(0).set(cargoAttribute(cargo));
             float h = hasTrack ? 0.02f : 0.5f;
             float yPos = hasTrack ? 0.01f : h / 2f;
             jewelBlock.transform.setToTranslation(x, yPos, z);
@@ -128,25 +156,24 @@ public class GroundRenderer extends BaseSubRenderer {
                     && modelRef.getGroundMap() != null) {
                 int gx = ground.getPosition().getX();
                 int gy = ground.getPosition().getY();
-                resourceContext.paletteColor(backgroundType == letrain.ground.GroundMap.ROCK
-                        ? letrain.palette.VisualPalette.Token.TERRAIN_MOUNTAIN
-                        : letrain.palette.VisualPalette.Token.TERRAIN_FIELDS, tempColor);
+                refreshWallColors();
+                ColorAttribute wallColor =
+                        backgroundType == letrain.ground.GroundMap.ROCK ? mountainWall : fieldsWall;
 
-                checkAndAddWall(gx, gy - 1, x, -1.05f, z - 0.5f, 0, tempColor);
-                checkAndAddWall(gx, gy + 1, x, -1.05f, z + 0.5f, 0, tempColor);
-                checkAndAddWall(gx - 1, gy, x - 0.5f, -1.05f, z, 90, tempColor);
-                checkAndAddWall(gx + 1, gy, x + 0.5f, -1.05f, z, 90, tempColor);
+                checkAndAddWall(gx, gy - 1, x, -1.05f, z - 0.5f, 0, wallColor);
+                checkAndAddWall(gx, gy + 1, x, -1.05f, z + 0.5f, 0, wallColor);
+                checkAndAddWall(gx - 1, gy, x - 0.5f, -1.05f, z, 90, wallColor);
+                checkAndAddWall(gx + 1, gy, x + 0.5f, -1.05f, z, 90, wallColor);
             }
         }
     }
 
     private void checkAndAddWall(int gx, int gy, float x, float y, float z, float rotationY,
-            Color color) {
+            ColorAttribute color) {
         Integer neighborType = modelRef.getGroundMap().getValueAt(gx, gy);
         if (neighborType != null && neighborType == GroundMap.WATER) {
             ModelInstance wall = resourceContext.getModelInstance(resourceContext.terrainWallModel);
-            wall.materials.get(0).set(
-                    com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute.createDiffuse(color));
+            wall.materials.get(0).set(color);
             wall.transform.setToTranslation(x, y, z);
             if (rotationY != 0) {
                 wall.transform.rotate(0, 1, 0, rotationY);

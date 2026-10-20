@@ -314,4 +314,24 @@ class GraphicPresenterBootTest {
         assertTrue(presenter.hasActiveGame());
         assertFalse(presenter.isCoverActive());
     }
+
+    @Test
+    @DisplayName("undo outside edit mode shows the 2D wording in the HUD (#819)")
+    void undoOutsideEditMode_showsTheSameMessageAs2D() {
+        doCallRealMethod().when(presenter).undo(1);
+
+        presenter.undo(1);
+
+        verify(hud).showMessage("Undo", "Undo needs the Record/edit mode (R)");
+    }
+
+    @Test
+    @DisplayName("redo outside edit mode shows the 2D wording in the HUD (#819)")
+    void redoOutsideEditMode_showsTheSameMessageAs2D() {
+        doCallRealMethod().when(presenter).redo(1);
+
+        presenter.redo(1);
+
+        verify(hud).showMessage("Redo", "Redo needs the Record/edit mode (R)");
+    }
 }
