@@ -100,7 +100,8 @@
    de área) solo desempata. Esto es clave: la densidad favorecía al mar (media mapa) y enterraba
    las industrias (pocos tiles), que solo se oían pisándolas.
    - **Valores de partida: `R = 8`, `stride = 1`** (~200 lecturas, coste despreciable con o sin
-     caché); ajustables de oído con el laboratorio `ZoneSensorLab`.
+     caché); ajustables de oído con el laboratorio `ZoneSensorLab` (retirado en #823; los valores
+     actuales de `ZoneAmbience` son `R = 8`, `stride = 1`).
    - **Rayos descartados**: dejarían puntos justo entre dos rayos sin detectar y no miden
      extensión.
    - **Alternativa barata — anillos cuadrados con salida temprana**: recorrer niveles de distancia

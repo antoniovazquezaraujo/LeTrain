@@ -5,7 +5,7 @@
 ## Contexto
 
 - **Audio actual** (repartido según [[ADR-026-Audio-Domains]], aún en migración):
-  - `core` (`letrain.audio`): síntesis procedural del tren (`TrainSynth`, `TrainSynthesizer`,
+  - `core` (`letrain.audio`): síntesis procedural del tren (`TrainSynthesizer`,
     `GrainEngine`), fuentes WAV puntuales (`WavSource`) y el motor de mezcla legacy.
   - `soundscape`: decorado aislado ([[ADR-023-Soundscape-Isolation]]) con muestras WAV **en el
     classpath del módulo** (`sounds/`), resueltas por `SampleResolver` (patrones tipo

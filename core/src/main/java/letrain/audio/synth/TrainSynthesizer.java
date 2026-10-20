@@ -903,8 +903,11 @@ public class TrainSynthesizer implements AudioSource {
     }
 
     /**
-     * Advances the state machine by a fixed delta. Used by deterministic tests and fixed-step
-     * callers; production drives {@link #update()} with wall-clock time.
+     * Advances the state machine by a fixed delta. The delta is caller-controlled, but the <b>wall
+     * clock</b> ({@link System#nanoTime()}) is still stamped as {@code now} for the ramp
+     * bookkeeping started by {@link #startTransition()}, so this overload is <b>not</b> fully
+     * deterministic: it is a fixed-step convenience for manual/visual checks, not a replay clock.
+     * Use {@link #update()} for production.
      */
     public void update(float deltaSeconds) {
         if (state == State.OFF) {

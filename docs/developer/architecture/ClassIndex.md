@@ -13,7 +13,6 @@
 - [[letrain.audio.ZoneAmbience|ZoneAmbience]] (core)
 - [[letrain.audio.core.AudioMixer|AudioMixer]] (core)
 - [[letrain.audio.core.AudioSource|AudioSource]] (core)
-- [[letrain.audio.core.DistanceAttenuator|DistanceAttenuator]] (core)
 - [[letrain.audio.material.ClasspathMaterialResolver|ClasspathMaterialResolver]] (core)
 - [[letrain.audio.material.LoopPoints|LoopPoints]] (core)
 - [[letrain.audio.material.MaterialBank|MaterialBank]] (core)
@@ -31,7 +30,6 @@
 - [[letrain.audio.synth.NoiseGenerator|NoiseGenerator]] (core)
 - [[letrain.audio.synth.Oscillator|Oscillator]] (core)
 - [[letrain.audio.synth.SpeedNotch|SpeedNotch]] (core)
-- [[letrain.audio.synth.TrainSynth|TrainSynth]] (core)
 - [[letrain.audio.synth.TrainSynthesizer|TrainSynthesizer]] (core)
 - [[letrain.audio.synth.Voice|Voice]] (core)
 - [[letrain.audio.util.AudacityLabelParser|AudacityLabelParser]] (core)
@@ -71,7 +69,6 @@
 - [[letrain.ground.TerrainPreview|TerrainPreview]] (core)
 - [[letrain.ground.ZoneSensor|ZoneSensor]] (core)
 - [[letrain.ground.impl.GroundMap|GroundMap]] (core)
-- [[letrain.ground.impl.Terrain2D|Terrain2D]] (core)
 
 ## letrain.itinerary
 - [[letrain.itinerary.AStarPathfinder|AStarPathfinder]] (core)
@@ -90,7 +87,6 @@
 - [[letrain.itinerary.impl.WaypointImpl|WaypointImpl]] (core)
 
 ## letrain.lab
-- [[letrain.lab.ZoneSensorLab|ZoneSensorLab]] (core)
 - [[letrain.lab.terminal.PaletteLab|PaletteLab]] (ui-terminal)
 
 ## letrain.map
@@ -129,7 +125,6 @@
 - [[letrain.mvp.impl.TrainMixin|TrainMixin]] (core)
 - [[letrain.mvp.impl.WaypointCommandMixin|WaypointCommandMixin]] (core)
 - [[letrain.mvp.impl.WaypointMixin|WaypointMixin]] (core)
-- [[letrain.mvp.impl.delegates.TrainFactory|TrainFactory]] (core)
 - [[letrain.mvp.impl.graphic.CameraController|CameraController]] (ui-graphic)
 - [[letrain.mvp.impl.graphic.CommandHistory|CommandHistory]] (ui-graphic)
 - [[letrain.mvp.impl.graphic.FileDialogEntries|FileDialogEntries]] (ui-graphic)
@@ -226,7 +221,6 @@
 - [[letrain.track.CargoTypes|CargoTypes]] (core)
 - [[letrain.track.Connectable|Connectable]] (core)
 - [[letrain.track.ForkEventListener|ForkEventListener]] (core)
-- [[letrain.track.Gate|Gate]] (core)
 - [[letrain.track.LinkerCompartment|LinkerCompartment]] (core)
 - [[letrain.track.LinkerCompartmentListener|LinkerCompartmentListener]] (core)
 - [[letrain.track.RailSemaphore|RailSemaphore]] (core)

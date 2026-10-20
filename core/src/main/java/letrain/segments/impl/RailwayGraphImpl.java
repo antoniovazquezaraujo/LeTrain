@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
 import letrain.segments.Port;
@@ -55,14 +54,6 @@ public class RailwayGraphImpl implements RailwayGraph {
         return tracks != null ? tracks.size() : 0;
     }
 
-    public Set<letrain.track.rail.RailTrack> getTracksForSegment(Segment segment) {
-        return segmentToTracks.getOrDefault(segment, Collections.emptySet());
-    }
-
-    public List<Segment> getSegmentsForNode(RailNode node) {
-        return nodeToSegments.getOrDefault(node, Collections.emptyList());
-    }
-
     public void registerStation(Segment segment, letrain.track.Station station) {
         segmentToStations.computeIfAbsent(segment, k -> new ArrayList<>()).add(station);
     }
@@ -93,70 +84,6 @@ public class RailwayGraphImpl implements RailwayGraph {
                 .filter(port -> destinationNode.getTransitionType(targetPort,
                         port) != TransitionType.BLOCKED)
                 .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<Segment> findPath(Segment start, Segment end) {
-        if (start == null || end == null) {
-            return new ArrayList<>();
-        }
-        if (start.equals(end)) {
-            return List.of(start);
-        }
-
-        Queue<Segment> queue = new java.util.LinkedList<>();
-        Map<Segment, Segment> parentMap = new HashMap<>();
-        java.util.Set<Segment> visited = new java.util.HashSet<>();
-
-        queue.add(start);
-        visited.add(start);
-
-        while (!queue.isEmpty()) {
-            Segment current = queue.poll();
-
-            if (current.equals(end)) {
-                return reconstructPath(parentMap, end);
-            }
-
-            for (Segment neighbor : getConnectedSegments(current)) {
-                if (!visited.contains(neighbor)) {
-                    visited.add(neighbor);
-                    parentMap.put(neighbor, current);
-                    queue.add(neighbor);
-                }
-            }
-        }
-
-        return new ArrayList<>();
-    }
-
-    private List<Segment> getConnectedSegments(Segment s) {
-        List<Segment> neighbors = new ArrayList<>();
-        RailNode node1 = (s.getPorts() != null && s.getPorts().getFirst() != null)
-                ? s.getPorts().getFirst().getNode()
-                : null;
-
-        RailNode node2 = (s.getPorts() != null && s.getPorts().getSecond() != null)
-                ? s.getPorts().getSecond().getNode()
-                : null;
-
-        if (node1 != null && nodeToSegments.containsKey(node1))
-            neighbors.addAll(nodeToSegments.get(node1));
-        if (node2 != null && nodeToSegments.containsKey(node2))
-            neighbors.addAll(nodeToSegments.get(node2));
-
-        return neighbors.stream().filter(neighbor -> !neighbor.equals(s)).distinct()
-                .collect(Collectors.toList());
-    }
-
-    private List<Segment> reconstructPath(Map<Segment, Segment> parentMap, Segment end) {
-        List<Segment> path = new java.util.LinkedList<>();
-        Segment curr = end;
-        while (curr != null) {
-            path.add(0, curr);
-            curr = parentMap.get(curr);
-        }
-        return path;
     }
 
     public void registerSegment(Port port, Segment segment) {

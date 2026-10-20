@@ -127,6 +127,14 @@ Junto a cada ejecutable se incluye un archivo `letrain.cfg` por defecto para que
 - **Scripting**: Lenguaje propio de automatización ferroviaria basado en ANTLR4.
 - **Audio**: Motor de síntesis granular para sonidos realistas de locomotoras.
 
+## 🧑‍💻 Cómo se construye LeTrain
+
+LeTrain lo diseña **Antonio Vázquez Araújo desde 2006**, cuando la IA generativa no existía — primero como un experimento ASCII en C++, después en Java. Todas las decisiones de diseño, mecánicas y dirección son suyas, y hasta **marzo de 2026** escribió él mismo cada línea del código.
+
+Desde entonces, el proyecto se desarrolla con un **equipo de agentes de IA** (OpenCode) trabajando bajo su dirección: él diseña, decide y revisa; los agentes escriben, prueban y refactorizan siguiendo sus instrucciones — igual que un compilador o un linter ayuda a pensar en alto nivel. Esto es software **de autoría humana y asistido por IA**, no generado por IA: los objetivos, la arquitectura y el criterio son humanos, y cada cambio pasa por la suite completa de tests y CI y lo valida el mantenedor antes del merge.
+
+Las definiciones y reglas de trabajo del equipo viven en el repositorio ([`AGENTS.md`](AGENTS.md), [`.opencode/agents/`](.opencode/agents/)), y todo el desarrollo es público en issues y pull requests.
+
 ## 🤝 Cómo Colaborar
 ¡Las contribuciones son bienvenidas! Informes de errores, ideas para nuevas características, documentación y código son siempre apreciados.
 - 📜 **Empieza leyendo nuestro [Manifiesto y Filosofía de Diseño](docs/PHILOSOPHY_es.md)** para comprender el alma del juego, la simetría 2D/3D y los principios innegociables de LeTrain.
