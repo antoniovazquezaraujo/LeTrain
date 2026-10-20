@@ -9,12 +9,13 @@ Hoy conviven **dos sistemas de audio completos y solapados**:
 - `soundscape` (módulo aislado, sin dependencias del juego): decorado por zonas/clima/hora.
   Con `AmbientPlayer`, `SampleLoader`, `SampleResolver`, `AmbientVoice`.
 - `core` (`letrain.audio`): el sistema legacy, con `AudioController`, `AudioMixer`,
-  `DistanceAttenuator`, `sources/` y `synth/`:
+  `sources/` y `synth/`:
   - **Ambiente**: `sound/birds.wav` y `sound/wind.wav` vía `SequencedAmbientSource`, dirigidos
     por `updateAmbient(...)` con la **posición de la cámara** — duplica lo que ya hace
     `soundscape` y usa la referencia equivocada (ver ADR-025).
-  - **Tren**: `TrainSynth`, `TrainSynthesizer`, `SpeedNotch`, `GrainEngine`, `Oscillator`, más
-    `sound/train-sound.wav` secuenciado con **labels** (`AudacityLabelParser`).
+  - **Tren**: `TrainSynthesizer`, `SpeedNotch`, `GrainEngine`, `Oscillator`, más
+    `sound/train-sound.wav` secuenciado con **labels** (`AudacityLabelParser`). (El antiguo
+    `TrainSynth` procedural se retiró en #823.)
   - **SFX de obra**: `hammer.wav` (jackhammer), `caterpillar.wav`, `fork.wav`, `load-unload.wav`.
   - **Eventos**: `train-link`, `train-contact`, `train-brakes`, `train-explosion`.
 - Consecuencias del estado actual: dos mezcladores, dos cargadores de samples, dos
@@ -30,14 +31,14 @@ Hoy conviven **dos sistemas de audio completos y solapados**:
    - **`train-audio`** (módulo nuevo): rodadura, tracción, frenos, enganches, contacto y
      explosión. Entrada = **snapshot de estado** (velocidad, notch, freno, posición, rumbo…), no
      el `Model` entero; así se testea con snapshots sintéticos y la simulación no se acopla al
-     audio. Reutiliza el synth existente (`TrainSynth`, `SpeedNotch`, `GrainEngine`).
+     audio. Reutiliza el synth existente (`TrainSynthesizer`, `SpeedNotch`, `GrainEngine`).
      El paquete `letrain.audio.material` (perfil, banco y planificador de
      [[ADR-029-Modelo-Sonido-Tren]]) es el **candidato a primer inquilino** de `train-audio`:
      moverlo será un refactor de paquetes, no un rediseño.
    - **`gameplay-sfx`** (capa fina, módulo propio solo si crece): martillo, caterpillar,
      carga/descarga y sonidos de UI. Disparos puntuales y posicionales; los emite el presenter.
    - **`audio-core`** (núcleo compartido, extraído de lo que ya existe): dispositivo de salida,
-     mezclador, voces, carga/loop, espacialización (`DistanceAttenuator`), **secuenciador por
+     mezclador, voces, carga/loop, espacialización, **secuenciador por
      labels** (`AudacityLabelParser`), **etapa de espacio (reverb/damping)** y limitador.
 2. **Dependencias**: `audio-core` ← (`soundscape`, `train-audio`, sfx). `train-audio` depende de
    interfaces/snapshot de `core`, no de sus clases internas. `soundscape` no depende de nadie del

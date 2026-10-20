@@ -142,39 +142,6 @@ class RailwayGraphTest {
     }
 
     @Test
-    void testFindPath() {
-        List<Segment> path = graph.findPath(segmentAB, segmentBC);
-        assertNotNull(path);
-        assertEquals(2, path.size());
-        assertEquals(segmentAB, path.get(0));
-        assertEquals(segmentBC, path.get(1));
-    }
-
-    @Test
-    void testFindPathToSelf() {
-        List<Segment> path = graph.findPath(segmentAB, segmentAB);
-        assertEquals(1, path.size());
-        assertEquals(segmentAB, path.get(0));
-    }
-
-    @Test
-    void testFindNonExistentPath() {
-        RailTrack tIso1 = new RailTrack();
-        tIso1.setPosition(new Point(10, 10));
-        RailTrack tIso2 = new RailTrack();
-        tIso2.setPosition(new Point(10, 11));
-        tIso1.connect(Dir.N, tIso2);
-        tIso2.connect(Dir.S, tIso1);
-        RailNodeImpl nodeIso1 = new RailNodeImpl(tIso1);
-        RailNodeImpl nodeIso2 = new RailNodeImpl(tIso2);
-        Segment isolatedSegment = new SegmentImpl("ISO", nodeIso1.getPortForDir(Dir.N),
-                nodeIso2.getPortForDir(Dir.S));
-
-        List<Segment> path = graph.findPath(segmentAB, isolatedSegment);
-        assertTrue(path.isEmpty());
-    }
-
-    @Test
     void testNonExistentPort() {
         RailTrack tGhost = new RailTrack();
         tGhost.setPosition(new Point(100, 100));

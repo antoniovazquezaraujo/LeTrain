@@ -85,6 +85,10 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     @com.fasterxml.jackson.annotation.JsonIgnore
     private int startMinuteOfDay = letrain.time.GameClock.DEFAULT_START_MINUTE_OF_DAY;
 
+    // Legacy terrain-distribution thresholds (RUBY/GOLD/COAL). They are NOT part of
+    // SettingsCatalog: terrain generation is driven by terrain.waterPercent/terrain.mountainPercent
+    // since D2, and these values only keep the historical threshold look for legacy cfg/savegames
+    // (see EconomyManager.applyProperties). Deliberately not migrated (#823).
     @com.fasterxml.jackson.annotation.JsonProperty("goldThreshold")
     private float goldThreshold = 0.30f;
 

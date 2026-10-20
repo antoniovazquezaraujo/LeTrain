@@ -703,7 +703,8 @@ public class TrainSafetyManager implements letrain.vehicle.rail.TrainSafetyManag
         // 2. Avanzar virtualmente por las vías físicas en la dirección del movimiento
         // hasta encontrar un cantón diferente al actual (respeta desvíos y curvas).
         RailIterator it = new RailIterator(headTrack, exitDir);
-        int maxIterations = 10000; // Evita bucles infinitos en circuitos cerrados puros
+        // Guard against infinite loops on pure circuits (issue #823: reuse the class constant).
+        int maxIterations = MAX_TOPOLOGY_WALK_ITERATIONS;
         while (it.advance() && maxIterations-- > 0) {
             Track t = it.getTrack();
             if (t instanceof RailTrack) {

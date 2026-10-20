@@ -49,8 +49,10 @@ elegida en cada punto:
    - notifica cambios de hora/día mediante listeners (event-driven, sin polling en `tick()`).
 3. **Escala configurable** en `letrain.cfg` como `time.dayDurationSeconds` (segundos reales que
    dura un día de juego). Valor inicial: **1440** (un día cada 24 minutos reales), equivalente a
-   3 segundos de juego por tick. La escala se fija al crear la partida y no se cambia en caliente
-   (ver *Escala temporal* más abajo).
+   3 segundos de juego por tick. **Desde S3a (#764) es un ajuste LIVE**: se puede cambiar en
+   caliente desde el diálogo de ajustes; al hacerlo se captura el instante mostrado y se rebasa el
+   contador a la nueva escala (`Model.applyLiveSettings` → `GameClock.setTime(displayed)`), de modo
+   que el calendario y los horarios no saltan (ver *Escala temporal* más abajo).
 4. **Hora inicial**: 08:00 del Día 1, día de 24 h. Sin fechas ni estaciones del año en esta fase;
    el modelo queda preparado para añadirlas. **S2b (#759)**: el origen es configurable por partida
    con los ajustes `time.startDay` (1..366) y `time.startTime` (`HH:MM`, 00:00..23:59), ambos de
@@ -80,7 +82,7 @@ elegida en cada punto:
    25`) se rechaza con aviso y **el reloj queda intacto**. El salto es determinista y se journaliza,
    así que el replay reproduce la misma hora. Los instantes anteriores al origen (Día 1, 08:00 por
    defecto; el configurado en S2b) ruedan hacia delante día a día; no se toca la duración del día
-   (esa escala se fija al crear la partida).
+   (esa escala se cambia desde el diálogo de Ajustes, no con `time set`).
 10. **Ciclo solar por latitud** (fase 1): `SolarModel` (core) calcula amanecer/atardecer y
     elevación/acimut del sol a partir del día del año, la hora y la latitud. `getDayNightRatio()`
     se deriva de la elevación con una banda de crepúsculo de 18°, y `world.latitude`
@@ -106,10 +108,12 @@ Consecuencias de diseño:
    calendario. Es un ajuste de **ritmo atmosférico** (que un ciclo día/noche quepa en una sesión),
    no de velocidad de simulación; nadie "juega más rápido" por subirlo. Acelerar trenes y física
    sería otra cosa (multiplicador de simulación) y no se adopta como opción de juego.
-2. **La escala se fija al crear la partida y no se cambia en caliente.** Si se cambiara a mitad de
-   partida, el mismo trayecto (los mismos ticks) pasaría a durar más o menos horas de juego y los
-   horarios guardados dejarían de ser válidos. `GameClock.setDayDurationSeconds` queda reservado
-   para la configuración inicial, escenarios y tests, no para menús en juego.
+2. **La escala es LIVE desde S3a (#764), no se fija al crear la partida.** Cambiarla a mitad de
+   partida no rompe los horarios: `Model.applyLiveSettings` captura el `GameTime` mostrado antes del
+   cambio, aplica la nueva escala y rebasa el contador de ticks al mismo instante
+   (`GameClock.setTime(displayed)`). El mismo trayecto (los mismos ticks) sigue durando las mismas
+   horas de juego; solo cambia cuánto tiempo real se espera por hora de juego. Los horarios
+   guardados siguen siendo válidos porque el instante mostrado es invariante al cambio.
 3. **La puntualidad es invariante al ritmo de juego.** Pausa, máquina lenta o un futuro acelerador
    de simulación (solo para pruebas) multiplican a la vez los ticks de física y el reloj, de modo
    que el tiempo de viaje en horas de juego no cambia; solo cambia lo que se espera en tiempo real.
@@ -125,7 +129,7 @@ Referencia rápida (notch 10 = 5 ticks/celda):
 |---|---|---|---|
 | Pausa de edición | se congela | se congela | invariante |
 | Acelerador de simulación (futuro, pruebas) | ×N | ×N | invariante |
-| Cambiar `dayDurationSeconds` | sin efecto | nueva escala | cambia (por eso se fija por partida) |
+| Cambiar `dayDurationSeconds` | sin efecto | nueva escala (LIVE; rebasa el contador para conservar el instante mostrado) | invariante |
 
 ### Arranque desde parado: el tramo 0→1 (enmienda)
 
