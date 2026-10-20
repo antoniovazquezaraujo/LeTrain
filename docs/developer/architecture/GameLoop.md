@@ -21,7 +21,7 @@ LeTrain tiene dos modos de ejecución principales — **Terminal 2D** (`LeTrainT
 │  │    │ Bucle propio │                       │ render()     │       │   │
 │  │    │ while running│                       │ (callback    │       │   │
 │  │    │              │                       │  LibGDX)     │       │   │
-│  │    │ 20 FPS       │                       │ ~60 FPS      │       │   │
+│  │    │ 20 TPS       │                       │ ~60 FPS      │       │   │
 │  │    │ lockstep     │                       │ visual       │       │   │
 │  │    └──────────────┘                       │ 20 TPS sim   │       │   │
 │  │                                           └──────────────┘       │   │
@@ -55,14 +55,14 @@ graph TD
     D -->|Bucle while| I[Leer tecla no bloqueante]
     I --> J[SimulationController.tick 20 TPS]
     J --> K[Actualizar Audio y Render 2D]
-    K --> L[Thread.sleep 50ms]
+    K --> L[paceFrame: dormir el resto de 50ms]
     L --> I
 ```
 
 ### A. Bucle 2D (TerminalPresenter)
 
 En el presentador de la terminal (`TerminalPresenter.java` en `ui-terminal`), el bucle se ejecuta de manera síncrona en el hilo principal dentro del método `start()`:
-*   **Frecuencia**: Se limita a aproximadamente **20 Ticks por segundo (TPS)** mediante una llamada a `Thread.sleep(50)` al final de cada iteración.
+*   **Frecuencia**: Periodo fijo de **50 ms (20 TPS)**. El bucle mide el tiempo de trabajo de la iteración (entrada + tick + pintado) y duerme **solo el resto** (`paceFrame`); antes de #480 añadía 50 ms *encima* del trabajo y corría por debajo de 20 TPS. Si un frame tarda más de 50 ms no intenta recuperar ticks perdidos, igual que el bucle 3D.
 *   **Lectura de Entrada**: Realiza polling de teclado no bloqueante usando Lanterna. Consume y vacía el búfer de entrada en cada ciclo para evitar retardos (*input lag*).
 *   **Actualización Lógica**: Invoca a `SimulationController.tick()`.
 *   **Sincronización de Audio**: Actualiza la posición y orientación del oyente de SLF4J/AudioController (siguiendo a la locomotora seleccionada en modo `DRIVE` o al cursor en otros modos).
@@ -92,8 +92,8 @@ LibGDX llama a `render()` cada vez que el monitor refresca (~60 FPS). El bucle s
 
 | Aspecto | Modo 2D Terminal | Modo 3D LibGDX |
 |---|---|---|
-| **FPS** | 20 fijos (bloqueante con `Thread.sleep(50)`) | Variable (monitor refresh, ~60 FPS) |
-| **TPS** | 20 (atado al render, mismo hilo) | 20 fijos (acumulador de tiempo, independiente del render) |
+| **FPS** | ~20 (un tick y un pintado por periodo) | Variable (monitor refresh, ~60 FPS) |
+| **TPS** | 20 (periodo de 50 ms con `paceFrame`, mismo hilo) | 20 fijos (acumulador de tiempo, independiente del render) |
 | **Input** | Polling: `screen.pollInput()` cada frame | Callbacks: `keyDown()`, `keyUp()`, `keyTyped()` |
 | **Render** | Texto en terminal (Lanterna) | OpenGL 3D con modelos, luces, sombras |
 | **Cámara** | Scroll por páginas, salto cuando cambia de cuadrícula | 3 modos: ORBIT (seguimiento), CAB (cabina), MAP (vista cenital) |
