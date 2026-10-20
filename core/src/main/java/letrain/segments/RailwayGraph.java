@@ -8,13 +8,11 @@ public interface RailwayGraph {
     Segment getSegment(Port port);
 
     /**
-     * Dado un puerto actual, devuelve los posibles puertos siguientes al final del segmento.
-     * Devuelve null si es fin de vía.
+     * Dado un puerto actual, devuelve los posibles puertos siguientes al final del segmento. En un
+     * fin de vía devuelve una <b>lista vacía</b>; {@code null} solo cuando el puerto no pertenece
+     * al grafo (no se conoce su segmento).
      */
     List<Port> getNextPorts(Port current);
-
-    /** Encuentra la secuencia de segmentos que conectan dos segmentos dados. */
-    List<Segment> findPath(Segment start, Segment end);
 
     /** Devuelve las estaciones presentes en un segmento. */
     List<letrain.track.Station> getStations(Segment segment);

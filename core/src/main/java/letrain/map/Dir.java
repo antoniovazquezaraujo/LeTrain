@@ -35,10 +35,6 @@ public enum Dir {
         this.value = value;
     }
 
-    public static Dir random() {
-        return fromInt((int) (Math.random() * NUM_DIRS));
-    }
-
     public static Dir fromInt(int n) {
         if (n < 0) {
             n = NUM_DIRS + n;

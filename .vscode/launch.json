@@ -27,13 +27,6 @@
         },
         {
             "type": "java",
-            "name": "Terrain2D",
-            "request": "launch",
-            "mainClass": "letrain.ground.impl.Terrain2D",
-            "projectName": "JLeTrain"
-        },
-        {
-            "type": "java",
             "name": "Borrame",
             "request": "launch",
             "mainClass": "letrain.ground.impl.Borrame",

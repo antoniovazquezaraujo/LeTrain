@@ -16,11 +16,6 @@ public interface View {
 
     void set(int x, int y, String c);
 
-    // Removed Lanterna specific color methods, will use abstract semantic styles or implementation
-    // specifics
-    // void setFgColor(TextColor color);
-    // void setBgColor(TextColor color);
-
     void setPageOfPos(int x, int y);
 
     default Point getScrollOffset() {

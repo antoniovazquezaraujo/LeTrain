@@ -1,9 +1,7 @@
 package letrain.itinerary;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import java.util.List;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.impl.RailMap;
@@ -71,18 +69,6 @@ class SegmentPathfinderIntegrationTest {
         assertNotNull(graph.getSegment(t1), "t1 (intermediate)");
         assertNotNull(graph.getSegment(fork), "fork (node)");
         assertNotNull(graph.getSegment(t3), "t3 (branch)");
-    }
-
-    @Test
-    @DisplayName("findPath should find route between connected segments")
-    void findPathBetweenSegments() {
-        Segment s0 = graph.getSegment(t0);
-        Segment sBranch1 = graph.getSegment(t3);
-        assertNotNull(s0);
-        assertNotNull(sBranch1);
-
-        List<Segment> path = graph.findPath(s0, sBranch1);
-        assertFalse(path.isEmpty(), "Should find path from start to branch E");
     }
 
     private RailTrack makeTrack(RailMap map, int x, int y) {
