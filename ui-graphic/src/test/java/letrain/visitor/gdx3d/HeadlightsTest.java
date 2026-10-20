@@ -1,8 +1,10 @@
 package letrain.visitor.gdx3d;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.badlogic.gdx.math.Vector3;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,5 +38,20 @@ class HeadlightsTest {
     @DisplayName("no sources means no lights")
     void should_ReturnEmpty_When_NoSources() {
         assertEquals(List.of(), Headlights.nearestTo(null, new Vector3(), 4));
+    }
+
+    @Test
+    @DisplayName("#820: the per-frame overload reuses and fills the caller's list")
+    void should_ReuseTheOutputList() {
+        Headlights.Source near = new Headlights.Source(2.5f, 2.5f, 1f, 0f);
+        Headlights.Source mid = new Headlights.Source(10.5f, 10.5f, 1f, 0f);
+        Headlights.Source far = new Headlights.Source(40.5f, 40.5f, 1f, 0f);
+        List<Headlights.Source> out = new ArrayList<>(List.of(far));
+
+        List<Headlights.Source> picked =
+                Headlights.nearestTo(List.of(far, near, mid), new Vector3(), 2, out);
+
+        assertSame(out, picked, "no new list is allocated");
+        assertEquals(List.of(near, mid), picked);
     }
 }

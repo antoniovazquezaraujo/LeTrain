@@ -327,4 +327,22 @@ class CameraControllerTest {
         assertEquals(10.5f, cameraController.getTargetX(), 0.001f);
         assertEquals(10.5f, cameraController.getTargetZ(), 0.001f);
     }
+
+    @Test
+    @DisplayName("#820: smoothing is normalised to 60 fps and frame-rate independent")
+    void smoothing_isFrameRateIndependent() {
+        assertEquals(0.05f, CameraController.smoothing(0.05f, 1f / 60f), 1e-6f,
+                "at 60 fps the factor is exactly the historical per-frame value");
+
+        float remainingAt60 = 1f;
+        for (int i = 0; i < 60; i++) {
+            remainingAt60 *= 1f - CameraController.smoothing(0.05f, 1f / 60f);
+        }
+        float remainingAt144 = 1f;
+        for (int i = 0; i < 144; i++) {
+            remainingAt144 *= 1f - CameraController.smoothing(0.05f, 1f / 144f);
+        }
+        assertEquals(remainingAt60, remainingAt144, 1e-4f,
+                "one second of smoothing must converge the same at 60 and 144 Hz");
+    }
 }

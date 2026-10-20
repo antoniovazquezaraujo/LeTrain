@@ -23,6 +23,21 @@ public class CameraController {
 
     private CameraMode cameraMode = CameraMode.ORBIT;
 
+    // Reused scratch objects: the camera updates every frame, so nothing here allocates (#820).
+    private final Vector3 orbitTarget = new Vector3();
+    private final Vector3 interpPosition = new Vector3();
+    private final Vector3 interpTangent = new Vector3();
+    private final Vector2 interpResult = new Vector2();
+    private final Vector2 cabTargetDirection = new Vector2();
+
+    /**
+     * Per-frame smoothing factors at 60 fps; scaled by the real delta so 60 and 144 Hz respond the
+     * same (see {@link #smoothing(float, float)}).
+     */
+    private static final float TARGET_LERP = 0.05f;
+    private static final float ORBIT_LERP = 0.1f;
+    private static final float CAB_LERP = 0.15f;
+
     // Estado de cámara ORBIT/MAP
     private final Vector3 camTarget = new Vector3();
     private float cameraAngle = 45f;
@@ -173,7 +188,16 @@ public class CameraController {
         cam.update();
     }
 
+    /** Compatibility entry point for callers without a frame delta: assumes 60 fps. */
     public void update(float alpha) {
+        update(alpha, 1f / 60f);
+    }
+
+    /**
+     * @param delta real frame time in seconds, used to make the smoothing frame-rate independent
+     *        (#820): the same response at 60 and 144 Hz.
+     */
+    public void update(float alpha, float delta) {
         if (cam == null) {
             return;
         }
@@ -248,21 +272,21 @@ public class CameraController {
         }
 
         if (cameraMode == CameraMode.CAB) {
-            updateCabCamera(alpha);
+            updateCabCamera(alpha, delta);
         }
 
         if (cameraMode == CameraMode.ORBIT) {
-            updateOrbitCamera(targetX, targetZ);
+            updateOrbitCamera(targetX, targetZ, delta);
         }
 
         if (cameraMode == CameraMode.MAP) {
-            updateMapCamera(targetX, targetZ);
+            updateMapCamera(targetX, targetZ, delta);
         }
 
         cam.update();
     }
 
-    private void updateCabCamera(float alpha) {
+    private void updateCabCamera(float alpha, float delta) {
         Locomotive loco = model.getSelectedLocomotive();
         if (loco == null && !model.getLocomotives().isEmpty()) {
             loco = model.getLocomotives().get(0);
@@ -277,13 +301,13 @@ public class CameraController {
             float dx = PathGeometry.getDirX(dir);
             float dz = PathGeometry.getDirZ(dir);
 
-            Vector2 targetDir = new Vector2(dx, dz);
+            cabTargetDirection.set(dx, dz);
             if (cabSnapNeeded || loco != lastCabLocomotive) {
-                currentCabDirection.set(targetDir).nor();
+                currentCabDirection.set(cabTargetDirection).nor();
                 lastCabLocomotive = loco;
                 cabSnapNeeded = false;
             } else {
-                currentCabDirection.lerp(targetDir, 0.15f).nor();
+                currentCabDirection.lerp(cabTargetDirection, smoothing(CAB_LERP, delta)).nor();
             }
 
             float smoothDx = currentCabDirection.x;
@@ -299,11 +323,13 @@ public class CameraController {
         }
     }
 
-    private void updateOrbitCamera(float targetX, float targetZ) {
-        camTarget.lerp(new Vector3(targetX, 0, targetZ), 0.05f);
+    private void updateOrbitCamera(float targetX, float targetZ, float delta) {
+        orbitTarget.set(targetX, 0, targetZ);
+        camTarget.lerp(orbitTarget, smoothing(TARGET_LERP, delta));
 
-        cameraAngle = MathUtils.lerp(cameraAngle, targetCameraAngle, 0.1f);
-        cameraDistance = MathUtils.lerp(cameraDistance, targetCameraDistance, 0.1f);
+        float orbitFactor = smoothing(ORBIT_LERP, delta);
+        cameraAngle = MathUtils.lerp(cameraAngle, targetCameraAngle, orbitFactor);
+        cameraDistance = MathUtils.lerp(cameraDistance, targetCameraDistance, orbitFactor);
 
         float angleRad = cameraAngle * MathUtils.degreesToRadians;
         float camX = camTarget.x + cameraDistance * MathUtils.sin(angleRad);
@@ -336,8 +362,9 @@ public class CameraController {
         cam.up.set(0, 1, 0);
     }
 
-    private void updateMapCamera(float targetX, float targetZ) {
-        camTarget.lerp(new Vector3(targetX, 0, targetZ), 0.05f);
+    private void updateMapCamera(float targetX, float targetZ, float delta) {
+        orbitTarget.set(targetX, 0, targetZ);
+        camTarget.lerp(orbitTarget, smoothing(TARGET_LERP, delta));
         cam.position.set(camTarget.x, mapCameraHeight, camTarget.z);
         cam.lookAt(camTarget.x, 0, camTarget.z);
         cam.up.set(0, 0, -1);
@@ -346,8 +373,8 @@ public class CameraController {
     private Vector2 getInterpolatedPosition(Locomotive locomotive, float alpha) {
         float x = locomotive.getPosition().getX();
         float y = locomotive.getPosition().getY();
-        Vector3 outPos = new Vector3();
-        Vector3 outTangent = new Vector3();
+        Vector3 outPos = interpPosition;
+        Vector3 outTangent = interpTangent;
 
         float progress = 0;
         if (locomotive.getTotalTurns() > 0) {
@@ -380,6 +407,16 @@ public class CameraController {
                 locomotive.getTrack(), progress, locomotive.getSpeed(), canEnterNext, outPos,
                 outTangent);
 
-        return new Vector2(outPos.x - 0.5f, outPos.z - 0.5f);
+        return interpResult.set(outPos.x - 0.5f, outPos.z - 0.5f);
+    }
+
+    /**
+     * Smoothing factor for a frame of {@code delta} seconds, normalised to the given per-frame
+     * factor at 60 fps: {@code 1 - (1 - base)^(delta*60)}. Clamped so a long frame cannot teleport
+     * the camera. At 60 fps this returns exactly {@code base}, preserving the previous feel.
+     */
+    static float smoothing(float base, float delta) {
+        float clamped = MathUtils.clamp(delta, 0f, 0.1f);
+        return 1f - (float) Math.pow(1f - base, clamped * 60f);
     }
 }
