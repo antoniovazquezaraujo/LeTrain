@@ -142,6 +142,30 @@ public class Gdx3DHud {
     private Label systemLabel;
     private Label financeLabel;
 
+    // #818: per-frame update caches. Values are compared before formatting/setText so an idle frame
+    // does no String.format and never invalidates the label layout.
+    private List<GameModeMenuOption> menuOptionsCache;
+    private final List<TextButton> menuButtons = new ArrayList<>();
+    private boolean[] lastMenuEnabled = new boolean[0];
+    private boolean[] lastMenuSelected = new boolean[0];
+    private String lastDescription;
+    private int lastSystemX = Integer.MIN_VALUE;
+    private int lastSystemY;
+    private int lastSystemSteps;
+    private int lastSystemQuantifier;
+    private Object lastSystemSaveTime;
+    private boolean lastFinancePresent;
+    private double lastIncome;
+    private double lastExpenses;
+    private double lastBalance;
+    private Locomotive lastTrainLoco;
+    private int lastTrainId;
+    private int lastTrainSpeed;
+    private int lastTrainTarget;
+    private int lastTrainWagons;
+    private boolean lastTrainReversed;
+    private String lastTrainPunctuality;
+
     /** 2D parity: 2 full, 1 compact, 0 hidden (see {@link HudHelp}). */
     private int helpLevel = HudHelp.FULL;
 
@@ -782,8 +806,14 @@ public class Gdx3DHud {
 
     public void updateMenuButtons() {
         menuTable.clearChildren();
-        for (GameModeMenuOption option : model.getMenuModel()) {
+        menuButtons.clear();
+        List<GameModeMenuOption> options = menuOptions();
+        lastMenuEnabled = new boolean[options.size()];
+        lastMenuSelected = new boolean[options.size()];
+        for (int i = 0; i < options.size(); i++) {
+            GameModeMenuOption option = options.get(i);
             boolean isEnabled = option.enabledIf().get();
+            lastMenuEnabled[i] = isEnabled;
             String formattedName = getMenuButtonText(option.gameModeName(), isEnabled);
 
             TextButton button = new TextButton(formattedName, skin, "menu-button");
@@ -817,7 +847,20 @@ public class Gdx3DHud {
             });
 
             menuTable.add(button).padRight(10);
+            menuButtons.add(button);
         }
+    }
+
+    /**
+     * Shared menu definition: the wording and the {@code enabledIf}/{@code selectedIf} suppliers
+     * are constant for a model, so the HUD builds the list once instead of allocating twelve
+     * options per frame (#818). A new HUD is created when the model is swapped.
+     */
+    private List<GameModeMenuOption> menuOptions() {
+        if (menuOptionsCache == null) {
+            menuOptionsCache = model.getMenuModel();
+        }
+        return menuOptionsCache;
     }
 
     public void updateHUD() {
@@ -845,47 +888,139 @@ public class Gdx3DHud {
             recDot.setVisible(recording && (System.currentTimeMillis() / 500) % 2 == 0);
         }
         updateClock();
-        // Notch-row status (2D format, no Page) and compact 2D finances on the line below.
-        systemLabel.setText(systemInfoText(model));
-        financeLabel.setText(financeText(model));
-
-        // The 2D-style speed bar in the Train row is the only notch indicator now (the graphical
-        // lever was removed); trainStatusText(null) leaves the row empty.
-        Locomotive loco = model.getSelectedLocomotive();
-        trainLabel.setText(trainStatusText(loco));
+        updateSystemLine();
+        updateFinanceLine();
+        updateTrainLine();
 
         // Marcamos el botón seleccionado según el modo y actualizamos textos
         // dinámicamente
         setRowVisible(descCell, descLabel, showMenuDescription(helpLevel, model.getMode()));
-        for (Actor actor : menuTable.getChildren()) {
-            if (actor instanceof TextButton) {
-                TextButton btn = (TextButton) actor;
-                String btnName = btn.getName();
-                for (GameModeMenuOption option : model.getMenuModel()) {
-                    String optionName = menuButtonName(option.gameModeName());
-                    if (optionName.equals(btnName)) {
-                        boolean isSelected = option.selectedIf().get();
-                        boolean isEnabled = option.enabledIf().get();
-
-                        btn.setChecked(isSelected);
-                        btn.setDisabled(!isEnabled);
-                        // Update text dynamically to reflect enabled/disabled state (gray vs
-                        // white/green)
-                        btn.setText(getMenuButtonText(option.gameModeName(), isEnabled));
-
-                        if (isSelected) {
-                            descLabel.setText(INFO_MARKUP
-                                    + MenuText.selectedHint(option.gameModeDescription(),
-                                            commandJournalRecording())
-                                    + MARKUP_RESET);
-                        }
-                    }
-                }
-            }
-        }
+        updateMenuState();
 
         if (model.getMode() == letrain.mvp.Model.GameMode.COMMAND) {
-            descLabel.setText(commandLineText(model));
+            setTextIfChanged(descLabel, commandLineText(model));
+        }
+    }
+
+    /** Notch row (2D format, no Page): only reformats when cursor/step/save-time changed. */
+    private void updateSystemLine() {
+        int x = model.getCursor().getPosition().getX();
+        int y = model.getCursor().getPosition().getY();
+        int steps = model.getQuantifierSteps();
+        int quantifier = model.getQuantifier();
+        Object saveTime = model.getLastSaveTime();
+        if (x == lastSystemX && y == lastSystemY && steps == lastSystemSteps
+                && quantifier == lastSystemQuantifier
+                && java.util.Objects.equals(saveTime, lastSystemSaveTime)) {
+            return;
+        }
+        lastSystemX = x;
+        lastSystemY = y;
+        lastSystemSteps = steps;
+        lastSystemQuantifier = quantifier;
+        lastSystemSaveTime = saveTime;
+        setTextIfChanged(systemLabel, systemInfoText(model));
+    }
+
+    /** Compact finances line: only reformats when one of the three amounts changed. */
+    private void updateFinanceLine() {
+        if (model.getEconomyManager() == null) {
+            if (lastFinancePresent) {
+                lastFinancePresent = false;
+                setTextIfChanged(financeLabel, "");
+            }
+            return;
+        }
+        double income = model.getEconomyManager().getTotalIncome();
+        double expenses = model.getEconomyManager().getTotalExpenses();
+        double balance = model.getEconomyManager().getBalance();
+        if (lastFinancePresent && Double.compare(income, lastIncome) == 0
+                && Double.compare(expenses, lastExpenses) == 0
+                && Double.compare(balance, lastBalance) == 0) {
+            return;
+        }
+        lastFinancePresent = true;
+        lastIncome = income;
+        lastExpenses = expenses;
+        lastBalance = balance;
+        setTextIfChanged(financeLabel, financeText(model));
+    }
+
+    /**
+     * Train row: the 2D-style speed bar is the only notch indicator (the graphical lever was
+     * removed). Only reformats when the selected train state changed; a null selection clears it.
+     */
+    private void updateTrainLine() {
+        Locomotive loco = model.getSelectedLocomotive();
+        if (loco == null) {
+            lastTrainLoco = null;
+            setTextIfChanged(trainLabel, "");
+            return;
+        }
+        Train train = loco.getTrain();
+        int trainId = train != null ? train.getId() : loco.getId();
+        int speed = loco.getSpeed();
+        int target = loco.getTargetSpeed();
+        int wagons = (train != null && train.getLinkers() != null)
+                ? Math.max(0, train.getLinkers().size() - 1)
+                : 0;
+        boolean reversed = loco.isReversed();
+        String punctuality = punctualitySuffix(train);
+        if (loco == lastTrainLoco && trainId == lastTrainId && speed == lastTrainSpeed
+                && target == lastTrainTarget && wagons == lastTrainWagons
+                && reversed == lastTrainReversed
+                && java.util.Objects.equals(punctuality, lastTrainPunctuality)) {
+            return;
+        }
+        lastTrainLoco = loco;
+        lastTrainId = trainId;
+        lastTrainSpeed = speed;
+        lastTrainTarget = target;
+        lastTrainWagons = wagons;
+        lastTrainReversed = reversed;
+        lastTrainPunctuality = punctuality;
+        setTextIfChanged(trainLabel, trainStatusText(loco));
+    }
+
+    /**
+     * Menu rows: one pass over the shared options and the buttons created by
+     * {@link #updateMenuButtons()} (same order). Only changed rows touch their widget, so the
+     * buttons×options double loop and the per-frame label rebuilds are gone (#818).
+     */
+    private void updateMenuState() {
+        List<GameModeMenuOption> options = menuOptions();
+        String selectedDescription = null;
+        int count = Math.min(menuButtons.size(), options.size());
+        for (int i = 0; i < count; i++) {
+            GameModeMenuOption option = options.get(i);
+            TextButton button = menuButtons.get(i);
+            boolean enabled = option.enabledIf().get();
+            if (i < lastMenuEnabled.length && lastMenuEnabled[i] != enabled) {
+                lastMenuEnabled[i] = enabled;
+                button.setDisabled(!enabled);
+                // Only rebuild the label markup when the grey/white state actually changed.
+                button.setText(getMenuButtonText(option.gameModeName(), enabled));
+            }
+            boolean selected = option.selectedIf().get();
+            if (i < lastMenuSelected.length && lastMenuSelected[i] != selected) {
+                lastMenuSelected[i] = selected;
+                button.setChecked(selected);
+            }
+            if (selected) {
+                selectedDescription =
+                        INFO_MARKUP + MenuText.selectedHint(option.gameModeDescription(),
+                                commandJournalRecording()) + MARKUP_RESET;
+            }
+        }
+        if (selectedDescription != null) {
+            setTextIfChanged(descLabel, selectedDescription);
+        }
+    }
+
+    /** Sets a label only when the text really differs, avoiding a layout invalidation per frame. */
+    private static void setTextIfChanged(Label label, String text) {
+        if (label != null && !text.contentEquals(label.getText())) {
+            label.setText(text);
         }
     }
 
