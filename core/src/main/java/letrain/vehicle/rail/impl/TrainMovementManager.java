@@ -481,19 +481,21 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
     @Override
     public boolean advance() {
         if (train.getLogisticsManager().isLoading()) {
-            Train.log.info("Train {} advance: cannot move because train is loading", train.getId());
+            Train.log.debug("Train {} advance: cannot move because train is loading",
+                    train.getId());
             return false;
         }
 
         if (train.isStalled()) {
-            Train.log.info("Train {} advance: cannot move because train is stalled", train.getId());
+            Train.log.debug("Train {} advance: cannot move because train is stalled",
+                    train.getId());
             train.brake();
             return false;
         }
 
         if (train.getModel() != null) {
             if (!train.getSafetyManager().hasPermissionToMove()) {
-                Train.log.info(
+                Train.log.debug(
                         "Train {} advance: cannot move because hasPermissionToMove is false. Forcing brake",
                         train.getId());
                 train.brake();
@@ -618,6 +620,6 @@ public class TrainMovementManager implements letrain.vehicle.rail.TrainMovementM
     @Override
     public void initiateBraking() {
         train.brake();
-        Train.log.info("Train {} initiateBraking: target speed set to 0", train.getId());
+        Train.log.debug("Train {} initiateBraking: target speed set to 0", train.getId());
     }
 }

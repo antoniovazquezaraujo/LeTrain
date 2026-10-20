@@ -206,7 +206,7 @@ public class Locomotive extends Linker implements Tractor {
                                 if (occupant != null && occupant.getTrain() != null
                                         && occupant.getTrain() != getTrain()) {
                                     blocked = true;
-                                    log.info(
+                                    log.debug(
                                             "[CONTACT-TIMING] Instant contact check on start: next cell is occupied. Firing contact sound immediately.");
                                     // Issue #645 follow-up: stop before notifying. The contact
                                     // chain (mission completion -> waypoint actions -> departure)
@@ -321,7 +321,7 @@ public class Locomotive extends Linker implements Tractor {
             } else {
                 setCurrentSpeed(currentSpeed - 1);
             }
-            log.info("Locomotive {}: inertia speed update from {} to {} (targetSpeed={})", id,
+            log.debug("Locomotive {}: inertia speed update from {} to {} (targetSpeed={})", id,
                     oldSpeed, currentSpeed, targetSpeed);
             railsSinceLastSpeedChange = 0;
         }
@@ -437,7 +437,7 @@ public class Locomotive extends Linker implements Tractor {
         boolean waitingForBlock = getTrain() != null && getTrain().getSafetyManager() != null
                 && getTrain().getSafetyManager().isWaitingForBlock();
         if (speed > 0 && (waitingForBlock || heldBySchedule)) {
-            log.info(
+            log.debug(
                     "Locomotive {}: Train is {} (waiting for block={}, schedule hold={}). Intercepting setTargetSpeed({}) and saving it instead.",
                     id, waitingForBlock ? "waiting for block" : "holding at a waypoint",
                     waitingForBlock, heldBySchedule, speed);
@@ -459,7 +459,7 @@ public class Locomotive extends Linker implements Tractor {
 
     private void applyTargetSpeed(int speed) {
         if (this.targetSpeed != speed) {
-            log.info("Locomotive {}: setTargetSpeed changes from {} to {}", id, this.targetSpeed,
+            log.debug("Locomotive {}: setTargetSpeed changes from {} to {}", id, this.targetSpeed,
                     speed);
         }
         this.targetSpeed = speed;

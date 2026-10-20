@@ -338,7 +338,7 @@ public class AutoPilotImpl implements AutoPilot {
         if (currentSeg == null) {
             return;
         }
-        log.info("[AP] onSegmentEntered: newSegment={}, mode={}",
+        log.debug("[AP] onSegmentEntered: newSegment={}, mode={}",
                 currentSeg != null ? currentSeg.getId() : "null", mode);
         if (mode != Mode.FOLLOWING) {
             return;
@@ -350,18 +350,18 @@ public class AutoPilotImpl implements AutoPilot {
 
         Optional<Waypoint> currentWpOpt = currentWaypoint();
         if (currentWpOpt.isEmpty()) {
-            log.info(
+            log.debug(
                     "[AP] onSegmentEntered: itinerary has no current waypoint. Setting mode to IDLE");
             mode = Mode.IDLE;
             return;
         }
 
         Waypoint wp = currentWpOpt.get();
-        log.info("[AP] onSegmentEntered: current target waypoint is {}", wp.targetId());
+        log.debug("[AP] onSegmentEntered: current target waypoint is {}", wp.targetId());
 
         // Si la ruta está vacía o nos desviamos, calcular ruta
         if (currentRoute.isEmpty() || !currentRoute.contains(currentSeg)) {
-            log.info("[AP] calculating route to wp {}...", wp.targetId());
+            log.debug("[AP] calculating route to wp {}...", wp.targetId());
             if (!calculateRoute()) {
                 log.warn("[AP] calculateRoute failed");
                 return;
@@ -370,10 +370,10 @@ public class AutoPilotImpl implements AutoPilot {
 
         // Orientar las agujas para el siguiente tramo de la ruta
         int index = currentRoute.indexOf(currentSeg);
-        log.info("[AP] onSegmentEntered: current segment index in route = {}", index);
+        log.debug("[AP] onSegmentEntered: current segment index in route = {}", index);
         if (index != -1 && index + 1 < currentRoute.size()) {
             Segment nextSeg = currentRoute.get(index + 1);
-            log.info("[AP] onSegmentEntered: orienting fork for next segment {} from {}",
+            log.debug("[AP] onSegmentEntered: orienting fork for next segment {} from {}",
                     nextSeg.getId(), currentSeg.getId());
             ensureForkRoute(currentSeg, nextSeg);
         }
@@ -574,7 +574,7 @@ public class AutoPilotImpl implements AutoPilot {
 
         if (entryPort != null && exitPort != null) {
             boolean routeChanged = node.setRoute(entryPort, exitPort);
-            log.info("[AP] ensureForkRoute {}->{} using ports: entry={}, exit={}, routeChanged={}",
+            log.debug("[AP] ensureForkRoute {}->{} using ports: entry={}, exit={}, routeChanged={}",
                     from.getId(), to.getId(), entryPort.getType(), exitPort.getType(),
                     routeChanged);
             return;
@@ -593,7 +593,7 @@ public class AutoPilotImpl implements AutoPilot {
         if (index != -1) {
             newRoute.set(index, newSeg);
             currentRoute = List.copyOf(newRoute);
-            log.info("[AP] replaceRouteSegment: replaced {} with {} at index {}", oldSeg.getId(),
+            log.debug("[AP] replaceRouteSegment: replaced {} with {} at index {}", oldSeg.getId(),
                     newSeg.getId(), index);
             if (index > 0) {
                 ensureForkRoute(newRoute.get(index - 1), newSeg);
@@ -694,7 +694,7 @@ public class AutoPilotImpl implements AutoPilot {
 
         Segment currentSeg = getTrainCurrentSegment();
         Segment targetSeg = getTrainTargetSegment(wp);
-        log.info("[AP] calcRoute currentSeg={} targetSeg={}",
+        log.debug("[AP] calcRoute currentSeg={} targetSeg={}",
                 currentSeg != null ? currentSeg.getId() : "null",
                 targetSeg != null ? targetSeg.getId() : "null");
         if (currentSeg == null || targetSeg == null) {
@@ -705,10 +705,10 @@ public class AutoPilotImpl implements AutoPilot {
         }
 
         Port exitPort = getTrainExitPort(currentSeg);
-        log.info("[AP] calcRoute exitPort={}", exitPort != null ? exitPort.getType() : "null");
+        log.debug("[AP] calcRoute exitPort={}", exitPort != null ? exitPort.getType() : "null");
         currentRoute = pathfinder.find(currentSeg, Optional.ofNullable(exitPort), targetSeg,
                 wp.entryDir());
-        log.info("[AP] calcRoute result: {} segments{} route={}", currentRoute.size(),
+        log.debug("[AP] calcRoute result: {} segments{} route={}", currentRoute.size(),
                 currentRoute.isEmpty() ? " → ROUTE NOT FOUND" : "",
                 currentRoute.stream().map(Segment::getId).toList());
         if (currentRoute.isEmpty()) {
