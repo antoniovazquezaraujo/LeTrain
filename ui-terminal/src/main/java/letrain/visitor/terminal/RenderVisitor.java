@@ -646,7 +646,6 @@ public class RenderVisitor implements Visitor {
         }
         if (locomotive.isDestroying()) {
             view.setFgColor(getCrashColor());
-            // view.setBgColor(getCrashColor());
             view.set(locomotive.getPosition().getX(), locomotive.getPosition().getY(),
                     getCrashAspect());
             resetColors();
@@ -682,7 +681,6 @@ public class RenderVisitor implements Visitor {
         }
         if (wagon.isDestroying()) {
             view.setFgColor(getCrashColor());
-            // view.setBgColor(getCrashColor());
             view.set(wagon.getPosition().getX(), wagon.getPosition().getY(), getCrashAspect());
             return;
         }

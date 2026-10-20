@@ -209,11 +209,6 @@ public class Gdx3DHud {
         return ideWindow != null;
     }
 
-    private boolean hasScenarioToExport() {
-        return model.getCommandJournal() != null
-                && !model.getCommandJournal().appliedEntries().isEmpty();
-    }
-
     private void initUI() {
         skin = new Skin();
 

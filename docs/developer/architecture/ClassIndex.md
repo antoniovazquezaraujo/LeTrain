@@ -253,7 +253,6 @@
 - [[letrain.utils.PathGeometry|PathGeometry]] (ui-graphic)
 - [[letrain.utils.SerializationHelper|SerializationHelper]] (core)
 - [[letrain.utils.SimulationScheduler|SimulationScheduler]] (core)
-- [[letrain.utils.SplinePath|SplinePath]] (ui-graphic)
 - [[letrain.utils.ValidationUtils|ValidationUtils]] (core)
 - [[letrain.utils.impl.SimulationScheduler|SimulationScheduler]] (core)
 
