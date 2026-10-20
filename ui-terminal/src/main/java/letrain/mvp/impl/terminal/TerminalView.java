@@ -1576,19 +1576,56 @@ public class TerminalView implements letrain.mvp.View {
     @Override
     public void showFileMenu() {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
-        BasicWindow window = new BasicWindow(FileMenuText.TITLE);
+        final boolean hasGame = gameViewListener.hasActiveGame();
+        // No window title (#802): the menu is compact and the rows already say it all.
+        BasicWindow window = new BasicWindow();
         window.setHints(Arrays.asList(Window.Hint.CENTERED));
         window.setCloseWindowWithEscape(true);
         Panel contentPanel = new Panel();
         contentPanel.setLayoutManager(new LinearLayout(Direction.VERTICAL));
         contentPanel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
-        for (FileMenuText.Item item : fileMenuItems(gameViewListener.hasActiveGame())) {
-            Button button =
-                    new Button(FileMenuText.displayLabel(item), fileMenuAction(item, window));
+        final Map<Character, Runnable> hotkeyActions = new java.util.HashMap<>();
+        for (FileMenuText.Item item : fileMenuItems(hasGame)) {
+            Runnable action = fileMenuAction(item, window);
+            Button button = new Button(FileMenuText.displayLabel(item), action);
             button.setEnabled(item.enabled());
+            // Alt mnemonic tinted like the rest of the dialogs (#803).
+            button.setRenderer(mnemonicRenderer(FileMenuText.mnemonic(item.command())));
+            if (item.enabled()) {
+                hotkeyActions.put(Character.toLowerCase(FileMenuText.mnemonic(item.command())),
+                        action);
+            }
             contentPanel.addComponent(button);
         }
         window.setComponent(contentPanel);
+
+        // #803: Alt+letter runs a row; at the boot menu (no game) Esc quits like the Quit row,
+        // while
+        // in-game Esc just closes the menu (D11).
+        window.addWindowListener(new com.googlecode.lanterna.gui2.WindowListenerAdapter() {
+            @Override
+            public void onInput(Window w, KeyStroke keyStroke,
+                    java.util.concurrent.atomic.AtomicBoolean deliverEvent) {
+                if (keyStroke == null) {
+                    return;
+                }
+                if (keyStroke.isAltDown() && keyStroke.getCharacter() != null) {
+                    Runnable action =
+                            hotkeyActions.get(Character.toLowerCase(keyStroke.getCharacter()));
+                    if (action != null) {
+                        action.run();
+                        deliverEvent.set(false);
+                        return;
+                    }
+                }
+                if (keyStroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Escape
+                        && !hasGame) {
+                    setEndOfGame(true);
+                    window.close();
+                    deliverEvent.set(false);
+                }
+            }
+        });
         gui.addWindowAndWait(window);
     }
 

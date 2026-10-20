@@ -1441,8 +1441,8 @@ public class GraphicPresenter extends ApplicationAdapter
 
     @Override
     public void showSaveDialog() {
-        hud.showFileDialog("Save Game", com.kotcrab.vis.ui.widget.file.FileChooser.Mode.SAVE,
-                DEFAULT_SAVEGAME_FILENAME, (text) -> {
+        hud.showFileDialog("Save Game", Gdx3DFileDialog.Mode.SAVE, DEFAULT_SAVEGAME_FILENAME,
+                (text) -> {
                     if (text != null && !text.trim().isEmpty()) {
                         File file = new File(text);
                         log.info("Saving game to {}", file.getAbsolutePath());
@@ -1454,8 +1454,8 @@ public class GraphicPresenter extends ApplicationAdapter
     @Override
     public void showLoadDialog() {
         boolean booting = !gameStarted;
-        hud.showFileDialog("Load Game", com.kotcrab.vis.ui.widget.file.FileChooser.Mode.OPEN,
-                DEFAULT_SAVEGAME_FILENAME, new String[] {"json"}, (text) -> {
+        hud.showFileDialog("Load Game", Gdx3DFileDialog.Mode.OPEN, DEFAULT_SAVEGAME_FILENAME,
+                new String[] {"json"}, (text) -> {
                     if (text != null && !text.trim().isEmpty()) {
                         File file = new File(text);
                         log.info("Loading game from {}", file.getAbsolutePath());
@@ -1516,8 +1516,8 @@ public class GraphicPresenter extends ApplicationAdapter
     }
 
     public void showExportDialog() {
-        hud.showFileDialog("Export Scenario", com.kotcrab.vis.ui.widget.file.FileChooser.Mode.SAVE,
-                DEFAULT_SCENARIO_FILENAME, new String[] {"ltr"}, (text) -> {
+        hud.showFileDialog("Export Scenario", Gdx3DFileDialog.Mode.SAVE, DEFAULT_SCENARIO_FILENAME,
+                new String[] {"ltr"}, (text) -> {
                     if (text != null && !text.trim().isEmpty()) {
                         File file = new File(text);
                         log.info("Exporting scenario to {}", file.getAbsolutePath());
@@ -1527,8 +1527,8 @@ public class GraphicPresenter extends ApplicationAdapter
     }
 
     public void showImportDialog() {
-        hud.showFileDialog("Import Scenario", com.kotcrab.vis.ui.widget.file.FileChooser.Mode.OPEN,
-                DEFAULT_SCENARIO_FILENAME, new String[] {"ltr"}, (text) -> {
+        hud.showFileDialog("Import Scenario", Gdx3DFileDialog.Mode.OPEN, DEFAULT_SCENARIO_FILENAME,
+                new String[] {"ltr"}, (text) -> {
                     if (text != null && !text.trim().isEmpty()) {
                         File file = new File(text);
                         if (file.exists()) {

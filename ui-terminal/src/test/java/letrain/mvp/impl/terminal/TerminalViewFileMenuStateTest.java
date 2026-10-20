@@ -1,5 +1,6 @@
 package letrain.mvp.impl.terminal;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -30,10 +31,12 @@ class TerminalViewFileMenuStateTest {
         assertFalse(item(items, Command.SAVE).enabled());
         assertFalse(item(items, Command.SETTINGS).enabled(),
                 "there is no running game to configure yet");
-        assertTrue(FileMenuText.displayLabel(item(items, Command.SAVE))
-                .contains(FileMenuText.SAVE_NO_GAME_REASON));
-        assertTrue(FileMenuText.displayLabel(item(items, Command.SETTINGS))
-                .contains(FileMenuText.SAVE_NO_GAME_REASON));
+        // #802: the disabled state is enough; the reason stays in the item, not in the label.
+        assertEquals("Save", FileMenuText.displayLabel(item(items, Command.SAVE)));
+        assertEquals("Settings", FileMenuText.displayLabel(item(items, Command.SETTINGS)));
+        assertEquals(FileMenuText.SAVE_NO_GAME_REASON, item(items, Command.SAVE).disabledReason());
+        assertEquals(FileMenuText.SAVE_NO_GAME_REASON,
+                item(items, Command.SETTINGS).disabledReason());
     }
 
     @Test

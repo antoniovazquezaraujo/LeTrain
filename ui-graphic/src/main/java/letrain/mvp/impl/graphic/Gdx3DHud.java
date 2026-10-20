@@ -25,6 +25,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.SplitPane;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.ui.TextField;
+import com.badlogic.gdx.scenes.scene2d.ui.TextTooltip;
 import com.badlogic.gdx.scenes.scene2d.ui.Tree;
 import com.badlogic.gdx.scenes.scene2d.ui.WidgetGroup;
 import com.badlogic.gdx.scenes.scene2d.ui.Window;
@@ -48,6 +49,7 @@ import letrain.itinerary.Punctuality;
 import letrain.mvp.EditorText;
 import letrain.mvp.FileMenuText;
 import letrain.mvp.MenuText;
+import letrain.mvp.CoverArt;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameModeMenuOption;
 import letrain.mvp.NewGameText;
@@ -160,6 +162,8 @@ public class Gdx3DHud {
 
     /** Full-screen image of the title cover; null when there is no capture to paint. */
     private Image coverImage;
+    /** "The Letter Train Simulator" overlay on the 3D cover (#801). */
+    private Label coverTagline;
 
     private Window messageWindow;
     private ScrollPane messageScroll;
@@ -1049,6 +1053,11 @@ public class Gdx3DHud {
             WidgetGroup coverLayer = new WidgetGroup();
             coverLayer.setFillParent(true);
             coverLayer.addActor(coverImage);
+            // 2D parity (#801): the same subtitle the braille art carries, as a monospace overlay
+            // so the capture stays untouched. Positioned and scaled in layoutCoverImage.
+            coverTagline = new Label(CoverArt.TAGLINE, skin, "monospace");
+            coverTagline.setColor(Color.WHITE);
+            coverLayer.addActor(coverTagline);
             coverTable.add(coverLayer).grow();
             layoutCoverImage(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         } else {
@@ -1087,6 +1096,15 @@ public class Gdx3DHud {
         float height = imageHeight * scale;
         coverImage.setSize(width, height);
         coverImage.setPosition(coverOffset(width, screenWidth), coverOffset(height, screenHeight));
+        if (coverTagline != null) {
+            // Legible at any window size: the monospace label scales with the height and stays
+            // centred near the bottom, just under the capture.
+            float fontScale = Math.max(0.8f, Math.min(2.4f, screenHeight / 720f));
+            coverTagline.setFontScale(fontScale);
+            coverTagline.pack();
+            coverTagline.setPosition((screenWidth - coverTagline.getWidth()) / 2f,
+                    Math.max(12f, screenHeight * 0.055f));
+        }
     }
 
     /**
@@ -1119,6 +1137,7 @@ public class Gdx3DHud {
         coverTable.remove();
         coverTable = null;
         coverImage = null;
+        coverTagline = null;
         if (coverTexture != null) {
             coverTexture.dispose();
             coverTexture = null;
@@ -1156,8 +1175,10 @@ public class Gdx3DHud {
                 }
             });
 
+            // No window title (#802): the menu reads better compact, and the rows already say it
+            // all.
             final com.badlogic.gdx.scenes.scene2d.ui.Dialog dialog =
-                    new com.badlogic.gdx.scenes.scene2d.ui.Dialog(FileMenuText.TITLE,
+                    new com.badlogic.gdx.scenes.scene2d.ui.Dialog("",
                             skin.get("dialog", Window.WindowStyle.class));
 
             // close just hides the menu (a row acted); dismiss also notifies the boot flow when the
@@ -1180,15 +1201,26 @@ public class Gdx3DHud {
             // disabled with the parity reason until S4b.
             final List<TextButton> focusable = new ArrayList<>();
             final java.util.Map<TextButton, Runnable> actions = new java.util.HashMap<>();
+            final java.util.Map<Character, Runnable> hotkeyActions = new java.util.HashMap<>();
             for (FileMenuText.Item item : FileMenuText
                     .items(FileMenuText.MenuState.graphic(hasGame))) {
-                final TextButton button = new TextButton(fileMenuButtonText(item), skin);
+                // Alt access key in the label, tinted like every other dialog (#803).
+                final TextButton button =
+                        new TextButton(settingsHotkeyLabel(fileMenuButtonText(item),
+                                FileMenuText.mnemonic(item.command())), skin);
                 final Runnable action = fileMenuAction(item, close);
                 if (item.enabled()) {
                     focusable.add(button);
+                    hotkeyActions.put(Character.toLowerCase(FileMenuText.mnemonic(item.command())),
+                            action);
                 } else {
                     button.setDisabled(true);
                     button.getLabel().setColor(Color.GRAY);
+                    // The reason no longer rides in the label (#802); the terminal just greys the
+                    // row out, the 3D client can explain it on hover.
+                    if (!item.disabledReason().isBlank()) {
+                        button.addListener(newTooltip(item.disabledReason()));
+                    }
                 }
                 button.addListener(new ChangeListener() {
                     @Override
@@ -1199,7 +1231,9 @@ public class Gdx3DHud {
                     }
                 });
                 actions.put(button, action);
-                dialog.getContentTable().add(button).width(560f).pad(6).row();
+                // Text-sized buttons (#802): the single column takes the longest label, which keeps
+                // the stack tidy without the old fixed 560 px.
+                dialog.getContentTable().add(button).pad(6).row();
             }
 
             // Keyboard navigation: Tab/arrows move the focus between the enabled rows, Enter/Space
@@ -1227,6 +1261,15 @@ public class Gdx3DHud {
                         paintFocus.run();
                         return true;
                     }
+                    // Alt+letter jumps to a row (#803), tinted in the label like the rest.
+                    if (isAltPressed() && keycode >= Input.Keys.A && keycode <= Input.Keys.Z) {
+                        char letter = (char) ('A' + keycode - Input.Keys.A);
+                        Runnable action = hotkeyActions.get(Character.toLowerCase(letter));
+                        if (action != null) {
+                            action.run();
+                            return true;
+                        }
+                    }
                     if (keycode == Input.Keys.ENTER || keycode == Input.Keys.NUMPAD_ENTER
                             || keycode == Input.Keys.SPACE) {
                         Runnable action = actions.get(stage.getKeyboardFocus());
@@ -1236,7 +1279,14 @@ public class Gdx3DHud {
                         return true;
                     }
                     if (keycode == Input.Keys.ESCAPE) {
-                        dismiss.run();
+                        // #803 (owner decision): at the boot menu Esc quits like the Quit row; with
+                        // a
+                        // game running it just closes the menu (D11).
+                        if (hasGame) {
+                            dismiss.run();
+                        } else {
+                            Gdx.app.exit();
+                        }
                         return true;
                     }
                     return true;
@@ -1251,12 +1301,11 @@ public class Gdx3DHud {
                 button.addListener(navigation);
             }
 
-            // Reserve enough top padding so the title fits inside the title bar (Window sizes
-            // the title table to `padTop`).
-            dialog.padTop(46);
+            // Compact, title-less menu (#802): only a small top pad and no forced wide/tall box.
+            dialog.padTop(16f);
             dialog.pack();
-            dialog.setWidth(Math.max(dialog.getWidth(), 620f));
-            dialog.setHeight(Math.max(dialog.getHeight(), 420f));
+            dialog.setWidth(Math.max(dialog.getWidth(), 320f));
+            dialog.setHeight(Math.max(dialog.getHeight(), 260f));
             dialog.setPosition((stage.getWidth() - dialog.getWidth()) / 2,
                     (stage.getHeight() - dialog.getHeight()) / 2);
 
@@ -1268,8 +1317,9 @@ public class Gdx3DHud {
     }
 
     /**
-     * Row text of the File menu: the shared label, plus the lock reason while the row is disabled.
-     * The 2D terminal shows the exact same words (issue #743).
+     * Row text of the File menu: the shared bare label. The lock reason stays on the item and is
+     * shown as a hover tooltip while the row is disabled (#802); the 2D terminal shows the exact
+     * same words (issue #743).
      */
     static String fileMenuButtonText(FileMenuText.Item item) {
         return FileMenuText.displayLabel(item);
@@ -1367,8 +1417,12 @@ public class Gdx3DHud {
             message.setWrap(true);
             dialog.getContentTable().pad(10, 48, 24, 48).add(message).width(560f);
 
-            TextButton confirmButton = new TextButton(confirmLabel, skin);
-            TextButton cancelButton = new TextButton("Cancel", skin);
+            // Every dialog button gets a visible Alt hotkey (#803): the confirm action takes its
+            // first letter (avoiding Cancel's C) and Cancel keeps C, tinted in the label.
+            final char confirmKey = confirmMnemonic(confirmLabel);
+            TextButton confirmButton =
+                    new TextButton(settingsHotkeyLabel(confirmLabel, confirmKey), skin);
+            TextButton cancelButton = new TextButton(settingsHotkeyLabel("Cancel", 'C'), skin);
             dialog.getButtonTable().defaults().space(24).minWidth(140).minHeight(50);
             dialog.button(confirmButton, Boolean.TRUE);
             dialog.button(cancelButton, Boolean.FALSE);
@@ -1391,6 +1445,18 @@ public class Gdx3DHud {
                                 focused == confirmButton ? cancelButton : confirmButton);
                         paintFocus.run();
                         return true;
+                    }
+                    // Alt+letter reaches either button (#803): the confirm key or C for Cancel.
+                    if (isAltPressed() && keycode >= Input.Keys.A && keycode <= Input.Keys.Z) {
+                        char letter = (char) ('A' + keycode - Input.Keys.A);
+                        if (Character.toLowerCase(letter) == Character.toLowerCase(confirmKey)) {
+                            activate(true);
+                            return true;
+                        }
+                        if (Character.toLowerCase(letter) == 'c') {
+                            activate(false);
+                            return true;
+                        }
                     }
                     if (keycode == Input.Keys.ENTER || keycode == Input.Keys.NUMPAD_ENTER
                             || keycode == Input.Keys.SPACE) {
@@ -1602,6 +1668,42 @@ public class Gdx3DHud {
             startButton.addListener(fireAction(start));
             cancelButton.addListener(fireAction(cancel));
 
+            // Slider key auto-repeat (#804): holding Left/Right keeps the focused slider moving
+            // after an initial delay, reusing the game input's timings for a consistent feel.
+            // libGDX sends discrete keyDown events, so the repeat is driven by the frame clock;
+            // the 2D terminal relies on the OS/terminal key repeat instead.
+            final int[] repeatDirection = {0};
+            final float[] repeatElapsed = {0f};
+            final boolean[] repeatBurst = {false};
+            dialog.addAction(new com.badlogic.gdx.scenes.scene2d.Action() {
+                @Override
+                public boolean act(float delta) {
+                    if (repeatDirection[0] == 0) {
+                        return false;
+                    }
+                    Actor focused = stage.getKeyboardFocus();
+                    if (!(focused instanceof Slider)) {
+                        repeatDirection[0] = 0;
+                        return false;
+                    }
+                    float delay = Gdx3DInputHandler.INITIAL_REPEAT_DELAY_MS / 1000f;
+                    float interval = Gdx3DInputHandler.REPEAT_INTERVAL_MS / 1000f;
+                    repeatElapsed[0] += delta;
+                    if (!repeatBurst[0]) {
+                        if (repeatElapsed[0] < delay) {
+                            return false;
+                        }
+                        repeatBurst[0] = true;
+                        repeatElapsed[0] -= delay;
+                    }
+                    while (repeatElapsed[0] >= interval) {
+                        repeatElapsed[0] -= interval;
+                        stepSlider((Slider) focused, repeatDirection[0]);
+                    }
+                    return false;
+                }
+            });
+
             // Keyboard: Ctrl+Tab cycles, Alt+letter reaches a page or Start/Cancel, Tab/arrows walk
             // the active page and the two buttons, Enter/Space activate a focused button, Left/
             // Right move a focused slider (or the caret in a text field) and Esc cancels. Text
@@ -1635,12 +1737,12 @@ public class Gdx3DHud {
                     }
                     if ((keycode == Input.Keys.LEFT || keycode == Input.Keys.RIGHT)
                             && focused instanceof Slider) {
-                        Slider slider = (Slider) focused;
-                        float step = keycode == Input.Keys.LEFT ? -slider.getStepSize()
-                                : slider.getStepSize();
-                        slider.setValue(
-                                com.badlogic.gdx.math.MathUtils.clamp(slider.getValue() + step,
-                                        slider.getMinValue(), slider.getMaxValue()));
+                        int direction = keycode == Input.Keys.LEFT ? -1 : 1;
+                        stepSlider((Slider) focused, direction);
+                        // Arm the auto-repeat: one step now, then delay + burst while held.
+                        repeatDirection[0] = direction;
+                        repeatElapsed[0] = 0f;
+                        repeatBurst[0] = false;
                         return true;
                     }
                     if (keycode == Input.Keys.TAB || keycode == Input.Keys.UP
@@ -1676,6 +1778,16 @@ public class Gdx3DHud {
                     if (keycode == Input.Keys.ESCAPE) {
                         cancel.run();
                         return true;
+                    }
+                    return false;
+                }
+
+                @Override
+                public boolean keyUp(InputEvent event, int keycode) {
+                    // Stop the slider repeat when the arrow is released (#804).
+                    if ((keycode == Input.Keys.LEFT || keycode == Input.Keys.RIGHT)
+                            && repeatDirection[0] != 0) {
+                        repeatDirection[0] = 0;
                     }
                     return false;
                 }
@@ -2793,6 +2905,42 @@ public class Gdx3DHud {
         return row;
     }
 
+    /**
+     * Hover tooltip for a disabled File menu row (#802): the terminal has no tooltips, so the 3D
+     * client is where the lock reason can still be read. The code-built skin has no tooltip style,
+     * so it is assembled here from the small label style and a translucent background.
+     */
+    private TextTooltip newTooltip(String text) {
+        TextTooltip.TextTooltipStyle style = new TextTooltip.TextTooltipStyle();
+        style.label = skin.get("small", Label.LabelStyle.class);
+        style.background = skin.newDrawable("white", new Color(0f, 0f, 0f, 0.85f));
+        return new TextTooltip(text, style);
+    }
+
+    /**
+     * Alt key of a confirmation's confirm button (#803): its first alphabetic letter, skipping
+     * {@code C} so it never collides with Cancel. Falls back to {@code Y} for a label with no other
+     * letter.
+     */
+    static char confirmMnemonic(String label) {
+        if (label != null) {
+            for (int i = 0; i < label.length(); i++) {
+                char c = label.charAt(i);
+                if (Character.isLetter(c) && Character.toUpperCase(c) != 'C') {
+                    return Character.toUpperCase(c);
+                }
+            }
+        }
+        return 'Y';
+    }
+
+    /** Moves a slider one step in {@code direction} (-1/+1), clamped to its range (#804). */
+    private static void stepSlider(Slider slider, int direction) {
+        float step = direction * slider.getStepSize();
+        slider.setValue(com.badlogic.gdx.math.MathUtils.clamp(slider.getValue() + step,
+                slider.getMinValue(), slider.getMaxValue()));
+    }
+
     /** One button listener that fires its action. */
     private static ChangeListener fireAction(Runnable action) {
         return new ChangeListener() {
@@ -3276,8 +3424,7 @@ public class Gdx3DHud {
                 letrain.command.ScenarioCompiler.Result result =
                         letrain.command.ScenarioCompiler.compile(full);
                 showDiagnostics.accept(result);
-                showFileDialog("Export Scenario",
-                        com.kotcrab.vis.ui.widget.file.FileChooser.Mode.SAVE, "scenario.ltr",
+                showFileDialog("Export Scenario", Gdx3DFileDialog.Mode.SAVE, "scenario.ltr",
                         new String[] {"ltr"}, path -> {
                             if (path != null && !path.trim().isEmpty()) {
                                 view.onExportScenarioText(new java.io.File(path), full);
@@ -3285,8 +3432,7 @@ public class Gdx3DHud {
                         });
             };
             final Runnable importAction = () -> showFileDialog("Open Scenario",
-                    com.kotcrab.vis.ui.widget.file.FileChooser.Mode.OPEN, "scenario.ltr",
-                    new String[] {"ltr"}, path -> {
+                    Gdx3DFileDialog.Mode.OPEN, "scenario.ltr", new String[] {"ltr"}, path -> {
                         if (path == null || path.trim().isEmpty()) {
                             return;
                         }
@@ -3644,101 +3790,25 @@ public class Gdx3DHud {
         }
     }
 
-    public void showFileDialog(String title, com.kotcrab.vis.ui.widget.file.FileChooser.Mode mode,
-            String defaultText, Consumer<String> onResult) {
+    public void showFileDialog(String title, Gdx3DFileDialog.Mode mode, String defaultText,
+            Consumer<String> onResult) {
         showFileDialog(title, mode, defaultText, new String[] {"json"}, onResult);
     }
 
-    public void showFileDialog(String title, com.kotcrab.vis.ui.widget.file.FileChooser.Mode mode,
-            String defaultText, String[] extensions, Consumer<String> onResult) {
+    public void showFileDialog(String title, Gdx3DFileDialog.Mode mode, String defaultText,
+            String[] extensions, Consumer<String> onResult) {
         showFileDialog(title, mode, defaultText, extensions, onResult, null);
     }
 
     /**
-     * @param onCancel run when the player closes the chooser without picking a file (used by the
+     * Opens the keyboard-first 3D file dialog (#484).
+     *
+     * @param onCancel run when the player closes the dialog without picking a file (used by the
      *        boot Load so it returns to the cover instead of leaving an empty world, S4 #777)
      */
-    public void showFileDialog(String title, com.kotcrab.vis.ui.widget.file.FileChooser.Mode mode,
-            String defaultText, String[] extensions, Consumer<String> onResult, Runnable onCancel) {
-        Gdx.app.postRunnable(() -> {
-            if (!com.kotcrab.vis.ui.VisUI.isLoaded()) {
-                com.kotcrab.vis.ui.VisUI.load();
-                com.kotcrab.vis.ui.widget.file.FileChooser
-                        .setDefaultPrefsName("letrain.filechooser");
-
-                // Override VisUI fonts with our monospace font to keep aesthetic
-                // consistency
-                com.badlogic.gdx.scenes.scene2d.ui.Skin visSkin =
-                        com.kotcrab.vis.ui.VisUI.getSkin();
-                com.badlogic.gdx.graphics.g2d.BitmapFont font =
-                        letrain.utils.FontManager.loadFont("JuliaMono-Regular", 18);
-
-                for (com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle style : visSkin
-                        .getAll(com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle.class)
-                        .values()) {
-                    style.font = font;
-                }
-                for (com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle style : visSkin
-                        .getAll(com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle.class)
-                        .values()) {
-                    style.font = font;
-                }
-                for (com.badlogic.gdx.scenes.scene2d.ui.Window.WindowStyle style : visSkin
-                        .getAll(com.badlogic.gdx.scenes.scene2d.ui.Window.WindowStyle.class)
-                        .values()) {
-                    style.titleFont = font;
-                }
-                for (com.badlogic.gdx.scenes.scene2d.ui.TextField.TextFieldStyle style : visSkin
-                        .getAll(com.badlogic.gdx.scenes.scene2d.ui.TextField.TextFieldStyle.class)
-                        .values()) {
-                    style.font = font;
-                }
-                for (com.badlogic.gdx.scenes.scene2d.ui.List.ListStyle style : visSkin
-                        .getAll(com.badlogic.gdx.scenes.scene2d.ui.List.ListStyle.class).values()) {
-                    style.font = font;
-                }
-                for (com.badlogic.gdx.scenes.scene2d.ui.SelectBox.SelectBoxStyle style : visSkin
-                        .getAll(com.badlogic.gdx.scenes.scene2d.ui.SelectBox.SelectBoxStyle.class)
-                        .values()) {
-                    style.font = font;
-                }
-            }
-            com.kotcrab.vis.ui.widget.file.FileChooser fileChooser =
-                    new com.kotcrab.vis.ui.widget.file.FileChooser(title, mode);
-            fileChooser.setSelectionMode(
-                    com.kotcrab.vis.ui.widget.file.FileChooser.SelectionMode.FILES);
-
-            // Filter by the requested extensions (json for savegames, ltr for scenarios).
-            com.kotcrab.vis.ui.widget.file.FileTypeFilter filter =
-                    new com.kotcrab.vis.ui.widget.file.FileTypeFilter(true);
-            for (String ext : extensions) {
-                filter.addRule(ext.toUpperCase() + " files (*." + ext + ")", ext);
-            }
-            fileChooser.setFileTypeFilter(filter);
-
-            fileChooser.setDirectory(Gdx.files.local("."));
-
-            fileChooser.setListener(new com.kotcrab.vis.ui.widget.file.FileChooserAdapter() {
-                @Override
-                public void selected(
-                        com.badlogic.gdx.utils.Array<com.badlogic.gdx.files.FileHandle> files) {
-                    if (files.size > 0) {
-                        onResult.accept(files.get(0).file().getAbsolutePath());
-                    }
-                }
-
-                @Override
-                public void canceled() {
-                    if (onCancel != null) {
-                        onCancel.run();
-                    }
-                }
-            });
-
-            fileChooser.setSize(750, 500);
-            fileChooser.centerWindow();
-            stage.addActor(fileChooser.fadeIn());
-        });
+    public void showFileDialog(String title, Gdx3DFileDialog.Mode mode, String defaultText,
+            String[] extensions, Consumer<String> onResult, Runnable onCancel) {
+        Gdx3DFileDialog.show(stage, skin, title, mode, defaultText, extensions, onResult, onCancel);
     }
 
     public void render(float delta) {

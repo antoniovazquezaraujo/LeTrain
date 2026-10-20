@@ -6,6 +6,7 @@ import com.badlogic.gdx.math.Vector3;
 import java.util.List;
 import letrain.map.Dir;
 import letrain.map.Point;
+import letrain.palette.VisualPalette;
 import letrain.track.CargoTypes;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
@@ -141,9 +142,8 @@ public class InfrastructureRenderer extends BaseSubRenderer {
                     }
                 }
 
-                ModelInstance autoSemaphore = resourceContext
-                        .getModelInstance(isGreen ? resourceContext.semaphoreOpenModel
-                                : resourceContext.semaphoreClosedModel);
+                ModelInstance autoSemaphore =
+                        resourceContext.getModelInstance(semaphoreModel(isGreen));
                 autoSemaphore.transform.setToTranslation(sx, 0.5f, sz);
 
                 float sdx = PathGeometry.getDirX(entryDir);
@@ -206,14 +206,27 @@ public class InfrastructureRenderer extends BaseSubRenderer {
                 idText, new Vector3(0, 1, 0), new Vector3(dx, 0, dz), Color.BLACK, 0.4f));
     }
 
+    /**
+     * Semaphore model for its state and the current light level (#807): at night the lit lamp is
+     * emissive so it keeps glowing; by day the off model keeps the previous appearance. Shared by
+     * the manual semaphores and the automatic fork semaphores.
+     */
+    private com.badlogic.gdx.graphics.g3d.Model semaphoreModel(boolean open) {
+        boolean night = VisualPalette.lightsOnFactor(resourceContext.getDayNightRatio()) > 0f;
+        if (open) {
+            return night ? resourceContext.semaphoreOpenModel
+                    : resourceContext.semaphoreOpenOffModel;
+        }
+        return night ? resourceContext.semaphoreClosedModel
+                : resourceContext.semaphoreClosedOffModel;
+    }
+
     @Override
     public void visitSemaphore(RailSemaphore semaphore) {
         float x = semaphore.getPosition().getX();
         float y = semaphore.getPosition().getY();
 
-        com.badlogic.gdx.graphics.g3d.Model modelToUse =
-                semaphore.isOpen() ? resourceContext.semaphoreOpenModel
-                        : resourceContext.semaphoreClosedModel;
+        com.badlogic.gdx.graphics.g3d.Model modelToUse = semaphoreModel(semaphore.isOpen());
         ModelInstance instance = resourceContext.getModelInstance(modelToUse);
 
         float offsetX = 0;

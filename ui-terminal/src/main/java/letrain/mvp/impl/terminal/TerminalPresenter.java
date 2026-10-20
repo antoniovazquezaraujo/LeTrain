@@ -461,12 +461,16 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     /**
-     * One step of the boot flow: shows the File menu. New/Load start a game; when the player leaves
-     * the menu with Esc and still has no game, the cover comes back (there is no world yet to
-     * return to). Returns true when a game was started.
+     * One step of the boot flow: shows the File menu. New/Load start a game; when the player
+     * dismisses the menu (not Esc any more at boot, #803: Esc there quits) and still has no game,
+     * the cover comes back (there is no world yet to return to). A quit request ends the flow
+     * without repainting the cover. Returns true when a game was started.
      */
     boolean startupMenuStep() {
         view.showFileMenu();
+        if (view.isEndOfGame(null)) {
+            return false;
+        }
         if (!gameStarted) {
             showCover();
             return false;

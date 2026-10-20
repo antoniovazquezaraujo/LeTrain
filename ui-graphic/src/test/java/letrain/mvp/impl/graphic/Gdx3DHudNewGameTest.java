@@ -175,6 +175,16 @@ class Gdx3DHudNewGameTest {
     }
 
     @Test
+    @DisplayName("#804: the slider repeat reuses the game input's 400 ms / 50 ms timings")
+    void should_ReuseTheInputAutoRepeatTimings() {
+        // The repeat itself is a scene2d Action driven by the frame clock (needs a Stage), but the
+        // timings are single-sourced from the input handler so the dialog and the game feel alike.
+        assertEquals(400L, Gdx3DInputHandler.INITIAL_REPEAT_DELAY_MS,
+                "initial delay before the slider bursts");
+        assertEquals(50L, Gdx3DInputHandler.REPEAT_INTERVAL_MS, "steps per repeat burst");
+    }
+
+    @Test
     @DisplayName("a non-Terrain edit stays live in the form after leaving the page")
     void should_KeepANonTerrainEditLiveInTheForm() {
         NewGameForm form = NewGameForm.forNewGame(Map.of(), new Random(1));

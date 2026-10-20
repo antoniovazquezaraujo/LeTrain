@@ -2,9 +2,12 @@ package letrain.mvp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import letrain.mvp.FileMenuText.Command;
 import letrain.mvp.FileMenuText.Item;
 import letrain.mvp.FileMenuText.MenuState;
@@ -27,9 +30,8 @@ class FileMenuTextTest {
     }
 
     @Test
-    @DisplayName("the menu is File, with New/Load/Save/Settings/Quit in this order")
+    @DisplayName("the menu has New/Load/Save/Settings/Quit in this order, with no window title")
     void should_DefineTheMenuStructure() {
-        assertEquals("File", FileMenuText.TITLE);
         assertEquals(
                 List.of(Command.NEW, Command.LOAD, Command.SAVE, Command.SETTINGS, Command.QUIT),
                 terminalItems(true).stream().map(Item::command).toList());
@@ -99,18 +101,77 @@ class FileMenuTextTest {
     }
 
     @Test
-    @DisplayName("the player reads the label, and the reason in parentheses while locked")
+    @DisplayName("the player reads the bare label; the lock reason stays in the item")
     void should_RenderTheDisplayLabels() {
         List<Item> items = terminalItems(false);
 
         assertEquals("New", FileMenuText.displayLabel(items.get(0)));
         assertEquals("Load", FileMenuText.displayLabel(items.get(1)));
-        assertEquals("Save (no game in progress)", FileMenuText.displayLabel(items.get(2)));
-        assertEquals("Settings (no game in progress)", FileMenuText.displayLabel(items.get(3)));
+        assertEquals("Save", FileMenuText.displayLabel(items.get(2)));
+        assertEquals("Settings", FileMenuText.displayLabel(items.get(3)));
         assertEquals("Quit", FileMenuText.displayLabel(items.get(4)));
 
-        assertEquals("Settings (no game in progress)",
+        assertEquals("Settings",
                 FileMenuText.displayLabel(FileMenuText.items(MenuState.graphic(false)).get(3)));
+
+        // #802: the reason no longer rides in the label, but it is still available to the clients.
+        assertEquals(FileMenuText.SAVE_NO_GAME_REASON, items.get(2).disabledReason());
+        assertEquals(FileMenuText.SAVE_NO_GAME_REASON, items.get(3).disabledReason());
+    }
+
+    @Test
+    @DisplayName("#802: a disabled row reads its bare label, the reason stays on the item")
+    void should_HideTheDisabledReasonFromTheLabel() {
+        Item save = terminalItems(false).get(2);
+
+        assertFalse(save.enabled());
+        assertEquals("Save", FileMenuText.displayLabel(save));
+        assertFalse(FileMenuText.displayLabel(save).contains(FileMenuText.SAVE_NO_GAME_REASON),
+                "the label must not carry the parenthetical reason");
+        assertEquals(FileMenuText.SAVE_NO_GAME_REASON, save.disabledReason(),
+                "the reason is still available to the 3D tooltip");
+    }
+
+    @Test
+    @DisplayName("#803: every File row maps to its Alt mnemonic N/L/S/E/Q")
+    void should_MapMnemonicLetters() {
+        assertEquals('N', FileMenuText.mnemonic(Command.NEW));
+        assertEquals('L', FileMenuText.mnemonic(Command.LOAD));
+        assertEquals('S', FileMenuText.mnemonic(Command.SAVE));
+        assertEquals('E', FileMenuText.mnemonic(Command.SETTINGS),
+                "Settings takes E so it never collides with Save's S");
+        assertEquals('Q', FileMenuText.mnemonic(Command.QUIT));
+    }
+
+    @Test
+    @DisplayName("#803: the five mnemonics are unique")
+    void should_KeepMnemonicLettersUnique() {
+        Set<Character> letters = new HashSet<>();
+        for (Command command : Command.values()) {
+            assertTrue(letters.add(FileMenuText.mnemonic(command)),
+                    "duplicate mnemonic for " + command);
+        }
+
+        assertEquals(Command.values().length, letters.size());
+        assertNotEquals(FileMenuText.mnemonic(Command.SAVE),
+                FileMenuText.mnemonic(Command.SETTINGS));
+    }
+
+    @Test
+    @DisplayName("#803: byHotkey resolves every letter case-insensitively and ignores others")
+    void should_ResolveHotkeys() {
+        for (Command command : Command.values()) {
+            char letter = FileMenuText.mnemonic(command);
+            assertEquals(command, FileMenuText.byHotkey(letter).orElseThrow());
+            assertEquals(command,
+                    FileMenuText.byHotkey(Character.toLowerCase(letter)).orElseThrow(),
+                    "Alt+letter is case-insensitive");
+        }
+
+        assertTrue(FileMenuText.byHotkey('X').isEmpty());
+        assertTrue(FileMenuText.byHotkey('C').isEmpty(), "C is not a File row");
+        assertTrue(FileMenuText.byHotkey('1').isEmpty());
+        assertTrue(FileMenuText.byHotkey(' ').isEmpty());
     }
 
     @Test
@@ -125,7 +186,7 @@ class FileMenuTextTest {
 
         assertEquals(FileMenuText.SAVE_NO_GAME_REASON, boot.get(2).disabledReason(),
                 "the boot Save reason is the shared one, exactly like 2D");
-        assertEquals("Save (no game in progress)", FileMenuText.displayLabel(boot.get(2)));
+        assertEquals("Save", FileMenuText.displayLabel(boot.get(2)));
 
         assertTrue(inGame.get(2).enabled(), "Save works while a game is running");
         assertEquals("Save", FileMenuText.displayLabel(inGame.get(2)));

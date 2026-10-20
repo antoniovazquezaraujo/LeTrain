@@ -76,7 +76,7 @@ class GraphicPresenterBootTest {
     }
 
     @Test
-    @DisplayName("Esc on the boot File menu brings the cover back")
+    @DisplayName("dismissing the boot File menu without a game brings the cover back")
     void fileMenuDismissed_withoutGame_showsTheCover() throws Exception {
         setField("gameStarted", false);
         setField("coverActive", false);
@@ -90,7 +90,7 @@ class GraphicPresenterBootTest {
     }
 
     @Test
-    @DisplayName("Esc on the in-game File menu leaves the world alone")
+    @DisplayName("dismissing the in-game File menu leaves the world alone")
     void fileMenuDismissed_withGame_doesNothing() throws Exception {
         setField("gameStarted", true);
         doCallRealMethod().when(presenter).onFileMenuDismissed();
@@ -118,7 +118,7 @@ class GraphicPresenterBootTest {
     }
 
     @Test
-    @DisplayName("boot cycle: cover → menu → Esc → cover → menu, without doubled calls")
+    @DisplayName("boot cycle: cover → menu → dismiss → cover → menu, without doubled calls")
     void bootCycle_coverToMenuToCoverToMenu() throws Exception {
         setField("gameStarted", false);
         setField("coverActive", true);
@@ -127,7 +127,7 @@ class GraphicPresenterBootTest {
         doCallRealMethod().when(presenter).showCover();
 
         presenter.dismissCover(); // cover -> boot menu
-        presenter.onFileMenuDismissed(); // boot menu Esc -> cover
+        presenter.onFileMenuDismissed(); // boot menu dismissal -> cover (Esc now quits, #803)
         presenter.dismissCover(); // cover -> boot menu again
 
         assertFalse(presenter.isCoverActive(), "the cycle ends back on the boot menu");

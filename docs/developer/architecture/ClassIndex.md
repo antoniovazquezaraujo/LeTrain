@@ -132,6 +132,8 @@
 - [[letrain.mvp.impl.delegates.TrainFactory|TrainFactory]] (core)
 - [[letrain.mvp.impl.graphic.CameraController|CameraController]] (ui-graphic)
 - [[letrain.mvp.impl.graphic.CommandHistory|CommandHistory]] (ui-graphic)
+- [[letrain.mvp.impl.graphic.FileDialogEntries|FileDialogEntries]] (ui-graphic)
+- [[letrain.mvp.impl.graphic.Gdx3DFileDialog|Gdx3DFileDialog]] (ui-graphic)
 - [[letrain.mvp.impl.graphic.Gdx3DHud|Gdx3DHud]] (ui-graphic)
 - [[letrain.mvp.impl.graphic.Gdx3DInputHandler|Gdx3DInputHandler]] (ui-graphic)
 - [[letrain.mvp.impl.graphic.GraphicPresenter|GraphicPresenter]] (ui-graphic)

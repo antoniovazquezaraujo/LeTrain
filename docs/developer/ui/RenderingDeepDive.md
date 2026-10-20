@@ -211,23 +211,30 @@ palabras no pueden divergir entre clientes:
   `gameStarted = false` al mostrar la portada si el cover está habilitado; al despedirla con
   cualquier tecla, `dismissCover()` abre el **menú File** en vez de entregar el mundo (equivale al
   `startupMenuStep()` 2D). `hasActiveGame()` refleja `gameStarted`, así que el menú de boot
-  deshabilita `Save`. El `Esc` del menú durante el boot devuelve a la portada
-  (`onFileMenuDismissed`); en partida no hace nada. `New`/`Load` arrancan partida: `New` abre el
+  deshabilita `Save`. El `Esc` del menú **en el boot ya no vuelve a la portada: sale de la
+  aplicación**, la misma acción que `Quit` (decisión del dueño #803, en ambos clientes); en partida
+  `Esc` sigue cerrando el menú (D11). `New`/`Load` arrancan partida: `New` abre el
   diálogo de Nueva Partida (`Gdx3DHud.showNewGameDialog`) y `startNewGame` reutiliza la maquinaria
   de `applyLoadedModel` (cámara/HUD/input/journal) marcando `gameStarted = true` y ocultando la
   portada; cancelar el diálogo `New` o el selector de `Load` en el boot vuelve a la portada (2D
   parity). El separador de callbacks del menú distingue `close` (solo oculta; una acción actuó) de
-  `dismiss` (oculta + avisa al boot).
+  `dismiss` (oculta + avisa con `onFileMenuDismissed`), que sigue siendo el camino del `Esc` en
+  partida; en el boot `Esc` sale antes de llegar a `dismiss` (#803).
 
 - **Menú File** (`FileMenuText`): `items()` define estructura, orden, palabras y estado
   (`enabled` + `disabledReason`) de `New`/`Load`/`Save`/`Settings`/`Quit`, y `displayLabel(item)`
-  añade el motivo entre paréntesis mientras la entrada está bloqueada. `MenuState.terminal(hasGame)`
-  y `MenuState.graphic(hasGame)` comparten el patrón contextual: `New` habilitado, `Save` y
+  devuelve la **etiqueta pelada**: el estado deshabilitado basta, el motivo queda en
+  `Item.disabledReason()` y se muestra como **tooltip** en 3D (el 2D solo deshabilita la fila)
+  (#802). Cada fila lleva un mnemónico compartido `Alt+N/L/S/E/Q` (`FileMenuText.mnemonic`, con `E`
+  para Settings y no chocar con Save), tintado como en el resto de diálogos en ambos clientes
+  (#803). `MenuState.terminal(hasGame)` y `MenuState.graphic(hasGame)` comparten el patrón
+  contextual: `New` habilitado, `Save` y
   `Settings` según haya partida (`no game in progress`) y `Load`/`Quit` siempre. Desde S4b (#778)
   ambos clientes habilitan `Settings` en partida y lo deshabilitan en portada con el mismo motivo;
   ya no hay diferencia entre `terminal(hasGame)` y `graphic(hasGame)`. `Load`/`Save` abren sus
-  diálogos y `Quit` sustituye al antiguo cierre directo con `Esc` (decisión D11). `Esc` abre el
-  menú (`view.showFileMenu()` en ambos presentadores) y `Esc` de nuevo lo cierra.
+  diálogos y `Quit` sustituye al antiguo cierre directo con `Esc` (decisión D11). El diálogo ya no
+  tiene título "File" (#802). `Esc` abre el menú (`view.showFileMenu()` en ambos presentadores) y,
+  dentro, `Esc` lo cierra en partida o sale de la aplicación en el boot (#803).
 - **Diálogo Nueva Partida 3D** (#777, V1): `Gdx3DHud.showNewGameDialog(form, onStart, onCancel)`
   reutiliza `NewGameForm` (semilla + sliders de agua/montaña, con la regla cruzada del catálogo) y
   valida con `form.toSettings()`, mostrando el mensaje del catálogo en el panel de mensajes si falla.
