@@ -127,6 +127,14 @@ A default `letrain.cfg` ships next to each launcher, so you can tweak the game w
 - **Scripting**: Custom ANTLR4-based rail automation language.
 - **Audio**: Granular synthesis engine for realistic locomotive sounds.
 
+## 🧑‍💻 How LeTrain is built
+
+LeTrain has been designed by **Antonio Vázquez Araújo since 2006**, when generative AI did not exist — first as a C++ ASCII experiment, later as Java. Every design decision, mechanic and direction is his, and until **March 2026** he wrote every line of the code himself.
+
+Since then, the project is developed with a **team of AI agents** (OpenCode) working under his direction: he designs, decides and reviews; the agents write, test and refactor at his instruction — the same way a compiler or a linter helps to think at a higher level. This is **human-authored, AI-assisted** software, not AI-generated: the goals, the architecture and the judgement are human, and every change goes through the full test suite and CI and is validated by the maintainer before merge.
+
+The team's definitions and working rules live in the repository ([`AGENTS.md`](AGENTS.md), [`.opencode/agents/`](.opencode/agents/)), and the whole development is public in issues and pull requests.
+
 ## 🤝 Contributing
 Contributions are welcome! Bug reports, feature ideas, docs and code are all appreciated.
 - 📜 **Start by reading our [Design Philosophy & Manifesto](docs/PHILOSOPHY.md)** to understand the core soul, the 2D/3D symmetry, and the non-negotiables of LeTrain.
