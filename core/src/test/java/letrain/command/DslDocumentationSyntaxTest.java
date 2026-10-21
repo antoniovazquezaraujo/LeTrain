@@ -144,6 +144,30 @@ class DslDocumentationSyntaxTest {
     }
 
     @Test
+    @DisplayName("scope is exact: BODY_ONLY never parses in a block, BLOCK_ONLY never at top level")
+    void scopesMatchTheGrammarExactly() {
+        List<String> bodyOnlyInBlock = new ArrayList<>();
+        List<String> blockOnlyAtTop = new ArrayList<>();
+        for (Scoped scoped : referenceCommands()) {
+            String text = ensureTerminated(substitute(scoped.snippet()));
+            if (scoped.scope() == GrammarReference.Scope.BODY_ONLY
+                    && firstSyntaxErrorInStatement(wrapBlock(text)) == null) {
+                bodyOnlyInBlock.add(scoped.label() + " :: " + scoped.snippet());
+            }
+            if (scoped.scope() == GrammarReference.Scope.BLOCK_ONLY
+                    && firstSyntaxErrorAtTopLevel(text) == null) {
+                blockOnlyAtTop.add(scoped.label() + " :: " + scoped.snippet());
+            }
+        }
+        assertTrue(bodyOnlyInBlock.isEmpty(),
+                "BODY_ONLY snippets that also parse inside a block (label should be BOTH): "
+                        + bodyOnlyInBlock);
+        assertTrue(blockOnlyAtTop.isEmpty(),
+                "BLOCK_ONLY snippets that also parse at top level (label should be BOTH): "
+                        + blockOnlyAtTop);
+    }
+
+    @Test
     @DisplayName("a BODY_ONLY command (signal) is rejected inside a block")
     void bodyOnlyCommand_failsInsideBlock() {
         String signal = substitute("signal <signal> set limit <limit>;");
@@ -332,6 +356,35 @@ class DslDocumentationSyntaxTest {
         // `train at …` is a block-only action: it is only valid inside a trigger/at/every block.
         if (text.startsWith("train at ")) {
             text = wrapBlock(text);
+        }
+        List<String> errors = new ArrayList<>();
+        LeTrainLexer lexer = new LeTrainLexer(CharStreams.fromString(text));
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(lexerListener(errors));
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        if (text.startsWith("add station ") || text.startsWith("add sensor ")) {
+            ScriptLogicParser parser = new ScriptLogicParser(tokens);
+            parser.removeErrorListeners();
+            parser.addErrorListener(collector(errors));
+            parser.waypoint();
+        } else {
+            PlayerCommandsParser parser = new PlayerCommandsParser(tokens);
+            parser.removeErrorListeners();
+            parser.addErrorListener(collector(errors));
+            parser.playerStart();
+        }
+        return errors.isEmpty() ? null : String.join(" | ", errors);
+    }
+
+    /**
+     * Strict top-level parse (no {@code train at} auto-wrap): used to prove a BLOCK_ONLY command
+     * really needs the block. Distinct from {@link #firstSyntaxErrorInStatement(String)}, which
+     * wraps that fragment for the convenience of the scope-aware callers.
+     */
+    private static String firstSyntaxErrorAtTopLevel(String snippet) {
+        String text = snippet.trim();
+        if (!text.endsWith(";") && !text.endsWith("}")) {
+            text += ";";
         }
         List<String> errors = new ArrayList<>();
         LeTrainLexer lexer = new LeTrainLexer(CharStreams.fromString(text));
