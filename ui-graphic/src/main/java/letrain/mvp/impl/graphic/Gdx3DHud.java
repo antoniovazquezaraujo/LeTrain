@@ -3196,10 +3196,10 @@ public class Gdx3DHud {
             final int[] activeTab = {0};
 
             // ---- Editor with line numbers
-            final com.badlogic.gdx.scenes.scene2d.ui.TextArea textArea =
-                    new com.badlogic.gdx.scenes.scene2d.ui.TextArea(scenarioBuffer[0], skin,
-                            "monospace-textarea");
+            final ProgramTextArea textArea =
+                    new ProgramTextArea(scenarioBuffer[0], skin, "monospace-textarea");
             textArea.setName("editorTextArea");
+            final java.util.List<Actor> focusCycle = new ArrayList<>();
 
             final Table lineNumbersTable = new Table();
             lineNumbersTable.top().right();
@@ -3213,7 +3213,6 @@ public class Gdx3DHud {
                     lineNumbersTable.add(l).height(lineHeight).top().right().padRight(10).row();
                 }
             };
-            textArea.setTextFieldListener((textField, c) -> updateLineNumbers.run());
             updateLineNumbers.run();
 
             float topPad = textArea.getStyle().background != null
@@ -3241,8 +3240,18 @@ public class Gdx3DHud {
                         col++;
                     }
                 }
-                statusLabel.setText("Ln " + (row + 1) + ", Col " + (col + 1));
+                String status = "Ln " + (row + 1) + ", Col " + (col + 1);
+                String placeholder = textArea.placeholderStatus();
+                if (!placeholder.isEmpty()) {
+                    status += " · " + placeholder;
+                }
+                statusLabel.setText(status + " · " + EditorText.EDITOR_KEY_HINT);
             };
+            textArea.setOnChange(() -> {
+                updateLineNumbers.run();
+                updateStatus.run();
+            });
+            textArea.setOnMessage(message -> statusLabel.setText("! " + message));
             updateStatus.run();
 
             // ---- Quick reference (rebuilt per tab)
@@ -3257,9 +3266,30 @@ public class Gdx3DHud {
             refTree.setIndentSpacing(12f);
             ScrollPane refScroll = new ScrollPane(refTree, skin);
 
-            final Consumer<String> insertSnippet = snippet -> insertQuickRef(textArea, snippet);
+            final Label previewLabel = new Label("", skin, "monospace");
+            previewLabel.setWrap(true);
+            previewLabel.setAlignment(com.badlogic.gdx.utils.Align.topLeft);
+            ScrollPane previewScroll = new ScrollPane(previewLabel, skin);
+            previewScroll.setFadeScrollBars(false);
+            final letrain.command.GrammarReference.Node[] previewNode = {null};
+            final Runnable updatePreview = () -> {
+                letrain.command.GrammarReference.Node node = previewNode[0];
+                previewLabel.setText(node == null ? "" : previewFor(node));
+            };
+            refTree.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    Tree.Node selected = refTree.getSelectedNode();
+                    if (selected != null && selected
+                            .getValue() instanceof letrain.command.GrammarReference.Node node) {
+                        previewNode[0] = node;
+                    }
+                    updatePreview.run();
+                }
+            });
 
             final Runnable rebuildRef = () -> {
+                previewNode[0] = null;
                 refTree.clearChildren();
                 letrain.command.GrammarReference.Group group =
                         activeTab[0] == 1 ? letrain.command.GrammarReference.Group.PROGRAM
@@ -3267,53 +3297,57 @@ public class Gdx3DHud {
                                         : letrain.command.GrammarReference.Group.BUILD;
                 class TreeBuilder {
                     Tree.Node build(letrain.command.GrammarReference.Node refNode, String indent) {
+                        String label;
                         switch (refNode.kind) {
                             case HEADING -> {
-                                Label l = new Label(refNode.label, skin, "monospace");
-                                l.setColor(Color.ORANGE);
-                                return new Tree.Node(l) {};
+                                label = refNode.label;
                             }
                             case INFO -> {
-                                Label l =
-                                        new Label(indent + "  " + refNode.info, skin, "monospace");
-                                l.setColor(Color.GRAY);
-                                return new Tree.Node(l) {};
+                                label = indent + "INFO " + refNode.label;
                             }
                             case COMMAND -> {
-                                Label l = new Label("   " + refNode.label, skin, "monospace");
-                                Tree.Node n = new Tree.Node(l) {};
-                                n.setValue(refNode.snippet);
-                                l.addListener(new ClickListener() {
-                                    @Override
-                                    public void clicked(InputEvent event, float x, float y) {
-                                        insertSnippet.accept(refNode.snippet);
-                                        event.stop();
-                                    }
-                                });
-                                return n;
+                                String tag =
+                                        letrain.command.ProgramTextEdit.scopeTag(refNode.scope);
+                                label = "   " + refNode.label + (tag.isEmpty() ? "" : "  " + tag);
                             }
                             case GROUP -> {
                                 String prefix = refNode.expanded ? "[-]" : "[+]";
-                                Label l = new Label(indent + prefix + " " + refNode.label, skin,
-                                        "monospace");
-                                Tree.Node n = new Tree.Node(l) {};
-                                l.addListener(new ClickListener() {
-                                    @Override
-                                    public void clicked(InputEvent event, float x, float y) {
-                                        n.setExpanded(!n.isExpanded());
-                                        l.setText(n.isExpanded() ? indent + "[-] " + refNode.label
-                                                : indent + "[+] " + refNode.label);
-                                        event.stop();
-                                    }
-                                });
-                                for (letrain.command.GrammarReference.Node child : refNode.children) {
-                                    n.add(build(child, indent + "  "));
-                                }
-                                n.setExpanded(refNode.expanded);
-                                return n;
+                                label = indent + prefix + " " + refNode.label;
                             }
+                            default -> label = refNode.label;
                         }
-                        return new Tree.Node(new Label(refNode.label, skin, "monospace")) {};
+                        Label l = new Label(label, skin, "monospace");
+                        if (refNode.kind == letrain.command.GrammarReference.Kind.INFO) {
+                            l.setColor(Color.GRAY);
+                        } else if (refNode.kind == letrain.command.GrammarReference.Kind.HEADING) {
+                            l.setColor(Color.ORANGE);
+                        }
+                        Tree.Node n = new Tree.Node(l) {};
+                        n.setValue(refNode);
+                        if (refNode.kind == letrain.command.GrammarReference.Kind.COMMAND) {
+                            l.addListener(new ClickListener() {
+                                @Override
+                                public void clicked(InputEvent event, float x, float y) {
+                                    textArea.insertSnippet(refNode.snippet, refNode.scope);
+                                    event.stop();
+                                }
+                            });
+                        } else if (refNode.kind == letrain.command.GrammarReference.Kind.GROUP) {
+                            l.addListener(new ClickListener() {
+                                @Override
+                                public void clicked(InputEvent event, float x, float y) {
+                                    n.setExpanded(!n.isExpanded());
+                                    l.setText(n.isExpanded() ? indent + "[-] " + refNode.label
+                                            : indent + "[+] " + refNode.label);
+                                    event.stop();
+                                }
+                            });
+                            for (letrain.command.GrammarReference.Node child : refNode.children) {
+                                n.add(build(child, indent + "  "));
+                            }
+                            n.setExpanded(refNode.expanded);
+                        }
+                        return n;
                     }
                 }
                 TreeBuilder tb = new TreeBuilder();
@@ -3321,6 +3355,7 @@ public class Gdx3DHud {
                         .getReferenceTree(group)) {
                     refTree.add(tb.build(rootNode, "  "));
                 }
+                updatePreview.run();
             };
 
             // Keyboard navigation inside the quick reference (arrows + Enter to insert/expand).
@@ -3375,6 +3410,16 @@ public class Gdx3DHud {
                     }
                 }
 
+                private void toggleNode(Tree.Node node) {
+                    boolean expanded = !node.isExpanded();
+                    node.setExpanded(expanded);
+                    if (node.getActor() instanceof Label label) {
+                        String text = label.getText().toString();
+                        label.setText(
+                                expanded ? text.replace("[+]", "[-]") : text.replace("[-]", "[+]"));
+                    }
+                }
+
                 @Override
                 public boolean keyDown(InputEvent event, int keycode) {
                     com.badlogic.gdx.utils.Array<Tree.Node> selection =
@@ -3394,20 +3439,28 @@ public class Gdx3DHud {
                             scrollRefTo(prev);
                         }
                         return true;
+                    } else if (keycode == com.badlogic.gdx.Input.Keys.RIGHT && current != null) {
+                        if (current.getChildren().size > 0 && !current.isExpanded()) {
+                            toggleNode(current);
+                        }
+                        return true;
+                    } else if (keycode == com.badlogic.gdx.Input.Keys.LEFT && current != null) {
+                        if (current.isExpanded() && current.getChildren().size > 0) {
+                            toggleNode(current);
+                        } else if (current.getParent() != null) {
+                            refTree.getSelection().set(current.getParent());
+                            scrollRefTo(current.getParent());
+                        }
+                        return true;
                     } else if (keycode == com.badlogic.gdx.Input.Keys.ENTER && current != null) {
-                        if (current.getValue() instanceof String) {
-                            insertSnippet.accept((String) current.getValue());
-                            return true;
-                        } else if (current.getActor() instanceof Label) {
-                            Label l = (Label) current.getActor();
-                            String text = l.getText().toString();
-                            if (text.contains("[+]") || text.contains("[-]")) {
-                                boolean expanded = !current.isExpanded();
-                                current.setExpanded(expanded);
-                                l.setText(expanded ? text.replace("[+]", "[-]")
-                                        : text.replace("[-]", "[+]"));
-                                return true;
+                        if (current
+                                .getValue() instanceof letrain.command.GrammarReference.Node node) {
+                            if (node.kind == letrain.command.GrammarReference.Kind.COMMAND) {
+                                textArea.insertSnippet(node.snippet, node.scope);
+                            } else if (node.kind == letrain.command.GrammarReference.Kind.GROUP) {
+                                toggleNode(current);
                             }
+                            return true;
                         }
                     }
                     return false;
@@ -3503,6 +3556,7 @@ public class Gdx3DHud {
 
             final Table errorItems = new Table();
             errorItems.top().left();
+            final java.util.List<Actor> errorFocus = new ArrayList<>();
             ScrollPane errorScroll = new ScrollPane(errorItems, skin);
             errorScroll.setFadeScrollBars(false);
             final Table errorTable = new CollapsiblePanel();
@@ -3516,7 +3570,7 @@ public class Gdx3DHud {
                 letrain.command.ScenarioFile.LineTarget target =
                         letrain.command.ScenarioFile.locateLine(composeFull.get(), d.line());
                 switchTo.accept(target.tab());
-                int pos = offsetOfLine(textArea.getText(), target.line());
+                int pos = offsetOfLineColumn(textArea.getText(), target.line(), d.col());
                 textArea.setCursorPosition(Math.min(pos, textArea.getText().length()));
                 if (stage != null) {
                     stage.setKeyboardFocus(textArea);
@@ -3524,6 +3578,8 @@ public class Gdx3DHud {
             };
             final Consumer<letrain.command.ScenarioCompiler.Result> showDiagnostics = result -> {
                 errorItems.clearChildren();
+                focusCycle.removeAll(errorFocus);
+                errorFocus.clear();
                 if (result.ok()) {
                     errorTable.setVisible(false);
                     return;
@@ -3538,7 +3594,9 @@ public class Gdx3DHud {
                         }
                     });
                     errorItems.add(b).left().padBottom(2).row();
+                    errorFocus.add(b);
                 }
+                focusCycle.addAll(errorFocus);
                 errorTable.setVisible(true);
                 window.invalidateHierarchy();
             };
@@ -3790,9 +3848,15 @@ public class Gdx3DHud {
                                 : editorTabText(EditorText.TAB_CONFIG));
                     })));
 
+            Table rightColumn = new Table();
+            rightColumn.top();
+            rightColumn.add(refScroll).grow().row();
+            rightColumn.add(new Label("PREVIEW", skin, "monospace")).left().padTop(6).row();
+            rightColumn.add(previewScroll).growX().height(160).padTop(4);
+
             Table mainContent = new Table();
             mainContent.add(editorScroll).grow();
-            mainContent.add(refScroll).width(340).growY().padLeft(5);
+            mainContent.add(rightColumn).width(340).growY().padLeft(5);
 
             window.add(tabBar).left().pad(5).row();
             window.add(mainContent).grow().row();
@@ -3800,9 +3864,8 @@ public class Gdx3DHud {
             window.add(footer).growX().pad(8).row();
             window.add(statusLabel).left().padLeft(10).padBottom(5);
 
-            // Tab cycles focus between the editor, the quick reference and the buttons. Tabs are
-            // reached with their hotkeys (Alt+A/G/F or Alt+1/2/3), not with Tab.
-            final java.util.List<Actor> focusCycle = new ArrayList<>();
+            // Ctrl+Tab / F6 cycle focus between the editor, the quick reference, the errors and
+            // the buttons. Tab indents inside the editor; Tabs are reached with Alt+A/G/F.
             focusCycle.add(textArea);
             focusCycle.add(refTree);
             focusCycle.add(exportBtn);
@@ -3815,15 +3878,18 @@ public class Gdx3DHud {
             window.addCaptureListener(new com.badlogic.gdx.scenes.scene2d.InputListener() {
                 @Override
                 public boolean keyDown(InputEvent event, int keycode) {
-                    if (keycode == com.badlogic.gdx.Input.Keys.TAB) {
-                        Actor focused = stage.getKeyboardFocus();
-                        int idx = focusCycle.indexOf(focused);
-                        boolean shift = Gdx.input
-                                .isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_LEFT)
-                                || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_RIGHT);
-                        int dir = shift ? -1 : 1;
-                        int next = (idx + dir + focusCycle.size()) % focusCycle.size();
-                        stage.setKeyboardFocus(focusCycle.get(next));
+                    boolean ctrl = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.CONTROL_LEFT)
+                            || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.CONTROL_RIGHT);
+                    boolean shift = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_LEFT)
+                            || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_RIGHT);
+                    if ((keycode == com.badlogic.gdx.Input.Keys.TAB && ctrl)
+                            || keycode == com.badlogic.gdx.Input.Keys.F6) {
+                        cycleFocus(focusCycle, shift);
+                        return true;
+                    }
+                    if (keycode == com.badlogic.gdx.Input.Keys.TAB
+                            && stage.getKeyboardFocus() != textArea) {
+                        cycleFocus(focusCycle, shift);
                         return true;
                     }
                     Actor focused = stage.getKeyboardFocus();
@@ -3858,6 +3924,14 @@ public class Gdx3DHud {
                             return true;
                         } else if (keycode == com.badlogic.gdx.Input.Keys.F) {
                             switchTo.accept(2);
+                            return true;
+                        } else if (keycode == com.badlogic.gdx.Input.Keys.Q) {
+                            stage.setKeyboardFocus(refTree);
+                            if (refTree.getSelection().isEmpty()
+                                    && refTree.getRootNodes().size > 0) {
+                                refTree.getSelection()
+                                        .set((Tree.Node) refTree.getRootNodes().get(0));
+                            }
                             return true;
                         } else if (keycode == com.badlogic.gdx.Input.Keys.E) {
                             exportAction.run();
@@ -3908,27 +3982,44 @@ public class Gdx3DHud {
         return pos;
     }
 
-    /**
-     * Inserts a quick-reference snippet as its own line: moves to the end of the caret's line
-     * (never mid-line), adds the snippet on a new line and leaves the caret on the line after it.
-     */
-    private void insertQuickRef(com.badlogic.gdx.scenes.scene2d.ui.TextArea textArea,
-            String snippet) {
-        String text = textArea.getText();
-        int pos = Math.min(textArea.getCursorPosition(), text.length());
-        int lineStart = text.lastIndexOf('\n', Math.max(0, pos - 1)) + 1;
-        int lineEnd = text.indexOf('\n', pos);
-        if (lineEnd < 0) {
-            lineEnd = text.length();
+    private static int offsetOfLineColumn(String text, int line, int col) {
+        int start = offsetOfLine(text, line);
+        int end = text.indexOf('\n', start);
+        if (end < 0) {
+            end = text.length();
         }
-        boolean emptyLine = lineEnd == lineStart;
-        String insertion = emptyLine ? snippet + "\n" : "\n" + snippet + "\n";
-        String updated = text.substring(0, lineEnd) + insertion + text.substring(lineEnd);
-        textArea.setText(updated);
-        textArea.setCursorPosition(Math.min(lineEnd + insertion.length(), updated.length()));
-        if (stage != null) {
-            stage.setKeyboardFocus(textArea);
+        return Math.min(start + Math.max(0, col - 1), end);
+    }
+
+    /** Preview text for a reference node: snippet plus scope for commands, prose for INFO. */
+    static String previewFor(letrain.command.GrammarReference.Node node) {
+        if (node == null) {
+            return "";
         }
+        return switch (node.kind) {
+            case COMMAND -> {
+                String hint = letrain.command.ProgramTextEdit.scopeHint(node.scope);
+                yield hint.isEmpty() ? node.snippet : node.snippet + "\n\nScope: " + hint;
+            }
+            case INFO -> node.info == null ? "" : node.info;
+            default -> "";
+        };
+    }
+
+    /** Moves the keyboard focus around the editor ring, wrapping at both ends. */
+    private void cycleFocus(List<Actor> cycle, boolean reverse) {
+        if (stage == null || cycle.isEmpty()) {
+            return;
+        }
+        Actor focused = stage.getKeyboardFocus();
+        int index = cycle.indexOf(focused);
+        int next;
+        if (index < 0) {
+            next = reverse ? cycle.size() - 1 : 0;
+        } else {
+            next = (index + (reverse ? -1 : 1) + cycle.size()) % cycle.size();
+        }
+        stage.setKeyboardFocus(cycle.get(next));
     }
 
     public void showFileDialog(String title, Gdx3DFileDialog.Mode mode, String defaultText,
