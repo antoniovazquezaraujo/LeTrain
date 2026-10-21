@@ -1000,7 +1000,7 @@ public class TerminalView implements letrain.mvp.View {
                 });
 
         Runnable updateList = new Runnable() {
-            private void build(GrammarReference.Node node, String indent) {
+            private void build(GrammarReference.Node node, String indent, boolean programming) {
                 String label;
                 boolean dim = false;
                 Runnable action;
@@ -1018,10 +1018,12 @@ public class TerminalView implements letrain.mvp.View {
                         };
                     }
                     case COMMAND -> {
-                        String tag = ProgramTextEdit.scopeTag(node.scope);
+                        String tag = ProgramTextEdit
+                                .scopeTag(ProgramTextEdit.scopeForTab(programming, node.scope));
                         label = indent + node.label + (tag.isEmpty() ? "" : "  " + tag);
                         action = () -> {
-                            String error = editor.insertSnippet(node.snippet, node.scope);
+                            String error = editor.insertSnippet(node.snippet,
+                                    ProgramTextEdit.scopeForTab(programming, node.scope));
                             if (error != null) {
                                 statusLabel.setText("! " + error);
                                 return;
@@ -1044,11 +1046,11 @@ public class TerminalView implements letrain.mvp.View {
                         };
                     }
                 }
-                refRows.add(new RefRow(label, previewFor(node), dim));
+                refRows.add(new RefRow(label, previewFor(node, programming), dim));
                 refList.addItem(label, action);
                 if (node.kind == GrammarReference.Kind.GROUP && node.expanded) {
                     for (GrammarReference.Node child : node.children) {
-                        build(child, indent + "  ");
+                        build(child, indent + "  ", programming);
                     }
                 }
             }
@@ -1063,7 +1065,7 @@ public class TerminalView implements letrain.mvp.View {
                                 : activeTab[0] == tabConfig ? GrammarReference.Group.CONFIG
                                         : GrammarReference.Group.BUILD;
                 for (GrammarReference.Node rootNode : GrammarReference.getReferenceTree(group)) {
-                    build(rootNode, "");
+                    build(rootNode, "", activeTab[0] == tabProgram);
                 }
                 if (selected >= 0 && selected < refList.getItems().size()) {
                     refList.setSelectedIndex(selected);
@@ -1581,13 +1583,14 @@ public class TerminalView implements letrain.mvp.View {
     }
 
     /** Preview text for a reference node: snippet plus scope for commands, prose for INFO. */
-    static String previewFor(GrammarReference.Node node) {
+    static String previewFor(GrammarReference.Node node, boolean programming) {
         if (node == null) {
             return "";
         }
         return switch (node.kind) {
             case COMMAND -> {
-                String hint = ProgramTextEdit.scopeHint(node.scope);
+                String hint = ProgramTextEdit
+                        .scopeHint(ProgramTextEdit.scopeForTab(programming, node.scope));
                 yield hint.isEmpty() ? node.snippet : node.snippet + "\n\nScope: " + hint;
             }
             case INFO -> node.info == null ? "" : node.info;

@@ -166,6 +166,28 @@ class ProgramTextEditTest {
     }
 
     @Test
+    @DisplayName("scope gating only applies in the Programming tab")
+    void scopeForTab() {
+        assertEquals(null, ProgramTextEdit.scopeForTab(false, GrammarReference.Scope.BODY_ONLY));
+        assertEquals(GrammarReference.Scope.BODY_ONLY,
+                ProgramTextEdit.scopeForTab(true, GrammarReference.Scope.BODY_ONLY));
+        assertEquals(null, ProgramTextEdit.scopeForTab(false, GrammarReference.Scope.BLOCK_ONLY));
+        assertEquals(GrammarReference.Scope.BLOCK_ONLY,
+                ProgramTextEdit.scopeForTab(true, GrammarReference.Scope.BLOCK_ONLY));
+    }
+
+    @Test
+    @DisplayName("Scenario commands insert inside on build/on start blocks without gating")
+    void scenarioScope_allowsNestedInsertion() {
+        GrammarReference.Scope scenario =
+                ProgramTextEdit.scopeForTab(false, GrammarReference.Scope.BODY_ONLY);
+
+        assertTrue(ProgramTextEdit.isInsertionAllowed(scenario, 0));
+        assertTrue(ProgramTextEdit.isInsertionAllowed(scenario, 1));
+        assertTrue(ProgramTextEdit.isInsertionAllowed(scenario, 2));
+    }
+
+    @Test
     @DisplayName("scope hints and mismatch messages are shared by both clients")
     void scopeTexts() {
         assertEquals("top-level only", ProgramTextEdit.scopeHint(GrammarReference.Scope.BODY_ONLY));

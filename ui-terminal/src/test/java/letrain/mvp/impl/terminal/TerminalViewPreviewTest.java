@@ -17,10 +17,22 @@ class TerminalViewPreviewTest {
         GrammarReference.Node command = GrammarReference.Node.command("train stop",
                 "train <train> stop;", GrammarReference.Scope.BLOCK_ONLY);
 
-        String preview = TerminalView.previewFor(command);
+        String preview = TerminalView.previewFor(command, true);
 
         assertTrue(preview.contains("train <train> stop;"));
         assertTrue(preview.contains("Scope: inside { }"));
+    }
+
+    @Test
+    @DisplayName("Scenario/Config previews show the snippet without a PROGRAM scope hint")
+    void commandPreviewOutsideProgrammingTab() {
+        GrammarReference.Node command = GrammarReference.Node.command("new station", "new st;",
+                GrammarReference.Scope.BODY_ONLY);
+
+        String preview = TerminalView.previewFor(command, false);
+
+        assertTrue(preview.contains("new st;"));
+        assertFalse(preview.contains("Scope:"));
     }
 
     @Test
@@ -29,14 +41,14 @@ class TerminalViewPreviewTest {
         GrammarReference.Node info =
                 GrammarReference.Node.info("block terminator", "A closing brace ends the block.");
 
-        assertEquals("A closing brace ends the block.", TerminalView.previewFor(info));
+        assertEquals("A closing brace ends the block.", TerminalView.previewFor(info, true));
     }
 
     @Test
     @DisplayName("HEADING and GROUP have no preview")
     void structuralNodesHaveNoPreview() {
-        assertEquals("", TerminalView.previewFor(GrammarReference.Node.heading("TRIGGERS")));
-        assertEquals("", TerminalView.previewFor(GrammarReference.Node.group("sensor")));
+        assertEquals("", TerminalView.previewFor(GrammarReference.Node.heading("TRIGGERS"), true));
+        assertEquals("", TerminalView.previewFor(GrammarReference.Node.group("sensor"), true));
     }
 
     @Test

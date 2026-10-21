@@ -3274,7 +3274,7 @@ public class Gdx3DHud {
             final letrain.command.GrammarReference.Node[] previewNode = {null};
             final Runnable updatePreview = () -> {
                 letrain.command.GrammarReference.Node node = previewNode[0];
-                previewLabel.setText(node == null ? "" : previewFor(node));
+                previewLabel.setText(node == null ? "" : previewFor(node, activeTab[0] == 1));
             };
             refTree.addListener(new ChangeListener() {
                 @Override
@@ -3291,6 +3291,7 @@ public class Gdx3DHud {
             final Runnable rebuildRef = () -> {
                 previewNode[0] = null;
                 refTree.clearChildren();
+                final boolean programming = activeTab[0] == 1;
                 letrain.command.GrammarReference.Group group =
                         activeTab[0] == 1 ? letrain.command.GrammarReference.Group.PROGRAM
                                 : activeTab[0] == 2 ? letrain.command.GrammarReference.Group.CONFIG
@@ -3306,8 +3307,9 @@ public class Gdx3DHud {
                                 label = indent + "INFO " + refNode.label;
                             }
                             case COMMAND -> {
-                                String tag =
-                                        letrain.command.ProgramTextEdit.scopeTag(refNode.scope);
+                                String tag = letrain.command.ProgramTextEdit
+                                        .scopeTag(letrain.command.ProgramTextEdit
+                                                .scopeForTab(programming, refNode.scope));
                                 label = "   " + refNode.label + (tag.isEmpty() ? "" : "  " + tag);
                             }
                             case GROUP -> {
@@ -3328,7 +3330,9 @@ public class Gdx3DHud {
                             l.addListener(new ClickListener() {
                                 @Override
                                 public void clicked(InputEvent event, float x, float y) {
-                                    textArea.insertSnippet(refNode.snippet, refNode.scope);
+                                    textArea.insertSnippet(refNode.snippet,
+                                            letrain.command.ProgramTextEdit.scopeForTab(programming,
+                                                    refNode.scope));
                                     event.stop();
                                 }
                             });
@@ -3456,7 +3460,8 @@ public class Gdx3DHud {
                         if (current
                                 .getValue() instanceof letrain.command.GrammarReference.Node node) {
                             if (node.kind == letrain.command.GrammarReference.Kind.COMMAND) {
-                                textArea.insertSnippet(node.snippet, node.scope);
+                                textArea.insertSnippet(node.snippet, letrain.command.ProgramTextEdit
+                                        .scopeForTab(activeTab[0] == 1, node.scope));
                             } else if (node.kind == letrain.command.GrammarReference.Kind.GROUP) {
                                 toggleNode(current);
                             }
@@ -3992,13 +3997,14 @@ public class Gdx3DHud {
     }
 
     /** Preview text for a reference node: snippet plus scope for commands, prose for INFO. */
-    static String previewFor(letrain.command.GrammarReference.Node node) {
+    static String previewFor(letrain.command.GrammarReference.Node node, boolean programming) {
         if (node == null) {
             return "";
         }
         return switch (node.kind) {
             case COMMAND -> {
-                String hint = letrain.command.ProgramTextEdit.scopeHint(node.scope);
+                String hint = letrain.command.ProgramTextEdit.scopeHint(
+                        letrain.command.ProgramTextEdit.scopeForTab(programming, node.scope));
                 yield hint.isEmpty() ? node.snippet : node.snippet + "\n\nScope: " + hint;
             }
             case INFO -> node.info == null ? "" : node.info;

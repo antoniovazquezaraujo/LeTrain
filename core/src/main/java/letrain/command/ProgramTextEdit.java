@@ -267,6 +267,15 @@ public final class ProgramTextEdit {
         };
     }
 
+    /**
+     * Scope that applies in an editor tab: PROGRAM commands keep their declared scope, while the
+     * Scenario tabs ({@code on build}/{@code on start}) and Config have no PROGRAM scope.
+     */
+    public static GrammarReference.Scope scopeForTab(boolean programmingTab,
+            GrammarReference.Scope scope) {
+        return programmingTab ? scope : null;
+    }
+
     /** Compact tag shown on a quick-reference command row. */
     public static String scopeTag(GrammarReference.Scope scope) {
         if (scope == null) {

@@ -8,10 +8,14 @@ Lógica de texto compartida: `letrain.command.ProgramTextEdit`.
 
 - Solo los nodos `COMMAND` se insertan. `HEADING` y `GROUP` son estructura; `INFO` es una nota
   seleccionable pero **inerte** (nunca inserta código).
-- Cada `COMMAND` muestra su scope:
+- Cada `COMMAND` muestra su scope **solo en la pestaña Programming**:
   - `[top]`: solo primer nivel (`BODY_ONLY`).
   - `[in {}]`: solo dentro de un bloque de trigger/tiempo (`BLOCK_ONLY`).
   - sin etiqueta: válido en ambos (`BOTH`).
+- En **Scenario** (`on build` / `on start`) y **Config** no se aplica ni se muestra el scope de
+  PROGRAM: ambos clientes pasan `null` a `ProgramTextEdit.isInsertionAllowed` mediante
+  `ProgramTextEdit.scopeForTab(programmingTab, scope)`, así que se puede insertar dentro de los
+  bloques de la receta sin avisos.
 - La lista/árbol se puede recorrer con el teclado; el panel **PREVIEW** de debajo muestra el
   snippet exacto y su scope, o la prosa de un `INFO`.
 - Si el caret está en el scope equivocado, la inserción se bloquea y el estado muestra el aviso
@@ -60,7 +64,10 @@ botones de error entran en el ciclo de foco (`Ctrl+Tab`/`F6`) cuando el panel es
 
 ## Tests
 
-- `ProgramTextEditTest`: inserción, indentación, dedent, `braceDepth`, placeholders y scope.
+- `ProgramTextEditTest`: inserción, indentación, dedent, `braceDepth`, placeholders y scope
+  (incluye `scopeForTab` y la inserción anidada en Scenario).
+- `ProgramTextBoxScopeTest`: la UI 2D inserta dentro de `on build { … }` con scope `null` y sigue
+  bloqueando `BODY_ONLY` en Programming.
 - `TerminalViewPreviewTest`: preview/wrapping del cliente 2D.
 - `Gdx3DHudPreviewTest`: preview del cliente 3D.
 - `TerminalViewDiagnosticLocatorTest`: línea:columna al mapear diagnósticos.
