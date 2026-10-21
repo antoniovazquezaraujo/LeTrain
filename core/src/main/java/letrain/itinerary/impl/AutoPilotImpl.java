@@ -535,12 +535,35 @@ public class AutoPilotImpl implements AutoPilot {
 
         var fromPorts = from.getPorts();
         var toPorts = to.getPorts();
+        if (fromPorts == null || toPorts == null) {
+            log.warn("[AP] ensureForkRoute {}->{}: missing ports", from.getId(), to.getId());
+            return;
+        }
 
         Port entryPort = null;
         Port exitPort = null;
         RailNode node = null;
 
-        if (fromPorts != null && toPorts != null) {
+        // Direction-aware (issue #830): orient the fork at the exit port of `from`, i.e. the one
+        // the train is actually approaching along the route. Parallel segments share both ends,
+        // and the first shared node may be the one the train already left behind; picking it
+        // turns the wrong switch and the train keeps the old branch.
+        Port fromExit = getTrainExitPort(from);
+        if (fromExit != null) {
+            RailNode exitNode = fromExit.getNode();
+            for (Port pTo : new Port[] {toPorts.getFirst(), toPorts.getSecond()}) {
+                if (pTo != null && pTo.getNode().equals(exitNode)) {
+                    node = exitNode;
+                    entryPort = fromExit;
+                    exitPort = pTo;
+                    break;
+                }
+            }
+        }
+
+        // Fallback for calls without a usable train direction (synthetic/manual, or `to` not
+        // adjacent to the exit end): keep the historical first-shared-node selection.
+        if (node == null) {
             for (Port pFrom : new Port[] {fromPorts.getFirst(), fromPorts.getSecond()}) {
                 if (pFrom == null) {
                     continue;
