@@ -35,8 +35,8 @@ final class ProgramTextBox extends TextBox {
      */
     String insertSnippet(String snippet, GrammarReference.Scope scope) {
         int caret = caretOffset();
-        int depth = ProgramTextEdit.braceDepth(getText(), caret);
-        if (!ProgramTextEdit.isInsertionAllowed(scope, depth)) {
+        if (scope != null && !ProgramTextEdit.isInsertionAllowed(scope,
+                ProgramTextEdit.programBodyDepth(getText(), caret))) {
             return ProgramTextEdit.mismatchMessage(scope);
         }
         Insertion insertion = ProgramTextEdit.insert(getText(), caret, snippet);

@@ -18,8 +18,11 @@ Lógica de texto compartida: `letrain.command.ProgramTextEdit`.
   bloques de la receta sin avisos.
 - La lista/árbol se puede recorrer con el teclado; el panel **PREVIEW** de debajo muestra el
   snippet exacto y su scope, o la prosa de un `INFO`.
+- El editor de Programming guarda el texto dentro de `program { … }`; el scope se mide con
+  `ProgramTextEdit.programBodyDepth`, que descuenta ese wrapper (cuerpo = 0, trigger = 1). Un
+  cuerpo crudo sin wrapper conserva su profundidad normal.
 - Si el caret está en el scope equivocado, la inserción se bloquea y el estado muestra el aviso
-  (“only works at top level” / “only works inside a trigger or time block”).
+  (“only works at the top level of the program” / “only works inside a trigger or time block”).
 
 ## Mapa de teclas
 

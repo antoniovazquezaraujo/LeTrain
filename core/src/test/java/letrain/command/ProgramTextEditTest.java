@@ -166,6 +166,51 @@ class ProgramTextEditTest {
     }
 
     @Test
+    @DisplayName("program body depth ignores the program { } wrapper")
+    void programBodyDepth_insideWrapperBody() {
+        String text = "program {\n  \n}";
+        int caret = text.indexOf("  \n") + 1;
+
+        assertEquals(1, ProgramTextEdit.braceDepth(text, caret));
+        assertEquals(0, ProgramTextEdit.programBodyDepth(text, caret));
+        assertTrue(ProgramTextEdit.isInsertionAllowed(GrammarReference.Scope.BODY_ONLY,
+                ProgramTextEdit.programBodyDepth(text, caret)));
+    }
+
+    @Test
+    @DisplayName("inside a trigger block the program body depth is 1")
+    void programBodyDepth_insideTrigger() {
+        String text = "program {\n  sensor 1 on train enter {\n    \n  }\n}\n";
+        int caret = text.indexOf("    \n") + 2;
+
+        assertEquals(1, ProgramTextEdit.programBodyDepth(text, caret));
+        assertFalse(ProgramTextEdit.isInsertionAllowed(GrammarReference.Scope.BODY_ONLY,
+                ProgramTextEdit.programBodyDepth(text, caret)));
+        assertTrue(ProgramTextEdit.isInsertionAllowed(GrammarReference.Scope.BLOCK_ONLY,
+                ProgramTextEdit.programBodyDepth(text, caret)));
+    }
+
+    @Test
+    @DisplayName("a raw program body without wrapper keeps its brace depth")
+    void programBodyDepth_rawBody() {
+        String text = "sensor 1 on train enter {\n  \n}\n";
+        int caret = text.indexOf("  \n") + 1;
+
+        assertEquals(1, ProgramTextEdit.programBodyDepth(text, caret));
+        assertTrue(ProgramTextEdit.isInsertionAllowed(GrammarReference.Scope.BLOCK_ONLY,
+                ProgramTextEdit.programBodyDepth(text, caret)));
+    }
+
+    @Test
+    @DisplayName("comments and whitespace before program do not hide the wrapper")
+    void programBodyDepth_commentedHeader() {
+        String text = "  # header\n  program {\n  \n}";
+        int caret = text.indexOf("  \n", text.indexOf("program")) + 1;
+
+        assertEquals(0, ProgramTextEdit.programBodyDepth(text, caret));
+    }
+
+    @Test
     @DisplayName("scope gating only applies in the Programming tab")
     void scopeForTab() {
         assertEquals(null, ProgramTextEdit.scopeForTab(false, GrammarReference.Scope.BODY_ONLY));
@@ -190,7 +235,8 @@ class ProgramTextEditTest {
     @Test
     @DisplayName("scope hints and mismatch messages are shared by both clients")
     void scopeTexts() {
-        assertEquals("top-level only", ProgramTextEdit.scopeHint(GrammarReference.Scope.BODY_ONLY));
+        assertEquals("program top level",
+                ProgramTextEdit.scopeHint(GrammarReference.Scope.BODY_ONLY));
         assertEquals("inside { }", ProgramTextEdit.scopeHint(GrammarReference.Scope.BLOCK_ONLY));
         assertEquals("", ProgramTextEdit.scopeHint(GrammarReference.Scope.BOTH));
         assertEquals("[top]", ProgramTextEdit.scopeTag(GrammarReference.Scope.BODY_ONLY));

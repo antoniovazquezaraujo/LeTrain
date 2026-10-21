@@ -114,8 +114,8 @@ final class ProgramTextArea extends TextArea {
      * message to show when the command does not belong to the current scope.
      */
     String insertSnippet(String snippet, GrammarReference.Scope scope) {
-        int depth = ProgramTextEdit.braceDepth(getText(), getCursorPosition());
-        if (!ProgramTextEdit.isInsertionAllowed(scope, depth)) {
+        if (scope != null && !ProgramTextEdit.isInsertionAllowed(scope,
+                ProgramTextEdit.programBodyDepth(getText(), getCursorPosition()))) {
             String message = ProgramTextEdit.mismatchMessage(scope);
             onMessage.accept(message);
             return message;

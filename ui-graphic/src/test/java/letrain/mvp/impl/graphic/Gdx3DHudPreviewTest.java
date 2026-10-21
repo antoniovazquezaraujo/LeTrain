@@ -20,7 +20,7 @@ class Gdx3DHudPreviewTest {
         String preview = Gdx3DHud.previewFor(command, true);
 
         assertTrue(preview.contains("signal <signal> set limit <limit>;"));
-        assertTrue(preview.contains("Scope: top-level only"));
+        assertTrue(preview.contains("Scope: program top level"));
     }
 
     @Test

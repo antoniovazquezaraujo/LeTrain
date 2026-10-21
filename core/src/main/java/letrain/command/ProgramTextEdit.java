@@ -249,6 +249,111 @@ public final class ProgramTextEdit {
     }
 
     /**
+     * Brace depth relative to the body of a {@code program} wrapper.
+     *
+     * <p>
+     * The Programming editor stores the program wrapped in a top-level {@code program} block, so
+     * the body itself sits at {@link #braceDepth} 1. This helper subtracts that wrapper only when
+     * the caret is inside it. A raw program body (the format accepted by
+     * {@code programSectionBody}) has no wrapper and returns the plain brace depth, keeping the
+     * same scope checks.
+     *
+     * <p>
+     * The wrapper is detected from the first significant token, ignoring whitespace and comment
+     * lines, so a commented header does not defeat it.
+     */
+    public static int programBodyDepth(String text, int offset) {
+        String source = text == null ? "" : text;
+        int at = Math.max(0, Math.min(offset, source.length()));
+        int depth = braceDepth(source, at);
+        int open = programWrapperOpen(source);
+        if (open < 0 || at <= open) {
+            return depth;
+        }
+        int close = matchingBrace(source, open);
+        if (close >= 0 && at > close) {
+            return depth;
+        }
+        return Math.max(0, depth - 1);
+    }
+
+    /** Offset of the wrapper's opening brace, or -1 when the text has no program wrapper. */
+    private static int programWrapperOpen(String text) {
+        int i = skipSpaceAndComments(text, 0);
+        String keyword = "program";
+        if (!text.startsWith(keyword, i)) {
+            return -1;
+        }
+        int after = i + keyword.length();
+        if (after < text.length() && isIdentifierPart(text.charAt(after))) {
+            return -1;
+        }
+        int brace = skipSpaceAndComments(text, after);
+        return brace < text.length() && text.charAt(brace) == '{' ? brace : -1;
+    }
+
+    private static int skipSpaceAndComments(String text, int from) {
+        int i = Math.max(0, Math.min(from, text.length()));
+        while (i < text.length()) {
+            char c = text.charAt(i);
+            if (Character.isWhitespace(c)) {
+                i++;
+            } else if (c == '#') {
+                while (i < text.length() && text.charAt(i) != '\n') {
+                    i++;
+                }
+            } else {
+                break;
+            }
+        }
+        return i;
+    }
+
+    private static boolean isIdentifierPart(char c) {
+        return Character.isLetterOrDigit(c) || c == '_';
+    }
+
+    /** Index of the brace matching {@code open}, ignoring strings and comments; -1 if unclosed. */
+    private static int matchingBrace(String text, int open) {
+        int depth = 0;
+        boolean inString = false;
+        boolean inComment = false;
+        boolean escaped = false;
+        for (int i = open; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (inComment) {
+                if (c == '\n') {
+                    inComment = false;
+                }
+                continue;
+            }
+            if (inString) {
+                if (escaped) {
+                    escaped = false;
+                } else if (c == '\\') {
+                    escaped = true;
+                } else if (c == '"') {
+                    inString = false;
+                }
+                continue;
+            }
+            if (c == '#') {
+                inComment = true;
+            } else if (c == '"') {
+                inString = true;
+            } else if (c == '{') {
+                depth++;
+            } else if (c == '}') {
+                depth--;
+                if (depth == 0) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+
+    /**
      * True when a command with {@code scope} can be inserted at {@code braceDepth}.
      *
      * <p>
@@ -294,7 +399,7 @@ public final class ProgramTextEdit {
             return "";
         }
         return switch (scope) {
-            case BODY_ONLY -> "top-level only";
+            case BODY_ONLY -> "program top level";
             case BLOCK_ONLY -> "inside { }";
             case BOTH -> "";
         };
@@ -306,7 +411,9 @@ public final class ProgramTextEdit {
             return "";
         }
         return switch (scope) {
-            case BODY_ONLY -> "This command only works at top level (outside { }).";
+            case BODY_ONLY ->
+                "This command only works at the top level of the program (not inside a trigger or"
+                        + " at/every block).";
             case BLOCK_ONLY -> "This command only works inside a trigger or time block ({ }).";
             case BOTH -> "";
         };

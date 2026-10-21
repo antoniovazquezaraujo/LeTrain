@@ -35,6 +35,51 @@ class ProgramTextBoxScopeTest {
         assertEquals("on build {\n  go 0,0;\n}", box.getText());
     }
 
+    private static ProgramTextBox programBox(String text, int row, int col) {
+        ProgramTextBox box = new ProgramTextBox(new TerminalSize(60, 12), text, () -> {
+        });
+        box.setCaretPosition(row, col);
+        return box;
+    }
+
+    @Test
+    @DisplayName("the program wrapper does not make the program body look like a block")
+    void programmingBodyAllowsBodyOnly() {
+        ProgramTextBox box = programBox("program {\n  \n}", 1, 2);
+
+        String error = box.insertSnippet("go 0,0;",
+                ProgramTextEdit.scopeForTab(true, GrammarReference.Scope.BODY_ONLY));
+
+        assertNull(error);
+        assertEquals("program {\n  go 0,0;\n}", box.getText());
+    }
+
+    @Test
+    @DisplayName("BLOCK_ONLY is still rejected in the program body")
+    void programmingBodyRejectsBlockOnly() {
+        ProgramTextBox box = programBox("program {\n  \n}", 1, 2);
+
+        String error = box.insertSnippet("semaphore 1 open;",
+                ProgramTextEdit.scopeForTab(true, GrammarReference.Scope.BLOCK_ONLY));
+
+        assertNotNull(error);
+        assertTrue(error.contains("inside a trigger"));
+        assertEquals("program {\n  \n}", box.getText());
+    }
+
+    @Test
+    @DisplayName("BLOCK_ONLY works inside a trigger block of the program")
+    void programmingTriggerAllowsBlockOnly() {
+        ProgramTextBox box =
+                programBox("program {\n  sensor 1 on train enter {\n    \n  }\n}", 2, 4);
+
+        String error = box.insertSnippet("semaphore 1 open;",
+                ProgramTextEdit.scopeForTab(true, GrammarReference.Scope.BLOCK_ONLY));
+
+        assertNull(error);
+        assertTrue(box.getText().contains("sensor 1 on train enter {\n    semaphore 1 open;"));
+    }
+
     @Test
     @DisplayName("Programming still blocks a BODY_ONLY command inside a block")
     void programmingStillGatesBodyOnly() {
