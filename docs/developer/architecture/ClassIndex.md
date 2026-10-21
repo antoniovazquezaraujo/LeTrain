@@ -43,6 +43,7 @@
 - [[letrain.command.ExperimentSession|ExperimentSession]] (core)
 - [[letrain.command.FileNames|FileNames]] (core)
 - [[letrain.command.GrammarReference|GrammarReference]] (core)
+- [[letrain.command.Placeholders|Placeholders]] (core)
 - [[letrain.command.PlayerCommandExecutor|PlayerCommandExecutor]] (core)
 - [[letrain.command.ScenarioCheckCli|ScenarioCheckCli]] (core)
 - [[letrain.command.ScenarioCompiler|ScenarioCompiler]] (core)

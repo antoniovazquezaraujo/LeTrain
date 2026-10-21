@@ -31,7 +31,7 @@ class CommandHelpTest {
         assertNotNull(text);
         assertTrue(text.contains("CONSOLE"), text);
         assertTrue(text.contains("journal;"), text);
-        assertTrue(text.contains("ITINERARY DSL"), text);
+        assertTrue(text.contains("PROGRAM"), text);
     }
 
     @Test
@@ -40,7 +40,7 @@ class CommandHelpTest {
         Model model = new Model(1);
         String console = run(model, "help console;");
         assertTrue(console.contains("journal;"), console);
-        assertFalse(console.contains("ITINERARY DSL"), console);
+        assertFalse(console.contains("PROGRAM"), console);
 
         assertTrue(run(model, "help ls;").contains("ls;"));
         assertTrue(run(model, "help nonsense;").contains("No help"));
