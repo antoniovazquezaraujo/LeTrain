@@ -17,27 +17,34 @@ class TerminalViewDiagnosticLocatorTest {
     @Test
     @DisplayName("header/seed and on build lines go to the Scenario tab")
     void scenarioLines() {
-        assertEquals(new TerminalView.Jump(0, 2), TerminalView.locateDiagnostic(FULL, 2));
-        assertEquals(new TerminalView.Jump(0, 4), TerminalView.locateDiagnostic(FULL, 7));
+        assertEquals(new TerminalView.Jump(0, 2, 1), TerminalView.locateDiagnostic(FULL, 2));
+        assertEquals(new TerminalView.Jump(0, 4, 1), TerminalView.locateDiagnostic(FULL, 7));
     }
 
     @Test
     @DisplayName("configuration lines go to the Config tab")
     void configLines() {
-        assertEquals(new TerminalView.Jump(2, 1), TerminalView.locateDiagnostic(FULL, 3));
-        assertEquals(new TerminalView.Jump(2, 2), TerminalView.locateDiagnostic(FULL, 4));
+        assertEquals(new TerminalView.Jump(2, 1, 1), TerminalView.locateDiagnostic(FULL, 3));
+        assertEquals(new TerminalView.Jump(2, 2, 1), TerminalView.locateDiagnostic(FULL, 4));
     }
 
     @Test
     @DisplayName("program lines go to the Programming tab")
     void programLines() {
-        assertEquals(new TerminalView.Jump(1, 2), TerminalView.locateDiagnostic(FULL, 10));
+        assertEquals(new TerminalView.Jump(1, 2, 1), TerminalView.locateDiagnostic(FULL, 10));
     }
 
     @Test
     @DisplayName("without a configuration section nothing shifts")
     void noConfigSection() {
         String full = "# LeTrain scenario v1\nseed 1\non build {\ngo 0,0; face e; write 1;\n}\n";
-        assertEquals(new TerminalView.Jump(0, 4), TerminalView.locateDiagnostic(full, 4));
+        assertEquals(new TerminalView.Jump(0, 4, 1), TerminalView.locateDiagnostic(full, 4));
+    }
+
+    @Test
+    @DisplayName("diagnostics keep the column, clamped to at least 1")
+    void diagnosticsKeepColumn() {
+        assertEquals(new TerminalView.Jump(0, 2, 7), TerminalView.locateDiagnostic(FULL, 2, 7));
+        assertEquals(new TerminalView.Jump(1, 2, 1), TerminalView.locateDiagnostic(FULL, 10, 0));
     }
 }
