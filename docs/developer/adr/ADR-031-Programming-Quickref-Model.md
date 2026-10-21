@@ -34,6 +34,13 @@ Cada `COMMAND` declara su `Scope`:
 - `BLOCK_ONLY`: solo dentro de un bloque `{ }` de trigger/`at`/`every` (p. ej. `train at …`).
 - `BOTH`: válido en ambos sitios (acciones de tren, fork y semáforo, que la gramática comparte).
 
+> **El scope es exclusivo de PROGRAM.** Describe dónde encaja un comando *dentro del programa*
+> (cuerpo vs. bloque de trigger/`at`/`every`). La pestaña **Scenario** (`on build` / `on start`)
+> tiene su propio contexto y **no** aplica estos scopes: su quick reference se muestra sin gating.
+> La UI pasa `scope = null` a `ProgramTextEdit.isInsertionAllowed`, que con `null` no restringe la
+> inserción (cualquier profundidad), porque el scope no describe la receta Scenario. Si en el futuro
+> se quiere validar la receta, será un modelo de scopes aparte.
+
 Los waypoints (`add station …` / `add sensor …`) son fragmentos del cuerpo de `create itinerary`;
 se marcan `BODY_ONLY` y se validan con la regla `waypoint` de la gramática.
 
@@ -57,7 +64,8 @@ placeholders, Tab, auto-indent) es de la UI:
 
 - Una hoja es **insertable solo si `kind == COMMAND`**.
 - `INFO` se pinta atenuado, sin `[+]` y sin acción de inserción.
-- La UI puede mostrar el `scope` como pista (“top-level only” / “inside `{ }`”).
+- La UI puede mostrar el `scope` como pista (“top-level only” / “inside `{ }`”) **solo en PROGRAM**;
+  en Scenario (`on build`/`on start`) no se muestra ni se aplica.
 - **Preview**: al seleccionar una entrada, mostrar el `snippet` tal cual (es código real).
 - **Inserción con placeholders**: seleccionar el primer `<token>`; `Tab`/`Shift+Tab` ciclan entre
   placeholders; teclear sustituye el token completo. En 2D (Lanterna no tiene selección) se coloca

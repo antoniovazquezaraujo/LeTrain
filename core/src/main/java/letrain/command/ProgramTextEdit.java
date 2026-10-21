@@ -248,10 +248,17 @@ public final class ProgramTextEdit {
         return depth;
     }
 
-    /** True when a command with {@code scope} can be inserted at {@code braceDepth}. */
+    /**
+     * True when a command with {@code scope} can be inserted at {@code braceDepth}.
+     *
+     * <p>
+     * A {@code null} scope means "no scope restriction": the caller is not in the PROGRAM body
+     * (e.g. the Scenario tabs {@code on build}/{@code on start}, which have their own context and
+     * pass {@code null}), so insertion is always allowed. Scope only describes PROGRAM commands.
+     */
     public static boolean isInsertionAllowed(GrammarReference.Scope scope, int braceDepth) {
         if (scope == null) {
-            return false;
+            return true;
         }
         return switch (scope) {
             case BOTH -> true;

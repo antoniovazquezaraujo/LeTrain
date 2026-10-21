@@ -212,9 +212,9 @@ public class GrammarReference {
         root.add(elements);
 
         Node ops = Node.group("element ops").setExpanded(true);
-        ops.add(Node.command("invert", "semaphore 1 invert;", Scope.BODY_ONLY));
-        ops.add(Node.command("toggle", "semaphore 1 toggle;", Scope.BODY_ONLY));
-        ops.add(Node.command("fork branch", "fork 1 set curved;", Scope.BODY_ONLY));
+        ops.add(Node.command("invert", "semaphore 1 invert;", Scope.BOTH));
+        ops.add(Node.command("toggle", "semaphore 1 toggle;", Scope.BOTH));
+        ops.add(Node.command("fork branch", "fork 1 set curved;", Scope.BOTH));
         ops.add(Node.command("signal limit", "signal 1 set limit 40;", Scope.BODY_ONLY));
         ops.add(Node.command("signal mode", "signal 1 set mode max;", Scope.BODY_ONLY));
         ops.add(Node.command("slide", "slide station 1 fw 2;", Scope.BODY_ONLY));
@@ -229,10 +229,10 @@ public class GrammarReference {
 
         root.add(Node.heading("ON START"));
         Node start = Node.group("initial state").setExpanded(true);
-        start.add(Node.command("semaphore", "semaphore 1 set closed;", Scope.BODY_ONLY));
-        start.add(Node.command("fork", "fork 1 set curved;", Scope.BODY_ONLY));
-        start.add(Node.command("train speed", "train 1 set speed 3;", Scope.BODY_ONLY));
-        start.add(Node.command("train engine", "train 1 set engine on;", Scope.BODY_ONLY));
+        start.add(Node.command("semaphore", "semaphore 1 set closed;", Scope.BOTH));
+        start.add(Node.command("fork", "fork 1 set curved;", Scope.BOTH));
+        start.add(Node.command("train speed", "train 1 set speed 3;", Scope.BOTH));
+        start.add(Node.command("train engine", "train 1 set engine on;", Scope.BOTH));
         root.add(start);
 
         return root;
@@ -274,7 +274,7 @@ public class GrammarReference {
         names.add(
                 Node.command("station", "station <station> set name \"<name>\";", Scope.BODY_ONLY));
         names.add(Node.command("sensor", "sensor <sensor> set name \"<name>\";", Scope.BODY_ONLY));
-        names.add(Node.command("train", "train <train> set name \"<name>\";", Scope.BODY_ONLY));
+        names.add(Node.command("train", "train <train> set name \"<name>\";", Scope.BOTH));
         names.add(Node.info("train name in blocks", "Train name also works inside blocks."));
         body.add(names);
         return body;

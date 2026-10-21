@@ -158,6 +158,11 @@ class ProgramTextEditTest {
         assertFalse(ProgramTextEdit.isInsertionAllowed(GrammarReference.Scope.BLOCK_ONLY, 0));
         assertTrue(ProgramTextEdit.isInsertionAllowed(GrammarReference.Scope.BOTH, 0));
         assertTrue(ProgramTextEdit.isInsertionAllowed(GrammarReference.Scope.BOTH, 3));
+        // null = no PROGRAM scope restriction (Scenario tabs pass null): always insertable.
+        assertTrue(ProgramTextEdit.isInsertionAllowed(null, 0),
+                "null scope must not restrict insertion (Scenario tab body)");
+        assertTrue(ProgramTextEdit.isInsertionAllowed(null, 3),
+                "null scope must not restrict insertion at any depth (Scenario tab)");
     }
 
     @Test
