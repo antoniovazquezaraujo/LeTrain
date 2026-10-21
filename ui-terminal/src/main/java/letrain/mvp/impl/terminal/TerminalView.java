@@ -956,24 +956,26 @@ public class TerminalView implements letrain.mvp.View {
         };
         Runnable updateList = new Runnable() {
             private void build(letrain.command.GrammarReference.Node node, String indent) {
-                if (node.isHeading) {
-                    refList.addItem(node.label, () -> {
+                switch (node.kind) {
+                    case HEADING -> refList.addItem(node.label, () -> {
                     });
-                } else if (node.snippet != null && node.children.isEmpty()) {
-                    refList.addItem(indent + node.label, () -> {
+                    case INFO -> refList.addItem(indent + "  " + node.info, () -> {
+                    });
+                    case COMMAND -> refList.addItem(indent + node.label, () -> {
                         insertAtCaret(editor, node.snippet);
                         refreshStatus.run();
                     });
-                } else {
-                    String prefix = node.expanded ? "[-]" : "[+]";
-                    refList.addItem(indent + prefix + " " + node.label, () -> {
-                        node.setExpanded(!node.expanded);
-                        this.run();
-                        refList.takeFocus();
-                    });
-                    if (node.expanded) {
-                        for (letrain.command.GrammarReference.Node child : node.children) {
-                            build(child, indent + "  ");
+                    case GROUP -> {
+                        String prefix = node.expanded ? "[-]" : "[+]";
+                        refList.addItem(indent + prefix + " " + node.label, () -> {
+                            node.setExpanded(!node.expanded);
+                            this.run();
+                            refList.takeFocus();
+                        });
+                        if (node.expanded) {
+                            for (letrain.command.GrammarReference.Node child : node.children) {
+                                build(child, indent + "  ");
+                            }
                         }
                     }
                 }

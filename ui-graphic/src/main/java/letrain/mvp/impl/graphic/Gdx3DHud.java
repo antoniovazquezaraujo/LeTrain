@@ -3267,42 +3267,53 @@ public class Gdx3DHud {
                                         : letrain.command.GrammarReference.Group.BUILD;
                 class TreeBuilder {
                     Tree.Node build(letrain.command.GrammarReference.Node refNode, String indent) {
-                        if (refNode.isHeading) {
-                            Label l = new Label(refNode.label, skin, "monospace");
-                            l.setColor(Color.ORANGE);
-                            return new Tree.Node(l) {};
-                        } else if (refNode.snippet != null && refNode.children.isEmpty()) {
-                            Label l = new Label("   " + refNode.label, skin, "monospace");
-                            Tree.Node n = new Tree.Node(l) {};
-                            n.setValue(refNode.snippet);
-                            l.addListener(new ClickListener() {
-                                @Override
-                                public void clicked(InputEvent event, float x, float y) {
-                                    insertSnippet.accept(refNode.snippet);
-                                    event.stop();
-                                }
-                            });
-                            return n;
-                        } else {
-                            String prefix = refNode.expanded ? "[-]" : "[+]";
-                            Label l = new Label(indent + prefix + " " + refNode.label, skin,
-                                    "monospace");
-                            Tree.Node n = new Tree.Node(l) {};
-                            l.addListener(new ClickListener() {
-                                @Override
-                                public void clicked(InputEvent event, float x, float y) {
-                                    n.setExpanded(!n.isExpanded());
-                                    l.setText(n.isExpanded() ? indent + "[-] " + refNode.label
-                                            : indent + "[+] " + refNode.label);
-                                    event.stop();
-                                }
-                            });
-                            for (letrain.command.GrammarReference.Node child : refNode.children) {
-                                n.add(build(child, indent + "  "));
+                        switch (refNode.kind) {
+                            case HEADING -> {
+                                Label l = new Label(refNode.label, skin, "monospace");
+                                l.setColor(Color.ORANGE);
+                                return new Tree.Node(l) {};
                             }
-                            n.setExpanded(refNode.expanded);
-                            return n;
+                            case INFO -> {
+                                Label l =
+                                        new Label(indent + "  " + refNode.info, skin, "monospace");
+                                l.setColor(Color.GRAY);
+                                return new Tree.Node(l) {};
+                            }
+                            case COMMAND -> {
+                                Label l = new Label("   " + refNode.label, skin, "monospace");
+                                Tree.Node n = new Tree.Node(l) {};
+                                n.setValue(refNode.snippet);
+                                l.addListener(new ClickListener() {
+                                    @Override
+                                    public void clicked(InputEvent event, float x, float y) {
+                                        insertSnippet.accept(refNode.snippet);
+                                        event.stop();
+                                    }
+                                });
+                                return n;
+                            }
+                            case GROUP -> {
+                                String prefix = refNode.expanded ? "[-]" : "[+]";
+                                Label l = new Label(indent + prefix + " " + refNode.label, skin,
+                                        "monospace");
+                                Tree.Node n = new Tree.Node(l) {};
+                                l.addListener(new ClickListener() {
+                                    @Override
+                                    public void clicked(InputEvent event, float x, float y) {
+                                        n.setExpanded(!n.isExpanded());
+                                        l.setText(n.isExpanded() ? indent + "[-] " + refNode.label
+                                                : indent + "[+] " + refNode.label);
+                                        event.stop();
+                                    }
+                                });
+                                for (letrain.command.GrammarReference.Node child : refNode.children) {
+                                    n.add(build(child, indent + "  "));
+                                }
+                                n.setExpanded(refNode.expanded);
+                                return n;
+                            }
                         }
+                        return new Tree.Node(new Label(refNode.label, skin, "monospace")) {};
                     }
                 }
                 TreeBuilder tb = new TreeBuilder();
