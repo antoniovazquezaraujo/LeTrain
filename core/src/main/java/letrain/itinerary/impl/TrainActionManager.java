@@ -408,6 +408,31 @@ public class TrainActionManager implements letrain.itinerary.TrainActionManager 
                 return false;
             }
             case WAIT:
+                // Issue #832: `wait N` means stop and wait. A moving train brakes first (same
+                // pattern as LOAD/UNLOAD) and the wait is re-executed once fully stopped; then the
+                // timer starts. `wait 0` is a no-op and keeps the train rolling; a negative count
+                // is rejected with a visible notice and does not wait.
+                if (command.seconds() <= 0) {
+                    if (command.seconds() < 0) {
+                        String notice = "Train " + train.getId() + ": wait " + command.seconds()
+                                + " is invalid (negative); ignoring the wait";
+                        log.warn(notice);
+                        if (train.getModel() != null) {
+                            train.getModel().reportUserMessage("Waypoint action", notice);
+                        }
+                    }
+                    return false;
+                }
+                if (train.getDirectorLinker() != null && train.getDirectorLinker().getSpeed() > 0) {
+                    if (savedTargetSpeed <= 0) {
+                        savedTargetSpeed = train.getDirectorLinker().getTargetSpeed() > 0
+                                ? train.getDirectorLinker().getTargetSpeed()
+                                : train.getDirectorLinker().getSpeed();
+                    }
+                    this.pendingCommandToResume = command;
+                    train.getMovementManager().initiateBraking();
+                    return true;
+                }
                 this.waitTicks = command.seconds() * WaypointCommand.TICKS_PER_SECOND;
                 scheduleResume(this.waitTicks);
                 return true;

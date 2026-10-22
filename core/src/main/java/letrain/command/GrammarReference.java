@@ -307,7 +307,7 @@ public class GrammarReference {
         parent.add(Node.command("reverse", waypoint + ", reverse", Scope.BODY_ONLY));
         parent.add(Node.command("stop", waypoint + ", stop", Scope.BODY_ONLY));
         parent.add(Node.command("park", waypoint + ", park", Scope.BODY_ONLY));
-        parent.add(Node.command("wait n", waypoint + ", wait <count>", Scope.BODY_ONLY));
+        parent.add(Node.command("wait n (stops)", waypoint + ", wait <count>", Scope.BODY_ONLY));
         parent.add(Node.command("speed n", waypoint + ", speed <speed>", Scope.BODY_ONLY));
         parent.add(Node.command("stop at sensor",
                 waypoint + ", stop at sensor <sensor> speed <speed>", Scope.BODY_ONLY));
