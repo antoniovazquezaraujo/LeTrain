@@ -64,7 +64,9 @@ planificación.
 - **Bypass** (`TrainSafetyManager.tryAlternativeSegment` → `AutoPilotImpl.replaceRouteSegment`):
   al reemplazar un segmento por la variante paralela, `ensureForkRoute` elige la aguja de salida
   correcta; el análisis histórico de `siding_bypass_analysis.md` se conserva con una nota de
-  actualización.
+  actualización. **Limitación actual:** `tryAlternativeSegment` prueba **el primer** segmento
+  paralelo que encuentra (rompe el bucle al primero) y, si ese también está ocupado, **no prueba el
+  siguiente**; no promete “cualquier paralelo”.
 - **Acciones de fork** (`fork N set curved|flip`) siguen usando el mismo `ForkRouter`; el criterio
   físico no las altera.
 - **Tests de regresión**:

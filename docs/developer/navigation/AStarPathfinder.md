@@ -42,7 +42,8 @@ es **direction-aware**:
 - `RailNodeImpl.setRoute` / `isRouteActive` comparan la **dirección física** de la rama
   (`getDirForPort`) con `originalRoute`/`alternativeRoute` vivos, no con A/B a ciegas. El mapeo A/B
   sigue siendo físico y fijo; solo cambia cómo se interpreta al rutar.
-- El fallback al primer nodo compartido queda solo para llamadas sin tren/dirección.
+- El fallback al primer nodo compartido queda solo para llamadas sin tren/dirección o cuando `to`
+  no es adyacente a la salida.
 
 Análisis completo y alternativas descartadas: [[../adr/ADR-033-Fork-Orientation-Parallel-Loops|ADR-033]].
 Regresión: `ForkLoopOrientationTest` (bucle triple + itinerario `1→2→4→1→2→5`) y

@@ -30,7 +30,7 @@ The `AutoPilot` interface (`core/src/main/java/letrain/itinerary/AutoPilot.java`
 *   `activate()`: Transitions from `IDLE` to `FOLLOWING` if a valid itinerary is assigned.
 *   `deactivate()`: Stops the autopilot, returning the train to manual mode.
 *   `onSegmentEntered(Segment)`: Triggered reactively when the train enters a new logical segment.
-*   `ensureForkRoute(Segment from, Segment to)`: Orients the fork at the train's **exit port** of `from` (direction-aware) so the switch it is approaching selects the branch that leads to `to`; falls back to the first shared node only when there is no train/direction. See [[../adr/ADR-033-Fork-Orientation-Parallel-Loops|ADR-033]].
+*   `ensureForkRoute(Segment from, Segment to)`: Orients the fork at the train's **exit port** of `from` (direction-aware) so the switch it is approaching selects the branch that leads to `to`; falls back to the first shared node only when there is no train/direction or `to` is not adjacent to the exit. See [[../adr/ADR-033-Fork-Orientation-Parallel-Loops|ADR-033]].
 *   `replaceRouteSegment(Segment old, Segment new)`: Modifies the planned route dynamically (e.g., during live rerouting or bypasses).
 
 ### Operational Modes (`AutoPilot.Mode`)

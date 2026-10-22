@@ -8,8 +8,12 @@ Este informe analiza en detalle el funcionamiento del sistema de cantones y desv
 > (`getTrainExitPort(from)`) y elige la aguja de salida (no el primer nodo compartido); en bucles
 > de segmentos paralelos con dos nodos compartidos orienta la aguja que el tren tiene delante. La
 > selección normal/alternativa se hace por dirección física de la rama (`getDirForPort` frente a
-> `originalRoute`/`alternativeRoute` vivos), no por A/B. El resto del documento (deadlock de
-> `onBlockReleased`, bucle de selección de locomotoras) sigue siendo el análisis original.
+> `originalRoute`/`alternativeRoute` vivos), no por A/B. Precisión: `replaceRouteSegment` sustituye
+> el segmento en la ruta y llama a `ensureForkRoute` para los vecinos (el direction-aware).
+> **Limitación actual:** `tryAlternativeSegment` prueba **el primer** segmento paralelo que encuentra
+> (rompe el bucle al primero) y, si ese también está ocupado, **no prueba el siguiente**; no promete
+> “cualquier paralelo”. El resto del documento (deadlock de `onBlockReleased`, bucle de selección de
+> locomotoras) sigue siendo el análisis original.
 
 ---
 
