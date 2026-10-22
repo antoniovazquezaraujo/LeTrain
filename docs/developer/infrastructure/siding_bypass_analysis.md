@@ -2,6 +2,19 @@
 
 Este informe analiza en detalle el funcionamiento del sistema de cantones y desvíos lógicos en **LeTrain**, explicando por qué los trenes autónomos se detienen ante un apartadero bloqueado y no reanudan la marcha cuando una de las vías del apartadero queda libre.
 
+> **Actualización 2026-10-22 (#830):** el análisis siguiente se conserva como histórico. Desde
+> [[../adr/ADR-033-Fork-Orientation-Parallel-Loops|ADR-033]], `replaceRouteSegment` +
+> `ensureForkRoute` son **direction-aware**: `ensureForkRoute` usa el *exit port* real del tren
+> (`getTrainExitPort(from)`) y elige la aguja de salida (no el primer nodo compartido); en bucles
+> de segmentos paralelos con dos nodos compartidos orienta la aguja que el tren tiene delante. La
+> selección normal/alternativa se hace por dirección física de la rama (`getDirForPort` frente a
+> `originalRoute`/`alternativeRoute` vivos), no por A/B. Precisión: `replaceRouteSegment` sustituye
+> el segmento en la ruta y llama a `ensureForkRoute` para los vecinos (el direction-aware).
+> **Limitación actual:** `tryAlternativeSegment` prueba **el primer** segmento paralelo que encuentra
+> (rompe el bucle al primero) y, si ese también está ocupado, **no prueba el siguiente**; no promete
+> “cualquier paralelo”. El resto del documento (deadlock de `onBlockReleased`, bucle de selección de
+> locomotoras) sigue siendo el análisis original.
+
 ---
 
 ## 1. Arquitectura del Sistema de Cantones y Bloqueos
