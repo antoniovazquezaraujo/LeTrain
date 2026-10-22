@@ -180,14 +180,19 @@ palabras no pueden divergir entre clientes:
   recurso `/letrain/cover/cover_u44.data`) y el pintado Lanterna + la traducción de profundidad, en
   `ui-terminal` (`letrain.mvp.impl.terminal.CoverArtPainter`), así que `core` sigue sin conocer
   Lanterna. **No hay texto de "pulsa una tecla" en 2D** (decisión del dueño): cualquier tecla
-  continúa igual que antes.
+  continúa igual que antes. Desde #845 se pinta la **versión del build** (`BuildInfo.versionTag()`)
+  centrada en la fila siguiente al arte braille; si el arte queda recortado por una terminal corta,
+  se pinta en la última fila para que siempre sea visible.
 - **Portada 3D**: `Gdx3DHud.showCover()` pinta la captura del tren de letras
   (`letrain/cover/cover_3d.png`, issue #775) a pantalla completa en modo *cover* —fondo negro
   debajo, escala `max(anchoP/imgAncho, altoP/imgAlto)`, centrada, el sobrante del eje mayor se sale
   de pantalla, sin deformar y sin barras (`coverScale`/`coverOffset`, estáticos puros testeables sin
-  GL)—. Tampoco muestra texto (decisión del dueño: la imagen ya rotula LeTrain), y al quedar sin
-  uso en ningún cliente se eliminaron las constantes `CoverText` (`TITLE`/`PROMPT`). Si falta el
-  recurso, la portada degrada al fondo negro; la textura se libera en `dispose()`.
+  GL)—. Sobre la captura se pintan el tagline compartido (`CoverArt.TAGLINE`) y, debajo, la
+  **versión del build** (`BuildInfo.versionTag()`, #845), ambas escaladas con la ventana; si la
+  ventana es muy baja, el tagline se sube lo justo para que la versión quepa sin solaparse. Al
+  quedar sin uso en ningún cliente se eliminaron las constantes `CoverText`
+  (`TITLE`/`PROMPT`). Si falta el recurso, la portada degrada al fondo negro; la textura se libera
+  en `dispose()`.
 - **Recorte centrado**: `CoverArtPainter.paint` sitúa el arte con `centredOffset` (división entera
   hacia abajo, luego el offset puede ser negativo) y **salta** las celdas que caen fuera de la
   pantalla, sin pasar coordenadas negativas a Lanterna (aplica a ambos estilos).

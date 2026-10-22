@@ -156,6 +156,37 @@ class Gdx3DHudCoverImageTest {
         assertTrue(1 * scale >= 1080f - EPSILON, "the height must not leave a bar");
     }
 
+    @Test
+    @DisplayName("the version sits below the tagline on a tall window")
+    void should_PlaceVersionBelowTagline_When_WindowIsTall() {
+        float taglineY = 100f;
+        float versionY = Gdx3DHud.versionLabelY(taglineY, 20f, 1080);
+
+        assertTrue(versionY < taglineY, "the version must be below the tagline");
+        assertEquals(taglineY - 20f - Gdx3DHud.coverVersionGap(1080), versionY, EPSILON);
+    }
+
+    @Test
+    @DisplayName("the version is clamped to the bottom margin on a short window")
+    void should_ClampVersionToBottomMargin_When_WindowIsShort() {
+        float versionY = Gdx3DHud.versionLabelY(20f, 40f, 500);
+
+        assertTrue(versionY >= 10f - EPSILON, "never below the bottom margin");
+        assertEquals(10f, versionY, EPSILON);
+    }
+
+    @Test
+    @DisplayName("version placement never yields a negative or NaN Y")
+    void should_KeepVersionOnScreen_When_SizesAreDegenerate() {
+        float[] values = {Gdx3DHud.versionLabelY(0f, 10f, 0),
+                Gdx3DHud.versionLabelY(-10f, 10f, 200), Gdx3DHud.versionLabelY(12f, 100f, 1080)};
+
+        for (float y : values) {
+            assertTrue(Float.isFinite(y), "Y must be finite");
+            assertTrue(y >= 0f, "Y must stay on screen: " + y);
+        }
+    }
+
     /**
      * Regression guard for #775: the 3D cover paints the letter-train capture and shows no text, so
      * the HUD must not reach for the 2D {@code CoverText.TITLE}/{@code PROMPT} anymore. Checked on
