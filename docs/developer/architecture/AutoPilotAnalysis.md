@@ -35,15 +35,15 @@ The `AutoPilot` interface (`core/src/main/java/letrain/itinerary/AutoPilot.java`
 
 ### Operational Modes (`AutoPilot.Mode`)
 
-The autopilot transitions through five distinct states:
+The autopilot uses three live states. (`AutoPilot.Mode` also declares `REVERSING` and `ERROR`, but
+`AutoPilotImpl` never assigns them today: they are reserved and are not part of the live state
+machine.)
 
 | Mode | Description |
 | :--- | :--- |
 | **`IDLE`** | Autopilot is inactive or has finished its itinerary. Control is manual. |
 | **`FOLLOWING`** | The train is moving towards the current waypoint following a calculated list of `Segment`s. |
 | **`WAITING`** | The train is held at a waypoint until its scheduled `departure` (retention). `wait N` does **not** use this mode: it is a `TrainActionManager` action (see §5.C and [[../adr/ADR-032-Wait-Stops-The-Train|ADR-032]]). |
-| **`REVERSING`** | The train is executing a `REVERSE` command, changing direction and updating safety blocks. |
-| **`ERROR`** | An unrecoverable routing error has occurred (e.g., path not found to next waypoint). |
 
 ---
 
@@ -55,13 +55,9 @@ The following state machine details how the autopilot transitions between differ
 stateDiagram-v2
     [*] --> IDLE
     IDLE --> FOLLOWING : activate
-    FOLLOWING --> IDLE : deactivate or Itinerary completed
+    FOLLOWING --> IDLE : deactivate or no current waypoint
     FOLLOWING --> WAITING : early at a waypoint with departure
-    FOLLOWING --> REVERSING : Waypoint reached with REVERSE
-    FOLLOWING --> ERROR : Path calculation failed
     WAITING --> FOLLOWING : departure due
-    REVERSING --> FOLLOWING : Reverse finished
-    ERROR --> IDLE : deactivate
 ```
 
 ---
@@ -73,7 +69,7 @@ When activated, or when the train enters a segment not present in the current ca
 1.  **Current Segment**: Derived from the train's head physical track position.
 2.  **Target Segment**: Derived from the coordinates of the target station or sensor specified in the current waypoint.
 3.  **Path Search**: Runs the A* algorithm (`AStarPathfinder`) seeking a sequence of `Segment`s. The search respects the waypoint's preferred `entryDir` constraint.
-4.  **Failure**: If no path is found, the system logs a warning, and the autopilot stops or triggers a retry cooldown.
+4.  **Failure**: If no path is found, `warnRouteUnavailable(...)` reports it (visible through the autopilot's message channel) and the route stays empty; the action manager holds the train instead of resuming the cruise towards a dead end (issue #649). There is no retry cooldown.
 
 ### B. Reactive Fork Switch Alignment (`ensureForkRoute`)
 
@@ -137,7 +133,7 @@ The safety manager operates reactively during movement:
 
 ### C. Action Engine (`TrainActionManager`)
 The `TrainActionManager` (`core/src/main/java/letrain/itinerary/impl/TrainActionManager.java`) handles waypoint arrival and command execution:
-1.  **Arrival Check**: In every tick, it checks if the train is at the target waypoint.
+1.  **Arrival Check (event-driven, not polled)**: `Train.notifyEnterSensor()` calls `checkAndNotifyWaypointReached()`, which fires `notifyWaypointReached(wp)` when the train is on the target (`isCurrentlyOn`); on activation, `checkInitialWaypoint()` covers a train already on its first station.
 2.  **Commands**: Upon arrival, it pulls the commands defined in the waypoint:
     *   `LOAD`/`UNLOAD`: Triggers station cargo transfer.
     *   `WAIT`: `wait N` **stops the train and waits**. If the train is moving, it brakes first (deferred like `load`/`unload`), then waits `N` simulation seconds (`N × 20` ticks) and restores the saved speed/plan cruise; `wait 0` is a no-op and a negative count is rejected with a visible notice. It is **not** the autopilot `WAITING` mode (that is the `departure` retention). See [[../adr/ADR-032-Wait-Stops-The-Train|ADR-032]].
