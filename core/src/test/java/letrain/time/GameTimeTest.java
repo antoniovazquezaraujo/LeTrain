@@ -47,4 +47,11 @@ class GameTimeTest {
         assertEquals(new GameTime(300, 6, 30), GameTime.ofMinuteOfDay(300, 390));
         assertEquals(new GameTime(1, 0, 0), GameTime.ofMinuteOfDay(1, 0));
     }
+
+    @Test
+    @DisplayName("toString uses the English-neutral user-facing format (Day D HH:MM)")
+    void should_FormatToStringInNeutralEnglish() {
+        assertEquals("Day 1 08:00", new GameTime(1, 8, 0).toString());
+        assertEquals("Day 2 09:05", new GameTime(2, 9, 5).toString());
+    }
 }
