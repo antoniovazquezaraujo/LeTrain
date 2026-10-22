@@ -30,7 +30,7 @@ The `AutoPilot` interface (`core/src/main/java/letrain/itinerary/AutoPilot.java`
 *   `activate()`: Transitions from `IDLE` to `FOLLOWING` if a valid itinerary is assigned.
 *   `deactivate()`: Stops the autopilot, returning the train to manual mode.
 *   `onSegmentEntered(Segment)`: Triggered reactively when the train enters a new logical segment.
-*   `ensureForkRoute(Segment from, Segment to)`: Examines the shared node between two segments and configures the track switch.
+*   `ensureForkRoute(Segment from, Segment to)`: Orients the fork at the train's **exit port** of `from` (direction-aware) so the switch it is approaching selects the branch that leads to `to`; falls back to the first shared node only when there is no train/direction. See [[../adr/ADR-033-Fork-Orientation-Parallel-Loops|ADR-033]].
 *   `replaceRouteSegment(Segment old, Segment new)`: Modifies the planned route dynamically (e.g., during live rerouting or bypasses).
 
 ### Operational Modes (`AutoPilot.Mode`)
@@ -41,7 +41,7 @@ The autopilot transitions through five distinct states:
 | :--- | :--- |
 | **`IDLE`** | Autopilot is inactive or has finished its itinerary. Control is manual. |
 | **`FOLLOWING`** | The train is moving towards the current waypoint following a calculated list of `Segment`s. |
-| **`WAITING`** | The train is temporarily stopped at a waypoint executing a `WAIT` command. |
+| **`WAITING`** | The train is held at a waypoint until its scheduled `departure` (retention). `wait N` does **not** use this mode: it is a `TrainActionManager` action (see §5.C and [[../adr/ADR-032-Wait-Stops-The-Train|ADR-032]]). |
 | **`REVERSING`** | The train is executing a `REVERSE` command, changing direction and updating safety blocks. |
 | **`ERROR`** | An unrecoverable routing error has occurred (e.g., path not found to next waypoint). |
 
@@ -56,10 +56,10 @@ stateDiagram-v2
     [*] --> IDLE
     IDLE --> FOLLOWING : activate
     FOLLOWING --> IDLE : deactivate or Itinerary completed
-    FOLLOWING --> WAITING : Waypoint reached with WAIT
+    FOLLOWING --> WAITING : early at a waypoint with departure
     FOLLOWING --> REVERSING : Waypoint reached with REVERSE
     FOLLOWING --> ERROR : Path calculation failed
-    WAITING --> FOLLOWING : waitTicks completed
+    WAITING --> FOLLOWING : departure due
     REVERSING --> FOLLOWING : Reverse finished
     ERROR --> IDLE : deactivate
 ```
@@ -76,23 +76,48 @@ When activated, or when the train enters a segment not present in the current ca
 4.  **Failure**: If no path is found, the system logs a warning, and the autopilot stops or triggers a retry cooldown.
 
 ### B. Reactive Fork Switch Alignment (`ensureForkRoute`)
-The autopilot must set the track switches ahead of the train before it enters a fork. This is executed reactively inside the `onSegmentEntered(Segment newSegment)` event handler:
+
+The autopilot must set the switch **the train is approaching**, not just any node shared by the
+two segments. This is executed reactively inside the `onSegmentEntered(Segment newSegment)` event
+handler:
 
 ```mermaid
 sequenceDiagram
     participant Train as "Train Movement Engine"
     participant AP as "AutoPilotImpl"
     participant Node as "RailNode (Fork Track)"
-    
+
     Train->>AP: onSegmentEntered(newSegment)
     Note over AP: Find next segment in planned route
-    AP->>AP: Get shared RailNode between current & next segments
-    alt Node is a Fork Track
+    AP->>AP: getTrainExitPort(from) — exit port along the train's sense
+    alt Exit node is shared with the target and is a fork
+        AP->>Node: setRoute(exitPort, toPort)
+        Note over Node: Branch by physical direction<br/>(getDirForPort vs original/alternative)
+    else No train direction or target not adjacent to the exit
+        AP->>AP: Fallback: first shared node
         AP->>Node: setRoute(entryPort, exitPort)
-        Node->>Node: Toggle switch state
-        Note over Node: Switch aligned reactively
     end
 ```
+
+Why direction matters:
+
+*   **Parallel segments share both ends.** With S0/S1/S2 between the same two forks, the *first*
+    shared node may be the one the train already left behind. Orienting it is a no-op for the
+    transition and the train keeps the old branch. `getTrainExitPort(from)` returns the port the
+    train will actually take, so the fork ahead is the one configured.
+*   **The exit fork is oriented on segment entry**, which also covers loops where the train enters
+    one end of a middle segment (e.g. S1) and leaves through the other.
+*   **Normal/alternative by physical branch**, not by port name: `RailNodeImpl.setRoute` /
+    `isRouteActive` / `getActiveExit` compare `getDirForPort(exit.getType())` with the fork's
+    **live** `originalRoute`/`alternativeRoute`. Port A/B remain a fixed physical mapping built by
+    `initializePorts`; they are not re-labelled. A crossed A/B mapping therefore still selects the
+    branch that physically leads to the target.
+*   **Fallback:** the historical first-shared-node selection is kept only for calls without a
+    usable train direction (synthetic/manual) or when `to` is not adjacent to the exit end.
+
+Regression tests: `RailNodeImplRouteTest` (crossed A/B) and `ForkLoopOrientationTest` (triple
+parallel loop, including the `1→2→4→1→2→5` itinerary). Full analysis:
+[[../adr/ADR-033-Fork-Orientation-Parallel-Loops|ADR-033]].
 
 ---
 
@@ -115,7 +140,7 @@ The `TrainActionManager` (`core/src/main/java/letrain/itinerary/impl/TrainAction
 1.  **Arrival Check**: In every tick, it checks if the train is at the target waypoint.
 2.  **Commands**: Upon arrival, it pulls the commands defined in the waypoint:
     *   `LOAD`/`UNLOAD`: Triggers station cargo transfer.
-    *   `WAIT`: Puts the autopilot into `WAITING` mode for $N$ seconds.
+    *   `WAIT`: `wait N` **stops the train and waits**. If the train is moving, it brakes first (deferred like `load`/`unload`), then waits `N` simulation seconds (`N × 20` ticks) and restores the saved speed/plan cruise; `wait 0` is a no-op and a negative count is rejected with a visible notice. It is **not** the autopilot `WAITING` mode (that is the `departure` retention). See [[../adr/ADR-032-Wait-Stops-The-Train|ADR-032]].
     *   `REVERSE`: Initiates direction reversal, which resets safety manager locks.
 3.  **Advance**: Once all commands are executed, it advances the waypoint index, clears the old route, and transitions the autopilot back to `FOLLOWING`.
 
@@ -129,7 +154,7 @@ To support game saving and loading, the autopilot state is serialized using a Ja
     *   `itinerary`: The complete itinerary definition.
     *   `mode`: The current operational mode name.
     *   `currentIndex`: The index of the active waypoint.
-    *   `waitTicks`: Remaining wait ticks if in `WAITING` mode.
+    *   `waitTicks`: legacy field kept for savegame compatibility; the active schedule hold is re-armed from the waypoint's `departure` on load.
     *   `pendingCommands`: List of commands that are queued for execution at the active waypoint.
 *   **Deserialization**: Jackson rebuilds the `AutoPilotImpl` using a specialized constructor, which is later reconnected to the live `Train` and `TrainActionManager` references via `reinitialize(Train, TrainActionManager)`.
 

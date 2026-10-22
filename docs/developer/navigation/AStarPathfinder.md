@@ -30,6 +30,24 @@ El sistema permite que los trenes calculen y recorran de forma autónoma la ruta
   `O(V²)` anterior. Los empates de `f` se resuelven por `seq` de inserción (FIFO), lo que hace
   determinista la ruta devuelta ante costes iguales.
 
+## Orientación de agujas en bucles de segmentos paralelos (#830)
+
+En un bucle con varios segmentos paralelos entre las **mismas dos agujas** (p. ej. S0 principal,
+S1 con la estación 4, S2 con la 5), ambos extremos son nodos compartidos. La orientación de agujas
+es **direction-aware**:
+
+- `ensureForkRoute(from, to)` resuelve el **puerto de salida** real de `from` con
+  `getTrainExitPort(from)` y orienta la aguja de **ese nodo** (la que el tren tiene delante), no el
+  primer nodo compartido (que puede ser la aguja de entrada, ya dejada atrás).
+- `RailNodeImpl.setRoute` / `isRouteActive` comparan la **dirección física** de la rama
+  (`getDirForPort`) con `originalRoute`/`alternativeRoute` vivos, no con A/B a ciegas. El mapeo A/B
+  sigue siendo físico y fijo; solo cambia cómo se interpreta al rutar.
+- El fallback al primer nodo compartido queda solo para llamadas sin tren/dirección.
+
+Análisis completo y alternativas descartadas: [[../adr/ADR-033-Fork-Orientation-Parallel-Loops|ADR-033]].
+Regresión: `ForkLoopOrientationTest` (bucle triple + itinerario `1→2→4→1→2→5`) y
+`RailNodeImplRouteTest` (A/B cruzados).
+
 ## Integración con el Lenguaje DSL (ANTLR4)
 La automatización permite definir y asignar itinerarios mediante scripts o consola (ver [[../systems/CommandPattern|Gestión de Automatización]] y la documentación de usuario `grammar.md`):
 ```letrain
