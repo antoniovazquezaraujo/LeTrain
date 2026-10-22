@@ -231,7 +231,7 @@ You can type these commands directly into the CLI to manage the game state, curs
 - `info;` - Show an overview of the whole world. `info [entityType];` lists that type; `info [entityType] [ID|name];` details a single entity. `info [ID];` without a type warns that the number is ignored (name the type: `info train 5;`).
 
 **Game Clock:**
-- `time;` - Report the current game day and time (`Día 1 08:00`). It is data output: it opens the message panel and is **not** recorded in the journal.
+- `time;` - Report the current game day and time (`Day 1 08:00`). It is data output: it opens the message panel and is **not** recorded in the journal.
 - `time set [HH];` - Set the hour on the current day; minutes become `00` (e.g. `time set 9;` = 09:00).
 - `time set [HH:MM];` - Set hour and minute in 24 h format; single-digit hours (and minutes) are accepted (`time set 9:05;` and `time set 9:5;` both mean 09:05).
 - Valid range is `00:00`–`23:59`. Out-of-range values (`time set 25;`, `time set 25:99;`) warn `Invalid time … (expected 00:00..23:59); the clock is unchanged` and **leave the clock untouched**. A valid change is silent: the new time is already visible in the HUD clock.
