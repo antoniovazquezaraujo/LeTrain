@@ -22,7 +22,7 @@ This beta is the quality-and-tooling step after `beta.6`: four internal quality 
 ## Known issues
 
 - **Save/load during a manoeuvre**: saving while a deferred `wait`/`load` is running may lose the pending action, and the train may stay stopped after loading. Planned for beta.8; avoid saving during a manoeuvre for now (#842).
-- #711 mixed-language user strings (if not fixed before the tag).
+- #239 wagons may clip into the track in the 3D view (deferred).
 - #250 train-sound synchronization; #795 2D fork visibility (if not fixed before the tag).
 - #712 savegame serialization audit is planned before 1.0, not a blocker for this beta.
 
