@@ -21,7 +21,7 @@ class GrammarReferenceTest {
 
     private static void collect(List<GrammarReference.Node> nodes, List<String> out) {
         for (GrammarReference.Node node : nodes) {
-            if (node.snippet != null) {
+            if (node.kind == GrammarReference.Kind.COMMAND && node.snippet != null) {
                 out.add(node.snippet);
             }
             collect(node.children, out);
@@ -49,7 +49,7 @@ class GrammarReferenceTest {
         List<String> snippets = snippets(GrammarReference.Group.PROGRAM);
 
         assertTrue(anyContains(snippets, "create itinerary"));
-        assertTrue(anyContains(snippets, "sensor # on train enter"));
+        assertTrue(anyContains(snippets, "sensor <sensor> on train enter"));
         assertFalse(anyContains(snippets, "threshold.WATER"));
         assertFalse(anyContains(snippets, "new st;"));
     }
@@ -113,12 +113,12 @@ class GrammarReferenceTest {
         String all = GrammarReference.helpText();
         assertTrue(all.contains("CONSOLE"), all);
         assertTrue(all.contains("ON BUILD"), all);
-        assertTrue(all.contains("ITINERARY DSL"), all);
+        assertTrue(all.contains("PROGRAM"), all);
         assertTrue(all.contains("CONFIGURATION"), all);
 
         String console = GrammarReference.helpText("console");
         assertTrue(console.contains("journal;"), console);
-        assertFalse(console.contains("ITINERARY DSL"), console);
+        assertFalse(console.contains("PROGRAM"), console);
 
         assertTrue(GrammarReference.helpText("ls").contains("ls;"));
         assertTrue(GrammarReference.helpText("configuration").contains("terrain.waterPercent"));
@@ -131,6 +131,6 @@ class GrammarReferenceTest {
         String program = GrammarReference.helpText("program");
 
         assertFalse(program.contains("{\n"), program);
-        assertTrue(program.contains("sensor # on train enter { }"), program);
+        assertTrue(program.contains("sensor <sensor> on train enter { }"), program);
     }
 }
