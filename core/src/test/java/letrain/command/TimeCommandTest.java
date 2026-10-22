@@ -27,7 +27,7 @@ class TimeCommandTest {
 
         String text = run(model, "time;");
 
-        assertTrue(text.contains("Día 1"), text);
+        assertTrue(text.contains("Day 1"), text);
         assertTrue(text.contains("08:00"), text);
     }
 

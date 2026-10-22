@@ -230,7 +230,7 @@ Puedes teclear estos comandos directamente en el CLI para gestionar el estado de
 - `info;` - Muestra una vista general de todo el mundo. `info [tipoEntidad];` lista ese tipo; `info [tipoEntidad] [ID|nombre];` detalla una entidad concreta. `info [ID];` sin tipo avisa de que el número se ignora (indica el tipo: `info train 5;`).
 
 **Reloj de Juego:**
-- `time;` - Consulta el día y la hora actuales del juego (`Día 1 08:00`). Es salida de datos: abre el panel de mensajes y **no** se graba en el diario.
+- `time;` - Consulta el día y la hora actuales del juego (`Day 1 08:00`; la salida de consola es en inglés neutro, no hay i18n todavía). Es salida de datos: abre el panel de mensajes y **no** se graba en el diario.
 - `time set [HH];` - Fija la hora del día actual; los minutos pasan a `00` (p. ej. `time set 9;` = 09:00).
 - `time set [HH:MM];` - Fija hora y minuto en formato 24 h; se aceptan horas (y minutos) de un dígito (`time set 9:05;` y `time set 9:5;` equivalen a 09:05).
 - Rango válido `00:00`–`23:59`. Un valor fuera de rango (`time set 25;`, `time set 25:99;`) avisa `Invalid time … (expected 00:00..23:59); the clock is unchanged` y **no mueve el reloj**. Un cambio correcto es silencioso: la nueva hora ya se ve en el reloj del HUD.
