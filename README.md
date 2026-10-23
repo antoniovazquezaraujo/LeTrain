@@ -156,6 +156,8 @@ LeTrain reads `letrain.cfg`, which ships next to the launcher. You can edit it b
 
 You can also change most things from the in-game **Settings** dialog (File → Settings). Some changes apply immediately, others ask you to reapply them, and a few need a new game; the dialog tells you which is which. If you export a scenario, its `configuration { ... }` block carries the settings with it and wins over the local `letrain.cfg`, so the map plays with the same rules for everyone.
 
+![LeTrain settings](images/settings.png)
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- USAGE EXAMPLES -->
@@ -171,6 +173,8 @@ You can adjust the base prices and rewards in `letrain.cfg`, or put your own val
 ### Ground, Water and Mountains
 This is the general appearance of LeTrain. On the map, randomly generated for each game, you can see water in blue, fields in green and mountains in brown. Building tracks across normal ground is fast and cheap, however, creating bridges to cross lakes or drilling tunnels to cross mountains is slow and expensive.
 
+![LeTrain map up close](images/zoom-in.png)
+
 At the bottom you can see the menu, where the different game modes are selected, which will allow us to create tracks, build wagons and locomotives, forks, speed signals, semaphores, and sensors.
 
 Each option is activated with the letter that appears in a different color, for example, to enter "drive" mode use the "d" key.
@@ -183,6 +187,11 @@ Once we have tracks, we just have to go to "trains" mode, which will allow us to
 The keys are the same in both clients; the 3D client adds mouse and camera controls for zoom and view.
 
 ![Creating tracks](images/creating-tracks.gif)
+
+#### Day and night
+The game has a clock, and the light changes with it. At night the palette turns darker and the running locomotives light the track with their headlights.
+
+![LeTrain at night](images/night.png)
 
 ### Linking and unlinking
 When creating wagons and locomotives they do not form a train, they are unlinked. To create a train you need to have the locomotive next to them and select "link" and then with the vertical keys, choose the direction to look for wagons and with the horizontal ones the number of elements to link. Then, with the space bar you will link the selected wagons. That will be a train. To unlink wagons, select "unlink", select the direction and move forward or backward to the wagon where you want to split. Then use the space bar.

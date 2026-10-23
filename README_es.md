@@ -162,6 +162,8 @@ LeTrain lee `letrain.cfg`, que se distribuye junto al lanzador. Puedes editarlo 
 
 También puedes cambiar casi todo desde el diálogo **Settings** del juego (File → Settings). Algunos cambios se aplican al momento, otros piden reaplicarlos y unos pocos necesitan una partida nueva; el propio diálogo te dice cuáles son. Si exportas un escenario, su bloque `configuration { ... }` viaja con él y gana sobre el `letrain.cfg` local, así que el mapa se juega con las mismas reglas para todos.
 
+![Ajustes de LeTrain](images/settings.png)
+
 <p align="right">(<a href="#readme-top">volver arriba</a>)</p>
 
 <!-- USAGE EXAMPLES -->
@@ -179,6 +181,8 @@ Puedes ajustar los precios y recompensas base en `letrain.cfg`, o poner tus prop
 ### Suelo, agua y montañas
 Este es el aspecto general de LeTrain. En el mapa, generado aleatoriamente en cada partida, puedes ver el agua en azul, los campos en verde y las montañas en marrón. Construir vías sobre suelo normal es rápido y barato; en cambio, crear puentes para cruzar lagos o perforar túneles para cruzar montañas es lento y caro.
 
+![Mapa de LeTrain de cerca](images/zoom-in.png)
+
 En la parte inferior puedes ver el menú, donde se seleccionan los distintos modos de juego, que te permitirán crear vías, construir vagones y locomotoras, agujas, señales de velocidad, semáforos y sensores.
 
 Cada opción se activa con la letra que aparece en otro color; por ejemplo, para entrar en el modo «drive» pulsa la tecla «d».
@@ -191,6 +195,11 @@ Cuando tengamos vías, solo hay que ir al modo «trains», que nos permitirá cr
 Las teclas son las mismas en ambos clientes; el cliente 3D añade ratón y controles de cámara para el zoom y la vista.
 
 ![Creando vías](images/creating-tracks.gif)
+
+#### Día y noche
+El juego tiene un reloj, y la luz cambia con él. De noche la paleta se vuelve más oscura y las locomotoras encendidas iluminan la vía con sus faros.
+
+![LeTrain de noche](images/night.png)
 
 ### Enlazar y desenlazar
 Al crear vagones y locomotoras no forman un tren: están desenlazados. Para crear un tren hay que tener la locomotora junto a ellos y seleccionar «link», y después con las teclas verticales, elegir la dirección en la que buscar vagones y con las horizontales seleccionar cuántos elementos deseas enlazar. Luego, con la barra espaciadora, enlazarás los vagones seleccionados. Eso será un tren. Para desenlazar vagones, selecciona «unlink», elige la dirección y avanza o retrocede hasta el vagón donde quieras cortar. Después usa la barra espaciadora.
