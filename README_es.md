@@ -195,17 +195,19 @@ Cuando tengamos vías, solo hay que ir al modo «trains», que nos permitirá cr
 Las teclas son las mismas en ambos clientes; el cliente 3D añade ratón y controles de cámara para el zoom y la vista.
 
 Este es el mismo mundo en el cliente 3D:
+
 ![LeTrain en 3D](images/3D-example.png)
 
 ![Creando vías](images/creating-tracks.gif)
 
 #### Día y noche
-El juego tiene un reloj, y la luz cambia con él. De noche la paleta se vuelve más oscura y las locomotoras encendidas iluminan la vía con sus faros.
+El juego tiene un reloj, y la luz cambia con él. De noche la paleta se vuelve más oscura y la locomotora de cabeza ilumina la vía con sus faros.
 
 ![LeTrain de noche](images/night.png)
 
 ### Enlazar y desenlazar
 Al crear vagones y locomotoras no forman un tren: están desenlazados. Para crear un tren hay que tener la locomotora junto a ellos y seleccionar «link», y después con las teclas verticales, elegir la dirección en la que buscar vagones y con las horizontales seleccionar cuántos elementos deseas enlazar. Luego, con la barra espaciadora, enlazarás los vagones seleccionados. Eso será un tren. Para desenlazar vagones, selecciona «unlink», elige la dirección y avanza o retrocede hasta el vagón donde quieras cortar. Después usa la barra espaciadora.
+
 ![Enlazar y desenlazar](images/link-and-unlink.gif)
 
 ### Mapa infinito
@@ -217,6 +219,7 @@ Si el cursor te parece demasiado lento, puedes escribir un número antes de usar
 
 ### Comportamiento programable
 Todo se puede programar, normalmente a partir de eventos —como un tren que pasa por una estación o activa un sensor— y se pueden ejecutar acciones como consecuencia: enganchar vagones, arrancar el tren, cargar mercancía, mover agujas o cambiar señales.
+
 ![Comandos](images/commands.png)
 
 ### El editor
@@ -231,7 +234,7 @@ Mientras construyes, `R` (`Shift+R`) activa el modo de grabación/edición: el m
 En el modo TRAINS, las letras mayúsculas crean locomotoras, así que `X` y `R` crean una locomotora con esa letra en lugar de activar esos modos.
 
 ### Guardar la partida
-Puedes guardar la partida en cualquier momento. Hay dos ficheros distintos, y merece la pena saber cuál necesitas.
+Puedes guardar la partida en cualquier momento, pero hay una excepción: si un tren está en medio de una carga, descarga o espera, la acción pendiente no se guarda. Deja que termine primero. Hay dos ficheros distintos, y merece la pena saber cuál necesitas.
 
 El primero es el savegame, un fichero `.json` con el estado actual del mundo: dónde están los trenes, qué llevan, cuánto dinero tienes y qué hora es. Cárgalo y continúas exactamente donde lo dejaste.
 
@@ -254,6 +257,7 @@ Además, si quieres colocar el cursor inmediatamente en la posición de un objet
 
 ### Choque de trenes
 En efecto: si dos trenes se acercan a una velocidad de 5 o más, se producirá una catástrofe. Perderás el dinero que te ha costado crearlos. El dinero es el número de la esquina inferior derecha del menú. Baja cuando los trenes se mueven y cuando se construyen vías. Sube cuando los trenes descargan mercancía en una estación consumidora.
+
 ![Choque de trenes](images/train-crash.gif)
 
  _Para más ejemplos, consulta la [Documentación](https://antoniovazquezaraujo.github.io/LeTrain/)._
@@ -289,18 +293,9 @@ Consulta las [issues abiertas](https://github.com/antoniovazquezaraujo/LeTrain/i
 <a name="contributing"></a>
 ## Contribuir
 
-Las contribuciones son lo que hace que la comunidad open source sea un lugar tan increíble para aprender, inspirarse y crear. Cualquier contribución tuya se agradece **mucho**.
+Si quieres ayudar, lee primero [CONTRIBUTING.md](CONTRIBUTING.md): explica el build, los tests y el flujo de ramas/PR.
 
-Lee [CONTRIBUTING.md](CONTRIBUTING.md) antes de abrir una pull request: explica el build, los tests y el flujo de ramas/PR.
-
-Si tienes una sugerencia para mejorarlo, haz un fork del repositorio y crea una pull request. También puedes abrir simplemente una issue con la etiqueta «enhancement».
-No te olvides de darle una estrella al proyecto. ¡Gracias!
-
-1. Haz un fork del proyecto
-2. Crea una rama para tu funcionalidad (`git checkout -b feature/AmazingFeature`)
-3. Haz commit de tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Sube la rama (`git push origin feature/AmazingFeature`)
-5. Abre una pull request
+Si tienes una idea, abre una issue. Si quieres arreglarla tú, haz un fork, crea una rama y manda una pull request. Y si simplemente te gusta el proyecto, una estrella ayuda.
 
 <p align="right">(<a href="#readme-top">volver arriba</a>)</p>
 

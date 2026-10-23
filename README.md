@@ -106,7 +106,7 @@ Antonio.
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
-LeTrain is a procedural train simulator with a classic ASCII terminal client and a modern 3D client. It consists of creating tracks and stations along a virtually infinite map, creating trains and earning money by carrying cargo (gold, coal and ruby) between producers and consumers. It will be more profitable the farther apart they are.
+LeTrain is a procedural train simulator with a classic ASCII terminal client and a modern 3D client. It consists of creating tracks and stations along a virtually infinite map, creating trains and earning money by carrying cargo (gold, coal and ruby) between producers and consumers. The farther apart they are, the more profitable the trip.
 
 **Warning**
 This is a preliminary version. There are still many things that are pending. At the moment it works but one day it will be much better than it is now.
@@ -136,7 +136,7 @@ This is a preliminary version. There are still many things that are pending. At 
 ### Installation
 If you don't want to build it, the latest release is on [GitHub](https://github.com/antoniovazquezaraujo/LeTrain/releases/latest), and there are also versions on [itch.io](https://avaraujo.itch.io/letrain-procedural-tycoon) and the [Snap Store](https://snapcraft.io/letrain).
 
-To install it
+To install it:
 * Clone it
    ```sh
    git clone https://github.com/antoniovazquezaraujo/LeTrain.git
@@ -171,7 +171,7 @@ The further the cargo travels, the more it pays. But distance also costs: every 
 You can adjust the base prices and rewards in `letrain.cfg`, or put your own values in a scenario so the rules travel with the map. The number at the bottom right of the menu is your balance.
 
 ### Ground, Water and Mountains
-This is the general appearance of LeTrain. On the map, randomly generated for each game, you can see water in blue, fields in green and mountains in brown. Building tracks across normal ground is fast and cheap, however, creating bridges to cross lakes or drilling tunnels to cross mountains is slow and expensive.
+This is the general appearance of LeTrain. On the map, randomly generated for each game, you can see water in blue, fields in green and mountains in brown. Building tracks across normal ground is fast and cheap. Creating bridges to cross lakes or drilling tunnels to cross mountains, however, is slow and expensive.
 
 ![LeTrain map up close](images/zoom-in.png)
 
@@ -187,17 +187,19 @@ Once we have tracks, we just have to go to "trains" mode, which will allow us to
 The keys are the same in both clients; the 3D client adds mouse and camera controls for zoom and view.
 
 This is the same world in the 3D client:
+
 ![LeTrain in 3D](images/3D-example.png)
 
 ![Creating tracks](images/creating-tracks.gif)
 
 #### Day and night
-The game has a clock, and the light changes with it. At night the palette turns darker and the running locomotives light the track with their headlights.
+The game has a clock, and the light changes with it. At night the palette turns darker and the head locomotive lights the track with its headlights.
 
 ![LeTrain at night](images/night.png)
 
 ### Linking and unlinking
 When creating wagons and locomotives they do not form a train, they are unlinked. To create a train you need to have the locomotive next to them and select "link" and then with the vertical keys, choose the direction to look for wagons and with the horizontal ones the number of elements to link. Then, with the space bar you will link the selected wagons. That will be a train. To unlink wagons, select "unlink", select the direction and move forward or backward to the wagon where you want to split. Then use the space bar.
+
 ![Link and unlink](images/link-and-unlink.gif)
 
 ### Infinite map
@@ -205,11 +207,12 @@ If you leave the page with the cursor, you will see that the map continues. Ther
 
 If you find that the cursor is moving too slowly, you can type any number before using it, and each step will be added to that number of steps. For example, if you type 30, each time you press the advance key, 31 steps will be advanced, the default step plus the other 30. (If you are a Vim user -cheers Bram, wherever you are- you will be familiar with this kind of quantifier). To return to the default quantifier, just use the space bar.
 
-![Alt text](images/inside-tunnel.png)
+![Inside a tunnel](images/inside-tunnel.png)
 
 ### Programmable behavior
 Everything can be programmed, usually based on events—such as a train passing through a station or triggering a sensor—and actions can be performed as a result, such as coupling wagons, starting the train, loading cargo, moving track switches, or changing signals.
-![Alt text](images/commands.png)
+
+![LeTrain editor](images/commands.png)
 
 ### The editor
 Press `p` to open the LeTrain editor. It has three tabs: **Scenario** (the seed, the initial build and the starting state), **Programming** (the automation script) and **Config** (the game settings). The right side has a quick reference for the active tab, and if something is wrong, the error list takes you to the line.
@@ -223,7 +226,7 @@ While you build, `R` (`Shift+R`) toggles record/edit mode: the world freezes, yo
 In TRAINS mode, uppercase letters create locomotives, so `X` and `R` create a locomotive with that letter instead of toggling those modes.
 
 ### Saving the game
-You can save the game at any time. There are two different files, and it is worth knowing which one you need.
+You can save the game at any time, but there is one exception: if a train is in the middle of a load, unload or wait, the pending action is not saved. Let it finish first. There are two different files, and it is worth knowing which one you need.
 
 The first one is the savegame, a `.json` file with the current state of the world: where the trains are, what they are carrying, how much money you have and what time it is. Load it and you continue exactly where you left off.
 
@@ -245,8 +248,9 @@ Also, if you want the cursor immediately placed at the position of an object, a 
 ![Zoom](images/zoom.gif)
 
 ### Train crash
-In effect: if two trains approach each other at a speed of 5 or more, a catastrophe will occur. You will lose the money you have spent to create them. The money is the number at the bottom right of the menu. It decreases when trains move, and when tracks are built. It increases when trains unload cargo at a consumer station.
-![Alt text](images/train-crash.gif)
+Yes: if two trains approach each other at a speed of 5 or more, a catastrophe will occur. You will lose the money you have spent to create them. The money is the number at the bottom right of the menu. It decreases when trains move, and when tracks are built. It increases when trains unload cargo at a consumer station.
+
+![Train crash](images/train-crash.gif)
 
  _For more examples, please refer to the [Documentation](https://antoniovazquezaraujo.github.io/LeTrain/)_
 
@@ -264,7 +268,7 @@ If you're in one of those cases, use the Linux zip (the `.sh` launcher) or build
 <!-- ROADMAP -->
 ## Roadmap
 
-There are many things to do, but for the moment it works
+There are many things to do, but for the moment it works.
 - [ ] Add passenger trains and cities
 - [ ] Finish the event-driven train sound (in review)
 - [ ] Add professionally recorded train sounds: real locomotives, wagons and stations
@@ -278,18 +282,9 @@ See the [open issues](https://github.com/antoniovazquezaraujo/LeTrain/issues) fo
 <!-- CONTRIBUTING -->
 ## Contributing
 
-Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+If you want to help, read [CONTRIBUTING.md](CONTRIBUTING.md) first: it explains the build, the tests and the branch/PR flow.
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request: it explains the build, the tests and the branch/PR flow.
-
-If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
-Don't forget to give the project a star! Thanks again!
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+If you have an idea, open an issue. If you want to fix it yourself, fork the repo, create a branch and send a pull request. And if you just like the project, a star helps.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
