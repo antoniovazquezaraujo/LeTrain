@@ -239,8 +239,6 @@ El segundo es el escenario, un fichero `.ltr` de texto plano. No es una foto de 
 
 Usa `save` y `load` para los savegames, y `export` e `import` para los escenarios. Uno guarda la partida tal y como está; el otro guarda la receta para construirla de nuevo.
 
-![Menú de LeTrain](images/menu.png)
-
 ### Zoom
 En 2D, puedes usar las teclas de zoom de la consola para ver más o menos paisaje cuando lo necesites. Normalmente están asignadas a ctrl-+ y ctrl--.
 También puedes usar PgUp y PgDn para moverte arriba y abajo por páginas, o ctrl+PgUp y ctrl+PgDn para moverte horizontalmente entre páginas.

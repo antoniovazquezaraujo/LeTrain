@@ -231,8 +231,6 @@ The second one is the scenario, a plain-text `.ltr` file. It is not a snapshot o
 
 Use `save` and `load` for savegames, and `export` and `import` for scenarios. One keeps the game as it is; the other keeps the recipe to build it again.
 
-![LeTrain menu](images/menu.png)
-
 ### Zoom
 In 2D, you can use the console zoom keys to see more or less scenery when you need it. They are usually assigned to ctrl-+ and ctrl--.
 You can also use the PgUp and PgDown keys to move up and down pages or ctrl+PgUp or ctrl+PgDown to move across pages horizontally.
