@@ -186,6 +186,9 @@ Once we have tracks, we just have to go to "trains" mode, which will allow us to
 
 The keys are the same in both clients; the 3D client adds mouse and camera controls for zoom and view.
 
+This is the same world in the 3D client:
+![LeTrain in 3D](images/3D-example.png)
+
 ![Creating tracks](images/creating-tracks.gif)
 
 #### Day and night
@@ -227,7 +230,8 @@ The first one is the savegame, a `.json` file with the current state of the worl
 The second one is the scenario, a plain-text `.ltr` file. It is not a snapshot of the game, but the recipe to rebuild it: the map seed, the game settings, the tracks and stations you built, the initial state and the program that automates the network. The same seed and the same commands give you the same world, so you can share it with someone else, open it in any text editor (or in the LeTrain editor) and check it with `letrain-check` before loading it.
 
 Use `save` and `load` for savegames, and `export` and `import` for scenarios. One keeps the game as it is; the other keeps the recipe to build it again.
-![Alt text](images/menu.png)
+
+![LeTrain menu](images/menu.png)
 
 ### Zoom
 In 2D, you can use the console zoom keys to see more or less scenery when you need it. They are usually assigned to ctrl-+ and ctrl--.

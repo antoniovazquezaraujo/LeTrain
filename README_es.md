@@ -194,6 +194,9 @@ Cuando tengamos vías, solo hay que ir al modo «trains», que nos permitirá cr
 
 Las teclas son las mismas en ambos clientes; el cliente 3D añade ratón y controles de cámara para el zoom y la vista.
 
+Este es el mismo mundo en el cliente 3D:
+![LeTrain en 3D](images/3D-example.png)
+
 ![Creando vías](images/creating-tracks.gif)
 
 #### Día y noche
@@ -235,7 +238,8 @@ El primero es el savegame, un fichero `.json` con el estado actual del mundo: d�
 El segundo es el escenario, un fichero `.ltr` de texto plano. No es una foto de la partida, sino la receta para reconstruirla: la semilla del mapa, los ajustes del juego, las vías y estaciones que construiste, el estado inicial y el programa que automatiza la red. La misma semilla y los mismos comandos dan el mismo mundo, así que puedes compartirlo con otra persona, abrirlo en cualquier editor de texto (o en el editor de LeTrain) y comprobarlo con `letrain-check` antes de cargarlo.
 
 Usa `save` y `load` para los savegames, y `export` e `import` para los escenarios. Uno guarda la partida tal y como está; el otro guarda la receta para construirla de nuevo.
-![Menú](images/menu.png)
+
+![Menú de LeTrain](images/menu.png)
 
 ### Zoom
 En 2D, puedes usar las teclas de zoom de la consola para ver más o menos paisaje cuando lo necesites. Normalmente están asignadas a ctrl-+ y ctrl--.
