@@ -112,6 +112,13 @@ mvn test -X             # Verbose
 - `mvp/`: MVP architecture components.
 - `audio/`: Audio synthesis engine.
 
+## Authoring and External Communication
+
+- **The project's public voice belongs to the owner.** `README.md`, `README_es.md`, store/project descriptions (itch.io, Snap Store, project pages) and any outward-facing prose are owner-authored. The README is not technical documentation: it is the author's statement.
+- Agents must not draft, rewrite or "improve" that prose. They may perform mechanical checks (links, badges, build commands, image paths) only when the owner asks, and must report issues without editing the text.
+- **External communication:** no agent replies to third parties (issues, PRs, Reddit, Hacker News, forums, email) without the owner's prior OK and without showing him the proposed text first.
+- Internal technical documentation (`docs/developer/`), commit messages and PR descriptions may still be written by agents.
+
 ## Common Tasks
 
 ### Add New Track Type
