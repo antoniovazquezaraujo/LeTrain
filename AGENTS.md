@@ -82,6 +82,13 @@ LeTrain es un simulador ferroviario en Java 17 modularizado con Maven (`core`, `
 ### Formato de Respuesta
 Siempre usar el formato `NOMBRE: respuesta` al presentar resultados al usuario.
 
+## Autoría y comunicación externa
+
+- **La voz pública del proyecto es del dueño.** `README.md`, `README_es.md`, los textos de presentación (itch.io, Snap Store, páginas de proyecto) y cualquier prosa dirigida al exterior son **autoría del dueño**. El README no es documentación técnica: es una declaración del autor.
+- Los agentes **no redactan, reescriben ni “mejoran”** esos textos. Pueden hacer comprobaciones mecánicas (enlaces, badges, comandos de build, rutas de imágenes) **solo cuando el dueño lo pida**, y deben reportar los problemas sin editar la prosa.
+- **Comunicación externa:** ningún agente responde a terceros (issues, PRs, Reddit, Hacker News, foros, correo) sin el **OK previo del dueño** y sin enseñarle antes el texto propuesto.
+- La documentación técnica interna (`docs/developer/`), los mensajes de commit y las descripciones de PR sí pueden ser redactados por agentes.
+
 ## Reglas Generales
 
 - **NUNCA** inventar respuestas técnicas que correspondan a un experto

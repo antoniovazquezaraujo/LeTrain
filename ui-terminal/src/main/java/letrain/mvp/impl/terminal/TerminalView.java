@@ -264,8 +264,11 @@ public class TerminalView implements letrain.mvp.View {
             if (coverPalette == null) {
                 coverPalette = TerminalPalette.detect();
             }
-            CoverArtPainter.paint(tg, CoverArt.load(), coverPalette, size,
-                    coverStyle(coverPalette));
+            CoverArt art = CoverArt.load();
+            CoverStyle style = coverStyle(coverPalette);
+            CoverArtPainter.paint(tg, art, coverPalette, size, style);
+            CoverArtPainter.paintVersion(tg, art, coverPalette, size, style,
+                    letrain.BuildInfo.versionTag());
             this.screen.refresh();
             Thread.yield();
         } catch (IOException e) {

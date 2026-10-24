@@ -214,6 +214,64 @@ class CoverArtPainterTest {
     }
 
     @Test
+    @DisplayName("the version row is the one below the art when there is room")
+    void should_PlaceVersionBelowArt_When_ThereIsRoom() {
+        assertEquals(47, CoverArtPainter.versionRow(3, CoverArt.ROWS, 50));
+        assertEquals(6, CoverArtPainter.versionRow(4, 2, 10));
+    }
+
+    @Test
+    @DisplayName("the version row falls back to the last row when the art is cropped or fills the screen")
+    void should_PlaceVersionOnLastRow_When_ArtIsCropped() {
+        assertEquals(39, CoverArtPainter.versionRow(-2, CoverArt.ROWS, 40));
+        assertEquals(43, CoverArtPainter.versionRow(0, CoverArt.ROWS, 44),
+                "no row below an exact fit: the last row is the only visible one");
+        assertEquals(0, CoverArtPainter.versionRow(0, 0, 0));
+    }
+
+    @Test
+    @DisplayName("paintVersion centres the caption just below the art with explicit colours")
+    void should_PaintCentredVersionBelowArt() {
+        CoverArt art = CoverArt.parse(List.of("0041ff0000------" + "0042------0000ff"));
+        TextGraphics tg = mock(TextGraphics.class);
+
+        CoverArtPainter.paintVersion(tg, art, TRUECOLOR, new TerminalSize(10, 10),
+                CoverStyle.COLOUR, "v1");
+
+        verify(tg).setForegroundColor(TRUECOLOR.colorOf(0xFFFFFF));
+        verify(tg).setBackgroundColor(TRUECOLOR.colorOf(CoverArtPainter.BLACK));
+        verify(tg).putString(eq(4), eq(5), eq("v1"));
+    }
+
+    @Test
+    @DisplayName("paintVersion stays legible in dots style and on a cropped short screen")
+    void should_PaintVersionInDotsStyleOnLastRow() {
+        CoverArt art = CoverArt.parse(List.of("0041ff0000------" + "0042------0000ff"));
+        TextGraphics tg = mock(TextGraphics.class);
+
+        CoverArtPainter.paintVersion(tg, art, TRUECOLOR, new TerminalSize(10, 1), CoverStyle.DOTS,
+                "v1");
+
+        verify(tg).putString(eq(4), eq(0), eq("v1"));
+    }
+
+    @Test
+    @DisplayName("paintVersion clips a caption wider than the terminal and ignores empty screens")
+    void should_ClipVersionToTerminalWidth() {
+        CoverArt art = CoverArt.parse(List.of("0041ff0000------" + "0042------0000ff"));
+        TextGraphics tg = mock(TextGraphics.class);
+
+        CoverArtPainter.paintVersion(tg, art, TRUECOLOR, new TerminalSize(3, 10), CoverStyle.COLOUR,
+                "v1.0.0");
+        verify(tg).putString(eq(0), eq(5), eq("v1."));
+
+        TextGraphics empty = mock(TextGraphics.class);
+        CoverArtPainter.paintVersion(empty, art, TRUECOLOR, new TerminalSize(0, 10),
+                CoverStyle.COLOUR, "v1");
+        verifyNoMoreInteractions(empty);
+    }
+
+    @Test
     @DisplayName("painting rejects null collaborators instead of failing deeper")
     void should_RejectNullArguments() {
         TextGraphics tg = mock(TextGraphics.class);
