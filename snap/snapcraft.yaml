@@ -2,6 +2,7 @@ name: letrain
 base: core22
 version: git
 summary: Procedural train simulator and logistics tycoon
+license: Apache-2.0
 description: |
   LeTrain is a procedural train simulator combining classic ASCII aesthetics with a modern 3D engine.
   Build vast rail networks across an infinite world, manage a complex economy, and master the art of logistical efficiency.
