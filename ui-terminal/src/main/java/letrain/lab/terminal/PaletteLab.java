@@ -28,9 +28,11 @@ import java.util.Locale;
  * (RGB 24-bit → 256 colores → ANSI 16 del tema), {@code a} auto, {@code q}/Esc salir.
  *
  * <p>
- * Para ajustar la paleta, edita los valores de {@link #palettes()} y vuelve a lanzar. Este
- * laboratorio usa los mismos tokens que el mapa de colores; cuando exista el {@code VisualPalette}
- * real, el lab pasará a consumirlo.
+ * Para ajustar la paleta, edita los valores de {@link #palettes()} y vuelve a lanzar. La tabla es
+ * propia <b>a propósito</b>: {@code VisualPalette} solo contiene los tokens compartidos con 3D y no
+ * modela la familia oscura, los escalones de contraste ni los tokens exclusivos del terminal, así
+ * que el laboratorio sigue siendo el banco de pruebas donde se afinan los valores que luego se
+ * replican en {@code TerminalPalette}.
  */
 public class PaletteLab {
 

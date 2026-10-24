@@ -1,9 +1,12 @@
 package letrain.itinerary;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Optional;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.map.impl.RailMap;
@@ -74,15 +77,48 @@ class SegmentPathfinderIntegrationTest {
     }
 
     @Test
-    @DisplayName("findPath should find route between connected segments")
-    void findPathBetweenSegments() {
-        Segment s0 = graph.getSegment(t0);
-        Segment sBranch1 = graph.getSegment(t3);
-        assertNotNull(s0);
-        assertNotNull(sBranch1);
+    @DisplayName("A* finds a route on the real topology (replaces the removed BFS findPath)")
+    void aStarFindsTheBranchFromTheRealTopology() {
+        // Arrange: the discovered graph connects t0 to the E branch through t1 and the fork.
+        Segment from = graph.getSegment(t0);
+        Segment to = graph.getSegment(t3);
+        assertNotNull(from);
+        assertNotNull(to);
 
-        List<Segment> path = graph.findPath(s0, sBranch1);
-        assertFalse(path.isEmpty(), "Should find path from start to branch E");
+        // Act
+        List<Segment> path = new AStarPathfinder(graph).find(from, to, Optional.empty());
+
+        // Assert: the route exists and starts/ends on the requested segments.
+        assertFalse(path.isEmpty(), "the real graph connects t0 to the t3 branch");
+        assertEquals(from, path.get(0));
+        assertEquals(to, path.get(path.size() - 1));
+    }
+
+    @Test
+    @DisplayName("A* returns empty between disconnected components of the real topology")
+    void aStarReturnsEmptyForAnIsolatedRealTopology() {
+        // Arrange: one RailMap with two disconnected two-track components.
+        RailMap disconnected = new RailMap();
+        RailTrack a0 = makeTrack(disconnected, 0, 0);
+        RailTrack a1 = makeTrack(disconnected, 1, 0);
+        a0.connect(Dir.E, a1);
+        a1.connect(Dir.W, a0);
+        RailTrack b0 = makeTrack(disconnected, 20, 20);
+        RailTrack b1 = makeTrack(disconnected, 21, 20);
+        b0.connect(Dir.E, b1);
+        b1.connect(Dir.W, b0);
+
+        RailwayGraph isolatedGraph = new TopologyServiceImpl().discover(disconnected);
+        Segment from = isolatedGraph.getSegment(a0);
+        Segment to = isolatedGraph.getSegment(b0);
+        assertNotNull(from);
+        assertNotNull(to);
+
+        // Act
+        List<Segment> path = new AStarPathfinder(isolatedGraph).find(from, to, Optional.empty());
+
+        // Assert: no route across components (the old BFS testFindNonExistentPath equivalent).
+        assertTrue(path.isEmpty(), "disconnected components must not produce a route");
     }
 
     private RailTrack makeTrack(RailMap map, int x, int y) {

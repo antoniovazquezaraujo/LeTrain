@@ -25,6 +25,10 @@ public final class EditorText {
     public static final String REBUILD_WORLD = "Rebuild world";
     public static final String CLOSE = "Close";
 
+    // ---- Keyboard map shown in the editor status line (both clients)
+    public static final String EDITOR_KEY_HINT =
+            "Tab/Shift+Tab indent · Ctrl+Tab/F6 focus · Alt+Q ref";
+
     // ---- Confirmation before rebuilding the world from the scenario
     public static final String REBUILD_CONFIRM_TITLE = "Rebuild world";
     public static final String REBUILD_CONFIRM_MESSAGE =

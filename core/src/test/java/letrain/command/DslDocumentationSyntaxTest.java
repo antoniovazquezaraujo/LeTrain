@@ -1,5 +1,8 @@
 package letrain.command;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -8,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.antlr.v4.runtime.BaseErrorListener;
@@ -20,56 +24,61 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * D3: the human-facing command metadata is checked against the real grammar. Every command snippet
- * of {@link GrammarReference} (console, build and program groups), every complete-statement example
- * of the user cheat sheets and every complete {@code letrain} block of the grammar pages must
- * parse; the snippets that are prose (not commands) are listed explicitly so the gap is a decision,
- * not an accident.
+ * D3/#828: the human-facing quick reference is checked against the real grammar. Every PROGRAM
+ * command must parse in its declared {@link GrammarReference.Scope} after replacing the
+ * {@code <token>} placeholders with valid values; INFO nodes are prose and must never be inserted.
+ * The cheat-sheet and grammar-page examples are checked too.
  */
 @DisplayName("D3: help and cheat-sheet examples parse against the grammar")
 class DslDocumentationSyntaxTest {
 
-    /**
-     * Reference snippets that are instructions, not commands: they carry prose and are rendered as
-     * help text. Everything else must parse as a full player statement.
-     */
-    private static final List<String> PROSE_SNIPPETS = List.of(
-            "} ends the block; a trailing ; is optional",
-            "waypoints: a comma after the reference (and its direction) is mandatory when there is"
-                    + " a plan; order: arrival, actions, departure");
+    /** Valid replacement for every allowed placeholder token. */
+    private static final Map<String, String> PLACEHOLDER_VALUES = Map.ofEntries(
+            Map.entry("station", "1"), Map.entry("sensor", "1"), Map.entry("train", "1"),
+            Map.entry("fork", "1"), Map.entry("semaphore", "1"), Map.entry("signal", "1"),
+            Map.entry("speed", "3"), Map.entry("limit", "40"), Map.entry("count", "1"),
+            Map.entry("name", "Test"), Map.entry("time", "9:30"), Map.entry("dir", "e"));
 
-    /** Every command snippet of the reference tree, flattened. */
-    private static List<String> referenceSnippets() {
-        List<String> out = new ArrayList<>();
+    private record Scoped(String label, String snippet, GrammarReference.Scope scope) {
+    }
+
+    private static List<GrammarReference.Node> allNodes(GrammarReference.Group group) {
+        List<GrammarReference.Node> out = new ArrayList<>();
+        collectNodes(GrammarReference.getReferenceTree(group), out);
+        return out;
+    }
+
+    private static void collectNodes(List<GrammarReference.Node> nodes,
+            List<GrammarReference.Node> out) {
+        for (GrammarReference.Node node : nodes) {
+            out.add(node);
+            collectNodes(node.children, out);
+        }
+    }
+
+    private static List<Scoped> referenceCommands() {
+        List<Scoped> out = new ArrayList<>();
         for (GrammarReference.Group group : GrammarReference.Group.values()) {
             if (group == GrammarReference.Group.CONFIG) {
                 continue; // key=value settings, not DSL commands
             }
-            collect(GrammarReference.getReferenceTree(group), out);
+            for (GrammarReference.Node node : allNodes(group)) {
+                if (node.kind == GrammarReference.Kind.COMMAND && node.snippet != null) {
+                    out.add(new Scoped(node.label, node.snippet, node.scope));
+                }
+            }
         }
         return out;
     }
 
-    private static void collect(List<GrammarReference.Node> nodes, List<String> out) {
-        for (GrammarReference.Node node : nodes) {
-            if (node.snippet != null && !node.snippet.isBlank()) {
-                out.add(node.snippet);
-            }
-            collect(node.children, out);
-        }
-    }
-
     @Test
-    @DisplayName("every GrammarReference command snippet parses with the player grammar")
-    void referenceSnippets_parse() {
+    @DisplayName("every PROGRAM/console/build command parses in its declared scope")
+    void referenceCommands_parseInTheirScope() {
         List<String> failures = new ArrayList<>();
-        for (String snippet : referenceSnippets()) {
-            if (PROSE_SNIPPETS.contains(snippet)) {
-                continue;
-            }
-            String error = firstSyntaxError(snippet);
+        for (Scoped scoped : referenceCommands()) {
+            String error = parseInScope(scoped);
             if (error != null) {
-                failures.add(snippet + " -> " + error);
+                failures.add(scoped.snippet() + " [" + scoped.scope() + "] -> " + error);
             }
         }
         assertTrue(failures.isEmpty(),
@@ -77,12 +86,94 @@ class DslDocumentationSyntaxTest {
     }
 
     @Test
-    @DisplayName("every prose snippet of the reference is explicitly marked (no silent exemptions)")
-    void proseSnippets_areExplicit() {
-        for (String snippet : PROSE_SNIPPETS) {
-            assertTrue(referenceSnippets().contains(snippet),
-                    "stale prose whitelist entry: " + snippet);
+    @DisplayName("no COMMAND snippet uses the comment character or an empty quoted name")
+    void commands_haveNoHashOrEmptyNames() {
+        for (Scoped scoped : referenceCommands()) {
+            assertFalse(scoped.snippet().contains("#"),
+                    "snippet uses the comment character: " + scoped.snippet());
+            assertFalse(scoped.snippet().contains("\"\""),
+                    "snippet has an empty quoted name: " + scoped.snippet());
         }
+    }
+
+    @Test
+    @DisplayName("INFO nodes are prose: never a snippet, and they carry their text")
+    void infoNodes_areNotes() {
+        for (GrammarReference.Group group : GrammarReference.Group.values()) {
+            for (GrammarReference.Node node : allNodes(group)) {
+                if (node.kind == GrammarReference.Kind.INFO) {
+                    assertNull(node.snippet, "INFO must not be insertable: " + node.label);
+                    assertNotNull(node.info, "INFO without text: " + node.label);
+                    assertFalse(node.info.isBlank(), "blank INFO: " + node.label);
+                } else {
+                    assertNull(node.info, "only INFO carries prose: " + node.label);
+                }
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("every COMMAND has a scope; only COMMAND carries a snippet")
+    void commands_haveScope() {
+        for (GrammarReference.Group group : GrammarReference.Group.values()) {
+            for (GrammarReference.Node node : allNodes(group)) {
+                if (node.kind == GrammarReference.Kind.COMMAND) {
+                    assertNotNull(node.scope, "COMMAND without scope: " + node.label);
+                    assertNotNull(node.snippet, "COMMAND without snippet: " + node.label);
+                } else {
+                    assertNull(node.scope, "scope is COMMAND-only: " + node.label);
+                    assertNull(node.snippet, "snippet is COMMAND-only: " + node.label);
+                }
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("placeholders are well formed and belong to the allowed token set")
+    void placeholders_areWhitelisted() {
+        List<String> failures = new ArrayList<>();
+        for (Scoped scoped : referenceCommands()) {
+            for (int[] span : Placeholders.find(scoped.snippet())) {
+                String token = Placeholders.tokenAt(scoped.snippet(), span);
+                if (!Placeholders.isAllowedToken(token)) {
+                    failures.add(scoped.snippet() + " -> <" + token + ">");
+                }
+            }
+        }
+        assertTrue(failures.isEmpty(), "unknown placeholders:\n" + String.join("\n", failures));
+    }
+
+    @Test
+    @DisplayName("scope is exact: BODY_ONLY never parses in a block, BLOCK_ONLY never at top level")
+    void scopesMatchTheGrammarExactly() {
+        List<String> bodyOnlyInBlock = new ArrayList<>();
+        List<String> blockOnlyAtTop = new ArrayList<>();
+        for (Scoped scoped : referenceCommands()) {
+            String text = ensureTerminated(substitute(scoped.snippet()));
+            if (scoped.scope() == GrammarReference.Scope.BODY_ONLY
+                    && firstSyntaxErrorInStatement(wrapBlock(text)) == null) {
+                bodyOnlyInBlock.add(scoped.label() + " :: " + scoped.snippet());
+            }
+            if (scoped.scope() == GrammarReference.Scope.BLOCK_ONLY
+                    && firstSyntaxErrorAtTopLevel(text) == null) {
+                blockOnlyAtTop.add(scoped.label() + " :: " + scoped.snippet());
+            }
+        }
+        assertTrue(bodyOnlyInBlock.isEmpty(),
+                "BODY_ONLY snippets that also parse inside a block (label should be BOTH): "
+                        + bodyOnlyInBlock);
+        assertTrue(blockOnlyAtTop.isEmpty(),
+                "BLOCK_ONLY snippets that also parse at top level (label should be BOTH): "
+                        + blockOnlyAtTop);
+    }
+
+    @Test
+    @DisplayName("a BODY_ONLY command (signal) is rejected inside a block")
+    void bodyOnlyCommand_failsInsideBlock() {
+        String signal = substitute("signal <signal> set limit <limit>;");
+        String wrapped = "sensor 1 on train enter { " + signal + " }";
+        assertNotNull(firstSyntaxErrorInStatement(wrapped),
+                "signal must not parse inside a trigger block: " + wrapped);
     }
 
     @Test
@@ -92,7 +183,7 @@ class DslDocumentationSyntaxTest {
         int checked = 0;
         for (String sheet : List.of("cheatsheet.md", "cheatsheet_es.md")) {
             for (String example : cheatSheetExamples(sheet)) {
-                String error = firstSyntaxError(example);
+                String error = firstSyntaxErrorInStatement(example);
                 checked++;
                 if (error != null) {
                     failures.add(sheet + ": " + example + " -> " + error);
@@ -126,6 +217,54 @@ class DslDocumentationSyntaxTest {
                 "expected the grammar pages to contribute examples, got " + checked);
         assertTrue(failures.isEmpty(),
                 "grammar-page blocks that do not parse:\n" + String.join("\n", failures));
+    }
+
+    /** Replaces every allowed placeholder with a valid example value. */
+    static String substitute(String text) {
+        List<int[]> spans = Placeholders.find(text);
+        StringBuilder out = new StringBuilder(text);
+        for (int i = spans.size() - 1; i >= 0; i--) {
+            int[] span = spans.get(i);
+            String token = text.substring(span[0] + 1, span[1] - 1);
+            String value = PLACEHOLDER_VALUES.get(token);
+            if (value != null) {
+                out.replace(span[0], span[1], value);
+            }
+        }
+        return out.toString();
+    }
+
+    /**
+     * Parses a command where its scope says it belongs: BODY_ONLY as a top-level statement,
+     * BLOCK_ONLY wrapped in a trigger block, BOTH in both places. Waypoint snippets ({@code add
+     * station/sensor …}) are fragments of {@code create itinerary} and use the {@code waypoint}
+     * grammar rule.
+     */
+    private static String parseInScope(Scoped scoped) {
+        String text = ensureTerminated(substitute(scoped.snippet()));
+        if (scoped.scope() == GrammarReference.Scope.BLOCK_ONLY) {
+            return firstSyntaxErrorInStatement(wrapBlock(text));
+        }
+        if (scoped.scope() == GrammarReference.Scope.BOTH) {
+            String topLevel = firstSyntaxErrorInStatement(text);
+            if (topLevel != null) {
+                return "top-level: " + topLevel;
+            }
+            String insideBlock = firstSyntaxErrorInStatement(wrapBlock(text));
+            return insideBlock == null ? null : "inside block: " + insideBlock;
+        }
+        return firstSyntaxErrorInStatement(text);
+    }
+
+    private static String ensureTerminated(String text) {
+        if (!text.endsWith(";") && !text.endsWith("}")) {
+            return text + ";";
+        }
+        return text;
+    }
+
+    private static String wrapBlock(String text) {
+        return "sensor 1 on train enter { " + text + " }";
     }
 
     /**
@@ -206,21 +345,53 @@ class DslDocumentationSyntaxTest {
 
     /**
      * Parses one snippet as console input; returns the first diagnostic, or null when it parses.
+     * Waypoint fragments ({@code add station/sensor …}) are parsed with the grammar rule the user
+     * is writing for, as they are only valid inside {@code create itinerary { … }}.
      */
-    private static String firstSyntaxError(String snippet) {
-        String text = snippet.replace("#", "1").trim();
+    private static String firstSyntaxErrorInStatement(String snippet) {
+        String text = snippet.trim();
         if (!text.endsWith(";") && !text.endsWith("}")) {
             text += ";"; // the console appends the semicolon when the user does not type it
         }
-        Wrapped wrapped = wrapForContext(text);
+        // `train at …` is a block-only action: it is only valid inside a trigger/at/every block.
+        if (text.startsWith("train at ")) {
+            text = wrapBlock(text);
+        }
         List<String> errors = new ArrayList<>();
-        LeTrainLexer lexer = new LeTrainLexer(CharStreams.fromString(wrapped.text()));
+        LeTrainLexer lexer = new LeTrainLexer(CharStreams.fromString(text));
         lexer.removeErrorListeners();
         lexer.addErrorListener(lexerListener(errors));
         CommonTokenStream tokens = new CommonTokenStream(lexer);
-        if (wrapped.waypoint()) {
-            // Waypoint snippets are fragments of a create-itinerary block: the standalone rule is
-            // the real grammar for them.
+        if (text.startsWith("add station ") || text.startsWith("add sensor ")) {
+            ScriptLogicParser parser = new ScriptLogicParser(tokens);
+            parser.removeErrorListeners();
+            parser.addErrorListener(collector(errors));
+            parser.waypoint();
+        } else {
+            PlayerCommandsParser parser = new PlayerCommandsParser(tokens);
+            parser.removeErrorListeners();
+            parser.addErrorListener(collector(errors));
+            parser.playerStart();
+        }
+        return errors.isEmpty() ? null : String.join(" | ", errors);
+    }
+
+    /**
+     * Strict top-level parse (no {@code train at} auto-wrap): used to prove a BLOCK_ONLY command
+     * really needs the block. Distinct from {@link #firstSyntaxErrorInStatement(String)}, which
+     * wraps that fragment for the convenience of the scope-aware callers.
+     */
+    private static String firstSyntaxErrorAtTopLevel(String snippet) {
+        String text = snippet.trim();
+        if (!text.endsWith(";") && !text.endsWith("}")) {
+            text += ";";
+        }
+        List<String> errors = new ArrayList<>();
+        LeTrainLexer lexer = new LeTrainLexer(CharStreams.fromString(text));
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(lexerListener(errors));
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        if (text.startsWith("add station ") || text.startsWith("add sensor ")) {
             ScriptLogicParser parser = new ScriptLogicParser(tokens);
             parser.removeErrorListeners();
             parser.addErrorListener(collector(errors));
@@ -258,24 +429,6 @@ class DslDocumentationSyntaxTest {
                 errors.add("lexer " + line + ":" + charPositionInLine + " " + msg);
             }
         };
-    }
-
-    private record Wrapped(String text, boolean waypoint) {
-    }
-
-    /**
-     * Some reference snippets are fragments, not full statements: waypoint lines live inside
-     * {@code create itinerary { … }} and {@code train at …} lines live inside a trigger block. The
-     * test parses them with the grammar rule the user is writing for, not with a bogus wrapper.
-     */
-    private static Wrapped wrapForContext(String text) {
-        if (text.startsWith("add station ") || text.startsWith("add sensor ")) {
-            return new Wrapped(text, true);
-        }
-        if (text.startsWith("train at ")) {
-            return new Wrapped("sensor 1 on train enter { " + text + " }", false);
-        }
-        return new Wrapped(text, false);
     }
 
     private static BaseErrorListener collector(List<String> errors) {

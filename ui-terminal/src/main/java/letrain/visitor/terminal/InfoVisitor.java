@@ -223,9 +223,7 @@ public class InfoVisitor implements Visitor {
     }
 
     @Override
-    public void visitRailTrack(RailTrack track) {
-        // infoBarText += "Track:{" + track + "}\n";
-    }
+    public void visitRailTrack(RailTrack track) {}
 
     private String getRouterAspect(Router router) {
         StringBuffer ret = new StringBuffer();

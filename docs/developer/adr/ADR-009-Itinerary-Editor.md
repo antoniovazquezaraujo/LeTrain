@@ -22,9 +22,9 @@ train 1 set name "Expreso";
 
 // ── Crear itinerario ──
 create itinerary "Ruta 1" {
-    add station "Madrid" S LOAD REVERSE
-    add sensor "Entrada Norte" N REVERSE
-    add station "Barcelona" N UNLOAD
+    add station "Madrid" se, arrival 9:00, load, departure 9:30
+    add sensor "Entrada Norte" n, reverse
+    add station "Barcelona" n, unload
 }
 
 // ── Asignar y activar ──
@@ -32,13 +32,21 @@ assign itinerary "Ruta 1" to train "Expreso";
 train "Expreso" set autopilot true;
 ```
 
+> **Forma antigua rechazada:** la versión sin comas
+> (`add station "Madrid" S LOAD REVERSE`) ya no parsea. Las comas son obligatorias entre los ítems
+> del plan y el orden es `arrival`, acciones, `departure`. La referencia viva es
+> [`docs/user/grammar.md`](../../user/grammar.md) y la quick reference del editor
+> (`GrammarReference`).
+
 ### Reglas
 
 - Un itinerario requiere al menos 2 waypoints (estaciones o sensores)
 - Las estaciones/sensores/trenes se referencian por **nombre** o por **ID numérico**
-- Cada waypoint acepta **múltiples acciones** (`LOAD REVERSE`, `PARADA UNLOAD`)
-- La dirección de entrada es opcional (`N`, `S`, `E`, `W`, `NE`, `NW`, `SE`, `SW`)
-- Acciones disponibles: `LOAD`, `UNLOAD`, `REVERSE`, `WAIT N`, `SPEED N`
+- Cada waypoint acepta **múltiples acciones separadas por comas** (`load, reverse`)
+- La dirección de entrada es opcional y en minúsculas (`n`, `s`, `e`, `w`, `ne`, `nw`, `se`, `sw`)
+- Acciones: `load`, `unload`, `reverse`/`invert`, `stop`, `park`, `wait N`, `speed N`,
+  `couple`/`uncouple`, `fork …`, `stop at …`, más los atributos `arrival`/`departure`
+  (lista completa en `grammar.md`)
 - En modo DRIVE, `↑`/`↓` desactivan el autopilot; `a` lo reactiva
 
 ### Implementación

@@ -25,6 +25,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.SplitPane;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.ui.TextField;
+import com.badlogic.gdx.scenes.scene2d.ui.TextTooltip;
 import com.badlogic.gdx.scenes.scene2d.ui.Tree;
 import com.badlogic.gdx.scenes.scene2d.ui.WidgetGroup;
 import com.badlogic.gdx.scenes.scene2d.ui.Window;
@@ -48,6 +49,7 @@ import letrain.itinerary.Punctuality;
 import letrain.mvp.EditorText;
 import letrain.mvp.FileMenuText;
 import letrain.mvp.MenuText;
+import letrain.mvp.CoverArt;
 import letrain.mvp.Model;
 import letrain.mvp.Model.GameModeMenuOption;
 import letrain.mvp.NewGameText;
@@ -140,6 +142,30 @@ public class Gdx3DHud {
     private Label systemLabel;
     private Label financeLabel;
 
+    // #818: per-frame update caches. Values are compared before formatting/setText so an idle frame
+    // does no String.format and never invalidates the label layout.
+    private List<GameModeMenuOption> menuOptionsCache;
+    private final List<TextButton> menuButtons = new ArrayList<>();
+    private boolean[] lastMenuEnabled = new boolean[0];
+    private boolean[] lastMenuSelected = new boolean[0];
+    private String lastDescription;
+    private int lastSystemX = Integer.MIN_VALUE;
+    private int lastSystemY;
+    private int lastSystemSteps;
+    private int lastSystemQuantifier;
+    private Object lastSystemSaveTime;
+    private boolean lastFinancePresent;
+    private double lastIncome;
+    private double lastExpenses;
+    private double lastBalance;
+    private Locomotive lastTrainLoco;
+    private int lastTrainId;
+    private int lastTrainSpeed;
+    private int lastTrainTarget;
+    private int lastTrainWagons;
+    private boolean lastTrainReversed;
+    private String lastTrainPunctuality;
+
     /** 2D parity: 2 full, 1 compact, 0 hidden (see {@link HudHelp}). */
     private int helpLevel = HudHelp.FULL;
 
@@ -160,6 +186,10 @@ public class Gdx3DHud {
 
     /** Full-screen image of the title cover; null when there is no capture to paint. */
     private Image coverImage;
+    /** "The Letter Train Simulator" overlay on the 3D cover (#801). */
+    private Label coverTagline;
+    /** Running build version under the tagline (#845). */
+    private Label coverVersion;
 
     private Window messageWindow;
     private ScrollPane messageScroll;
@@ -179,11 +209,6 @@ public class Gdx3DHud {
     /** True while the PROGRAM editor window is open (game shortcuts must be ignored then). */
     public boolean isIDEOpen() {
         return ideWindow != null;
-    }
-
-    private boolean hasScenarioToExport() {
-        return model.getCommandJournal() != null
-                && !model.getCommandJournal().appliedEntries().isEmpty();
     }
 
     private void initUI() {
@@ -778,8 +803,14 @@ public class Gdx3DHud {
 
     public void updateMenuButtons() {
         menuTable.clearChildren();
-        for (GameModeMenuOption option : model.getMenuModel()) {
+        menuButtons.clear();
+        List<GameModeMenuOption> options = menuOptions();
+        lastMenuEnabled = new boolean[options.size()];
+        lastMenuSelected = new boolean[options.size()];
+        for (int i = 0; i < options.size(); i++) {
+            GameModeMenuOption option = options.get(i);
             boolean isEnabled = option.enabledIf().get();
+            lastMenuEnabled[i] = isEnabled;
             String formattedName = getMenuButtonText(option.gameModeName(), isEnabled);
 
             TextButton button = new TextButton(formattedName, skin, "menu-button");
@@ -813,7 +844,20 @@ public class Gdx3DHud {
             });
 
             menuTable.add(button).padRight(10);
+            menuButtons.add(button);
         }
+    }
+
+    /**
+     * Shared menu definition: the wording and the {@code enabledIf}/{@code selectedIf} suppliers
+     * are constant for a model, so the HUD builds the list once instead of allocating twelve
+     * options per frame (#818). A new HUD is created when the model is swapped.
+     */
+    private List<GameModeMenuOption> menuOptions() {
+        if (menuOptionsCache == null) {
+            menuOptionsCache = model.getMenuModel();
+        }
+        return menuOptionsCache;
     }
 
     public void updateHUD() {
@@ -841,47 +885,139 @@ public class Gdx3DHud {
             recDot.setVisible(recording && (System.currentTimeMillis() / 500) % 2 == 0);
         }
         updateClock();
-        // Notch-row status (2D format, no Page) and compact 2D finances on the line below.
-        systemLabel.setText(systemInfoText(model));
-        financeLabel.setText(financeText(model));
-
-        // The 2D-style speed bar in the Train row is the only notch indicator now (the graphical
-        // lever was removed); trainStatusText(null) leaves the row empty.
-        Locomotive loco = model.getSelectedLocomotive();
-        trainLabel.setText(trainStatusText(loco));
+        updateSystemLine();
+        updateFinanceLine();
+        updateTrainLine();
 
         // Marcamos el botón seleccionado según el modo y actualizamos textos
         // dinámicamente
         setRowVisible(descCell, descLabel, showMenuDescription(helpLevel, model.getMode()));
-        for (Actor actor : menuTable.getChildren()) {
-            if (actor instanceof TextButton) {
-                TextButton btn = (TextButton) actor;
-                String btnName = btn.getName();
-                for (GameModeMenuOption option : model.getMenuModel()) {
-                    String optionName = menuButtonName(option.gameModeName());
-                    if (optionName.equals(btnName)) {
-                        boolean isSelected = option.selectedIf().get();
-                        boolean isEnabled = option.enabledIf().get();
-
-                        btn.setChecked(isSelected);
-                        btn.setDisabled(!isEnabled);
-                        // Update text dynamically to reflect enabled/disabled state (gray vs
-                        // white/green)
-                        btn.setText(getMenuButtonText(option.gameModeName(), isEnabled));
-
-                        if (isSelected) {
-                            descLabel.setText(INFO_MARKUP
-                                    + MenuText.selectedHint(option.gameModeDescription(),
-                                            commandJournalRecording())
-                                    + MARKUP_RESET);
-                        }
-                    }
-                }
-            }
-        }
+        updateMenuState();
 
         if (model.getMode() == letrain.mvp.Model.GameMode.COMMAND) {
-            descLabel.setText(commandLineText(model));
+            setTextIfChanged(descLabel, commandLineText(model));
+        }
+    }
+
+    /** Notch row (2D format, no Page): only reformats when cursor/step/save-time changed. */
+    private void updateSystemLine() {
+        int x = model.getCursor().getPosition().getX();
+        int y = model.getCursor().getPosition().getY();
+        int steps = model.getQuantifierSteps();
+        int quantifier = model.getQuantifier();
+        Object saveTime = model.getLastSaveTime();
+        if (x == lastSystemX && y == lastSystemY && steps == lastSystemSteps
+                && quantifier == lastSystemQuantifier
+                && java.util.Objects.equals(saveTime, lastSystemSaveTime)) {
+            return;
+        }
+        lastSystemX = x;
+        lastSystemY = y;
+        lastSystemSteps = steps;
+        lastSystemQuantifier = quantifier;
+        lastSystemSaveTime = saveTime;
+        setTextIfChanged(systemLabel, systemInfoText(model));
+    }
+
+    /** Compact finances line: only reformats when one of the three amounts changed. */
+    private void updateFinanceLine() {
+        if (model.getEconomyManager() == null) {
+            if (lastFinancePresent) {
+                lastFinancePresent = false;
+                setTextIfChanged(financeLabel, "");
+            }
+            return;
+        }
+        double income = model.getEconomyManager().getTotalIncome();
+        double expenses = model.getEconomyManager().getTotalExpenses();
+        double balance = model.getEconomyManager().getBalance();
+        if (lastFinancePresent && Double.compare(income, lastIncome) == 0
+                && Double.compare(expenses, lastExpenses) == 0
+                && Double.compare(balance, lastBalance) == 0) {
+            return;
+        }
+        lastFinancePresent = true;
+        lastIncome = income;
+        lastExpenses = expenses;
+        lastBalance = balance;
+        setTextIfChanged(financeLabel, financeText(model));
+    }
+
+    /**
+     * Train row: the 2D-style speed bar is the only notch indicator (the graphical lever was
+     * removed). Only reformats when the selected train state changed; a null selection clears it.
+     */
+    private void updateTrainLine() {
+        Locomotive loco = model.getSelectedLocomotive();
+        if (loco == null) {
+            lastTrainLoco = null;
+            setTextIfChanged(trainLabel, "");
+            return;
+        }
+        Train train = loco.getTrain();
+        int trainId = train != null ? train.getId() : loco.getId();
+        int speed = loco.getSpeed();
+        int target = loco.getTargetSpeed();
+        int wagons = (train != null && train.getLinkers() != null)
+                ? Math.max(0, train.getLinkers().size() - 1)
+                : 0;
+        boolean reversed = loco.isReversed();
+        String punctuality = punctualitySuffix(train);
+        if (loco == lastTrainLoco && trainId == lastTrainId && speed == lastTrainSpeed
+                && target == lastTrainTarget && wagons == lastTrainWagons
+                && reversed == lastTrainReversed
+                && java.util.Objects.equals(punctuality, lastTrainPunctuality)) {
+            return;
+        }
+        lastTrainLoco = loco;
+        lastTrainId = trainId;
+        lastTrainSpeed = speed;
+        lastTrainTarget = target;
+        lastTrainWagons = wagons;
+        lastTrainReversed = reversed;
+        lastTrainPunctuality = punctuality;
+        setTextIfChanged(trainLabel, trainStatusText(loco));
+    }
+
+    /**
+     * Menu rows: one pass over the shared options and the buttons created by
+     * {@link #updateMenuButtons()} (same order). Only changed rows touch their widget, so the
+     * buttons×options double loop and the per-frame label rebuilds are gone (#818).
+     */
+    private void updateMenuState() {
+        List<GameModeMenuOption> options = menuOptions();
+        String selectedDescription = null;
+        int count = Math.min(menuButtons.size(), options.size());
+        for (int i = 0; i < count; i++) {
+            GameModeMenuOption option = options.get(i);
+            TextButton button = menuButtons.get(i);
+            boolean enabled = option.enabledIf().get();
+            if (i < lastMenuEnabled.length && lastMenuEnabled[i] != enabled) {
+                lastMenuEnabled[i] = enabled;
+                button.setDisabled(!enabled);
+                // Only rebuild the label markup when the grey/white state actually changed.
+                button.setText(getMenuButtonText(option.gameModeName(), enabled));
+            }
+            boolean selected = option.selectedIf().get();
+            if (i < lastMenuSelected.length && lastMenuSelected[i] != selected) {
+                lastMenuSelected[i] = selected;
+                button.setChecked(selected);
+            }
+            if (selected) {
+                selectedDescription =
+                        INFO_MARKUP + MenuText.selectedHint(option.gameModeDescription(),
+                                commandJournalRecording()) + MARKUP_RESET;
+            }
+        }
+        if (selectedDescription != null) {
+            setTextIfChanged(descLabel, selectedDescription);
+        }
+    }
+
+    /** Sets a label only when the text really differs, avoiding a layout invalidation per frame. */
+    private static void setTextIfChanged(Label label, String text) {
+        if (label != null && !text.contentEquals(label.getText())) {
+            label.setText(text);
         }
     }
 
@@ -1049,6 +1185,14 @@ public class Gdx3DHud {
             WidgetGroup coverLayer = new WidgetGroup();
             coverLayer.setFillParent(true);
             coverLayer.addActor(coverImage);
+            // 2D parity (#801): the same subtitle the braille art carries, as a monospace overlay
+            // so the capture stays untouched. Positioned and scaled in layoutCoverImage.
+            coverTagline = new Label(CoverArt.TAGLINE, skin, "monospace");
+            coverTagline.setColor(Color.WHITE);
+            coverLayer.addActor(coverTagline);
+            coverVersion = new Label(letrain.BuildInfo.versionTag(), skin, "monospace");
+            coverVersion.setColor(new Color(0.82f, 0.82f, 0.82f, 1f));
+            coverLayer.addActor(coverVersion);
             coverTable.add(coverLayer).grow();
             layoutCoverImage(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         } else {
@@ -1087,6 +1231,45 @@ public class Gdx3DHud {
         float height = imageHeight * scale;
         coverImage.setSize(width, height);
         coverImage.setPosition(coverOffset(width, screenWidth), coverOffset(height, screenHeight));
+        if (coverTagline != null) {
+            // Legible at any window size: the monospace label scales with the height and stays
+            // centred near the bottom, just under the capture.
+            float fontScale = Math.max(0.8f, Math.min(2.4f, screenHeight / 720f));
+            coverTagline.setFontScale(fontScale);
+            coverTagline.pack();
+            float taglineY = Math.max(12f, screenHeight * 0.055f);
+            coverTagline.setPosition((screenWidth - coverTagline.getWidth()) / 2f, taglineY);
+            if (coverVersion != null) {
+                // Slightly smaller than the tagline but still scaled with the window.
+                float versionScale = Math.max(0.6f, Math.min(1.8f, fontScale * 0.7f));
+                coverVersion.setFontScale(versionScale);
+                coverVersion.pack();
+                float versionY = versionLabelY(taglineY, coverVersion.getHeight(), screenHeight);
+                // On very short windows the clamp could push the version into the tagline: lift
+                // the tagline just enough to keep both readable.
+                float gap = coverVersionGap(screenHeight);
+                if (versionY + coverVersion.getHeight() + gap > taglineY) {
+                    taglineY = versionY + coverVersion.getHeight() + gap;
+                    coverTagline.setPosition((screenWidth - coverTagline.getWidth()) / 2f,
+                            taglineY);
+                }
+                coverVersion.setPosition((screenWidth - coverVersion.getWidth()) / 2f, versionY);
+            }
+        }
+    }
+
+    /** Vertical gap between the tagline and the version caption. */
+    static float coverVersionGap(float screenHeight) {
+        return Math.max(4f, screenHeight * 0.006f);
+    }
+
+    /**
+     * Bottom of the version label: below the tagline, with a small gap, clamped to the bottom
+     * margin so small windows never push it off screen.
+     */
+    static float versionLabelY(float taglineY, float versionHeight, float screenHeight) {
+        float margin = Math.max(8f, screenHeight * 0.02f);
+        return Math.max(margin, taglineY - versionHeight - coverVersionGap(screenHeight));
     }
 
     /**
@@ -1119,6 +1302,8 @@ public class Gdx3DHud {
         coverTable.remove();
         coverTable = null;
         coverImage = null;
+        coverTagline = null;
+        coverVersion = null;
         if (coverTexture != null) {
             coverTexture.dispose();
             coverTexture = null;
@@ -1156,8 +1341,10 @@ public class Gdx3DHud {
                 }
             });
 
+            // No window title (#802): the menu reads better compact, and the rows already say it
+            // all.
             final com.badlogic.gdx.scenes.scene2d.ui.Dialog dialog =
-                    new com.badlogic.gdx.scenes.scene2d.ui.Dialog(FileMenuText.TITLE,
+                    new com.badlogic.gdx.scenes.scene2d.ui.Dialog("",
                             skin.get("dialog", Window.WindowStyle.class));
 
             // close just hides the menu (a row acted); dismiss also notifies the boot flow when the
@@ -1180,15 +1367,26 @@ public class Gdx3DHud {
             // disabled with the parity reason until S4b.
             final List<TextButton> focusable = new ArrayList<>();
             final java.util.Map<TextButton, Runnable> actions = new java.util.HashMap<>();
+            final java.util.Map<Character, Runnable> hotkeyActions = new java.util.HashMap<>();
             for (FileMenuText.Item item : FileMenuText
                     .items(FileMenuText.MenuState.graphic(hasGame))) {
-                final TextButton button = new TextButton(fileMenuButtonText(item), skin);
+                // Alt access key in the label, tinted like every other dialog (#803).
+                final TextButton button =
+                        new TextButton(settingsHotkeyLabel(fileMenuButtonText(item),
+                                FileMenuText.mnemonic(item.command())), skin);
                 final Runnable action = fileMenuAction(item, close);
                 if (item.enabled()) {
                     focusable.add(button);
+                    hotkeyActions.put(Character.toLowerCase(FileMenuText.mnemonic(item.command())),
+                            action);
                 } else {
                     button.setDisabled(true);
                     button.getLabel().setColor(Color.GRAY);
+                    // The reason no longer rides in the label (#802); the terminal just greys the
+                    // row out, the 3D client can explain it on hover.
+                    if (!item.disabledReason().isBlank()) {
+                        button.addListener(newTooltip(item.disabledReason()));
+                    }
                 }
                 button.addListener(new ChangeListener() {
                     @Override
@@ -1199,7 +1397,9 @@ public class Gdx3DHud {
                     }
                 });
                 actions.put(button, action);
-                dialog.getContentTable().add(button).width(560f).pad(6).row();
+                // Text-sized buttons (#802): the single column takes the longest label, which keeps
+                // the stack tidy without the old fixed 560 px.
+                dialog.getContentTable().add(button).pad(6).row();
             }
 
             // Keyboard navigation: Tab/arrows move the focus between the enabled rows, Enter/Space
@@ -1227,6 +1427,15 @@ public class Gdx3DHud {
                         paintFocus.run();
                         return true;
                     }
+                    // Alt+letter jumps to a row (#803), tinted in the label like the rest.
+                    if (isAltPressed() && keycode >= Input.Keys.A && keycode <= Input.Keys.Z) {
+                        char letter = (char) ('A' + keycode - Input.Keys.A);
+                        Runnable action = hotkeyActions.get(Character.toLowerCase(letter));
+                        if (action != null) {
+                            action.run();
+                            return true;
+                        }
+                    }
                     if (keycode == Input.Keys.ENTER || keycode == Input.Keys.NUMPAD_ENTER
                             || keycode == Input.Keys.SPACE) {
                         Runnable action = actions.get(stage.getKeyboardFocus());
@@ -1236,7 +1445,14 @@ public class Gdx3DHud {
                         return true;
                     }
                     if (keycode == Input.Keys.ESCAPE) {
-                        dismiss.run();
+                        // #803 (owner decision): at the boot menu Esc quits like the Quit row; with
+                        // a
+                        // game running it just closes the menu (D11).
+                        if (hasGame) {
+                            dismiss.run();
+                        } else {
+                            Gdx.app.exit();
+                        }
                         return true;
                     }
                     return true;
@@ -1251,12 +1467,11 @@ public class Gdx3DHud {
                 button.addListener(navigation);
             }
 
-            // Reserve enough top padding so the title fits inside the title bar (Window sizes
-            // the title table to `padTop`).
-            dialog.padTop(46);
+            // Compact, title-less menu (#802): only a small top pad and no forced wide/tall box.
+            dialog.padTop(16f);
             dialog.pack();
-            dialog.setWidth(Math.max(dialog.getWidth(), 620f));
-            dialog.setHeight(Math.max(dialog.getHeight(), 420f));
+            dialog.setWidth(Math.max(dialog.getWidth(), 320f));
+            dialog.setHeight(Math.max(dialog.getHeight(), 260f));
             dialog.setPosition((stage.getWidth() - dialog.getWidth()) / 2,
                     (stage.getHeight() - dialog.getHeight()) / 2);
 
@@ -1268,8 +1483,9 @@ public class Gdx3DHud {
     }
 
     /**
-     * Row text of the File menu: the shared label, plus the lock reason while the row is disabled.
-     * The 2D terminal shows the exact same words (issue #743).
+     * Row text of the File menu: the shared bare label. The lock reason stays on the item and is
+     * shown as a hover tooltip while the row is disabled (#802); the 2D terminal shows the exact
+     * same words (issue #743).
      */
     static String fileMenuButtonText(FileMenuText.Item item) {
         return FileMenuText.displayLabel(item);
@@ -1367,8 +1583,12 @@ public class Gdx3DHud {
             message.setWrap(true);
             dialog.getContentTable().pad(10, 48, 24, 48).add(message).width(560f);
 
-            TextButton confirmButton = new TextButton(confirmLabel, skin);
-            TextButton cancelButton = new TextButton("Cancel", skin);
+            // Every dialog button gets a visible Alt hotkey (#803): the confirm action takes its
+            // first letter (avoiding Cancel's C) and Cancel keeps C, tinted in the label.
+            final char confirmKey = confirmMnemonic(confirmLabel);
+            TextButton confirmButton =
+                    new TextButton(settingsHotkeyLabel(confirmLabel, confirmKey), skin);
+            TextButton cancelButton = new TextButton(settingsHotkeyLabel("Cancel", 'C'), skin);
             dialog.getButtonTable().defaults().space(24).minWidth(140).minHeight(50);
             dialog.button(confirmButton, Boolean.TRUE);
             dialog.button(cancelButton, Boolean.FALSE);
@@ -1391,6 +1611,18 @@ public class Gdx3DHud {
                                 focused == confirmButton ? cancelButton : confirmButton);
                         paintFocus.run();
                         return true;
+                    }
+                    // Alt+letter reaches either button (#803): the confirm key or C for Cancel.
+                    if (isAltPressed() && keycode >= Input.Keys.A && keycode <= Input.Keys.Z) {
+                        char letter = (char) ('A' + keycode - Input.Keys.A);
+                        if (Character.toLowerCase(letter) == Character.toLowerCase(confirmKey)) {
+                            activate(true);
+                            return true;
+                        }
+                        if (Character.toLowerCase(letter) == 'c') {
+                            activate(false);
+                            return true;
+                        }
                     }
                     if (keycode == Input.Keys.ENTER || keycode == Input.Keys.NUMPAD_ENTER
                             || keycode == Input.Keys.SPACE) {
@@ -1442,14 +1674,23 @@ public class Gdx3DHud {
     }
 
     /**
-     * New Game dialog (S4, #777): the 3D counterpart of the 2D dialog, V1 slice with the seed and
-     * the two terrain proportions (Settings tabs and the catalog preview arrive in S4b/S4c). The
-     * form owns the catalogue rules; {@code Start} validates through
-     * {@link NewGameForm#toSettings()} and, on failure, shows the catalogue message inline without
-     * closing. Tab/arrows move the focus, left/right move the focused slider, Enter/Space activate
-     * the focused button and Esc cancels (2D parity).
+     * New Game dialog (S4, #777; five pages #808): the 3D counterpart of the 2D dialog. It shows
+     * the same five catalogue pages as the 2D {@code NewGameDialog} — Terrain, Game, Economy, Build
+     * and UI — in the shared order, read from {@link SettingCategory} and the catalogue, nothing
+     * hardcoded. The Terrain page keeps its live block (seed, water/mountain sliders, 100 % bar and
+     * map preview); the other pages are one scrolling column of catalogue fields bound to the
+     * {@link NewGameForm}, exactly the rows the Settings dialog reads.
      *
-     * @param form the prefilled form (seed + terrain) owned by the presenter
+     * <p>
+     * Keyboard (2D parity, S4b #778/#780): <b>Alt+T/G/E/B/U</b> jump to a page (mnemonic tinted
+     * like the Settings tabs), <b>Ctrl+Tab</b>/<b>Ctrl+Shift+Tab</b> cycle them, <b>Tab</b>/arrows
+     * walk the active page's fields plus Start/Cancel (Shift+Tab reverses),
+     * <b>Alt+S</b>/<b>Alt+C</b> start/cancel, Left/Right move a focused slider, Enter/Space
+     * activate a focused button and Esc cancels. The form owns the catalogue rules; {@code Start}
+     * validates through {@link NewGameForm#toSettings()} and, on failure, shows the catalogue
+     * message inline without closing.
+     *
+     * @param form the prefilled form (seed + catalogue values) owned by the presenter
      * @param onStart receives the validated settings when the player starts
      * @param onCancel run when the dialog is cancelled
      */
@@ -1474,123 +1715,54 @@ public class Gdx3DHud {
                     new com.badlogic.gdx.scenes.scene2d.ui.Dialog(NewGameText.TITLE,
                             skin.get("dialog", Window.WindowStyle.class));
 
-            final TextField seedField = new TextField(form.value(NewGameForm.SEED_KEY), skin);
-            // The dialog owns Tab/arrow navigation, so the field must not consume Tab itself.
-            seedField.setFocusTraversal(false);
-            // LWJGL3 synthesises keyTyped('\t') on Tab and hasGlyph lies for the missing glyph: a
-            // plain field would type the "?" placeholder, so only accept printable characters.
-            seedField.setTextFieldFilter((f, c) -> c >= 32);
+            // One scrolling column shared by every page (the Settings dialog pattern): the Terrain
+            // block or the catalogue field rows are swapped in place (#808). The terrain previews
+            // are disposed when the page is left or the dialog closes.
+            final Table pageTable = new Table();
+            pageTable.top().left();
+            pageTable.padLeft(SETTINGS_LEFT_GUTTER);
+            final ScrollPane pageScroll = new ScrollPane(pageTable, skin);
+            pageScroll.setFadeScrollBars(false);
 
-            final Slider waterSlider =
-                    new Slider(0, SettingsCatalog.MAX_TERRAIN_PERCENT, 1, false, skin);
-            final Slider mountainSlider =
-                    new Slider(0, SettingsCatalog.MAX_TERRAIN_PERCENT, 1, false, skin);
-            waterSlider.setValue(form.waterPercent());
-            mountainSlider.setValue(form.mountainPercent());
-            final Label waterValue = new Label(form.waterPercent() + " %", skin, "small");
-            final Label mountainValue = new Label(form.mountainPercent() + " %", skin, "small");
+            final List<Actor> pageFields = new ArrayList<>();
+            final List<Actor> focusable = new ArrayList<>();
+            final List<TerrainPreviewView> terrainPreviews = new ArrayList<>();
+            final SettingCategory[] active = {SettingCategory.TERRAIN};
+            final Map<SettingCategory, TextButton> categoryButtons = new LinkedHashMap<>();
+            final Table categoryBar = new Table();
 
-            final Label validation = new Label("", skin, "small");
-            validation.setColor(new Color(1f, 0.4f, 0.4f, 1f));
-            validation.setWrap(true);
+            // Start/Cancel carry their Alt mnemonic in the label (2D parity: Alt+S / Alt+C).
+            final TextButton startButton =
+                    new TextButton(settingsHotkeyLabel(NewGameText.START, 'S'), skin);
+            final TextButton cancelButton =
+                    new TextButton(settingsHotkeyLabel(NewGameText.CANCEL, 'C'), skin);
+            final List<TextButton> footerButtons = List.of(startButton, cancelButton);
 
-            // Live terrain block: the three-colour 100 % bar and the map preview refresh on every
-            // slider move and on every valid seed edit (2D parity), reusing the Settings helpers
-            // and the shared TerrainPreviewView.
-            final Table bar = terrainBarTable(form.waterPercent(), form.mountainPercent());
-            final TerrainPreviewView preview = new TerrainPreviewView();
-            preview.setValues(form.seed(), form.waterPercent(), form.mountainPercent());
-            final Runnable refreshTerrain = () -> {
-                updateTerrainBar(bar, form.waterPercent(), form.mountainPercent());
-                preview.setValues(form.seed(), form.waterPercent(), form.mountainPercent());
-            };
-
-            seedField.setTextFieldListener((field, c) -> {
-                int previous = form.seed();
-                form.setSeed(field.getText());
-                // Keep the last valid seed for the preview when the text does not parse (form
-                // ignores the malformed value); only repaint when the seed actually moved.
-                if (form.seed() != previous) {
-                    refreshTerrain.run();
-                }
-            });
-            waterSlider.addListener(new ChangeListener() {
-                @Override
-                public void changed(ChangeEvent event, Actor actor) {
-                    form.setWaterPercent((int) waterSlider.getValue());
-                    waterValue.setText(form.waterPercent() + " %");
-                    // The cross-field rule may have clamped the mountain side: refresh it too.
-                    mountainSlider.setValue(form.mountainPercent());
-                    mountainValue.setText(form.mountainPercent() + " %");
-                    refreshTerrain.run();
-                }
-            });
-            mountainSlider.addListener(new ChangeListener() {
-                @Override
-                public void changed(ChangeEvent event, Actor actor) {
-                    form.setMountainPercent((int) mountainSlider.getValue());
-                    mountainValue.setText(form.mountainPercent() + " %");
-                    waterSlider.setValue(form.waterPercent());
-                    waterValue.setText(form.waterPercent() + " %");
-                    refreshTerrain.run();
-                }
-            });
-
-            final float labelWidth = 90f;
-            final float valueWidth = 80f;
-
-            Table content = dialog.getContentTable();
-            content.pad(24, 48, 8, 48);
-            content.defaults().space(12);
-            Table block = new Table();
-            block.top().left();
-            block.defaults().space(6);
-
-            Table seedRow = new Table();
-            seedRow.left();
-            seedRow.add(new Label(NewGameText.SEED_LABEL, skin, "small")).width(labelWidth).left();
-            seedRow.add(seedField).width(280f).height(38f).left();
-            block.add(seedRow).left().row();
-
-            block.add(terrainSliderRow(NewGameText.WATER_LABEL, waterSlider, waterValue, labelWidth,
-                    valueWidth)).left().row();
-            block.add(terrainSliderRow(NewGameText.MOUNTAIN_LABEL, mountainSlider, mountainValue,
-                    labelWidth, valueWidth)).left().row();
-
-            // Bar under the sliders, then a gap and the map: same order as the 2D terrain block.
-            block.add(bar).left().padLeft(labelWidth).row();
-            block.add().height(8f).row();
-            block.add(preview).left().padLeft(labelWidth).row();
-
-            content.add(block).left().row();
-            content.add(validation).width(520f).left();
-
-            final TextButton startButton = new TextButton(NewGameText.START, skin);
-            final TextButton cancelButton = new TextButton(NewGameText.CANCEL, skin);
-            dialog.getButtonTable().defaults().space(24).minWidth(140).minHeight(50);
-            // Plain table cells, not Dialog.button(...): that path auto-hides on click, which would
-            // close the dialog even when Start must show a validation message and stay open.
-            dialog.getButtonTable().add(startButton);
-            dialog.getButtonTable().add(cancelButton);
-
-            final List<Actor> focusable =
-                    List.of(seedField, waterSlider, mountainSlider, startButton, cancelButton);
-
-            // Focus highlight (owner feedback S4b): sliders swap to the cyan-knob style and the
-            // Start/Cancel buttons to the SELECTED_BG background. Refreshed after every navigation.
-            final Runnable paintNewGameFocus = () -> {
+            // Focus highlight (S4b, #780): sliders swap to the cyan-knob style, buttons to the
+            // SELECTED_BG background and checkboxes are tinted cyan. Refreshed after navigation.
+            final Runnable paintFocus = () -> {
                 Actor focused = stage.getKeyboardFocus();
-                paintSliderFocus(waterSlider, focused == waterSlider);
-                paintSliderFocus(mountainSlider, focused == mountainSlider);
-                paintButtonFocus(startButton, focused == startButton);
-                paintButtonFocus(cancelButton, focused == cancelButton);
+                for (Actor widget : focusable) {
+                    if (widget instanceof Slider) {
+                        paintSliderFocus((Slider) widget, focused == widget);
+                    } else if (widget instanceof CheckBox) {
+                        // libGDX 1.14.2: CheckBox extends TextButton, so this branch
+                        // must run before the TextButton one, or paintButtonFocus
+                        // would hand it a TextButtonStyle, which CheckBox.setStyle
+                        // rejects (#808).
+                        ((CheckBox) widget).getImage()
+                                .setColor(focused == widget ? Color.CYAN : Color.WHITE);
+                    } else if (widget instanceof TextButton) {
+                        paintButtonFocus((TextButton) widget, focused == widget);
+                    }
+                }
             };
 
             final Runnable finish = () -> {
                 newGameDialogOpen = false;
                 blocker.remove();
                 dialog.hide(null);
-                preview.dispose();
+                disposeTerrainPreviews(terrainPreviews);
             };
             final Runnable start = () -> {
                 try {
@@ -1600,8 +1772,9 @@ public class Gdx3DHud {
                         onStart.accept(settings);
                     }
                 } catch (IllegalArgumentException e) {
-                    // The catalogue message is what the player reads under the form.
-                    validation.setText(e.getMessage());
+                    // 2D parity: the catalogue message, titled like the 2D dialog, and the New Game
+                    // dialog stays open so the player can fix the field (S4b #780 error channel).
+                    showMessage(NewGameText.INVALID_TITLE, e.getMessage());
                 }
             };
             final Runnable cancel = () -> {
@@ -1610,58 +1783,153 @@ public class Gdx3DHud {
                     onCancel.run();
                 }
             };
-            startButton.addListener(new ChangeListener() {
-                @Override
-                public void changed(ChangeEvent event, Actor actor) {
-                    start.run();
+
+            // Swaps the visible page and refreshes the Tab cycle: the active page's fields plus
+            // Start/Cancel (the tab selector stays out of it, like 2D #757). The Terrain page is
+            // the
+            // live block, the rest are catalogue field rows bound to the form (#808).
+            final Consumer<SettingCategory> showCategory = category -> {
+                active[0] = category;
+                disposeTerrainPreviews(terrainPreviews);
+                pageTable.clear();
+                pageFields.clear();
+                if (category == SettingCategory.TERRAIN) {
+                    fillNewGameTerrain(pageTable, pageFields, form, terrainPreviews);
+                } else {
+                    fillNewGameCategory(category, pageTable, pageFields, form);
                 }
-            });
-            cancelButton.addListener(new ChangeListener() {
+                for (Map.Entry<SettingCategory, TextButton> entry : categoryButtons.entrySet()) {
+                    entry.getValue().setChecked(entry.getKey() == category);
+                }
+                focusable.clear();
+                focusable.addAll(pageFields);
+                focusable.addAll(footerButtons);
+                pageScroll.setScrollY(0);
+                // Always pin the focus: with a null focus Stage sends keyDown to the root and this
+                // dialog never hears it, so Tab/Enter/Esc would be dead (#778).
+                focusAndSelect(pageFields.isEmpty() ? focusable.get(0) : pageFields.get(0));
+                paintFocus.run();
+            };
+            for (SettingCategory category : SETTINGS_CATEGORIES) {
+                final TextButton tab = new TextButton(
+                        settingsHotkeyLabel(category.displayName(), settingsTabLetter(category)),
+                        skin, "toggle");
+                // ClickListener (not ChangeListener): showCategory re-syncs every tab's checked
+                // state, so reacting to ChangeEvent would ping-pong the programmatic setChecked
+                // back into this listener and recurse until StackOverflowError (#778).
+                tab.addListener(new ClickListener() {
+                    @Override
+                    public void clicked(InputEvent event, float x, float y) {
+                        if (active[0] == category) {
+                            tab.setChecked(true);
+                            return;
+                        }
+                        showCategory.accept(category);
+                    }
+                });
+                categoryButtons.put(category, tab);
+                categoryBar.add(tab).pad(4);
+            }
+
+            startButton.addListener(fireAction(start));
+            cancelButton.addListener(fireAction(cancel));
+
+            // Slider key auto-repeat (#804): holding Left/Right keeps the focused slider moving
+            // after an initial delay, reusing the game input's timings for a consistent feel.
+            // libGDX sends discrete keyDown events, so the repeat is driven by the frame clock;
+            // the 2D terminal relies on the OS/terminal key repeat instead.
+            final int[] repeatDirection = {0};
+            final float[] repeatElapsed = {0f};
+            final boolean[] repeatBurst = {false};
+            dialog.addAction(new com.badlogic.gdx.scenes.scene2d.Action() {
                 @Override
-                public void changed(ChangeEvent event, Actor actor) {
-                    cancel.run();
+                public boolean act(float delta) {
+                    if (repeatDirection[0] == 0) {
+                        return false;
+                    }
+                    Actor focused = stage.getKeyboardFocus();
+                    if (!(focused instanceof Slider)) {
+                        repeatDirection[0] = 0;
+                        return false;
+                    }
+                    float delay = Gdx3DInputHandler.INITIAL_REPEAT_DELAY_MS / 1000f;
+                    float interval = Gdx3DInputHandler.REPEAT_INTERVAL_MS / 1000f;
+                    repeatElapsed[0] += delta;
+                    if (!repeatBurst[0]) {
+                        if (repeatElapsed[0] < delay) {
+                            return false;
+                        }
+                        repeatBurst[0] = true;
+                        repeatElapsed[0] -= delay;
+                    }
+                    while (repeatElapsed[0] >= interval) {
+                        repeatElapsed[0] -= interval;
+                        stepSlider((Slider) focused, repeatDirection[0]);
+                    }
+                    return false;
                 }
             });
 
-            InputListener navigation = new InputListener() {
+            // Keyboard: Ctrl+Tab cycles, Alt+letter reaches a page or Start/Cancel, Tab/arrows walk
+            // the active page and the two buttons, Enter/Space activate a focused button, Left/
+            // Right move a focused slider (or the caret in a text field) and Esc cancels. Text
+            // fields keep the arrows for the caret and the space for typing.
+            dialog.addListener(new InputListener() {
                 @Override
                 public boolean keyDown(InputEvent event, int keycode) {
                     Actor focused = stage.getKeyboardFocus();
+                    if (keycode == Input.Keys.TAB && isCtrlPressed()) {
+                        // Ctrl+Tab / Ctrl+Shift+Tab cycles the pages and never triggers the normal
+                        // Tab navigation.
+                        showCategory.accept(settingsCycleTab(active[0], isShiftPressed()));
+                        return true;
+                    }
+                    if (isAltPressed() && keycode >= Input.Keys.A && keycode <= Input.Keys.Z) {
+                        char letter = (char) ('A' + keycode - Input.Keys.A);
+                        Optional<SettingCategory> tab = settingsTabHotkey(letter);
+                        if (tab.isPresent()) {
+                            showCategory.accept(tab.get());
+                            return true;
+                        }
+                        char lower = Character.toLowerCase(letter);
+                        if (lower == 's') {
+                            start.run();
+                            return true;
+                        }
+                        if (lower == 'c') {
+                            cancel.run();
+                            return true;
+                        }
+                    }
                     if ((keycode == Input.Keys.LEFT || keycode == Input.Keys.RIGHT)
                             && focused instanceof Slider) {
-                        Slider slider = (Slider) focused;
-                        float step = keycode == Input.Keys.LEFT ? -slider.getStepSize()
-                                : slider.getStepSize();
-                        slider.setValue(
-                                com.badlogic.gdx.math.MathUtils.clamp(slider.getValue() + step,
-                                        slider.getMinValue(), slider.getMaxValue()));
+                        int direction = keycode == Input.Keys.LEFT ? -1 : 1;
+                        stepSlider((Slider) focused, direction);
+                        // Arm the auto-repeat: one step now, then delay + burst while held.
+                        repeatDirection[0] = direction;
+                        repeatElapsed[0] = 0f;
+                        repeatBurst[0] = false;
                         return true;
                     }
                     if (keycode == Input.Keys.TAB || keycode == Input.Keys.UP
                             || keycode == Input.Keys.DOWN
                             || ((keycode == Input.Keys.LEFT || keycode == Input.Keys.RIGHT)
                                     && !(focused instanceof TextField))) {
-                        int index = focusable.indexOf(focused);
                         // Shift+Tab walks the ring backwards, like Shift+Up/Shift+Left.
                         int step = (keycode == Input.Keys.UP || keycode == Input.Keys.LEFT
                                 || (keycode == Input.Keys.TAB && isShiftPressed())) ? -1 : 1;
-                        int next = Math.floorMod(index + step, focusable.size());
-                        focusAndSelect(focusable.get(next));
-                        paintNewGameFocus.run();
+                        navigateSettingsFocus(step, focusable, pageScroll, pageTable);
+                        paintFocus.run();
                         return true;
                     }
-                    if (keycode == Input.Keys.ENTER || keycode == Input.Keys.NUMPAD_ENTER) {
-                        if (focused == startButton) {
-                            start.run();
+                    if (keycode == Input.Keys.ENTER || keycode == Input.Keys.NUMPAD_ENTER
+                            || keycode == Input.Keys.SPACE) {
+                        // libGDX 1.14.2: CheckBox extends TextButton, so this branch runs first.
+                        if (focused instanceof CheckBox) {
+                            CheckBox checkBox = (CheckBox) focused;
+                            checkBox.setChecked(!checkBox.isChecked());
                             return true;
                         }
-                        if (focused == cancelButton) {
-                            cancel.run();
-                            return true;
-                        }
-                        return false;
-                    }
-                    if (keycode == Input.Keys.SPACE) {
                         if (focused == startButton) {
                             start.run();
                             return true;
@@ -1681,27 +1949,199 @@ public class Gdx3DHud {
                 }
 
                 @Override
-                public boolean keyTyped(InputEvent event, char character) {
-                    // Never swallow: the seed field must receive its typed characters.
+                public boolean keyUp(InputEvent event, int keycode) {
+                    // Stop the slider repeat when the arrow is released (#804).
+                    if ((keycode == Input.Keys.LEFT || keycode == Input.Keys.RIGHT)
+                            && repeatDirection[0] != 0) {
+                        repeatDirection[0] = 0;
+                    }
                     return false;
                 }
-            };
-            dialog.addListener(navigation);
+
+                @Override
+                public boolean keyTyped(InputEvent event, char character) {
+                    // Never swallow: the seed field and the catalogue fields must receive theirs.
+                    return false;
+                }
+            });
+
+            Table content = dialog.getContentTable();
+            content.pad(24, 40, 10, 40);
+            content.defaults().space(10);
+            content.add(categoryBar).left().row();
+            content.add(pageScroll).width(660f).height(340f).row();
+
+            Table buttons = dialog.getButtonTable();
+            buttons.defaults().space(24).minWidth(140).minHeight(50);
+            // Plain table cells, not Dialog.button(...): that path auto-hides on click, which would
+            // close the dialog even when Start must show a validation message and stay open.
+            for (TextButton button : footerButtons) {
+                buttons.add(button);
+            }
 
             dialog.padTop(46);
             dialog.pack();
-            dialog.setWidth(Math.max(dialog.getWidth(), 640f));
-            dialog.setHeight(Math.max(dialog.getHeight(), 460f));
+            dialog.setWidth(Math.max(dialog.getWidth(), 760f));
+            dialog.setHeight(Math.max(dialog.getHeight(), 620f));
             dialog.setPosition((stage.getWidth() - dialog.getWidth()) / 2,
                     (stage.getHeight() - dialog.getHeight()) / 2);
 
             stage.addActor(blocker);
             stage.addActor(dialog);
-            // The seed field starts focused with its whole value selected, so the first keystroke
-            // replaces the drawn seed, like the 2D dialog's select-on-focus (#757).
-            focusAndSelect(seedField);
-            paintNewGameFocus.run();
+            // The Terrain page opens first with its seed focused and selected, so the first
+            // keystroke replaces the drawn seed, like the 2D dialog's select-on-focus (#757).
+            showCategory.accept(SettingCategory.TERRAIN);
         });
+    }
+
+    /**
+     * Fills the New Game content with the live Terrain block (#808): seed, water/mountain sliders,
+     * the three-colour 100 % bar and the map preview, all wired to the {@link NewGameForm} so Start
+     * collects them like the 2D dialog. The widgets are rebuilt when the page is shown; the form
+     * (kept in sync live) owns the values, so switching pages never loses an edit.
+     */
+    private void fillNewGameTerrain(Table fieldsTable, List<Actor> categoryFields, NewGameForm form,
+            List<TerrainPreviewView> previews) {
+        fieldsTable.clear();
+        categoryFields.clear();
+
+        final TextField seedField = new TextField(form.value(NewGameForm.SEED_KEY), skin);
+        // The dialog owns Tab/arrow navigation, so the field must not consume Tab itself.
+        seedField.setFocusTraversal(false);
+        // LWJGL3 synthesises keyTyped('\t') on Tab and hasGlyph lies for the missing glyph: a plain
+        // field would type the "?" placeholder, so only accept printable characters.
+        seedField.setTextFieldFilter((f, c) -> c >= 32);
+
+        final Slider waterSlider =
+                new Slider(0, SettingsCatalog.MAX_TERRAIN_PERCENT, 1, false, skin);
+        final Slider mountainSlider =
+                new Slider(0, SettingsCatalog.MAX_TERRAIN_PERCENT, 1, false, skin);
+        waterSlider.setValue(form.waterPercent());
+        mountainSlider.setValue(form.mountainPercent());
+        final Label waterValue = new Label(form.waterPercent() + " %", skin, "small");
+        final Label mountainValue = new Label(form.mountainPercent() + " %", skin, "small");
+
+        // Live terrain block: the three-colour 100 % bar and the map preview refresh on every
+        // slider move and on every valid seed edit (2D parity), reusing the Settings helpers.
+        final Table bar = terrainBarTable(form.waterPercent(), form.mountainPercent());
+        final TerrainPreviewView preview = new TerrainPreviewView();
+        preview.setValues(form.seed(), form.waterPercent(), form.mountainPercent());
+        previews.add(preview);
+        final Runnable refreshTerrain = () -> {
+            updateTerrainBar(bar, form.waterPercent(), form.mountainPercent());
+            preview.setValues(form.seed(), form.waterPercent(), form.mountainPercent());
+        };
+
+        seedField.setTextFieldListener((field, c) -> {
+            int previous = form.seed();
+            form.setSeed(field.getText());
+            // Keep the last valid seed for the preview when the text does not parse (form ignores
+            // the malformed value); only repaint when the seed actually moved.
+            if (form.seed() != previous) {
+                refreshTerrain.run();
+            }
+        });
+        waterSlider.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                form.setWaterPercent((int) waterSlider.getValue());
+                waterValue.setText(form.waterPercent() + " %");
+                // The cross-field rule may have clamped the mountain side: refresh it too.
+                mountainSlider.setValue(form.mountainPercent());
+                mountainValue.setText(form.mountainPercent() + " %");
+                refreshTerrain.run();
+            }
+        });
+        mountainSlider.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                form.setMountainPercent((int) mountainSlider.getValue());
+                mountainValue.setText(form.mountainPercent() + " %");
+                waterSlider.setValue(form.waterPercent());
+                waterValue.setText(form.waterPercent() + " %");
+                refreshTerrain.run();
+            }
+        });
+
+        final float labelWidth = 90f;
+        final float valueWidth = 80f;
+
+        Table block = new Table();
+        block.top().left();
+        block.defaults().space(6);
+
+        Table seedRow = new Table();
+        seedRow.left();
+        seedRow.add(new Label(NewGameText.SEED_LABEL, skin, "small")).width(labelWidth).left();
+        seedRow.add(seedField).width(280f).height(38f).left();
+        block.add(seedRow).left().row();
+
+        block.add(terrainSliderRow(NewGameText.WATER_LABEL, waterSlider, waterValue, labelWidth,
+                valueWidth)).left().row();
+        block.add(terrainSliderRow(NewGameText.MOUNTAIN_LABEL, mountainSlider, mountainValue,
+                labelWidth, valueWidth)).left().row();
+
+        // Bar under the sliders, then a gap and the map: same order as the 2D terrain block.
+        block.add(bar).left().padLeft(labelWidth).row();
+        block.add().height(8f).row();
+        block.add(preview).left().padLeft(labelWidth).row();
+
+        fieldsTable.add(block).growX().left().top();
+
+        categoryFields.add(seedField);
+        categoryFields.add(waterSlider);
+        categoryFields.add(mountainSlider);
+    }
+
+    /**
+     * Fills the New Game content with one row per catalogue field of {@code category}, in catalogue
+     * order and bound to the {@link NewGameForm} (the 3D counterpart of the 2D
+     * {@code NewGameDialog.buildSection}, #808). No state glyphs: New Game edits every field, so
+     * the Settings page's apply-state column would only add noise.
+     */
+    private void fillNewGameCategory(SettingCategory category, Table fieldsTable,
+            List<Actor> categoryFields, NewGameForm form) {
+        fieldsTable.clear();
+        categoryFields.clear();
+        for (SettingDefinition definition : categoryDefinitions(category)) {
+            fieldsTable.add(newGameFieldRow(definition, form, categoryFields)).growX().left()
+                    .padBottom(6).row();
+        }
+    }
+
+    /**
+     * One New Game field row: label with its unit, and a checkbox (BOOLEAN) or a text field bound
+     * to the form. Editable, so it always enters the Tab cycle.
+     */
+    private Table newGameFieldRow(SettingDefinition definition, NewGameForm form,
+            List<Actor> categoryFields) {
+        Table row = new Table();
+        row.left();
+        row.defaults().space(8);
+        row.add(new Label(settingsFieldLabel(definition), skin, "default")).width(320f).left();
+        String value = form.value(definition.key());
+        if (definition.type() == SettingValueType.BOOLEAN) {
+            CheckBox checkBox = new CheckBox("", skin);
+            checkBox.setChecked(Boolean.parseBoolean(value));
+            checkBox.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    form.setValue(definition.key(), checkBox.isChecked() ? "true" : "false");
+                }
+            });
+            row.add(checkBox).width(240f).height(34f).left();
+            categoryFields.add(checkBox);
+        } else {
+            TextField field = new TextField(value, skin);
+            field.setFocusTraversal(false);
+            field.setTextFieldFilter((f, c) -> c >= 32);
+            // Keep the working form in sync so switching pages never loses an edit; Start
+            // validates.
+            field.setTextFieldListener((f, c) -> form.setValue(definition.key(), f.getText()));
+            row.add(field).width(240f).height(34f);
+            categoryFields.add(field);
+        }
+        return row;
     }
 
     /** Apply-state glyph shared with the 2D Settings dialog (#764). */
@@ -1820,6 +2260,21 @@ public class Gdx3DHud {
     /** Form sections the 3D dialog offers, in display order (shared with 2D). */
     static List<SettingCategory> settingsCategories() {
         return SETTINGS_CATEGORIES;
+    }
+
+    /**
+     * Catalogue fields of one page, in catalogue order: the shared source of the Settings and New
+     * Game page columns (#808). The Terrain page does not use it in either dialog: its live block
+     * (seed, sliders, bar, map) is hand-built for the two clients.
+     */
+    static List<SettingDefinition> categoryDefinitions(SettingCategory category) {
+        List<SettingDefinition> definitions = new ArrayList<>();
+        for (SettingDefinition definition : SettingsCatalog.definitions()) {
+            if (definition.category() == category) {
+                definitions.add(definition);
+            }
+        }
+        return definitions;
     }
 
     /** Field state (scenario lock wins over the catalogue state) both clients show (#764). */
@@ -2343,11 +2798,9 @@ public class Gdx3DHud {
             List<Actor> categoryFields, Map<String, String> form, Set<String> scenarioKeys) {
         fieldsTable.clear();
         categoryFields.clear();
-        for (SettingDefinition definition : SettingsCatalog.definitions()) {
-            if (definition.category() == category) {
-                fieldsTable.add(settingsFieldRow(definition, scenarioKeys, form, categoryFields))
-                        .growX().left().padBottom(6).row();
-            }
+        for (SettingDefinition definition : categoryDefinitions(category)) {
+            fieldsTable.add(settingsFieldRow(definition, scenarioKeys, form, categoryFields))
+                    .growX().left().padBottom(6).row();
         }
     }
 
@@ -2618,6 +3071,42 @@ public class Gdx3DHud {
         return row;
     }
 
+    /**
+     * Hover tooltip for a disabled File menu row (#802): the terminal has no tooltips, so the 3D
+     * client is where the lock reason can still be read. The code-built skin has no tooltip style,
+     * so it is assembled here from the small label style and a translucent background.
+     */
+    private TextTooltip newTooltip(String text) {
+        TextTooltip.TextTooltipStyle style = new TextTooltip.TextTooltipStyle();
+        style.label = skin.get("small", Label.LabelStyle.class);
+        style.background = skin.newDrawable("white", new Color(0f, 0f, 0f, 0.85f));
+        return new TextTooltip(text, style);
+    }
+
+    /**
+     * Alt key of a confirmation's confirm button (#803): its first alphabetic letter, skipping
+     * {@code C} so it never collides with Cancel. Falls back to {@code Y} for a label with no other
+     * letter.
+     */
+    static char confirmMnemonic(String label) {
+        if (label != null) {
+            for (int i = 0; i < label.length(); i++) {
+                char c = label.charAt(i);
+                if (Character.isLetter(c) && Character.toUpperCase(c) != 'C') {
+                    return Character.toUpperCase(c);
+                }
+            }
+        }
+        return 'Y';
+    }
+
+    /** Moves a slider one step in {@code direction} (-1/+1), clamped to its range (#804). */
+    private static void stepSlider(Slider slider, int direction) {
+        float step = direction * slider.getStepSize();
+        slider.setValue(com.badlogic.gdx.math.MathUtils.clamp(slider.getValue() + step,
+                slider.getMinValue(), slider.getMaxValue()));
+    }
+
     /** One button listener that fires its action. */
     private static ChangeListener fireAction(Runnable action) {
         return new ChangeListener() {
@@ -2743,10 +3232,10 @@ public class Gdx3DHud {
             final int[] activeTab = {0};
 
             // ---- Editor with line numbers
-            final com.badlogic.gdx.scenes.scene2d.ui.TextArea textArea =
-                    new com.badlogic.gdx.scenes.scene2d.ui.TextArea(scenarioBuffer[0], skin,
-                            "monospace-textarea");
+            final ProgramTextArea textArea =
+                    new ProgramTextArea(scenarioBuffer[0], skin, "monospace-textarea");
             textArea.setName("editorTextArea");
+            final java.util.List<Actor> focusCycle = new ArrayList<>();
 
             final Table lineNumbersTable = new Table();
             lineNumbersTable.top().right();
@@ -2760,7 +3249,6 @@ public class Gdx3DHud {
                     lineNumbersTable.add(l).height(lineHeight).top().right().padRight(10).row();
                 }
             };
-            textArea.setTextFieldListener((textField, c) -> updateLineNumbers.run());
             updateLineNumbers.run();
 
             float topPad = textArea.getStyle().background != null
@@ -2788,8 +3276,18 @@ public class Gdx3DHud {
                         col++;
                     }
                 }
-                statusLabel.setText("Ln " + (row + 1) + ", Col " + (col + 1));
+                String status = "Ln " + (row + 1) + ", Col " + (col + 1);
+                String placeholder = textArea.placeholderStatus();
+                if (!placeholder.isEmpty()) {
+                    status += " · " + placeholder;
+                }
+                statusLabel.setText(status + " · " + EditorText.EDITOR_KEY_HINT);
             };
+            textArea.setOnChange(() -> {
+                updateLineNumbers.run();
+                updateStatus.run();
+            });
+            textArea.setOnMessage(message -> statusLabel.setText("! " + message));
             updateStatus.run();
 
             // ---- Quick reference (rebuilt per tab)
@@ -2804,37 +3302,77 @@ public class Gdx3DHud {
             refTree.setIndentSpacing(12f);
             ScrollPane refScroll = new ScrollPane(refTree, skin);
 
-            final Consumer<String> insertSnippet = snippet -> insertQuickRef(textArea, snippet);
+            final Label previewLabel = new Label("", skin, "monospace");
+            previewLabel.setWrap(true);
+            previewLabel.setAlignment(com.badlogic.gdx.utils.Align.topLeft);
+            ScrollPane previewScroll = new ScrollPane(previewLabel, skin);
+            previewScroll.setFadeScrollBars(false);
+            final letrain.command.GrammarReference.Node[] previewNode = {null};
+            final Runnable updatePreview = () -> {
+                letrain.command.GrammarReference.Node node = previewNode[0];
+                previewLabel.setText(node == null ? "" : previewFor(node, activeTab[0] == 1));
+            };
+            refTree.addListener(new ChangeListener() {
+                @Override
+                public void changed(ChangeEvent event, Actor actor) {
+                    Tree.Node selected = refTree.getSelectedNode();
+                    if (selected != null && selected
+                            .getValue() instanceof letrain.command.GrammarReference.Node node) {
+                        previewNode[0] = node;
+                    }
+                    updatePreview.run();
+                }
+            });
 
             final Runnable rebuildRef = () -> {
+                previewNode[0] = null;
                 refTree.clearChildren();
+                final boolean programming = activeTab[0] == 1;
                 letrain.command.GrammarReference.Group group =
                         activeTab[0] == 1 ? letrain.command.GrammarReference.Group.PROGRAM
                                 : activeTab[0] == 2 ? letrain.command.GrammarReference.Group.CONFIG
                                         : letrain.command.GrammarReference.Group.BUILD;
                 class TreeBuilder {
                     Tree.Node build(letrain.command.GrammarReference.Node refNode, String indent) {
-                        if (refNode.isHeading) {
-                            Label l = new Label(refNode.label, skin, "monospace");
+                        String label;
+                        switch (refNode.kind) {
+                            case HEADING -> {
+                                label = refNode.label;
+                            }
+                            case INFO -> {
+                                label = indent + "INFO " + refNode.label;
+                            }
+                            case COMMAND -> {
+                                String tag = letrain.command.ProgramTextEdit
+                                        .scopeTag(letrain.command.ProgramTextEdit
+                                                .scopeForTab(programming, refNode.scope));
+                                label = "   " + refNode.label + (tag.isEmpty() ? "" : "  " + tag);
+                            }
+                            case GROUP -> {
+                                String prefix = refNode.expanded ? "[-]" : "[+]";
+                                label = indent + prefix + " " + refNode.label;
+                            }
+                            default -> label = refNode.label;
+                        }
+                        Label l = new Label(label, skin, "monospace");
+                        if (refNode.kind == letrain.command.GrammarReference.Kind.INFO) {
+                            l.setColor(Color.GRAY);
+                        } else if (refNode.kind == letrain.command.GrammarReference.Kind.HEADING) {
                             l.setColor(Color.ORANGE);
-                            return new Tree.Node(l) {};
-                        } else if (refNode.snippet != null && refNode.children.isEmpty()) {
-                            Label l = new Label("   " + refNode.label, skin, "monospace");
-                            Tree.Node n = new Tree.Node(l) {};
-                            n.setValue(refNode.snippet);
+                        }
+                        Tree.Node n = new Tree.Node(l) {};
+                        n.setValue(refNode);
+                        if (refNode.kind == letrain.command.GrammarReference.Kind.COMMAND) {
                             l.addListener(new ClickListener() {
                                 @Override
                                 public void clicked(InputEvent event, float x, float y) {
-                                    insertSnippet.accept(refNode.snippet);
+                                    textArea.insertSnippet(refNode.snippet,
+                                            letrain.command.ProgramTextEdit.scopeForTab(programming,
+                                                    refNode.scope));
                                     event.stop();
                                 }
                             });
-                            return n;
-                        } else {
-                            String prefix = refNode.expanded ? "[-]" : "[+]";
-                            Label l = new Label(indent + prefix + " " + refNode.label, skin,
-                                    "monospace");
-                            Tree.Node n = new Tree.Node(l) {};
+                        } else if (refNode.kind == letrain.command.GrammarReference.Kind.GROUP) {
                             l.addListener(new ClickListener() {
                                 @Override
                                 public void clicked(InputEvent event, float x, float y) {
@@ -2848,8 +3386,8 @@ public class Gdx3DHud {
                                 n.add(build(child, indent + "  "));
                             }
                             n.setExpanded(refNode.expanded);
-                            return n;
                         }
+                        return n;
                     }
                 }
                 TreeBuilder tb = new TreeBuilder();
@@ -2857,6 +3395,7 @@ public class Gdx3DHud {
                         .getReferenceTree(group)) {
                     refTree.add(tb.build(rootNode, "  "));
                 }
+                updatePreview.run();
             };
 
             // Keyboard navigation inside the quick reference (arrows + Enter to insert/expand).
@@ -2911,6 +3450,16 @@ public class Gdx3DHud {
                     }
                 }
 
+                private void toggleNode(Tree.Node node) {
+                    boolean expanded = !node.isExpanded();
+                    node.setExpanded(expanded);
+                    if (node.getActor() instanceof Label label) {
+                        String text = label.getText().toString();
+                        label.setText(
+                                expanded ? text.replace("[+]", "[-]") : text.replace("[-]", "[+]"));
+                    }
+                }
+
                 @Override
                 public boolean keyDown(InputEvent event, int keycode) {
                     com.badlogic.gdx.utils.Array<Tree.Node> selection =
@@ -2930,20 +3479,29 @@ public class Gdx3DHud {
                             scrollRefTo(prev);
                         }
                         return true;
+                    } else if (keycode == com.badlogic.gdx.Input.Keys.RIGHT && current != null) {
+                        if (current.getChildren().size > 0 && !current.isExpanded()) {
+                            toggleNode(current);
+                        }
+                        return true;
+                    } else if (keycode == com.badlogic.gdx.Input.Keys.LEFT && current != null) {
+                        if (current.isExpanded() && current.getChildren().size > 0) {
+                            toggleNode(current);
+                        } else if (current.getParent() != null) {
+                            refTree.getSelection().set(current.getParent());
+                            scrollRefTo(current.getParent());
+                        }
+                        return true;
                     } else if (keycode == com.badlogic.gdx.Input.Keys.ENTER && current != null) {
-                        if (current.getValue() instanceof String) {
-                            insertSnippet.accept((String) current.getValue());
-                            return true;
-                        } else if (current.getActor() instanceof Label) {
-                            Label l = (Label) current.getActor();
-                            String text = l.getText().toString();
-                            if (text.contains("[+]") || text.contains("[-]")) {
-                                boolean expanded = !current.isExpanded();
-                                current.setExpanded(expanded);
-                                l.setText(expanded ? text.replace("[+]", "[-]")
-                                        : text.replace("[-]", "[+]"));
-                                return true;
+                        if (current
+                                .getValue() instanceof letrain.command.GrammarReference.Node node) {
+                            if (node.kind == letrain.command.GrammarReference.Kind.COMMAND) {
+                                textArea.insertSnippet(node.snippet, letrain.command.ProgramTextEdit
+                                        .scopeForTab(activeTab[0] == 1, node.scope));
+                            } else if (node.kind == letrain.command.GrammarReference.Kind.GROUP) {
+                                toggleNode(current);
                             }
+                            return true;
                         }
                     }
                     return false;
@@ -3039,6 +3597,7 @@ public class Gdx3DHud {
 
             final Table errorItems = new Table();
             errorItems.top().left();
+            final java.util.List<Actor> errorFocus = new ArrayList<>();
             ScrollPane errorScroll = new ScrollPane(errorItems, skin);
             errorScroll.setFadeScrollBars(false);
             final Table errorTable = new CollapsiblePanel();
@@ -3052,7 +3611,7 @@ public class Gdx3DHud {
                 letrain.command.ScenarioFile.LineTarget target =
                         letrain.command.ScenarioFile.locateLine(composeFull.get(), d.line());
                 switchTo.accept(target.tab());
-                int pos = offsetOfLine(textArea.getText(), target.line());
+                int pos = offsetOfLineColumn(textArea.getText(), target.line(), d.col());
                 textArea.setCursorPosition(Math.min(pos, textArea.getText().length()));
                 if (stage != null) {
                     stage.setKeyboardFocus(textArea);
@@ -3060,6 +3619,8 @@ public class Gdx3DHud {
             };
             final Consumer<letrain.command.ScenarioCompiler.Result> showDiagnostics = result -> {
                 errorItems.clearChildren();
+                focusCycle.removeAll(errorFocus);
+                errorFocus.clear();
                 if (result.ok()) {
                     errorTable.setVisible(false);
                     return;
@@ -3074,7 +3635,9 @@ public class Gdx3DHud {
                         }
                     });
                     errorItems.add(b).left().padBottom(2).row();
+                    errorFocus.add(b);
                 }
+                focusCycle.addAll(errorFocus);
                 errorTable.setVisible(true);
                 window.invalidateHierarchy();
             };
@@ -3101,8 +3664,7 @@ public class Gdx3DHud {
                 letrain.command.ScenarioCompiler.Result result =
                         letrain.command.ScenarioCompiler.compile(full);
                 showDiagnostics.accept(result);
-                showFileDialog("Export Scenario",
-                        com.kotcrab.vis.ui.widget.file.FileChooser.Mode.SAVE, "scenario.ltr",
+                showFileDialog("Export Scenario", Gdx3DFileDialog.Mode.SAVE, "scenario.ltr",
                         new String[] {"ltr"}, path -> {
                             if (path != null && !path.trim().isEmpty()) {
                                 view.onExportScenarioText(new java.io.File(path), full);
@@ -3110,8 +3672,7 @@ public class Gdx3DHud {
                         });
             };
             final Runnable importAction = () -> showFileDialog("Open Scenario",
-                    com.kotcrab.vis.ui.widget.file.FileChooser.Mode.OPEN, "scenario.ltr",
-                    new String[] {"ltr"}, path -> {
+                    Gdx3DFileDialog.Mode.OPEN, "scenario.ltr", new String[] {"ltr"}, path -> {
                         if (path == null || path.trim().isEmpty()) {
                             return;
                         }
@@ -3328,9 +3889,15 @@ public class Gdx3DHud {
                                 : editorTabText(EditorText.TAB_CONFIG));
                     })));
 
+            Table rightColumn = new Table();
+            rightColumn.top();
+            rightColumn.add(refScroll).grow().row();
+            rightColumn.add(new Label("PREVIEW", skin, "monospace")).left().padTop(6).row();
+            rightColumn.add(previewScroll).growX().height(160).padTop(4);
+
             Table mainContent = new Table();
             mainContent.add(editorScroll).grow();
-            mainContent.add(refScroll).width(340).growY().padLeft(5);
+            mainContent.add(rightColumn).width(340).growY().padLeft(5);
 
             window.add(tabBar).left().pad(5).row();
             window.add(mainContent).grow().row();
@@ -3338,9 +3905,8 @@ public class Gdx3DHud {
             window.add(footer).growX().pad(8).row();
             window.add(statusLabel).left().padLeft(10).padBottom(5);
 
-            // Tab cycles focus between the editor, the quick reference and the buttons. Tabs are
-            // reached with their hotkeys (Alt+A/G/F or Alt+1/2/3), not with Tab.
-            final java.util.List<Actor> focusCycle = new ArrayList<>();
+            // Ctrl+Tab / F6 cycle focus between the editor, the quick reference, the errors and
+            // the buttons. Tab indents inside the editor; Tabs are reached with Alt+A/G/F.
             focusCycle.add(textArea);
             focusCycle.add(refTree);
             focusCycle.add(exportBtn);
@@ -3353,15 +3919,18 @@ public class Gdx3DHud {
             window.addCaptureListener(new com.badlogic.gdx.scenes.scene2d.InputListener() {
                 @Override
                 public boolean keyDown(InputEvent event, int keycode) {
-                    if (keycode == com.badlogic.gdx.Input.Keys.TAB) {
-                        Actor focused = stage.getKeyboardFocus();
-                        int idx = focusCycle.indexOf(focused);
-                        boolean shift = Gdx.input
-                                .isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_LEFT)
-                                || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_RIGHT);
-                        int dir = shift ? -1 : 1;
-                        int next = (idx + dir + focusCycle.size()) % focusCycle.size();
-                        stage.setKeyboardFocus(focusCycle.get(next));
+                    boolean ctrl = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.CONTROL_LEFT)
+                            || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.CONTROL_RIGHT);
+                    boolean shift = Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_LEFT)
+                            || Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_RIGHT);
+                    if ((keycode == com.badlogic.gdx.Input.Keys.TAB && ctrl)
+                            || keycode == com.badlogic.gdx.Input.Keys.F6) {
+                        cycleFocus(focusCycle, shift);
+                        return true;
+                    }
+                    if (keycode == com.badlogic.gdx.Input.Keys.TAB
+                            && stage.getKeyboardFocus() != textArea) {
+                        cycleFocus(focusCycle, shift);
                         return true;
                     }
                     Actor focused = stage.getKeyboardFocus();
@@ -3396,6 +3965,14 @@ public class Gdx3DHud {
                             return true;
                         } else if (keycode == com.badlogic.gdx.Input.Keys.F) {
                             switchTo.accept(2);
+                            return true;
+                        } else if (keycode == com.badlogic.gdx.Input.Keys.Q) {
+                            stage.setKeyboardFocus(refTree);
+                            if (refTree.getSelection().isEmpty()
+                                    && refTree.getRootNodes().size > 0) {
+                                refTree.getSelection()
+                                        .set((Tree.Node) refTree.getRootNodes().get(0));
+                            }
                             return true;
                         } else if (keycode == com.badlogic.gdx.Input.Keys.E) {
                             exportAction.run();
@@ -3446,124 +4023,66 @@ public class Gdx3DHud {
         return pos;
     }
 
-    /**
-     * Inserts a quick-reference snippet as its own line: moves to the end of the caret's line
-     * (never mid-line), adds the snippet on a new line and leaves the caret on the line after it.
-     */
-    private void insertQuickRef(com.badlogic.gdx.scenes.scene2d.ui.TextArea textArea,
-            String snippet) {
-        String text = textArea.getText();
-        int pos = Math.min(textArea.getCursorPosition(), text.length());
-        int lineStart = text.lastIndexOf('\n', Math.max(0, pos - 1)) + 1;
-        int lineEnd = text.indexOf('\n', pos);
-        if (lineEnd < 0) {
-            lineEnd = text.length();
+    private static int offsetOfLineColumn(String text, int line, int col) {
+        int start = offsetOfLine(text, line);
+        int end = text.indexOf('\n', start);
+        if (end < 0) {
+            end = text.length();
         }
-        boolean emptyLine = lineEnd == lineStart;
-        String insertion = emptyLine ? snippet + "\n" : "\n" + snippet + "\n";
-        String updated = text.substring(0, lineEnd) + insertion + text.substring(lineEnd);
-        textArea.setText(updated);
-        textArea.setCursorPosition(Math.min(lineEnd + insertion.length(), updated.length()));
-        if (stage != null) {
-            stage.setKeyboardFocus(textArea);
-        }
+        return Math.min(start + Math.max(0, col - 1), end);
     }
 
-    public void showFileDialog(String title, com.kotcrab.vis.ui.widget.file.FileChooser.Mode mode,
-            String defaultText, Consumer<String> onResult) {
+    /** Preview text for a reference node: snippet plus scope for commands, prose for INFO. */
+    static String previewFor(letrain.command.GrammarReference.Node node, boolean programming) {
+        if (node == null) {
+            return "";
+        }
+        return switch (node.kind) {
+            case COMMAND -> {
+                String hint = letrain.command.ProgramTextEdit.scopeHint(
+                        letrain.command.ProgramTextEdit.scopeForTab(programming, node.scope));
+                yield hint.isEmpty() ? node.snippet : node.snippet + "\n\nScope: " + hint;
+            }
+            case INFO -> node.info == null ? "" : node.info;
+            default -> "";
+        };
+    }
+
+    /** Moves the keyboard focus around the editor ring, wrapping at both ends. */
+    private void cycleFocus(List<Actor> cycle, boolean reverse) {
+        if (stage == null || cycle.isEmpty()) {
+            return;
+        }
+        Actor focused = stage.getKeyboardFocus();
+        int index = cycle.indexOf(focused);
+        int next;
+        if (index < 0) {
+            next = reverse ? cycle.size() - 1 : 0;
+        } else {
+            next = (index + (reverse ? -1 : 1) + cycle.size()) % cycle.size();
+        }
+        stage.setKeyboardFocus(cycle.get(next));
+    }
+
+    public void showFileDialog(String title, Gdx3DFileDialog.Mode mode, String defaultText,
+            Consumer<String> onResult) {
         showFileDialog(title, mode, defaultText, new String[] {"json"}, onResult);
     }
 
-    public void showFileDialog(String title, com.kotcrab.vis.ui.widget.file.FileChooser.Mode mode,
-            String defaultText, String[] extensions, Consumer<String> onResult) {
+    public void showFileDialog(String title, Gdx3DFileDialog.Mode mode, String defaultText,
+            String[] extensions, Consumer<String> onResult) {
         showFileDialog(title, mode, defaultText, extensions, onResult, null);
     }
 
     /**
-     * @param onCancel run when the player closes the chooser without picking a file (used by the
+     * Opens the keyboard-first 3D file dialog (#484).
+     *
+     * @param onCancel run when the player closes the dialog without picking a file (used by the
      *        boot Load so it returns to the cover instead of leaving an empty world, S4 #777)
      */
-    public void showFileDialog(String title, com.kotcrab.vis.ui.widget.file.FileChooser.Mode mode,
-            String defaultText, String[] extensions, Consumer<String> onResult, Runnable onCancel) {
-        Gdx.app.postRunnable(() -> {
-            if (!com.kotcrab.vis.ui.VisUI.isLoaded()) {
-                com.kotcrab.vis.ui.VisUI.load();
-                com.kotcrab.vis.ui.widget.file.FileChooser
-                        .setDefaultPrefsName("letrain.filechooser");
-
-                // Override VisUI fonts with our monospace font to keep aesthetic
-                // consistency
-                com.badlogic.gdx.scenes.scene2d.ui.Skin visSkin =
-                        com.kotcrab.vis.ui.VisUI.getSkin();
-                com.badlogic.gdx.graphics.g2d.BitmapFont font =
-                        letrain.utils.FontManager.loadFont("JuliaMono-Regular", 18);
-
-                for (com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle style : visSkin
-                        .getAll(com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle.class)
-                        .values()) {
-                    style.font = font;
-                }
-                for (com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle style : visSkin
-                        .getAll(com.badlogic.gdx.scenes.scene2d.ui.TextButton.TextButtonStyle.class)
-                        .values()) {
-                    style.font = font;
-                }
-                for (com.badlogic.gdx.scenes.scene2d.ui.Window.WindowStyle style : visSkin
-                        .getAll(com.badlogic.gdx.scenes.scene2d.ui.Window.WindowStyle.class)
-                        .values()) {
-                    style.titleFont = font;
-                }
-                for (com.badlogic.gdx.scenes.scene2d.ui.TextField.TextFieldStyle style : visSkin
-                        .getAll(com.badlogic.gdx.scenes.scene2d.ui.TextField.TextFieldStyle.class)
-                        .values()) {
-                    style.font = font;
-                }
-                for (com.badlogic.gdx.scenes.scene2d.ui.List.ListStyle style : visSkin
-                        .getAll(com.badlogic.gdx.scenes.scene2d.ui.List.ListStyle.class).values()) {
-                    style.font = font;
-                }
-                for (com.badlogic.gdx.scenes.scene2d.ui.SelectBox.SelectBoxStyle style : visSkin
-                        .getAll(com.badlogic.gdx.scenes.scene2d.ui.SelectBox.SelectBoxStyle.class)
-                        .values()) {
-                    style.font = font;
-                }
-            }
-            com.kotcrab.vis.ui.widget.file.FileChooser fileChooser =
-                    new com.kotcrab.vis.ui.widget.file.FileChooser(title, mode);
-            fileChooser.setSelectionMode(
-                    com.kotcrab.vis.ui.widget.file.FileChooser.SelectionMode.FILES);
-
-            // Filter by the requested extensions (json for savegames, ltr for scenarios).
-            com.kotcrab.vis.ui.widget.file.FileTypeFilter filter =
-                    new com.kotcrab.vis.ui.widget.file.FileTypeFilter(true);
-            for (String ext : extensions) {
-                filter.addRule(ext.toUpperCase() + " files (*." + ext + ")", ext);
-            }
-            fileChooser.setFileTypeFilter(filter);
-
-            fileChooser.setDirectory(Gdx.files.local("."));
-
-            fileChooser.setListener(new com.kotcrab.vis.ui.widget.file.FileChooserAdapter() {
-                @Override
-                public void selected(
-                        com.badlogic.gdx.utils.Array<com.badlogic.gdx.files.FileHandle> files) {
-                    if (files.size > 0) {
-                        onResult.accept(files.get(0).file().getAbsolutePath());
-                    }
-                }
-
-                @Override
-                public void canceled() {
-                    if (onCancel != null) {
-                        onCancel.run();
-                    }
-                }
-            });
-
-            fileChooser.setSize(750, 500);
-            fileChooser.centerWindow();
-            stage.addActor(fileChooser.fadeIn());
-        });
+    public void showFileDialog(String title, Gdx3DFileDialog.Mode mode, String defaultText,
+            String[] extensions, Consumer<String> onResult, Runnable onCancel) {
+        Gdx3DFileDialog.show(stage, skin, title, mode, defaultText, extensions, onResult, onCancel);
     }
 
     public void render(float delta) {

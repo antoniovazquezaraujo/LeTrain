@@ -82,10 +82,20 @@ public abstract class Linker extends Tracker implements Linkable {
         this.previousDir = previousDir;
     }
 
+    /**
+     * Legacy single-cell advance helper. It is superseded by
+     * {@link letrain.vehicle.rail.TrainMovementManager#advance()} (the two-pass linker movement
+     * that also handles collisions and reservations) and has no callers in the engine; it is kept
+     * only because it overrides the {@code Vehicle}/{@code Transportable} contract.
+     *
+     * <p>
+     * A vehicle without a track cannot advance, so this returns {@code false} instead of the old
+     * {@code true // de momento} (which reported a successful move that never happened).
+     */
     @Override
     public boolean advance() {
         if (this.getTrack() == null) {
-            return true; // de momento
+            return false;
         }
         Dir dir = this.getDir();
         Dir inverseDir = dir.inverse();

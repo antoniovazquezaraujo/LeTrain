@@ -728,6 +728,26 @@ public class Train implements Renderable {
     }
 
     /**
+     * The locomotive that must show the white headlights (#618). They follow the <em>physical</em>
+     * front: in a push-pull consist the lamps swap ends when the train is reversed because the rear
+     * locomotive becomes the head. A train with a single locomotive keeps its lamps on even while
+     * it pushes from behind, and with several locomotives but a wagon at the physical front none
+     * shine (the front really is dark). A locomotive without a train is its own head, handled by
+     * the callers.
+     *
+     * <p>
+     * Pure query: no state is touched, so the renderers can call it every frame.
+     */
+    public Locomotive getHeadlightLocomotive() {
+        List<Locomotive> locomotives = getLocomotives();
+        if (locomotives.size() == 1) {
+            return locomotives.get(0);
+        }
+        Linker physicalFront = getPhysicalFront();
+        return physicalFront instanceof Locomotive ? (Locomotive) physicalFront : null;
+    }
+
+    /**
      * Sets target speed to 0 on the director linker (gradual stop). Saves the current target speed
      * so it can be restored later.
      */

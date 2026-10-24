@@ -1,7 +1,7 @@
 # Mapa de colores día/noche (fase 1 de ADR-022)
 
 Estado: **implementado** — fase 1: **1a, 1b, 1c y 1d completas**; **1e parcial** (faros de
-locomotora; farolas/ventanas y niebla fina pendientes).
+locomotora y faroles rojos de cola; farolas/ventanas y niebla fina pendientes).
 
 Relacionado: [[ADR-022-Game-Time]] (fase 1), [[ADR-013]] (modo noche/día), issue #480
 (paridad 2D/3D).
@@ -57,9 +57,29 @@ Lo que hay en `develop` a día de hoy; el detalle por fase está al final de la 
   `RenderVisitor` simula el cono (`Headlight`). Los charcos sustituyen a los `PointLight` originales,
   que sobre el suelo de un quad por celda se veían como manchas **cuadradas** siguiendo la rejilla
   (#690); su plano se pinta por encima del balasto (y por debajo de vía y tren) para que las cajas
-  por celda del balasto no lo recorten. En ambos clientes las luces y el haz solo se encienden con el
-  motor en marcha (`isEngineOn()`) y en la locomotora de cabeza (`isHeadLocomotive()`); en 3D tampoco
-  durante el descarrilamiento (`isDestroying()`).
+  por celda del balasto no lo recorten. Las luces alumbran la **única locomotora del tren** o la que
+  ocupa el **frente físico** (`Train.getHeadlightLocomotive()`, #618): en push-pull la luz se
+  intercambia de extremo al invertir, con una sola locomotora se mantiene encendida aunque empuje
+  desde atrás, y con varias locomotoras y el frente en un vagón no alumbra ninguna (el frente va a
+  oscuras). Las lámparas van **siempre en la cara exterior** de la locomotora, no "a la marcha"
+  (`TailLamps.headlightSign(train, loco)` en 3D y `beamDir` en 2D): **al invertir no se mueven**; en
+  push-pull solo se intercambian porque la locomotora blanca cambia de extremo. Siguen exigiéndose
+  el motor en marcha (`isEngineOn()`), la noche y, en 3D, no estar descarrilada (`isDestroying()`).
+- **Faroles rojos de cola** (**solo 3D**, excepción consciente a la paridad 2D/3D, #796): dos esferas
+  rojas en el vehículo del **extremo opuesto** a la locomotora blanca (vale vagón o locomotora),
+  fijas al material. Con la **cola de vagón** quedan clavadas en su cara: al invertir no se mueven,
+  aunque ese vagón pase a liderar; en **push-pull** se intercambian blanco↔rojo entre las dos
+  locomotoras; una **loco suelta** lleva blancas delante y rojas detrás. La elección del vehículo, el
+  signo de su cara libre y la fase de parpadeo son lógica pura en
+  `ui-graphic/.../gdx3d/TailLamps` (cubierta por `TailLampsTest`; `Train.getHeadlightLocomotive()`
+  por `HeadlightLocomotiveTest`). De día o con el motor parado son **círculos rojos estáticos**
+  (modelo rojo sin `emissive`, `tailLampOffModel`); de noche son emisivos y **parpadean por ticks de
+  juego** (`Model.getElapsedTicks()`, ciclo de 20: lámpara A en las fases 0–3, ambas apagadas en
+  4–11, lámpara B en 12–15, ambas apagadas en 16–19), determinista y nunca con reloj real. Cada
+  lámpara encendida proyecta
+  **su propio charco rojo** reutilizando `HeadlightGlows` + `HeadlightGlowRenderer` con tinte
+  (`Gdx3DResourceContext.LAMP_RED_RGB`), y el charco se apaga y se va con su lámpara. Comparte
+  visibilidad con los faros: sin luz en túnel ni con el tren destruido.
 
 ## Cómo funcionaba antes de implementar (histórico)
 
@@ -158,7 +178,7 @@ implementación.
 | `element.fork` | `WHITE_BRIGHT` (:49) | `GRAY` (:190 / Infra:244) | actual | actual | atenuar ×0.6 |
 | `element.fork.selected` | `RED_BRIGHT` (:50) | `WHITE` (:195/232) | actual | actual | actual |
 | `element.fork.route` | — | `RED` (:222) | actual | actual | actual |
-| `element.semaphore` | `SEMAPHORE_COLOR`/`SELECTED_SEMAPHORE_COLOR` (BLUE/RED_BRIGHT, :56–57) **sin uso** | mástil `GRAY` + placa `BLACK` (:404) | actual | actual | atenuar ×0.6 |
+| `element.semaphore` | `SEMAPHORE_OPEN`/`SEMAPHORE_CLOSED` (:486–488); seleccionado en modo SEMAPHORES: subrayado + `HIGHLIGHT` (:492–500) | mástil `GRAY` + placa `BLACK` (:404) | actual | actual | atenuar ×0.6 |
 | `element.semaphore.open` | `GREEN` (:54) | luz inferior `GREEN`, superior `440000` (:411–415) | actual | actual | actual |
 | `element.semaphore.closed` | `RED` (:55) | luz superior `RED`, inferior `004400` (:411–415) | actual | actual | actual |
 | `element.speedSignal.max` | `RED` (:323) | placa `RED` (:358) | actual | actual | actual |
@@ -170,8 +190,9 @@ implementación.
 | `selection.link` | bg `MAGENTA` + fg `BLACK` (:53, :426) | translúcido amarillo/rojo `(1,1,0,0.75)`/`(1,0,0,0.75)` (:35–36) | actual | actual | actual |
 
 Nota: 2D y 3D coinciden en semántica (abierto = verde, cerrado = rojo); el 3D lo hace con dos
-esferas (la activa a color, la otra muy oscura). Limpieza pendiente: en 2D `SEMAPHORE_COLOR` y
-`SELECTED_SEMAPHORE_COLOR` son constantes muertas.
+esferas (la activa a color, la otra muy oscura). Las antiguas constantes 2D `SEMAPHORE_COLOR` y
+`SELECTED_SEMAPHORE_COLOR` **se eliminaron en el wiring de 1d**; el glifo usa los tokens
+`SEMAPHORE_OPEN`/`SEMAPHORE_CLOSED` y, al seleccionarlo, subrayado + `HIGHLIGHT`.
 
 ### Trenes
 
@@ -223,9 +244,10 @@ esferas (la activa a color, la otra muy oscura). Limpieza pendiente: en 2D `SEMA
    resaltados conservan color y contraste de noche (son información de juego, no decorado).
 4. **Colores de jugador**: solo atenuación global (≤ 45 % de noche); no se re-mapean a variantes.
 5. **Emisivos**: los faros de locomotora son el token `EMISSIVE_HEADLIGHT`, que no se atenúa
-   (implementado); farolas y ventanas iluminadas se añadirán como tokens emisivos (1e pendiente).
-   Lámpara y luz se encienden a la vez: umbral compartido `VisualPalette.LIGHTS_ON_RATIO` (0,1) y
-   rampa `lightsOnFactor` en 3D y 2D.
+   (implementado); los **faroles rojos de cola** usan su propio emisivo `LAMP_RED_RGB` (3D, #796), y
+   farolas y ventanas iluminadas se añadirán como tokens emisivos (1e pendiente). Lámpara y luz se
+   encienden a la vez: umbral compartido `VisualPalette.LIGHTS_ON_RATIO` (0,1) y rampa
+   `lightsOnFactor` en 3D y 2D.
 6. **Rendimiento**: en 3D la paleta se interpola una vez por tick (no por instancia) y los
    materiales actualizan su `ColorAttribute` solo cuando el color cambia; en 2D la paleta se resuelve
    al cruzar un escalón, no en cada frame.
@@ -238,7 +260,7 @@ esferas (la activa a color, la otra muy oscura). Limpieza pendiente: en 2D `SEMA
 | 1b | Terreno (campos, agua, montaña, balasto, túnel, pared) | Tokens de terreno en `VisualPalette` y materiales del `Gdx3DResourceContext`/`GroundRenderer` | Hecha |
 | 1c | Elementos, vía y trenes | Tokens de vía/trenes base + atenuación de colores de jugador; avisos intactos | Hecha |
 | 1d | 2D: paleta día/noche del terminal (familia clara) | `TerminalPalette` + wiring del `RenderVisitor` | Hecha |
-| 1e | Emisivos (faros/farolas) y niebla/cielo fino | **Faros de locomotora** (charco aditivo en 3D + haz simulado en 2D) | Parcial: farolas/ventanas y niebla pendientes; coordinar con #480 |
+| 1e | Emisivos (faros/farolas) y niebla/cielo fino | **Faros de locomotora y faroles rojos de cola** (charco aditivo en 3D + haz simulado en 2D; rojos solo 3D) | Parcial: farolas/ventanas y niebla pendientes; coordinar con #480 |
 
 Pendiente de 1e: farolas/ventanas, acabado de cielo y niebla fina. El resto de la fase 1 está en
 `develop`.
@@ -281,8 +303,9 @@ Pendiente de 1e: farolas/ventanas, acabado de cielo y niebla fina. El resto de l
   con **su** fondo, no con el campo. La **vía, el puente y demás glifos de vía** se adaptan además
   al fondo **real** de su celda: sobre mar o montaña se aclaran (`lightenOn`, contraste ≥
   `MIN_CONTRAST`), porque `RAIL` está resuelto contra el campo; la **librea** de un tren que bloquea
-  la vía se aclara u oscurece con el mismo criterio (`contrastOn`), conservando su color (la
-  configuración para desactivar ese coloreado la lleva #694). `0x4CA331` es el `TERRAIN_FIELDS` de
+  la vía se aclara u oscurece con el mismo criterio (`contrastOn`), conservando su color. Ese
+  coloreado se desactiva con `ui.highlightBlockedTracks=false` (#694): ambos clientes consultan
+  `EconomyManager.isHighlightBlockedTracks()` y, con `false`, dejan la vía con su color normal. `0x4CA331` es el `TERRAIN_FIELDS` de
   3D (`0x66994C`) con la
   misma luminosidad percibida (136) y el mismo tono (~106°), subiendo solo la saturación lo justo
   para que el fallback de 16 colores caiga en el **verde del tema** y no en el gris brillante
@@ -310,8 +333,13 @@ Pendiente de 1e: farolas/ventanas, acabado de cielo y niebla fina. El resto de l
   recortaban el charco en agujeros alineados con la rejilla. El charco usa la
   posición **renderizada** (interpolada) que el `VehicleRenderer` publica cada frame
   (`Gdx3DRenderer.getHeadlightSources()`), así se desliza con el tren en vez de saltar de celda en
-  celda. Luces y haz solo se encienden con el motor en marcha (`Locomotive.isEngineOn()`), en la
-  locomotora de cabeza (`isHeadLocomotive()`) y por encima del umbral compartido. En 2D el
+  celda. Luces y haz solo se encienden con el motor en marcha (`Locomotive.isEngineOn()`) y por
+  encima del umbral compartido, y alumbran la locomotora del **frente físico**
+  (`Train.getHeadlightLocomotive()`, #618): única locomotora o, en push-pull, la que va delante, de
+  modo que el extremo se intercambia al invertir. La lámpara y su charco se colocan en la **cara
+  exterior** de la locomotora con `TailLamps.headlightSign(train, loco)` (en 2D el haz usa el mismo
+  criterio con `beamDir`), no a lo largo de la marcha: una locomotora que empuja mantiene sus blancas
+  en la misma cara al invertir. En 2D el
   `RenderVisitor` simula el haz: `Headlight.factor(dx, dy, dir)` da el cono (alcance 3 celdas,
   semiángulo 40°, tope `MAX_LIGHT`), y las celdas que ilumina se pintan mezclando su color nocturno
   con el diurno, **incluido el fondo**, así que el haz "aclara" vía y terreno. El túnel oculto (fuera
@@ -319,6 +347,17 @@ Pendiente de 1e: farolas/ventanas, acabado de cielo y niebla fina. El resto de l
   proyecta haz y las celdas de túnel no se iluminan. Todo el sistema enciende con el mismo umbral
   (`VisualPalette.LIGHTS_ON_RATIO`) y rampa (`lightsOnFactor`), para que lámpara, resplandor y haz
   aparezcan a la vez en ambos clientes.
+- Faroles rojos de cola (1e parcial, **solo 3D**, #796): `TailLamps` (lógica pura, en
+  `ui-graphic/.../gdx3d`) elige el vehículo del extremo opuesto a la locomotora blanca (o el fondo
+  físico como *fallback*), el signo de su cara libre y la fase de parpadeo, y el `VehicleRenderer`
+  pinta dos lámparas rojas igual que las blancas. Modelos `tailLampModel`/`tailLampOffModel` en
+  `Gdx3DResourceContext`: emisivos de noche y círculos rojos estáticos de día o con el motor parado.
+  De noche parpadean por ticks de juego (`Model.getElapsedTicks()`, ciclo de 20 ticks: A en [0,4),
+  ambas apagadas [4,12), B en [12,16), ambas apagadas [16,20)) y cada lámpara encendida publica su
+  propia fuente en `Gdx3DRenderer.getTailLampSources()`, que el presentador dibuja como charco rojo
+  (`HeadlightGlowRenderer.render(..., tailLampColor, ratio)`) con su propio tope. Son fijas al
+  material: la cola de vagón conserva sus rojos al invertir y solo en push-pull se intercambian
+  blanco↔rojo; una loco suelta lleva blancas delante y rojas detrás.
 
 ## Decisiones pendientes
 
@@ -358,8 +397,9 @@ Pendiente de 1e: farolas/ventanas, acabado de cielo y niebla fina. El resto de l
   adapta al fondo **real** de su celda: sobre mar/montaña lo aclara (`lightenOn`, día `#323237` →
   `#747479` sobre el mar, contraste ≥ `MIN_CONTRAST`); sobre el campo no cambia. La librea del tren
   que bloquea la vía sigue mandando, pero se aclara u oscurece lo justo para no fundirse con el
-  mar/montaña (`contrastOn`). La opción de configuración para desactivar ese coloreado de bloqueo
-  la lleva Alex en #694 (no implementada aquí).
+  mar/montaña (`contrastOn`). La opción para desactivar ese coloreado de bloqueo **está implementada
+  en #694**: `ui.highlightBlockedTracks` (por defecto `true`, `letrain.cfg:63`); con `false` ambos
+  clientes pintan la vía con su color normal (`EconomyManager.isHighlightBlockedTracks()`).
 - **2D: color 24-bit con degradación 256 → 16 ANSI** (detección por `COLORTERM`/`TERM`, sin
   autodetección del fondo del terminal). Las constantes muertas del 2D
   (`SEMAPHORE_COLOR`, `SELECTED_SEMAPHORE_COLOR`, `SELECTED_FORK_COLOR`,

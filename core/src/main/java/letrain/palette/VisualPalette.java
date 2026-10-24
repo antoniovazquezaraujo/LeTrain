@@ -2,8 +2,10 @@ package letrain.palette;
 
 /**
  * Shared day/night visual palette (ADR-022 phase 1, see
- * {@code docs/developer/systems/DayNight_Colors.md}). Pure data and maths: no UI dependencies, so
- * the same token values feed the 3D renderer and, later, the 2D terminal.
+ * {@code docs/developer/systems/DayNight_Colors.md}). Pure data and maths: no UI dependencies. The
+ * 3D renderer consumes these token values directly; the 2D terminal keeps its own {@code
+ * TerminalPalette} (20 quantised bands, ANSI fallbacks and a light family) and only shares
+ * {@link #lightsOnFactor(double)} with this class.
  *
  * <p>
  * Every token has day, dusk and night keys; {@link #color(Token, double)} interpolates them in

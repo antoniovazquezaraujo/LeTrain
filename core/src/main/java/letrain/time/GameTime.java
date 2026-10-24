@@ -62,8 +62,12 @@ public record GameTime(int day, int hour, int minute) implements Comparable<Game
         return Integer.compare(minuteOfDay(), other.minuteOfDay());
     }
 
+    /**
+     * User-facing representation, {@code Day D HH:MM}. The text is deliberately English-neutral
+     * (the game has no i18n layer yet); keep it in sync with any future localisation.
+     */
     @Override
     public String toString() {
-        return String.format("Día %d %02d:%02d", day, hour, minute);
+        return String.format("Day %d %02d:%02d", day, hour, minute);
     }
 }

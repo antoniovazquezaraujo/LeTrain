@@ -189,10 +189,11 @@ De Hola Y
   │           newSegment = graph.getSegment((RailTrack)nextTrack)
   │           (buscar el segmento al que pertenece la vía)
   │       └─ Si newSegment != null Y es distinto del actual:
-  │           train.notifySegmentEntered(newSegment)
-  │           ├─ actionManager.checkWaypointArrival()
-  │           ├─ autopilot.onSegmentEntered() → ruta + forks
-  │           └─ safetyManager.onSegmentEntered() → bloqueos
+  │           safetyManager.onSegmentEntered(newSegment) → bloqueos
+  │           train.notifyAutopilotSegmentEntered(newSegment)
+  │           └─ autopilot.onSegmentEntered() → ruta + agujas
+  │           (la llegada a waypoint NO se detecta aquí: es event-driven
+  │            en notifyEnterSensor → checkAndNotifyWaypointReached)
 
   ├─ F: LIMPIAR RESERVA
   │   nextTrack.setReservation(null)
@@ -290,7 +291,7 @@ FASE 2 (ejecución):
                sale de [A], entra en [B]
   L2:          sale de [B], entra en [C]
   L1 (primero): entra en [D] → onEnterTrain en [D] → eventos
-                notifySegmentEntered si [D] es otro segmento
+                notifyAutopilotSegmentEntered si [D] es otro segmento
 
 FASE 3 (post-move):
   nextAfterMove = [D].getConnected(ESTE) = [E]
@@ -397,7 +398,7 @@ Segmento (tramo de vía entre dos nodos)
        └─ ¿speed > 0? → permite (inercia restante)
        └─ ¿speed == 0? → bloqueado (espera)
 
-3. notifySegmentEntered(newSegment)
+3. onSegmentEntered(newSegment) (safety + autopilot)
    └─ safetyManager.onSegmentEntered()
        ├─ tryLock(currentSegment) → si falla → emergencyStop
        ├─ findNextSegment() + tryLock(nextSegment)
@@ -458,9 +459,11 @@ Activación del piloto automático
   └─ setAutoMode(true) + activate()
       ├─ onSegmentEntered(currentSegment)
       │   ├─ calculateRoute()
-      │   │   └─ pathfinder.find(currentSeg, targetSeg)
-      │   │       └─ BFS en RailwayGraph
-      │   └─ ensureForkRoute() → orienta desvíos
+      │   │   └─ pathfinder.find(currentSeg, exitPort, targetSeg, entryDir)
+      │   │       └─ AStarPathfinder: cola de prioridad O(E log V),
+      │   │          heurística admisible por entry-port y coste por
+      │   │          getTrackCount (#816/#823; ver ADR-033 para agujas)
+      │   └─ ensureForkRoute() → orienta la aguja de salida (direction-aware)
       └─ acquireInitialLocks() → inicia bloqueo de segmentos
 
 Control de velocidad (indirecto):
@@ -479,16 +482,17 @@ Control de velocidad (indirecto):
 
 ## Waypoints
 
-Los waypoints son puntos de ruta (estación o sensor) que ejecutan comandos al llegar:
+Los waypoints son puntos de ruta (estación o sensor) que ejecutan comandos al llegar. La llegada
+es **event-driven**, no se sondea cada tick:
 
 ```
-Puntos de entrada para checkWaypointArrival():
-  ├─ notifySegmentEntered() → cambio de segmento
-  ├─ notifyEnterSensor() → entrada a celda con sensor
-  └─ setTargetSpeed(>0 desde 0) → arranque
+Disparo del waypoint:
+  ├─ notifyEnterSensor() → checkAndNotifyWaypointReached() (isCurrentlyOn)
+  └─ checkInitialWaypoint() al activar el autopilot (tren ya sobre la estación)
 
 Comandos disponibles:
-  ├─ WAIT(ticks)     → espera usando SimulationScheduler
+  ├─ WAIT(n)         → si va en marcha frena (diferido como load/unload); después
+  │                    N×20 ticks y restaura velocidad/plan (ADR-032)
   ├─ LOAD/UNLOAD     → 80 ticks por vagón
   ├─ REVERSE         → pendingReverse, se ejecuta al llegar a speed=0
   └─ SPEED(n)        → setTargetSpeed + acquireInitialLocks
@@ -526,7 +530,8 @@ Comandos disponibles:
  │  eventDispatcher  : TrainEventDispatcher             │
  │  ─────────────────────────────────────────────────── │
  │  notifyCrash() / notifyContact() / notifyLink()      │
- │  notifySegmentEntered() / notifyEnterSensor()        │
+ │  notifyAutopilotSegmentEntered()                     │
+ │  notifyEnterSensor()                                 │
  └──────┬───────┬───────┬───────┬───────┬───────┬───────┘
         │       │       │       │       │       │
         ▼       ▼       ▼       ▼       ▼       ▼

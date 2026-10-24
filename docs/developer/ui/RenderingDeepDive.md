@@ -71,8 +71,14 @@ latitud mundial). El detalle de tokens y fases está en
   sobre el suelo de un quad por celda dibujaban la rejilla como manchas cuadradas (#690); el plano
   del charco se pinta por encima del balasto (y por debajo de vía y tren) para que las cajas por
   celda del balasto no lo recorten. Luces y haz solo se encienden por encima de
-  `VisualPalette.LIGHTS_ON_RATIO` (0,1) y con el motor en marcha y la locomotora de cabeza
-  (`isEngineOn() && isHeadLocomotive()`); en 2D el túnel oculto también apaga el haz.
+  `VisualPalette.LIGHTS_ON_RATIO` (0,1) y con el motor en marcha (`isEngineOn()`); alumbran la
+  locomotora del frente físico (`Train.getHeadlightLocomotive()`) desde su **cara exterior**
+  (`TailLamps.headlightSign`), así que **la inversión no mueve ninguna luz**: sólo en push-pull se
+  intercambian porque cambia la locomotora blanca (#618). En 3D se añaden los **faroles rojos de
+  cola** (#796): sólo 3D, fijos al material, fijos en un vagón de cola, y de noche parpadean por
+  ticks de juego (ciclo 20: A [0,4), B [12,16), apagadas el resto) con su propio charco rojo. En 2D
+  el túnel oculto también apaga el haz. Reglas completas en
+  [DayNight_Colors.md](../systems/DayNight_Colors.md) (#618, #796).
 
 ## Menú de modos: paridad 2D/3D (#710)
 
@@ -174,14 +180,19 @@ palabras no pueden divergir entre clientes:
   recurso `/letrain/cover/cover_u44.data`) y el pintado Lanterna + la traducción de profundidad, en
   `ui-terminal` (`letrain.mvp.impl.terminal.CoverArtPainter`), así que `core` sigue sin conocer
   Lanterna. **No hay texto de "pulsa una tecla" en 2D** (decisión del dueño): cualquier tecla
-  continúa igual que antes.
+  continúa igual que antes. Desde #845 se pinta la **versión del build** (`BuildInfo.versionTag()`)
+  centrada en la fila siguiente al arte braille; si el arte queda recortado por una terminal corta,
+  se pinta en la última fila para que siempre sea visible.
 - **Portada 3D**: `Gdx3DHud.showCover()` pinta la captura del tren de letras
   (`letrain/cover/cover_3d.png`, issue #775) a pantalla completa en modo *cover* —fondo negro
   debajo, escala `max(anchoP/imgAncho, altoP/imgAlto)`, centrada, el sobrante del eje mayor se sale
   de pantalla, sin deformar y sin barras (`coverScale`/`coverOffset`, estáticos puros testeables sin
-  GL)—. Tampoco muestra texto (decisión del dueño: la imagen ya rotula LeTrain), y al quedar sin
-  uso en ningún cliente se eliminaron las constantes `CoverText` (`TITLE`/`PROMPT`). Si falta el
-  recurso, la portada degrada al fondo negro; la textura se libera en `dispose()`.
+  GL)—. Sobre la captura se pintan el tagline compartido (`CoverArt.TAGLINE`) y, debajo, la
+  **versión del build** (`BuildInfo.versionTag()`, #845), ambas escaladas con la ventana; si la
+  ventana es muy baja, el tagline se sube lo justo para que la versión quepa sin solaparse. Al
+  quedar sin uso en ningún cliente se eliminaron las constantes `CoverText`
+  (`TITLE`/`PROMPT`). Si falta el recurso, la portada degrada al fondo negro; la textura se libera
+  en `dispose()`.
 - **Recorte centrado**: `CoverArtPainter.paint` sitúa el arte con `centredOffset` (división entera
   hacia abajo, luego el offset puede ser negativo) y **salta** las celdas que caen fuera de la
   pantalla, sin pasar coordenadas negativas a Lanterna (aplica a ambos estilos).
@@ -205,36 +216,50 @@ palabras no pueden divergir entre clientes:
   `gameStarted = false` al mostrar la portada si el cover está habilitado; al despedirla con
   cualquier tecla, `dismissCover()` abre el **menú File** en vez de entregar el mundo (equivale al
   `startupMenuStep()` 2D). `hasActiveGame()` refleja `gameStarted`, así que el menú de boot
-  deshabilita `Save`. El `Esc` del menú durante el boot devuelve a la portada
-  (`onFileMenuDismissed`); en partida no hace nada. `New`/`Load` arrancan partida: `New` abre el
+  deshabilita `Save`. El `Esc` del menú **en el boot ya no vuelve a la portada: sale de la
+  aplicación**, la misma acción que `Quit` (decisión del dueño #803, en ambos clientes); en partida
+  `Esc` sigue cerrando el menú (D11). `New`/`Load` arrancan partida: `New` abre el
   diálogo de Nueva Partida (`Gdx3DHud.showNewGameDialog`) y `startNewGame` reutiliza la maquinaria
   de `applyLoadedModel` (cámara/HUD/input/journal) marcando `gameStarted = true` y ocultando la
   portada; cancelar el diálogo `New` o el selector de `Load` en el boot vuelve a la portada (2D
   parity). El separador de callbacks del menú distingue `close` (solo oculta; una acción actuó) de
-  `dismiss` (oculta + avisa al boot).
+  `dismiss` (oculta + avisa con `onFileMenuDismissed`), que sigue siendo el camino del `Esc` en
+  partida; en el boot `Esc` sale antes de llegar a `dismiss` (#803).
 
 - **Menú File** (`FileMenuText`): `items()` define estructura, orden, palabras y estado
   (`enabled` + `disabledReason`) de `New`/`Load`/`Save`/`Settings`/`Quit`, y `displayLabel(item)`
-  añade el motivo entre paréntesis mientras la entrada está bloqueada. `MenuState.terminal(hasGame)`
-  y `MenuState.graphic(hasGame)` comparten el patrón contextual: `New` habilitado, `Save` y
+  devuelve la **etiqueta pelada**: el estado deshabilitado basta, el motivo queda en
+  `Item.disabledReason()` y se muestra como **tooltip** en 3D (el 2D solo deshabilita la fila)
+  (#802). Cada fila lleva un mnemónico compartido `Alt+N/L/S/E/Q` (`FileMenuText.mnemonic`, con `E`
+  para Settings y no chocar con Save), tintado como en el resto de diálogos en ambos clientes
+  (#803). `MenuState.terminal(hasGame)` y `MenuState.graphic(hasGame)` comparten el patrón
+  contextual: `New` habilitado, `Save` y
   `Settings` según haya partida (`no game in progress`) y `Load`/`Quit` siempre. Desde S4b (#778)
   ambos clientes habilitan `Settings` en partida y lo deshabilitan en portada con el mismo motivo;
   ya no hay diferencia entre `terminal(hasGame)` y `graphic(hasGame)`. `Load`/`Save` abren sus
-  diálogos y `Quit` sustituye al antiguo cierre directo con `Esc` (decisión D11). `Esc` abre el
-  menú (`view.showFileMenu()` en ambos presentadores) y `Esc` de nuevo lo cierra.
+  diálogos y `Quit` sustituye al antiguo cierre directo con `Esc` (decisión D11). El diálogo ya no
+  tiene título "File" (#802). `Esc` abre el menú (`view.showFileMenu()` en ambos presentadores) y,
+  dentro, `Esc` lo cierra en partida o sale de la aplicación en el boot (#803).
 - **Diálogo Nueva Partida 3D** (#777, V1): `Gdx3DHud.showNewGameDialog(form, onStart, onCancel)`
   reutiliza `NewGameForm` (semilla + sliders de agua/montaña, con la regla cruzada del catálogo) y
-  valida con `form.toSettings()`, mostrando el mensaje del catálogo en línea si falla. El skin
-  code-built no tenía `Slider`, así que añade un `Slider.SliderStyle` "default-horizontal" (ver
+  valida con `form.toSettings()`, mostrando el mensaje del catálogo en el panel de mensajes si falla.
+  El skin code-built no tenía `Slider`, así que añade un `Slider.SliderStyle` "default-horizontal" (ver
   *Estilo de controles* más abajo). El campo de semilla lleva un `TextFieldFilter` que descarta los
   caracteres de control (#780, ver *Caracteres de control*). Desde el feedback S4b (#780) el bloque
   de terreno es **vivo**: bajo los sliders van la barra tricolor del 100 % y el preview cuadrado
   (`TerrainPreviewView`, 88x88 a 2x) y ambos se recalculan al mover cualquier slider y al editar la
   semilla cuando parsea a entero (se guarda la última semilla válida, como el 2D); el botón "new"
   desapareció, así que la semilla se sortea al abrir y a mano después. El foco se pinta en vivo
-  (`paintNewGameFocus`): los sliders cambian al estilo "focused-horizontal" (knob cian) y Start/Cancel
-  al estilo "focused" (fondo `SELECTED_BG`); las flechas no roban el caret a los `TextField`. Las
-  pestañas del catálogo llegan en S4c.
+  (`paintNewGameFocus`): los sliders cambian al estilo "focused-horizontal" (knob cian) y
+  Start/Cancel al estilo "focused" (fondo `SELECTED_BG`); las flechas no roban el caret a los
+  `TextField`. Las pestañas del catálogo ya están (#808): las cinco páginas
+  (Terrain/Game/Economy/Build/UI) se construyen desde `SettingsCatalog` con la misma maquinaria que
+  el Settings 3D (`settingsTabLetter`/`settingsTabHotkey`, `settingsCycleTab`,
+  `settingsHotkeyLabel`), `Alt+T/G/E/B/U` saltan de página, `Ctrl+Tab` cicla y `Tab`/flechas
+  recorren la página activa más Start/Cancel (`Alt+S`/`Alt+C`). Las páginas no-Terrain son una
+  columna con scroll de filas del catálogo enlazadas **en vivo** al `NewGameForm`; en Start,
+  `form.toSettings()` valida y el error sale con `NewGameText.INVALID_TITLE` en el panel de
+  mensajes, sin cerrar el diálogo.
 - **Diálogo Settings 3D** (#778, `Gdx3DHud.showSettingsDialog`): espejo del 2D con las mismas
   palabras y semántica. Un selector de categorías (una página a la vez) y, por cada
   `SettingDefinition`, una fila con el glifo de estado —● verde LIVE, ● amarillo REAPPLY, ● rojo

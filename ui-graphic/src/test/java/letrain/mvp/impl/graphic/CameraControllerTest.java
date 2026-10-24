@@ -327,4 +327,63 @@ class CameraControllerTest {
         assertEquals(10.5f, cameraController.getTargetX(), 0.001f);
         assertEquals(10.5f, cameraController.getTargetZ(), 0.001f);
     }
+
+    @Test
+    @DisplayName("#820: smoothing is normalised to 60 fps and frame-rate independent")
+    void smoothing_isFrameRateIndependent() {
+        assertEquals(0.05f, CameraController.smoothing(0.05f, 1f / 60f), 1e-6f,
+                "at 60 fps the factor is exactly the historical per-frame value");
+
+        float remainingAt60 = 1f;
+        for (int i = 0; i < 60; i++) {
+            remainingAt60 *= 1f - CameraController.smoothing(0.05f, 1f / 60f);
+        }
+        float remainingAt144 = 1f;
+        for (int i = 0; i < 144; i++) {
+            remainingAt144 *= 1f - CameraController.smoothing(0.05f, 1f / 144f);
+        }
+        assertEquals(remainingAt60, remainingAt144, 1e-4f,
+                "one second of smoothing must converge the same at 60 and 144 Hz");
+    }
+
+    @Test
+    @DisplayName("#820: no frame time (or a negative one) means no smoothing")
+    void smoothing_isZeroWithoutElapsedTime() {
+        assertEquals(0f, CameraController.smoothing(0.05f, 0f), 1e-6f);
+        assertEquals(0f, CameraController.smoothing(0.05f, -1f), 1e-6f,
+                "a negative delta is clamped to zero");
+    }
+
+    @Test
+    @DisplayName("#820: a long frame is clamped to 100 ms")
+    void smoothing_clampsLongFrames() {
+        float atHundredMs = CameraController.smoothing(0.05f, 0.1f);
+        float atOneSecond = CameraController.smoothing(0.05f, 1f);
+
+        assertEquals(atHundredMs, atOneSecond, 1e-6f, "the clamp caps the response");
+        assertEquals(1f - (float) Math.pow(0.95f, 6f), atHundredMs, 1e-6f,
+                "100 ms is six 60 fps steps");
+    }
+
+    @Test
+    @DisplayName("#820: base 0 keeps the value and base 1 snaps immediately")
+    void smoothing_handlesTheBaseEdges() {
+        assertEquals(0f, CameraController.smoothing(0f, 1f / 60f), 1e-6f,
+                "no smoothing factor leaves the value untouched");
+        assertEquals(0f, CameraController.smoothing(0f, 0.1f), 1e-6f);
+        assertEquals(1f, CameraController.smoothing(1f, 1f / 60f), 1e-6f,
+                "a full factor snaps in one frame");
+        assertEquals(1f, CameraController.smoothing(1f, 0.1f), 1e-6f);
+    }
+
+    @Test
+    @DisplayName("#820: a longer frame smooths more (monotonic in delta)")
+    void smoothing_growsWithDelta() {
+        float at120Hz = CameraController.smoothing(0.05f, 1f / 120f);
+        float at60Hz = CameraController.smoothing(0.05f, 1f / 60f);
+        float at30Hz = CameraController.smoothing(0.05f, 1f / 30f);
+
+        assertTrue(at120Hz < at60Hz, "120 Hz: " + at120Hz + " < 60 Hz: " + at60Hz);
+        assertTrue(at60Hz < at30Hz, "60 Hz: " + at60Hz + " < 30 Hz: " + at30Hz);
+    }
 }

@@ -47,11 +47,31 @@ class ZoneAmbienceTest {
         when(map.getValueAt(anyInt(), anyInt()))
                 .thenAnswer(invocation -> cells[clamp(invocation.getArgument(1))][clamp(
                         invocation.getArgument(0))]);
-        return new ZoneAmbience(map, 8, 1);
+        when(model.getGroundMap()).thenReturn(map);
+        return new ZoneAmbience(8, 1);
     }
 
     private int clamp(int value) {
         return Math.max(0, Math.min(127, value));
+    }
+
+    /** A rails model whose cursor sits on {@code (x, y)} over a uniform terrain map. */
+    private static Model railsModelAt(int x, int y, GroundMap map) {
+        Model world = mock(Model.class);
+        Cursor focus = mock(Cursor.class);
+        when(focus.getPosition()).thenReturn(new Point(x, y));
+        when(world.getMode()).thenReturn(Model.GameMode.RAILS);
+        when(world.getEffectiveMode()).thenReturn(Model.GameMode.RAILS);
+        when(world.getCursor()).thenReturn(focus);
+        when(world.getGroundMap()).thenReturn(map);
+        return world;
+    }
+
+    /** A map that returns the same terrain value everywhere (no noise, deterministic sampling). */
+    private static GroundMap uniformMap(int terrain) {
+        GroundMap map = mock(GroundMap.class);
+        when(map.getValueAt(anyInt(), anyInt())).thenReturn(terrain);
+        return map;
     }
 
     @Test
@@ -156,5 +176,49 @@ class ZoneAmbienceTest {
         ZoneAmbience.Update update = ambience().update(model, 0L, true);
 
         assertNull(update.primary());
+    }
+
+    @Test
+    @DisplayName("#805: after a New Game the sea weight follows the new world, not the old map")
+    void should_DropTheSeaWeight_When_TheModelSwapsToADryWorld() {
+        // Arrange: the same focus, once over a water world and once over a 0% water world.
+        Model wateryWorld = railsModelAt(64, 64, uniformMap(GroundMap.WATER));
+        Model dryWorld = railsModelAt(64, 64, uniformMap(GroundMap.GROUND));
+        ZoneAmbience ambience = new ZoneAmbience(8, 1);
+
+        // Act: the second update is NOT forced and reuses the same timestamp, so only the
+        // ground-map identity can trigger the resample.
+        ZoneAmbience.Update before = ambience.update(wateryWorld, 0L, true);
+        ZoneAmbience.Update after = ambience.update(dryWorld, 0L, false);
+
+        // Assert
+        assertTrue(before.weightOf("sea") > 0f, "the old watery world hears the sea");
+        assertEquals(0f, after.weightOf("sea"), 0.0001f,
+                "the new 0% water world must not inherit the old sea weight");
+        assertEquals("fields", after.primary());
+        assertFalse(after.focusChanged(), "the focus kind did not change");
+    }
+
+    @Test
+    @DisplayName("#805: a ground-map change forces a resample even with the same focus and kind")
+    void should_Resample_When_OnlyTheGroundMapChanges() {
+        // Arrange: one world, sampled once (forced) then once more without moving the focus.
+        GroundMap watery = uniformMap(GroundMap.WATER);
+        Model firstWorld = railsModelAt(64, 64, watery);
+        ZoneAmbience ambience = new ZoneAmbience(8, 1);
+        ZoneAmbience.Update first = ambience.update(firstWorld, 0L, true);
+
+        // Act/Assert: the same map and focus reuse the cached update...
+        ZoneAmbience.Update cached = ambience.update(firstWorld, 0L, false);
+        assertEquals(first.weights(), cached.weights(),
+                "same map, same focus and no elapsed time must reuse the sample");
+
+        // ...but a different map identity resamples immediately, without force or elapsed time.
+        Model swappedWorld = railsModelAt(64, 64, uniformMap(GroundMap.GROUND));
+        ZoneAmbience.Update swapped = ambience.update(swappedWorld, 0L, false);
+
+        assertTrue(first.weightOf("sea") > 0f);
+        assertEquals(0f, swapped.weightOf("sea"), 0.0001f,
+                "the map identity alone must force the new terrain weights");
     }
 }

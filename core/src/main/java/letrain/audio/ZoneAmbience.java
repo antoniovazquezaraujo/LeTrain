@@ -15,6 +15,13 @@ import letrain.vehicle.rail.impl.Locomotive;
  * Bridge between the game and the soundscape (ADR-025): resolves the listening focus from the
  * active {@link Model.GameMode}, asks the {@link ZoneSensor} for the zone weights and caps how
  * often the map is sampled. A change of focus kind is reported so the player can cut the scene.
+ *
+ * <p>
+ * The terrain is resolved from the <b>model passed to each {@link #update(Model)} call</b>, never
+ * captured in the constructor (issue #805): after a New Game the world is a different
+ * {@link GroundMap}, and a constructor-captured lambda would keep sampling the old map (sea heard
+ * on a 0% water world). A change of ground-map identity also forces a resample even when the focus
+ * has not moved, so the new world's weights replace the old ones immediately.
  */
 public class ZoneAmbience {
 
@@ -38,17 +45,18 @@ public class ZoneAmbience {
     private static final Update EMPTY = new Update(null, Map.of(), Map.of(), false);
 
     private final ZoneSensor sensor;
-    private final IntBinaryOperator terrainAt;
     private Focus lastFocus;
     private Update lastUpdate;
     private long lastCompute;
+    /** Ground map the last sample was taken from; a different instance forces a resample. */
+    private GroundMap lastGroundMap;
 
-    public ZoneAmbience(GroundMap groundMap, int radius, int stride) {
+    /**
+     * @param radius sampling radius in cells
+     * @param stride sampling stride in cells
+     */
+    public ZoneAmbience(int radius, int stride) {
         this.sensor = new ZoneSensor(radius, stride);
-        this.terrainAt = (x, y) -> {
-            Integer value = groundMap.getValueAt(x, y);
-            return value == null ? -1 : value;
-        };
     }
 
     public Update update(Model model) {
@@ -60,20 +68,35 @@ public class ZoneAmbience {
         if (focus == null) {
             return lastUpdate == null ? EMPTY : lastUpdate;
         }
+        // Resolve the world's terrain on every sample (issue #805): never capture the GroundMap.
+        GroundMap groundMap = model.getGroundMap();
+        boolean mapChanged = groundMap != lastGroundMap;
         boolean kindChanged = lastFocus == null || !lastFocus.kind().equals(focus.kind());
         boolean moved =
                 lastFocus == null || lastFocus.x() != focus.x() || lastFocus.y() != focus.y();
         lastFocus = focus;
-        boolean due =
-                force || kindChanged || (moved && nowNanos - lastCompute >= MIN_INTERVAL_NANOS);
+        lastGroundMap = groundMap;
+        boolean due = force || kindChanged || mapChanged
+                || (moved && nowNanos - lastCompute >= MIN_INTERVAL_NANOS);
         if (!due && lastUpdate != null) {
             return lastUpdate;
         }
-        ZoneSensor.Result result = sensor.sense(terrainAt, focus.x(), focus.y());
+        ZoneSensor.Result result = sensor.sense(terrainAt(groundMap), focus.x(), focus.y());
         lastCompute = nowNanos;
         lastUpdate =
                 new Update(result.primary(), result.weights(), result.influence(), kindChanged);
         return lastUpdate;
+    }
+
+    /** Terrain sampler bound to the given world map; an absent map reads as unknown (-1). */
+    private static IntBinaryOperator terrainAt(GroundMap groundMap) {
+        if (groundMap == null) {
+            return (x, y) -> -1;
+        }
+        return (x, y) -> {
+            Integer value = groundMap.getValueAt(x, y);
+            return value == null ? -1 : value;
+        };
     }
 
     private Focus resolve(Model model) {

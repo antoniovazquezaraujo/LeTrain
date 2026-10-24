@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.progmatic</groupId>
     <artifactId>JLeTrain</artifactId>
-    <version>1.0.0-beta.6</version>
+    <version>1.0.0-beta.7</version>
     <packaging>pom</packaging>
 
     <properties>
@@ -32,11 +32,6 @@
                 <groupId>org.antlr</groupId>
                 <artifactId>antlr4</artifactId>
                 <version>4.13.2</version>
-            </dependency>
-            <dependency>
-                <groupId>com.kotcrab.vis</groupId>
-                <artifactId>vis-ui</artifactId>
-                <version>1.5.9</version>
             </dependency>
             <dependency>
                 <groupId>com.googlecode.lanterna</groupId>

@@ -34,6 +34,12 @@ public final class CoverArt {
     /** Classpath resource bundled by {@code core} with the owner-approved braille cover. */
     public static final String RESOURCE = "/letrain/cover/cover_u44.data";
 
+    /**
+     * Subtitle under the logo ("The Letter Train Simulator"), baked into the 2D art and drawn as a
+     * monospace overlay by the 3D cover (#801), so the two covers cannot drift apart.
+     */
+    public static final String TAGLINE = "The Letter Train Simulator";
+
     /** Natural width of the art in terminal columns; a narrower terminal crops it symmetrically. */
     public static final int COLUMNS = 160;
 

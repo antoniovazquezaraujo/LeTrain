@@ -2,7 +2,6 @@ package letrain.visitor.gdx3d;
 
 import com.badlogic.gdx.math.Vector3;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -28,15 +27,42 @@ public final class Headlights {
      * locomotives at all.
      */
     public static List<Source> nearestTo(List<Source> sources, Vector3 origin, int max) {
-        List<Source> candidates = new ArrayList<>();
-        if (sources != null) {
-            candidates.addAll(sources);
+        return nearestTo(sources, origin, max, new ArrayList<>());
+    }
+
+    /**
+     * Allocation-free variant for the per-frame render path (#820): writes the nearest {@code max}
+     * sources, sorted, into {@code out} (cleared first). With few sources the list is copied as-is;
+     * otherwise a top-N insertion keeps the order without sorting or allocating. Callers reuse
+     * {@code out} across frames.
+     */
+    public static List<Source> nearestTo(List<Source> sources, Vector3 origin, int max,
+            List<Source> out) {
+        out.clear();
+        if (sources == null || sources.isEmpty() || max <= 0) {
+            return out;
         }
-        candidates.sort(Comparator.comparingDouble(s -> squaredDistance(s, origin)));
-        if (candidates.size() > max) {
-            candidates.subList(max, candidates.size()).clear();
+        if (sources.size() <= max) {
+            out.addAll(sources);
+            return out;
         }
-        return candidates;
+        for (Source source : sources) {
+            double distance = squaredDistance(source, origin);
+            int insert = out.size();
+            for (int i = 0; i < out.size(); i++) {
+                if (distance < squaredDistance(out.get(i), origin)) {
+                    insert = i;
+                    break;
+                }
+            }
+            if (insert < max) {
+                out.add(insert, source);
+                if (out.size() > max) {
+                    out.remove(out.size() - 1);
+                }
+            }
+        }
+        return out;
     }
 
     private static double squaredDistance(Source source, Vector3 origin) {

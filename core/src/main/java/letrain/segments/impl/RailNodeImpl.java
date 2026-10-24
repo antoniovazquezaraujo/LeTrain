@@ -103,16 +103,30 @@ public class RailNodeImpl implements RailNode {
         }
 
         ForkRailTrack fork = (ForkRailTrack) track;
-        if (exit.getType() == PortType.A) {
+        // Decide by the physical branch direction of the exit port against the fork's *current*
+        // labels, not by port A/B: on parallel loops the node's A/B mapping can be crossed
+        // relative to originalRoute/alternativeRoute (issue #830). getDirForPort() is the fixed
+        // physical direction the port was built with; original/alternative may have been
+        // relabelled since.
+        Dir exitDir = getDirForPort(exit.getType());
+        if (exitDir == null) {
+            return false;
+        }
+        letrain.utils.Pair<Dir, Dir> original = fork.getOriginalRoute();
+        letrain.utils.Pair<Dir, Dir> alternative = fork.getAlternativeRoute();
+        if (original != null && exitDir.equals(original.getValue())) {
             if (fork.isUsingAlternativeRoute()) {
                 fork.setNormalRoute();
                 return true;
             }
-        } else if (exit.getType() == PortType.B) {
+            return false;
+        }
+        if (alternative != null && exitDir.equals(alternative.getValue())) {
             if (!fork.isUsingAlternativeRoute()) {
                 fork.setAlternativeRoute();
                 return true;
             }
+            return false;
         }
         return false;
     }
@@ -128,9 +142,20 @@ public class RailNodeImpl implements RailNode {
         }
 
         ForkRailTrack fork = (ForkRailTrack) track;
+        Dir exitDir = getDirForPort(exit.getType());
+        if (exitDir == null) {
+            return false;
+        }
+        letrain.utils.Pair<Dir, Dir> original = fork.getOriginalRoute();
+        letrain.utils.Pair<Dir, Dir> alternative = fork.getAlternativeRoute();
         boolean usingAlt = fork.isUsingAlternativeRoute();
-        return (exit.getType() == PortType.B && usingAlt)
-                || (exit.getType() == PortType.A && !usingAlt);
+        if (original != null && exitDir.equals(original.getValue())) {
+            return !usingAlt;
+        }
+        if (alternative != null && exitDir.equals(alternative.getValue())) {
+            return usingAlt;
+        }
+        return false;
     }
 
     @Override
@@ -143,8 +168,13 @@ public class RailNodeImpl implements RailNode {
         }
 
         ForkRailTrack fork = (ForkRailTrack) track;
-        PortType activeType = fork.isUsingAlternativeRoute() ? PortType.B : PortType.A;
-        return getPortByType(activeType);
+        letrain.utils.Pair<Dir, Dir> active =
+                fork.isUsingAlternativeRoute() ? fork.getAlternativeRoute()
+                        : fork.getOriginalRoute();
+        if (active == null) {
+            return null;
+        }
+        return getPortForDir(active.getValue());
     }
 
     public Port getPortByType(PortType type) {

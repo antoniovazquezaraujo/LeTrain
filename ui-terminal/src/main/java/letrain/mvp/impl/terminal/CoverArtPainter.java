@@ -93,6 +93,44 @@ final class CoverArtPainter {
     }
 
     /**
+     * Row for the version caption: the row just below the art, or the last screen row when the art
+     * is cropped (or ends exactly at the bottom, so no row is left below it).
+     */
+    static int versionRow(int artStartRow, int artHeight, int screenRows) {
+        if (screenRows <= 0) {
+            return 0;
+        }
+        int below = artStartRow + artHeight;
+        return below < screenRows ? Math.max(0, below) : screenRows - 1;
+    }
+
+    /**
+     * Draws the running build version centred just below the braille art (or on the last row when a
+     * short terminal crops the art, so it is always visible). The colours are explicit and do not
+     * alter the art data; both {@link CoverStyle#COLOUR} and {@link CoverStyle#DOTS} stay legible.
+     */
+    static void paintVersion(TextGraphics tg, CoverArt art, TerminalPalette palette,
+            TerminalSize size, CoverStyle style, String text) {
+        ValidationUtils.requireNonNull(tg, "tg must not be null");
+        ValidationUtils.requireNonNull(art, "art must not be null");
+        ValidationUtils.requireNonNull(palette, "palette must not be null");
+        ValidationUtils.requireNonNull(size, "size must not be null");
+        ValidationUtils.requireNonNull(style, "style must not be null");
+        ValidationUtils.requireNonNull(text, "text must not be null");
+        if (text.isEmpty() || size.getColumns() <= 0 || size.getRows() <= 0) {
+            return;
+        }
+        String label =
+                text.length() > size.getColumns() ? text.substring(0, size.getColumns()) : text;
+        int startRow = centredOffset(size.getRows(), art.height());
+        int row = versionRow(startRow, art.height(), size.getRows());
+        int column = Math.max(0, (size.getColumns() - label.length()) / 2);
+        tg.setForegroundColor(palette.colorOf(0xFFFFFF));
+        tg.setBackgroundColor(palette.colorOf(BLACK));
+        tg.putString(column, row, label);
+    }
+
+    /**
      * The Lanterna character (glyph + colours) for one cover cell, applying the fallback rules and
      * the style. Returns {@code null} in {@link CoverStyle#DOTS} for a blank cell: nothing must be
      * painted there, so the terminal background shows through.

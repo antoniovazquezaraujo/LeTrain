@@ -49,11 +49,6 @@ public interface GameViewListener {
     /** Plays a scenario from its text (used by the editor's Play button). */
     default void onPlayScenarioText(String text) {}
 
-    /** Whether there is an edit journal to export (used to enable/disable the Export button). */
-    default boolean canExportScenario() {
-        return true;
-    }
-
     /** Whether the command journal is currently recording edits (for the REC indicator). */
     default boolean isRecordingCommands() {
         return false;

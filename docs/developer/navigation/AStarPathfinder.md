@@ -14,6 +14,41 @@ El sistema permite que los trenes calculen y recorran de forma autónoma la ruta
 - **`Itinerary`** (`letrain.itinerary.Itinerary`): Estructura de datos que almacena la lista de `Waypoint`s y comandos de parada, velocidad, espera o inversión.
 - **`TrainActionManager`** (`letrain.itinerary.TrainActionManager`): Gestiona la llegada a waypoints y la ejecución programada de acciones.
 
+## Implementación del A* (issue #816)
+
+- **Métrica de coste:** entrar en un segmento cuesta su número de vías físicas
+  (`RailwayGraph.getTrackCount`, mínimo 1); el segmento de origen no se cobra. El coste de una ruta
+  es, por tanto, el número de raíles que faltan por entrar. Un cantón bloqueado por otro tren añade
+  una penalización de `10000` que la heurística nunca incluye.
+- **Heurística (admisible y consistente):** distancia de Chebyshev entre el nodo del **puerto de
+  entrada** del estado y el extremo más cercano del segmento destino, menos el `trackCount` del
+  segmento actual (el tren aún debe cruzarlo), acotada a cero. Las 8 direcciones mueven como mucho
+  una celda por eje y raíl, así que Chebyshev nunca supera los pasos restantes; al no incluir la
+  penalización y respetar la desigualdad triangular, `h(a) ≤ coste(a→b) + h(b)`.
+- **Cola de prioridad:** `PriorityQueue` de `(f, g, seq, estado)` con descarte de entradas obsoletas
+  (si el `g` encolado ya no coincide con el mejor `gScore`), `O(E log V)` frente al escaneo lineal
+  `O(V²)` anterior. Los empates de `f` se resuelven por `seq` de inserción (FIFO), lo que hace
+  determinista la ruta devuelta ante costes iguales.
+
+## Orientación de agujas en bucles de segmentos paralelos (#830)
+
+En un bucle con varios segmentos paralelos entre las **mismas dos agujas** (p. ej. S0 principal,
+S1 con la estación 4, S2 con la 5), ambos extremos son nodos compartidos. La orientación de agujas
+es **direction-aware**:
+
+- `ensureForkRoute(from, to)` resuelve el **puerto de salida** real de `from` con
+  `getTrainExitPort(from)` y orienta la aguja de **ese nodo** (la que el tren tiene delante), no el
+  primer nodo compartido (que puede ser la aguja de entrada, ya dejada atrás).
+- `RailNodeImpl.setRoute` / `isRouteActive` comparan la **dirección física** de la rama
+  (`getDirForPort`) con `originalRoute`/`alternativeRoute` vivos, no con A/B a ciegas. El mapeo A/B
+  sigue siendo físico y fijo; solo cambia cómo se interpreta al rutar.
+- El fallback al primer nodo compartido queda solo para llamadas sin tren/dirección o cuando `to`
+  no es adyacente a la salida.
+
+Análisis completo y alternativas descartadas: [[../adr/ADR-033-Fork-Orientation-Parallel-Loops|ADR-033]].
+Regresión: `ForkLoopOrientationTest` (bucle triple + itinerario `1→2→4→1→2→5`) y
+`RailNodeImplRouteTest` (A/B cruzados).
+
 ## Integración con el Lenguaje DSL (ANTLR4)
 La automatización permite definir y asignar itinerarios mediante scripts o consola (ver [[../systems/CommandPattern|Gestión de Automatización]] y la documentación de usuario `grammar.md`):
 ```letrain

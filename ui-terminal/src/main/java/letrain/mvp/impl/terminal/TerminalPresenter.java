@@ -138,6 +138,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private static final int AMBIENT_BASE_CELLS = 80 * 25;
     private static final int AMBIENT_FULL_CELLS = 120 * 40;
 
+    /** Fixed simulation period, single-sourced with the game clock (50 ms at 20 TPS). */
+    private static final long SIMULATION_PERIOD_NANOS =
+            1_000_000_000L / letrain.time.GameClock.TICKS_PER_SECOND;
+
     /** Menu + help bar shown from the start so newcomers see the controls (see setHelpLevel). */
     private static final int FULL_HELP_LEVEL = 2;
 
@@ -461,12 +465,16 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     /**
-     * One step of the boot flow: shows the File menu. New/Load start a game; when the player leaves
-     * the menu with Esc and still has no game, the cover comes back (there is no world yet to
-     * return to). Returns true when a game was started.
+     * One step of the boot flow: shows the File menu. New/Load start a game; when the player
+     * dismisses the menu (not Esc any more at boot, #803: Esc there quits) and still has no game,
+     * the cover comes back (there is no world yet to return to). A quit request ends the flow
+     * without repainting the cover. Returns true when a game was started.
      */
     boolean startupMenuStep() {
         view.showFileMenu();
+        if (view.isEndOfGame(null)) {
+            return false;
+        }
         if (!gameStarted) {
             showCover();
             return false;
@@ -486,6 +494,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             view.centerOn(startPos.getX(), startPos.getY());
             model.updateGroundMap(view.getScrollOffset(), view.getCols(), view.getRows());
             while (running) {
+                long frameStartNanos = System.nanoTime();
                 com.googlecode.lanterna.input.KeyStroke rawStroke = view.readKey();
                 boolean endOfGame = view.isEndOfGame(rawStroke);
                 if (coverActive) {
@@ -510,7 +519,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     } else {
                         view.clear();
                     }
-                    Thread.sleep(50);
+                    paceFrame(frameStartNanos);
                     continue;
                 }
                 // Handles the whole queued burst: the old code discarded every key after the first
@@ -542,11 +551,29 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
                 updateTimeouts();
 
-                Thread.sleep(50);
+                paceFrame(frameStartNanos);
                 view.clear();
             }
         } catch (Exception e) {
             log.error("Error in main loop", e);
+        }
+    }
+
+    /**
+     * Sleeps only the remainder of the fixed simulation period, so the work done in the iteration
+     * (input, tick, paint) does not lengthen it. Before #480 the loop always added 50 ms on top of
+     * the work, making the terminal run below 20 TPS. A frame longer than the period does not try
+     * to catch up, matching the 3D loop's at-most-one-tick-per-frame rule.
+     */
+    private static void paceFrame(long frameStartNanos) {
+        long remainingNanos = SIMULATION_PERIOD_NANOS - (System.nanoTime() - frameStartNanos);
+        if (remainingNanos <= 0) {
+            return;
+        }
+        try {
+            Thread.sleep(remainingNanos / 1_000_000L, (int) (remainingNanos % 1_000_000L));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -2548,11 +2575,6 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     @Override
-    public boolean canExportScenario() {
-        return !commandJournal.appliedEntries().isEmpty();
-    }
-
-    @Override
     public boolean isRecordingCommands() {
         return commandJournal.isRecording() && model.isSimulationPaused();
     }
@@ -2632,9 +2654,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     @Override
-    public void onPlay() {
-        // start();
-    }
+    public void onPlay() {}
 
     String loadProgram(File file) {
         try {

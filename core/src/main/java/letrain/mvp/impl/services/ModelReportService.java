@@ -44,7 +44,7 @@ public final class ModelReportService {
                         () -> !model.getForks().isEmpty(),
                         () -> model.getEffectiveMode() == GameMode.FORKS, () -> GameMode.FORKS),
                 new GameModeMenuOption("&Semaphores",
-                        "[⏴⏵/hl]:Select [o]:Locate [Space]:Toggle [#]:ID",
+                        "[⏴⏵/hl]:Select [o]:Locate [m]:Toggle [Space]:Invert [#]:ID",
                         () -> !model.getSemaphores().isEmpty(),
                         () -> model.getEffectiveMode() == GameMode.SEMAPHORES,
                         () -> GameMode.SEMAPHORES),

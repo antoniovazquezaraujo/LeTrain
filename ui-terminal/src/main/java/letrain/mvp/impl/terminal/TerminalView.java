@@ -10,14 +10,15 @@ import com.googlecode.lanterna.gui2.ActionListBox;
 import com.googlecode.lanterna.gui2.BasicWindow;
 import com.googlecode.lanterna.gui2.BorderLayout;
 import com.googlecode.lanterna.gui2.Button;
+import com.googlecode.lanterna.gui2.Container;
 import com.googlecode.lanterna.gui2.Direction;
 import com.googlecode.lanterna.gui2.EmptySpace;
+import com.googlecode.lanterna.gui2.Interactable;
 import com.googlecode.lanterna.gui2.Label;
 import com.googlecode.lanterna.gui2.LinearLayout;
 import com.googlecode.lanterna.gui2.LocalizedString;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
 import com.googlecode.lanterna.gui2.Panel;
-import com.googlecode.lanterna.gui2.TextBox;
 import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.gui2.dialogs.FileDialogBuilder;
 import com.googlecode.lanterna.input.KeyStroke;
@@ -31,11 +32,14 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import letrain.command.GrammarReference;
+import letrain.command.ProgramTextEdit;
 import letrain.map.Page;
 import letrain.map.Point;
 import letrain.mvp.CoverArt;
@@ -260,8 +264,11 @@ public class TerminalView implements letrain.mvp.View {
             if (coverPalette == null) {
                 coverPalette = TerminalPalette.detect();
             }
-            CoverArtPainter.paint(tg, CoverArt.load(), coverPalette, size,
-                    coverStyle(coverPalette));
+            CoverArt art = CoverArt.load();
+            CoverStyle style = coverStyle(coverPalette);
+            CoverArtPainter.paint(tg, art, coverPalette, size, style);
+            CoverArtPainter.paintVersion(tg, art, coverPalette, size, style,
+                    letrain.BuildInfo.versionTag());
             this.screen.refresh();
             Thread.yield();
         } catch (IOException e) {
@@ -868,6 +875,10 @@ public class TerminalView implements letrain.mvp.View {
     record FooterAction(String label, char mnemonic) {
     }
 
+    /** One quick-reference row: the model node, its rendered label and its preview text. */
+    record RefRow(String label, String preview, boolean dim) {
+    }
+
     /**
      * The editor footer in display order (issue #740). The labels are the shared {@link EditorText}
      * words, so the 2D and 3D clients cannot drift; static and package-visible so a test can pin
@@ -909,28 +920,26 @@ public class TerminalView implements letrain.mvp.View {
         Panel tabBar = new Panel(new LinearLayout(Direction.HORIZONTAL));
         mainPanel.addComponent(tabBar, BorderLayout.Location.TOP);
 
-        // Editor Area (the caret position is mirrored in the status bar below).
+        // Editor Area (the caret position and active placeholder are mirrored in the status bar).
         final Label statusLabel = new Label("");
-        final TextBox editor =
-                new TextBox(new TerminalSize(60, 20), scenarioBuffer[0], TextBox.Style.MULTI_LINE) {
-                    @Override
-                    public com.googlecode.lanterna.gui2.Interactable.Result handleKeyStroke(
-                            com.googlecode.lanterna.input.KeyStroke ks) {
-                        com.googlecode.lanterna.gui2.Interactable.Result result =
-                                super.handleKeyStroke(ks);
-                        updateStatusLabel(statusLabel, this);
-                        return result;
-                    }
-                };
+        final ProgramTextBox[] editorHolder = new ProgramTextBox[1];
+        editorHolder[0] = new ProgramTextBox(new TerminalSize(60, 20), scenarioBuffer[0],
+                () -> updateStatusLabel(statusLabel, editorHolder[0]));
+        final ProgramTextBox editor = editorHolder[0];
         final Runnable refreshStatus = () -> updateStatusLabel(statusLabel, editor);
         refreshStatus.run();
         mainPanel.addComponent(editor, BorderLayout.Location.CENTER);
 
-        // Side Panel (Reference)
+        // Side Panel (Reference, preview and scope hints)
         Panel sidePanel = new Panel(new LinearLayout(Direction.VERTICAL));
         sidePanel.addComponent(new Label("QUICK REFERENCE").setLabelWidth(30));
 
-        ActionListBox refList = new ActionListBox(new TerminalSize(30, 30)) {
+        final List<RefRow> refRows = new ArrayList<>();
+        final Label previewLabel = new Label("");
+        previewLabel.setPreferredSize(new TerminalSize(30, 6));
+        final Runnable[] refreshPreview = new Runnable[1];
+
+        ActionListBox refList = new ActionListBox(new TerminalSize(30, 14)) {
             private long lastClickTime = 0;
 
             @Override
@@ -943,38 +952,108 @@ public class TerminalView implements letrain.mvp.View {
                         super.handleKeyStroke(ks);
                         long now = System.currentTimeMillis();
                         if (now - lastClickTime < 500) {
-                            return super.handleKeyStroke(
-                                    new com.googlecode.lanterna.input.KeyStroke(
-                                            com.googlecode.lanterna.input.KeyType.Enter));
+                            com.googlecode.lanterna.gui2.Interactable.Result result =
+                                    super.handleKeyStroke(
+                                            new com.googlecode.lanterna.input.KeyStroke(
+                                                    com.googlecode.lanterna.input.KeyType.Enter));
+                            if (refreshPreview[0] != null) {
+                                refreshPreview[0].run();
+                            }
+                            return result;
                         }
                         lastClickTime = now;
+                        if (refreshPreview[0] != null) {
+                            refreshPreview[0].run();
+                        }
                         return com.googlecode.lanterna.gui2.Interactable.Result.HANDLED;
                     }
                 }
-                return super.handleKeyStroke(ks);
+                com.googlecode.lanterna.gui2.Interactable.Result result = super.handleKeyStroke(ks);
+                if (refreshPreview[0] != null) {
+                    refreshPreview[0].run();
+                }
+                return result;
             }
         };
-        Runnable updateList = new Runnable() {
-            private void build(letrain.command.GrammarReference.Node node, String indent) {
-                if (node.isHeading) {
-                    refList.addItem(node.label, () -> {
-                    });
-                } else if (node.snippet != null && node.children.isEmpty()) {
-                    refList.addItem(indent + node.label, () -> {
-                        insertAtCaret(editor, node.snippet);
-                        refreshStatus.run();
-                    });
-                } else {
-                    String prefix = node.expanded ? "[-]" : "[+]";
-                    refList.addItem(indent + prefix + " " + node.label, () -> {
-                        node.setExpanded(!node.expanded);
-                        this.run();
-                        refList.takeFocus();
-                    });
-                    if (node.expanded) {
-                        for (letrain.command.GrammarReference.Node child : node.children) {
-                            build(child, indent + "  ");
+        refList.setListItemRenderer(
+                new com.googlecode.lanterna.gui2.AbstractListBox.ListItemRenderer<Runnable, ActionListBox>() {
+                    @Override
+                    public String getLabel(ActionListBox listBox, int index, Runnable item) {
+                        return index >= 0 && index < refRows.size() ? refRows.get(index).label()
+                                : "";
+                    }
+
+                    @Override
+                    public void drawItem(com.googlecode.lanterna.gui2.TextGUIGraphics graphics,
+                            ActionListBox listBox, int index, Runnable item, boolean selected,
+                            boolean focused) {
+                        super.drawItem(graphics, listBox, index, item, selected, focused);
+                        if (index >= 0 && index < refRows.size() && refRows.get(index).dim()) {
+                            String label = getLabel(listBox, index, item);
+                            label = com.googlecode.lanterna.TerminalTextUtils.fitString(label,
+                                    graphics.getSize().getColumns());
+                            while (com.googlecode.lanterna.TerminalTextUtils
+                                    .getColumnWidth(label) < graphics.getSize().getColumns()) {
+                                label += " ";
+                            }
+                            graphics.setForegroundColor(TextColor.ANSI.BLACK_BRIGHT);
+                            graphics.putString(0, 0, label);
                         }
+                    }
+                });
+
+        Runnable updateList = new Runnable() {
+            private void build(GrammarReference.Node node, String indent, boolean programming) {
+                String label;
+                boolean dim = false;
+                Runnable action;
+                switch (node.kind) {
+                    case HEADING -> {
+                        label = node.label;
+                        dim = true;
+                        action = () -> {
+                        };
+                    }
+                    case INFO -> {
+                        label = indent + "INFO " + node.label;
+                        dim = true;
+                        action = () -> {
+                        };
+                    }
+                    case COMMAND -> {
+                        String tag = ProgramTextEdit
+                                .scopeTag(ProgramTextEdit.scopeForTab(programming, node.scope));
+                        label = indent + node.label + (tag.isEmpty() ? "" : "  " + tag);
+                        action = () -> {
+                            String error = editor.insertSnippet(node.snippet,
+                                    ProgramTextEdit.scopeForTab(programming, node.scope));
+                            if (error != null) {
+                                statusLabel.setText("! " + error);
+                                return;
+                            }
+                            refreshStatus.run();
+                        };
+                    }
+                    case GROUP -> {
+                        String prefix = node.expanded ? "[-]" : "[+]";
+                        label = indent + prefix + " " + node.label;
+                        action = () -> {
+                            node.setExpanded(!node.expanded);
+                            this.run();
+                            refList.takeFocus();
+                        };
+                    }
+                    default -> {
+                        label = node.label;
+                        action = () -> {
+                        };
+                    }
+                }
+                refRows.add(new RefRow(label, previewFor(node, programming), dim));
+                refList.addItem(label, action);
+                if (node.kind == GrammarReference.Kind.GROUP && node.expanded) {
+                    for (GrammarReference.Node child : node.children) {
+                        build(child, indent + "  ", programming);
                     }
                 }
             }
@@ -983,22 +1062,32 @@ public class TerminalView implements letrain.mvp.View {
             public void run() {
                 int selected = refList.getSelectedIndex();
                 refList.clearItems();
-                letrain.command.GrammarReference.Group group =
-                        activeTab[0] == tabProgram ? letrain.command.GrammarReference.Group.PROGRAM
-                                : activeTab[0] == tabConfig
-                                        ? letrain.command.GrammarReference.Group.CONFIG
-                                        : letrain.command.GrammarReference.Group.BUILD;
-                for (letrain.command.GrammarReference.Node rootNode : letrain.command.GrammarReference
-                        .getReferenceTree(group)) {
-                    build(rootNode, "");
+                refRows.clear();
+                GrammarReference.Group group =
+                        activeTab[0] == tabProgram ? GrammarReference.Group.PROGRAM
+                                : activeTab[0] == tabConfig ? GrammarReference.Group.CONFIG
+                                        : GrammarReference.Group.BUILD;
+                for (GrammarReference.Node rootNode : GrammarReference.getReferenceTree(group)) {
+                    build(rootNode, "", activeTab[0] == tabProgram);
                 }
                 if (selected >= 0 && selected < refList.getItems().size()) {
                     refList.setSelectedIndex(selected);
                 }
+                if (refreshPreview[0] != null) {
+                    refreshPreview[0].run();
+                }
             }
+        };
+        refreshPreview[0] = () -> {
+            int index = refList.getSelectedIndex();
+            String preview =
+                    index >= 0 && index < refRows.size() ? refRows.get(index).preview() : "";
+            previewLabel.setText(wrapPreview(preview, 30, 6));
         };
         updateList.run();
         sidePanel.addComponent(refList);
+        sidePanel.addComponent(new Label("PREVIEW").setLabelWidth(30));
+        sidePanel.addComponent(previewLabel);
 
         mainPanel.addComponent(sidePanel, BorderLayout.Location.RIGHT);
 
@@ -1037,10 +1126,13 @@ public class TerminalView implements letrain.mvp.View {
         final Runnable switchToProgram = () -> switchTo.accept(tabProgram);
         final Runnable switchToConfig = () -> switchTo.accept(tabConfig);
 
-        // Moves the caret to a line of a given tab (used by the error picker).
-        final java.util.function.BiConsumer<Integer, Integer> jumpTo = (tab, line) -> {
-            switchTo.accept(tab);
-            editor.setCaretPosition(Math.max(0, line - 1), 0);
+        // Moves the caret to a line:column of a given tab (used by the error picker).
+        final java.util.function.Consumer<Jump> jumpTo = jump -> {
+            switchTo.accept(jump.tab());
+            String[] lines = editor.getText().split("\n", -1);
+            int row = Math.max(0, Math.min(jump.line() - 1, lines.length - 1));
+            int col = Math.max(0, Math.min(jump.col() - 1, lines[row].length()));
+            editor.setCaretPosition(row, col);
             editor.takeFocus();
             refreshStatus.run();
             window.invalidate();
@@ -1123,7 +1215,7 @@ public class TerminalView implements letrain.mvp.View {
             if (!result.ok()) {
                 Jump jump = pickDiagnostic(gui, result, full);
                 if (jump != null) {
-                    jumpTo.accept(jump.tab(), jump.line());
+                    jumpTo.accept(jump);
                 }
                 return;
             }
@@ -1212,7 +1304,18 @@ public class TerminalView implements letrain.mvp.View {
             public void onInput(com.googlecode.lanterna.gui2.Window w,
                     com.googlecode.lanterna.input.KeyStroke ks,
                     java.util.concurrent.atomic.AtomicBoolean deliverEvent) {
-                if (ks.getKeyType() == com.googlecode.lanterna.input.KeyType.Escape) {
+                com.googlecode.lanterna.input.KeyType keyType = ks.getKeyType();
+                boolean ctrlTab =
+                        ks.isCtrlDown() && (keyType == com.googlecode.lanterna.input.KeyType.Tab
+                                || keyType == com.googlecode.lanterna.input.KeyType.ReverseTab);
+                if (ctrlTab || keyType == com.googlecode.lanterna.input.KeyType.F6) {
+                    boolean forward = !ks.isShiftDown()
+                            && keyType != com.googlecode.lanterna.input.KeyType.ReverseTab;
+                    cycleFocus(window, forward);
+                    deliverEvent.set(false);
+                    return;
+                }
+                if (keyType == com.googlecode.lanterna.input.KeyType.Escape) {
                     cancelAction.run();
                     deliverEvent.set(false);
                     return;
@@ -1275,14 +1378,35 @@ public class TerminalView implements letrain.mvp.View {
         gui.addWindowAndWait(window);
     }
 
-    /** Mirrors the editor caret in the status bar as {@code Ln X, Col Y}. */
-    private static void updateStatusLabel(Label label, TextBox editor) {
+    /** Mirrors the caret, the active placeholder and the keyboard map in the status bar. */
+    private static void updateStatusLabel(Label label, ProgramTextBox editor) {
         TerminalPosition caret = editor.getCaretPosition();
-        label.setText("Ln " + (caret.getRow() + 1) + ", Col " + (caret.getColumn() + 1));
+        String status = "Ln " + (caret.getRow() + 1) + ", Col " + (caret.getColumn() + 1);
+        String placeholder = editor.placeholderStatus();
+        if (!placeholder.isEmpty()) {
+            status += " · " + placeholder;
+        }
+        label.setText(status + " · " + EditorText.EDITOR_KEY_HINT);
     }
 
-    /** A location in the editor: which tab and which 1-based line inside it. */
-    record Jump(int tab, int line) {
+    /** Moves the keyboard focus to the next/previous interactable, wrapping around. */
+    private static void cycleFocus(Window window, boolean forward) {
+        Container root = window.getComponent() instanceof Container container ? container : null;
+        if (root == null) {
+            return;
+        }
+        Interactable current = window.getFocusedInteractable();
+        Interactable next = forward ? root.nextFocus(current) : root.previousFocus(current);
+        if (next == null) {
+            next = forward ? root.nextFocus(null) : root.previousFocus(null);
+        }
+        if (next != null) {
+            window.setFocusedInteractable(next);
+        }
+    }
+
+    /** A location in the editor: which tab and which 1-based line:column inside it. */
+    record Jump(int tab, int line, int col) {
     }
 
     /**
@@ -1301,8 +1425,9 @@ public class TerminalView implements letrain.mvp.View {
         ActionListBox list = new ActionListBox(new TerminalSize(60, 12));
         for (letrain.command.ScenarioCompiler.Diagnostic d : result.diagnostics()) {
             int line = d.line();
+            int col = d.col();
             list.addItem(d.line() + ":" + d.col() + ": " + d.message(), () -> {
-                picked[0] = locateDiagnostic(full, line);
+                picked[0] = locateDiagnostic(full, line, col);
                 dialog.close();
             });
         }
@@ -1319,9 +1444,14 @@ public class TerminalView implements letrain.mvp.View {
      * omits the {@code configuration} section (it has its own tab), so lines after it shift up.
      */
     static Jump locateDiagnostic(String full, int line) {
+        return locateDiagnostic(full, line, 1);
+    }
+
+    /** Maps a composed-scenario line:column to the tab that owns it, keeping the column. */
+    static Jump locateDiagnostic(String full, int line, int col) {
         letrain.command.ScenarioFile.LineTarget target =
                 letrain.command.ScenarioFile.locateLine(full, line);
-        return new Jump(target.tab(), target.line());
+        return new Jump(target.tab(), target.line(), Math.max(1, col));
     }
 
     /** Keeps the Config tab editable even when the world has no settings yet. */
@@ -1455,38 +1585,51 @@ public class TerminalView implements letrain.mvp.View {
         };
     }
 
-    private void insertAtCaret(TextBox editor, String text) {
-        String current = editor.getText();
-        TerminalPosition pos = editor.getCaretPosition();
-
-        // Snap to the beginning of the caret's line so we never split an existing line.
-        String[] lines = current.split("\n", -1);
-        int row = Math.min(pos.getRow(), lines.length - 1);
-        int offset = 0;
-        for (int i = 0; i < row; i++) {
-            offset += lines[i].length() + 1; // +1 for the newline
+    /** Preview text for a reference node: snippet plus scope for commands, prose for INFO. */
+    static String previewFor(GrammarReference.Node node, boolean programming) {
+        if (node == null) {
+            return "";
         }
-
-        String before = current.substring(0, offset);
-        String after = current.substring(offset);
-        String insertion = text + "\n"; // finish the line so the next insert starts clean
-        String updated = before + insertion + after;
-        editor.setText(updated);
-
-        // Leave the caret on the line after the inserted snippet, ready to insert another.
-        int caret = Math.min(offset + insertion.length(), updated.length());
-        int newRow = 0;
-        int col = 0;
-        for (int i = 0; i < caret; i++) {
-            if (updated.charAt(i) == '\n') {
-                newRow++;
-                col = 0;
-            } else {
-                col++;
+        return switch (node.kind) {
+            case COMMAND -> {
+                String hint = ProgramTextEdit
+                        .scopeHint(ProgramTextEdit.scopeForTab(programming, node.scope));
+                yield hint.isEmpty() ? node.snippet : node.snippet + "\n\nScope: " + hint;
             }
+            case INFO -> node.info == null ? "" : node.info;
+            default -> "";
+        };
+    }
+
+    /** Hard-wraps a preview to the side panel width and caps it at {@code maxLines} rows. */
+    static String wrapPreview(String text, int width, int maxLines) {
+        if (text == null || text.isEmpty() || width <= 0 || maxLines <= 0) {
+            return "";
         }
-        editor.setCaretPosition(newRow, col);
-        editor.takeFocus();
+        List<String> out = new ArrayList<>();
+        for (String paragraph : text.split("\n", -1)) {
+            String rest = paragraph;
+            if (rest.isEmpty()) {
+                out.add("");
+                continue;
+            }
+            while (rest.length() > width) {
+                int cut = rest.lastIndexOf(' ', width);
+                if (cut <= 0) {
+                    cut = width;
+                }
+                out.add(rest.substring(0, cut));
+                rest = rest.substring(cut).stripLeading();
+            }
+            out.add(rest);
+        }
+        if (out.size() > maxLines) {
+            out = new ArrayList<>(out.subList(0, maxLines));
+            String last = out.get(maxLines - 1);
+            int keep = Math.max(0, Math.min(last.length(), width - 3));
+            out.set(maxLines - 1, last.substring(0, keep) + "...");
+        }
+        return String.join("\n", out);
     }
 
     public boolean isShowingOverlay() {
@@ -1576,19 +1719,56 @@ public class TerminalView implements letrain.mvp.View {
     @Override
     public void showFileMenu() {
         MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
-        BasicWindow window = new BasicWindow(FileMenuText.TITLE);
+        final boolean hasGame = gameViewListener.hasActiveGame();
+        // No window title (#802): the menu is compact and the rows already say it all.
+        BasicWindow window = new BasicWindow();
         window.setHints(Arrays.asList(Window.Hint.CENTERED));
         window.setCloseWindowWithEscape(true);
         Panel contentPanel = new Panel();
         contentPanel.setLayoutManager(new LinearLayout(Direction.VERTICAL));
         contentPanel.addComponent(new EmptySpace(new TerminalSize(0, 1)));
-        for (FileMenuText.Item item : fileMenuItems(gameViewListener.hasActiveGame())) {
-            Button button =
-                    new Button(FileMenuText.displayLabel(item), fileMenuAction(item, window));
+        final Map<Character, Runnable> hotkeyActions = new java.util.HashMap<>();
+        for (FileMenuText.Item item : fileMenuItems(hasGame)) {
+            Runnable action = fileMenuAction(item, window);
+            Button button = new Button(FileMenuText.displayLabel(item), action);
             button.setEnabled(item.enabled());
+            // Alt mnemonic tinted like the rest of the dialogs (#803).
+            button.setRenderer(mnemonicRenderer(FileMenuText.mnemonic(item.command())));
+            if (item.enabled()) {
+                hotkeyActions.put(Character.toLowerCase(FileMenuText.mnemonic(item.command())),
+                        action);
+            }
             contentPanel.addComponent(button);
         }
         window.setComponent(contentPanel);
+
+        // #803: Alt+letter runs a row; at the boot menu (no game) Esc quits like the Quit row,
+        // while
+        // in-game Esc just closes the menu (D11).
+        window.addWindowListener(new com.googlecode.lanterna.gui2.WindowListenerAdapter() {
+            @Override
+            public void onInput(Window w, KeyStroke keyStroke,
+                    java.util.concurrent.atomic.AtomicBoolean deliverEvent) {
+                if (keyStroke == null) {
+                    return;
+                }
+                if (keyStroke.isAltDown() && keyStroke.getCharacter() != null) {
+                    Runnable action =
+                            hotkeyActions.get(Character.toLowerCase(keyStroke.getCharacter()));
+                    if (action != null) {
+                        action.run();
+                        deliverEvent.set(false);
+                        return;
+                    }
+                }
+                if (keyStroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Escape
+                        && !hasGame) {
+                    setEndOfGame(true);
+                    window.close();
+                    deliverEvent.set(false);
+                }
+            }
+        });
         gui.addWindowAndWait(window);
     }
 

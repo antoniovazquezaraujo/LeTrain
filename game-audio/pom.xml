@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.progmatic</groupId>
         <artifactId>JLeTrain</artifactId>
-        <version>1.0.0-beta.6</version>
+        <version>1.0.0-beta.7</version>
     </parent>
     <artifactId>JLeTrain-game-audio</artifactId>
     <packaging>jar</packaging>
@@ -21,6 +21,16 @@
             <groupId>com.progmatic</groupId>
             <artifactId>JLeTrain-soundscape</artifactId>
             <version>${project.version}</version>
+            <!-- The soundscape module carries slf4j-simple for its standalone CLI/GUI. The game
+                 app (core + launchers) already binds SLF4J through logback-classic, so keep a
+                 single provider on the app class path (issue #823). Excluding it here propagates
+                 to ui-* and every launcher, while `mvn -pl soundscape exec:java` still sees it. -->
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-simple</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
