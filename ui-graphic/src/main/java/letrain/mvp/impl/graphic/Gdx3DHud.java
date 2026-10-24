@@ -188,6 +188,8 @@ public class Gdx3DHud {
     private Image coverImage;
     /** "The Letter Train Simulator" overlay on the 3D cover (#801). */
     private Label coverTagline;
+    /** Running build version under the tagline (#845). */
+    private Label coverVersion;
 
     private Window messageWindow;
     private ScrollPane messageScroll;
@@ -1188,6 +1190,9 @@ public class Gdx3DHud {
             coverTagline = new Label(CoverArt.TAGLINE, skin, "monospace");
             coverTagline.setColor(Color.WHITE);
             coverLayer.addActor(coverTagline);
+            coverVersion = new Label(letrain.BuildInfo.versionTag(), skin, "monospace");
+            coverVersion.setColor(new Color(0.82f, 0.82f, 0.82f, 1f));
+            coverLayer.addActor(coverVersion);
             coverTable.add(coverLayer).grow();
             layoutCoverImage(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         } else {
@@ -1232,9 +1237,39 @@ public class Gdx3DHud {
             float fontScale = Math.max(0.8f, Math.min(2.4f, screenHeight / 720f));
             coverTagline.setFontScale(fontScale);
             coverTagline.pack();
-            coverTagline.setPosition((screenWidth - coverTagline.getWidth()) / 2f,
-                    Math.max(12f, screenHeight * 0.055f));
+            float taglineY = Math.max(12f, screenHeight * 0.055f);
+            coverTagline.setPosition((screenWidth - coverTagline.getWidth()) / 2f, taglineY);
+            if (coverVersion != null) {
+                // Slightly smaller than the tagline but still scaled with the window.
+                float versionScale = Math.max(0.6f, Math.min(1.8f, fontScale * 0.7f));
+                coverVersion.setFontScale(versionScale);
+                coverVersion.pack();
+                float versionY = versionLabelY(taglineY, coverVersion.getHeight(), screenHeight);
+                // On very short windows the clamp could push the version into the tagline: lift
+                // the tagline just enough to keep both readable.
+                float gap = coverVersionGap(screenHeight);
+                if (versionY + coverVersion.getHeight() + gap > taglineY) {
+                    taglineY = versionY + coverVersion.getHeight() + gap;
+                    coverTagline.setPosition((screenWidth - coverTagline.getWidth()) / 2f,
+                            taglineY);
+                }
+                coverVersion.setPosition((screenWidth - coverVersion.getWidth()) / 2f, versionY);
+            }
         }
+    }
+
+    /** Vertical gap between the tagline and the version caption. */
+    static float coverVersionGap(float screenHeight) {
+        return Math.max(4f, screenHeight * 0.006f);
+    }
+
+    /**
+     * Bottom of the version label: below the tagline, with a small gap, clamped to the bottom
+     * margin so small windows never push it off screen.
+     */
+    static float versionLabelY(float taglineY, float versionHeight, float screenHeight) {
+        float margin = Math.max(8f, screenHeight * 0.02f);
+        return Math.max(margin, taglineY - versionHeight - coverVersionGap(screenHeight));
     }
 
     /**
@@ -1268,6 +1303,7 @@ public class Gdx3DHud {
         coverTable = null;
         coverImage = null;
         coverTagline = null;
+        coverVersion = null;
         if (coverTexture != null) {
             coverTexture.dispose();
             coverTexture = null;
