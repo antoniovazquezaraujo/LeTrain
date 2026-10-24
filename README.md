@@ -1,159 +1,325 @@
-# LeTrain 🚂✨
+
+<a name="readme-top"></a>
 
 <p align="left">
   🌐 <strong>English</strong> | <a href="README_es.md">Español</a>
 </p>
 
-<p align="left">
-  <a href="https://github.com/antoniovazquezaraujo/LeTrain/actions/workflows/ci.yml"><img src="https://github.com/antoniovazquezaraujo/LeTrain/actions/workflows/ci.yml/badge.svg" alt="Build Status"></a>
-  <a href="https://github.com/antoniovazquezaraujo/LeTrain/releases"><img src="https://img.shields.io/github/v/release/antoniovazquezaraujo/LeTrain?include_prereleases&style=flat-square" alt="GitHub release"></a>
-  <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=flat-square" alt="License"></a>
-  <img src="https://img.shields.io/badge/Java-17%2B-ED8B00?style=flat-square&logo=openjdk&logoColor=white" alt="Java 17+">
-</p>
+[![CI][ci-shield]][ci-url]
+[![Contributors][contributors-shield]][contributors-url]
+[![Forks][forks-shield]][forks-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Issues][issues-shield]][issues-url]
+[![Apache 2.0 License][license-shield]][license-url]
 
-```text
-      __       ______           _
-     / /   ___/_  __/________ _(_)___
-    / /   / _ \/ / / ___/ __ `/ / __ \
-   / /___/  __/ / / /  / /_/ / / / / /
-  /_____/\___/_/ /_/   \__,_/_/_/ /_/
-       The Letter Train Simulator           
-   (C) 2006-2026 Antonio Vazquez Araujo 
+```
+     __       ______           _
+    / /   ___/_  __/________ _(_)___
+   / /   / _ \/ / / ___/ __ `/ / __ \
+  / /___/  __/ / / /  / /_/ / / / / /
+ /_____/\___/_/ /_/   \__,_/_/_/ /_/
+      The Letter Train Simulator
+  (C) 2006-2026 Antonio Vazquez Araujo
 ```
 
-<p align="center">
-  <a href="https://github.com/antoniovazquezaraujo/LeTrain/releases/latest">
-    <img src="https://img.shields.io/badge/🎮_Download_Latest_Release-0078D4?style=for-the-badge&logo=github&logoColor=white" alt="Download Latest Release">
-  </a>
-  <a href="https://avaraujo.itch.io/letrain-procedural-tycoon">
-    <img src="https://img.shields.io/badge/👾_Available_on_Itch.io-FA5C5C?style=for-the-badge&logo=itch.io&logoColor=white" alt="Available on Itch.io">
-  </a>
-  <a href="https://snapcraft.io/letrain">
-    <img src="https://img.shields.io/badge/🐧_Get_it_on_Snap_Store-E95420?style=for-the-badge&logo=snapcraft&logoColor=white" alt="Get it on Snap Store">
-  </a>
-  <br><br>
-  <a href="docs/PHILOSOPHY.md">
-    <img src="https://img.shields.io/badge/📜_Manifesto_&_Philosophy-8A2BE2?style=for-the-badge&logo=markdown&logoColor=white" alt="Read the Manifesto">
-  </a>
-  <a href="https://antoniovazquezaraujo.github.io/LeTrain/">
-    <img src="https://img.shields.io/badge/📖_Read_the_Documentation-2EA043?style=for-the-badge&logo=markdown&logoColor=white" alt="Read the Documentation">
-  </a>
-</p>
+<!-- PROJECT LOGO -->
+<br />
+<div align="center">
 
-<p align="center">
-  <img width="80%" alt="The LeTrain cover screen" src="docs/user/images/start.png" />
-</p>
+<h1 align="center">LeTrain</h1>
 
-**LeTrain** is a procedural train simulator that blends classic ASCII aesthetics with a modern 3D engine. Build vast rail networks across an infinite world, manage a complex economy, and master the art of logistical efficiency.
+  <p align="center">
+    LeTrain is a procedural train simulator with a classic ASCII terminal client and a modern 3D client
+    <br />
+    <a href="https://antoniovazquezaraujo.github.io/LeTrain/"><strong>Explore the docs »</strong></a>
+    <br />
+    <br />
+    <a href="https://github.com/antoniovazquezaraujo/LeTrain/releases/latest">Download</a>
+    ·
+    <a href="https://avaraujo.itch.io/letrain-procedural-tycoon">Play on itch.io</a>
+    ·
+    <a href="https://snapcraft.io/letrain">Snap Store</a>
+    ·
+    <a href="https://github.com/antoniovazquezaraujo/LeTrain/issues">Report Bug</a>
+    ·
+    <a href="https://github.com/antoniovazquezaraujo/LeTrain/issues">Request Feature</a>
+  </p>
+</div>
 
-> 📜 **[Read the LeTrain Manifesto & Philosophy](docs/PHILOSOPHY.md)** ([Leer en Español](docs/PHILOSOPHY_es.md))  
-> *"A game for engineer-children and child-engineers: no toys that play by themselves, honest trains, and pure keyboard flow."*
 
----
 
-## 🌟 New in 2026: The 3D Evolution
-LeTrain has evolved! While maintaining its terminal roots, it now features a **high-performance 3D engine** powered by LibGDX:
-- **Modern Perspective**: Explore your rail empire in full 3D with smooth orbiting cameras.
-- **Classic Soul**: Industrial zones and trains retain their iconic character-based charm, now rendered as physical 3D objects.
-- **Visual Polish**: Dynamic transparency for mountains, semantic color-coded stations, and high-resolution typography.
+<!-- TABLE OF CONTENTS -->
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li>
+      <a href="#about-the-project">About The Project</a>
+      <ul>
+        <li><a href="#built-with">Built With</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#getting-started">Getting Started</a>
+      <ul>
+        <li><a href="#prerequisites">Prerequisites</a></li>
+        <li><a href="#installation">Installation</a></li>
+        <li><a href="#configuration">Configuration</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#usage">Usage</a>
+      <ul>
+        <li><a href="#economy">Economy</a></li>
+      </ul>
+    </li>
+    <li><a href="#known-issues">Known Issues</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#license">License</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ol>
+</details>
 
-<p align="center">
-  <img width="32%" alt="The same world in the classic 2D terminal" src="docs/user/images/landscape2D.png" />
-  <img width="32%" alt="The 3D world by day: a letter train spelling 'letrainisverycool'" src="docs/user/images/landscape3D.png" />
-  <img width="32%" alt="The 3D world at night, lit by locomotive headlights" src="docs/user/images/night.png" />
-</p>
-<p align="center"><sub>Classic 2D terminal · 3D by day · 3D by night</sub></p>
 
-## 🎬 Record, Undo & Scenarios
-The editing workflow is now first-class — in both the 2D and 3D clients:
-- **Record/edit mode (`R`)**: freeze the world, build instantly, and journal every edit.
-- **Undo / redo**: `u` and **Ctrl+R** (or `undo;` / `redo;`), for construction *and* state changes (forks, semaphores, signals).
-- **Scenarios (`.ltr`)**: export your whole network as a small text recipe and import anyone else's. The same seed rebuilds the same world, so a scenario travels as plain text. Validate one headlessly with the bundled **`letrain-check`**.
-- **Built-in editor (`p`)**: a tabbed Scenario / Programming / Config editor with a per-tab quick reference and error navigation.
-- **Experiment mode (`X`)**: snapshot the live world, try anything, then restore it.
+# Warning: Human-generated content
 
-<p align="center">
-  <img width="80%" alt="The LeTrain editor with the Programming tab selected" src="docs/user/images/programming.png" />
-</p>
+Hello. I'm Antonio, the author of LeTrain. The previous version of this file was written with AI agents. A comment on Hacker News made me realize that wasn't a good idea.
+I realized that the “ME” in “README” doesn't refer to the file—it refers to the project's author.
+A project’s first point of contact can’t be just technical information—that’s what manuals and tutorials are for—it must be an invitation to talk, a human introduction; it can’t give the impression that there’s no one at the helm (which has been happening lately with many projects resulting from a week of “vibe-coding”).
 
-## 💰 Deep Economy & Industry
-The game now features a fully integrated financial system:
-- **Capital Management**: Start with **$0** (Zero-to-Hero challenge) and grow your wealth.
-- **Logistics Engine**: Transport specialized cargo (**GOLD**, **COAL**, **RUBY**) from Producers to Consumers.
-- **Smart Pricing**: Revenue scales with travel distance. Every meter counts!
-- **Construction Costs**: Balancing infrastructure expansion vs. operational fuel costs.
-- **Configurable Gameplay**: Fine-tune the entire game via the `letrain.cfg` file (it ships next to the launchers).
+LeTrain has been on my mind since 2006; the first version was in C++. All the ideas, mechanisms, algorithms, and bugs are my responsibility. And, after years of watching it grow, I’m now seeing that everything in it truly reflects my style, my way of seeing things, and my personality.
+I’ve been learning from it every day since then, and I still have a lot to learn.
 
-## 🌍 Infinite Procedural World
-- **Entropy Booster**: Every new game starts at a unique, randomized coordinate (±10k to ±100k units) to ensure fresh exploration every time.
-- **Procedural Landscapes**: Navigate through lakes, forests, and towering mountains generated by custom Perlin noise.
-- **Frustum Culling**: Optimized rendering engine handles massive maps by only processing what you see.
+In March 2026, I started using AI—just like everyone else (well, except maybe that 1% of human programmers who are still better than LLMs :-D). I use OpenCode as my agent harness and built a team of agents specialized in each part of the project. I also gave them human names—specifically, the names of the people on my team from when I worked at Imatia—perhaps so I wouldn’t miss them, or perhaps to change my way of working as little as possible. Dani is the coordinator, Alex is a Java expert, Jorge is a whiz at the UI, and I made up a new one, Bicho, who’s an expert in testing.
 
-<p align="center">
-  <img width="80%" alt="The Settings dialog, Terrain tab: seed, water and mountain sliders with a map preview" src="docs/user/images/settings.png" />
-</p>
+I talk to them as if they were people—or as if they were “silicon people.” The truth is, they show great responsibility and even a good sense of humor. Sometimes we argue; sometimes I correct them, and other times they correct me. Frankly, I don’t feel like I’m losing control of the project. Ultimately, I’m still the one making every important decision, and I still know what I want (and what I don’t want).
 
----
+But it’s true that I no longer write source code—at least not Java code—and I don't review it line by line. What I review is the product and its behavior. I went from being the project’s “jack-of-all-trades” to being the Architect. Actually, I used to trust the compiler back then, too; I didn’t review the bytecode it generated. It’s true that AI can be unpredictable at times and create real monsters, which is why it’s important to use a good safety net, make sure everything is tested, and above all, ensure that the foundation on which we’re working is robust and clear. This is what I’ve focused on all these years: everything is separated, standard programming patterns are used, and the codebase was very clear. With that in place, AI or a human can make changes, improvements, and enhancements without fear of breaking anything.
 
-## 🚀 Getting Started
+But that comment made me realize the value of being human. Even if my writing isn’t that great and my English needs Deep Translator, people value information more when it comes from another human being. We don’t like feeling like we’re “talking to a toaster.”
+
+I’ll continue working as a team with my “invisible friends” to improve the project, but I’ll also gladly accept help from other people. I promise to respond personally and not hide behind technical jargon.
+
+Now, here is the old `README`, but updated to the current status. If you want to know why this exists, the [manifesto](docs/PHILOSOPHY.md) explains it more calmly.
+
+Antonio.
+
+<!-- ABOUT THE PROJECT -->
+## About The Project
+LeTrain is a procedural train simulator with a classic ASCII terminal client and a modern 3D client. It consists of creating tracks and stations along a virtually infinite map, creating trains and earning money by carrying cargo (gold, coal and ruby) between producers and consumers. The farther apart they are, the more profitable the trip.
+
+**Warning**
+This is a preliminary version. There are still many things that are pending. At the moment it works but one day it will be much better than it is now.
+
+![LeTrain map zoomed out](images/zoom-out.png)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+### Built With
+* Java OpenJDK 17
+* [Lanterna library](https://github.com/mabe02/lanterna) (2D terminal client)
+* [LibGDX](https://libgdx.com/) (3D client)
+* ANTLR4 (rail automation scripting language)
+* Granular audio synthesis engine
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- GETTING STARTED -->
+## Getting Started
 
 ### Prerequisites
-- **Java JDK 17** or higher.
-- **Maven**.
 
-### Quick Launch
-The build system is fully automated. Simply run:
-```bash
-mvn clean package -DskipTests
-```
-This generates three standalone distributions in `output/`:
-- **`output/LeTrain`** — the modern **3D** experience.
-- **`output/LeTrain2D`** — the classic, high-speed **ASCII terminal** view.
-- **`output/letrain-check`** — the headless scenario (`.ltr`) validator.
+* Java JDK 17
+* Apache Maven
 
-A default `letrain.cfg` ships next to each launcher, so you can tweak the game without touching the code.
+### Installation
+If you don't want to build it, the latest release is on [GitHub](https://github.com/antoniovazquezaraujo/LeTrain/releases/latest), and there are also versions on [itch.io](https://avaraujo.itch.io/letrain-procedural-tycoon) and the [Snap Store](https://snapcraft.io/letrain).
 
-### Launchers
-- **`LeTrain`** (or `.exe` / `.sh`): Launches directly into **3D mode**.
-- **`LeTrain2D`** (or `.exe` / `.sh`): For those who prefer the classic terminal view.
-- **`letrain-check <file.ltr>`**: Validates a scenario file and prints `file:line:col` diagnostics.
+To install it:
+* Clone it
+   ```sh
+   git clone https://github.com/antoniovazquezaraujo/LeTrain.git
+   ```
+* Build it
+	```sh
+	mvn clean package -DskipTests
+	```
+* Run it
+	```sh
+	output/LeTrain/bin/LeTrain.sh      # 3D
+	output/LeTrain2D/bin/LeTrain2D.sh  # 2D terminal
+	```
 
----
+### Configuration
+LeTrain reads `letrain.cfg`, which ships next to the launcher. You can edit it by hand to change costs, rewards, the length of the day and other settings. A `letrain.cfg` in the working directory takes precedence over the packaged one.
 
-## 🛠️ Tech Stack
-- **Core**: Java 17
-- **3D Engine**: LibGDX (OpenGL)
-- **Terminal UI**: Lanterna
-- **Scripting**: Custom ANTLR4-based rail automation language.
-- **Audio**: Granular synthesis engine for realistic locomotive sounds.
+You can also change most things from the in-game **Settings** dialog (File → Settings). Some changes apply immediately, others ask you to reapply them, and a few need a new game; the dialog tells you which is which. If you export a scenario, its `configuration { ... }` block carries the settings with it and wins over the local `letrain.cfg`, so the map plays with the same rules for everyone.
 
-## 🧑‍💻 How LeTrain is built
+![LeTrain settings](images/settings.png)
 
-LeTrain has been designed by **Antonio Vázquez Araújo since 2006**, when generative AI did not exist — first as a C++ ASCII experiment, later as Java. Every design decision, mechanic and direction is his, and until **March 2026** he wrote every line of the code himself.
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-Since then, the project is developed with a **team of AI agents** (OpenCode) working under his direction: he designs, decides and reviews; the agents write, test and refactor at his instruction — the same way a compiler or a linter helps to think at a higher level. This is **human-authored, AI-assisted** software, not AI-generated: the goals, the architecture and the judgement are human, and every change goes through the full test suite and CI and is validated by the maintainer before merge.
+<!-- USAGE EXAMPLES -->
+## Usage
 
-The team's definitions and working rules live in the repository ([`AGENTS.md`](AGENTS.md), [`.opencode/agents/`](.opencode/agents/)), and the whole development is public in issues and pull requests.
+### Economy
+You start with $0. That's not a bug: the idea is to build something from nothing, and I like it that way. The map has producers (mines) and consumers (cities and factories), and you earn money by carrying cargo (gold, coal and ruby) from one to the other. A load station next to a mine fills the wagons; an unload station next to a city or factory empties them and pays you.
 
-## 🤝 Contributing
-Contributions are welcome! Bug reports, feature ideas, docs and code are all appreciated.
-- 📜 **Start by reading our [Design Philosophy & Manifesto](docs/PHILOSOPHY.md)** to understand the core soul, the 2D/3D symmetry, and the non-negotiables of LeTrain.
-- Read **[CONTRIBUTING.md](CONTRIBUTING.md)** for the build/test and PR workflow.
-- [Open an issue](https://github.com/antoniovazquezaraujo/LeTrain/issues/new/choose) for a bug or a feature request.
-- For code, branch from `develop` (`feature/...` / `fix/...`), keep the PR focused, and make sure `mvn clean test` passes.
+The further the cargo travels, the more it pays. But distance also costs: every meter the train moves burns fuel, and bridges and tunnels are much more expensive than plain track. A long route can be very profitable or ruin you, depending on how you build it.
 
----
-*Created by Antonio Vazquez Araujo.*  
-[Twitter/X - @avaraujo](https://twitter.com/avaraujo) | [GitHub](https://github.com/antoniovazquezaraujo)
+You can adjust the base prices and rewards in `letrain.cfg`, or put your own values in a scenario so the rules travel with the map. The number at the bottom right of the menu is your balance.
 
-## ⚠️ Known Issues
+### Ground, Water and Mountains
+This is the general appearance of LeTrain. On the map, randomly generated for each game, you can see water in blue, fields in green and mountains in brown. Building tracks across normal ground is fast and cheap. Creating bridges to cross lakes or drilling tunnels to cross mountains, however, is slow and expensive.
 
-### Snap Package Limitations (WSL2 & Remote Desktop)
-Because the **Snap package** uses strict sandboxing and bundles its own graphics/audio libraries, it may not function correctly in virtualized or remote environments:
+![LeTrain map up close](images/zoom-in.png)
 
-* **Windows Subsystem for Linux (WSL2 / WSLg):** The Snap version will run without audio. This is due to a known AppArmor sandbox restriction that prevents the Snap from accessing Microsoft's non-standard PulseAudio socket (`/mnt/wslg/PulseServer`).
-* **Remote Desktop (XRDP / VNC):** 
-  * The **3D version** will crash on startup with OpenGL errors (`Failed to create context: BadValue`, `swrast` fallback failures). Snap's bundled Mesa graphics drivers conflict with the virtual X11 display created by XRDP.
-  * The **2D version** will not stream audio over the network. ALSA directly accesses the host's physical sound card instead of routing through XRDP's virtual PulseAudio sinks.
+At the bottom you can see the menu, where the different game modes are selected, which will allow us to create tracks, build wagons and locomotives, forks, speed signals, semaphores, and sensors.
 
-**Solution:** If you are playing over a Remote Desktop connection on Linux, compile the game from source or use the `.sh` launcher from the Linux `.zip` release, which perfectly adapts to the host's XRDP drivers. If you are playing on Windows, download the native **`LeTrain-Windows.zip`** from the [Releases](https://github.com/antoniovazquezaraujo/LeTrain/releases) page for perfect 3D acceleration and sound.
+Each option is activated with the letter that appears in a different color, for example, to enter "drive" mode use the "d" key.
+
+To create tracks on the map just select the "rails" mode and move with the cursor. Holding down the shift key will generate tracks and with control you can delete them. Forks and crossings are created automatically.
+
+Once we have tracks, we just have to go to "trains" mode, which will allow us to create wagons (any lower case letter) and locomotives (any upper case letter).
+**To exit this mode you need to press Enter**.
+
+The keys are the same in both clients; the 3D client adds mouse and camera controls for zoom and view.
+
+This is the same world in the 3D client:
+
+![LeTrain in 3D](images/3D-example.png)
+
+![Creating tracks](images/creating-tracks.gif)
+
+#### Day and night
+The game has a clock, and the light changes with it. At night the palette turns darker and the head locomotive lights the track with its headlights.
+
+![LeTrain at night](images/night.png)
+
+### Linking and unlinking
+When creating wagons and locomotives they do not form a train, they are unlinked. To create a train you need to have the locomotive next to them and select "link" and then with the vertical keys, choose the direction to look for wagons and with the horizontal ones the number of elements to link. Then, with the space bar you will link the selected wagons. That will be a train. To unlink wagons, select "unlink", select the direction and move forward or backward to the wagon where you want to split. Then use the space bar.
+
+![Link and unlink](images/link-and-unlink.gif)
+
+### Infinite map
+If you leave the page with the cursor, you will see that the map continues. There is no limit but memory.
+
+If you find that the cursor is moving too slowly, you can type any number before using it, and each step will be added to that number of steps. For example, if you type 30, each time you press the advance key, 31 steps will be advanced, the default step plus the other 30. (If you are a Vim user -cheers Bram, wherever you are- you will be familiar with this kind of quantifier). To return to the default quantifier, just use the space bar.
+
+![Inside a tunnel](images/inside-tunnel.png)
+
+### Programmable behavior
+Everything can be programmed, usually based on events—such as a train passing through a station or triggering a sensor—and actions can be performed as a result, such as coupling wagons, starting the train, loading cargo, moving track switches, or changing signals.
+
+![LeTrain editor](images/commands.png)
+
+### The editor
+Press `p` to open the LeTrain editor. It has three tabs: **Scenario** (the seed, the initial build and the starting state), **Programming** (the automation script) and **Config** (the game settings). The right side has a quick reference for the active tab, and if something is wrong, the error list takes you to the line.
+
+From the editor you can export and import `.ltr` scenarios, reload the current world, apply the program or rebuild the world from the scenario. `Esc` closes it. Save and load live in the File menu of the game, not in the editor.
+
+### Record, undo and experiment
+
+While you build, `R` (`Shift+R`) toggles record/edit mode: the world freezes, you build instantly, and every edit goes into a journal. `u` undoes the last edit and `Ctrl+R` redoes it. `X` (`Shift+X`) toggles experiment mode: it takes a snapshot, lets you try anything, and restores it when you leave.
+
+In TRAINS mode, uppercase letters create locomotives, so `X` and `R` create a locomotive with that letter instead of toggling those modes.
+
+### Saving the game
+You can save the game at any time, but there is one exception: if a train is in the middle of a load, unload or wait, the pending action is not saved. Let it finish first. There are two different files, and it is worth knowing which one you need.
+
+The first one is the savegame, a `.json` file with the current state of the world: where the trains are, what they are carrying, how much money you have and what time it is. Load it and you continue exactly where you left off.
+
+The second one is the scenario, a plain-text `.ltr` file. It is not a snapshot of the game, but the recipe to rebuild it: the map seed, the game settings, the tracks and stations you built, the initial state and the program that automates the network. The same seed and the same commands give you the same world, so you can share it with someone else, open it in any text editor (or in the LeTrain editor) and check it with `letrain-check` before loading it.
+
+Use `save` and `load` for savegames, and `export` and `import` for scenarios. One keeps the game as it is; the other keeps the recipe to build it again.
+
+### Zoom
+In 2D, you can use the console zoom keys to see more or less scenery when you need it. They are usually assigned to ctrl-+ and ctrl--.
+You can also use the PgUp and PgDown keys to move up and down pages or ctrl+PgUp or ctrl+PgDown to move across pages horizontally.
+
+In 3D, the camera can be oriented with `Alt+hjkl/cursors` and with the mouse wheel.
+
+#### Don't get lost
+With a big map, it is easy to get lost; to go back just switch to "drive" mode and select with the arrows the next or previous locomotive. The same with forks, stations, sensors, etc. You can also select objects by their number, just type the number and the object will be selected.
+
+Also, if you want the cursor immediately placed at the position of an object, a fork, a station, a train, a semaphore, etc. simply press the `o` key to relocate it.
+
+![Zoom](images/zoom.gif)
+
+### Train crash
+Yes: if two trains approach each other at a speed of 5 or more, a catastrophe will occur. You will lose the money you have spent to create them. The money is the number at the bottom right of the menu. It decreases when trains move, and when tracks are built. It increases when trains unload cargo at a consumer station.
+
+![Train crash](images/train-crash.gif)
+
+ _For more examples, please refer to the [Documentation](https://antoniovazquezaraujo.github.io/LeTrain/)_
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- KNOWN ISSUES -->
+## Known Issues
+
+The Snap package is convenient, but it's sandboxed and that causes problems in some environments. Under WSL2 it runs without sound, because it can't reach the PulseAudio socket that Windows exposes. Over XRDP or VNC, the 3D client usually fails with an OpenGL error (`Failed to create context: BadValue`), and the 2D client can't send audio through the remote session.
+
+If you're in one of those cases, use the Linux zip (the `.sh` launcher) or build it from source. On Windows, the `LeTrain-Windows.zip` from the [releases page](https://github.com/antoniovazquezaraujo/LeTrain/releases/latest) is the best option. If you find another problem, open an issue and tell me.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- ROADMAP -->
+## Roadmap
+
+There are many things to do, but for the moment it works.
+- [ ] Add passenger trains and cities
+- [ ] Finish the event-driven train sound (in review)
+- [ ] Add professionally recorded train sounds: real locomotives, wagons and stations
+- [ ] Add track inspection, maintenance and failures
+- [ ] Add train cleaning, maintenance and breakdowns
+
+See the [open issues](https://github.com/antoniovazquezaraujo/LeTrain/issues) for a full list of proposed features (and known issues).
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- CONTRIBUTING -->
+## Contributing
+
+If you want to help, read [CONTRIBUTING.md](CONTRIBUTING.md) first: it explains the build, the tests and the branch/PR flow.
+
+If you have an idea, open an issue. If you want to fix it yourself, fork the repo, create a branch and send a pull request. And if you just like the project, a star helps.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- LICENSE -->
+## License
+
+Distributed under the Apache License 2.0. See `LICENSE` for more information.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- CONTACT -->
+## Contact
+
+
+Antonio Vazquez Araujo
+
+Twitter/X - [@avaraujo](https://twitter.com/avaraujo)
+
+Gmail - antoniovazquezaraujo@gmail.com
+
+Project Link: [https://github.com/antoniovazquezaraujo/LeTrain](https://github.com/antoniovazquezaraujo/LeTrain)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- MARKDOWN LINKS & IMAGES -->
+<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+[ci-shield]: https://img.shields.io/github/actions/workflow/status/antoniovazquezaraujo/LeTrain/ci.yml?style=for-the-badge
+[ci-url]: https://github.com/antoniovazquezaraujo/LeTrain/actions/workflows/ci.yml
+[contributors-shield]: https://img.shields.io/github/contributors/antoniovazquezaraujo/LeTrain.svg?style=for-the-badge
+[contributors-url]: https://github.com/antoniovazquezaraujo/LeTrain/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/antoniovazquezaraujo/LeTrain.svg?style=for-the-badge
+[forks-url]: https://github.com/antoniovazquezaraujo/LeTrain/network/members
+[stars-shield]: https://img.shields.io/github/stars/antoniovazquezaraujo/LeTrain.svg?style=for-the-badge
+[stars-url]: https://github.com/antoniovazquezaraujo/LeTrain/stargazers
+[issues-shield]: https://img.shields.io/github/issues/antoniovazquezaraujo/LeTrain.svg?style=for-the-badge
+[issues-url]: https://github.com/antoniovazquezaraujo/LeTrain/issues
+[license-shield]: https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge
+[license-url]: https://github.com/antoniovazquezaraujo/LeTrain/blob/main/LICENSE
