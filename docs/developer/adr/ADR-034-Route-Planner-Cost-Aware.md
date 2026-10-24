@@ -88,9 +88,11 @@ inputs ⇒ misma ruta, en cualquier JVM. Los tests cubren una simetría con dos 
 
 ## Decisiones menores tomadas para no expandir el alcance
 
-- **Mover en diagonal no recorta esquinas**: se permite pasar en diagonal entre dos celdas
-  bloqueadas. Es la lectura simple de "A* sobre rejilla de 8 direcciones"; si la autoría quiere
-  prohibirlo, se añade después como regla de vecindad.
+- **Movimiento diagonal y celdas no construibles**: una celda no construible es el agua o la roca
+  cuando la política las bloquea, o cualquier valor de terreno fuera de `GROUND`/`WATER`/`ROCK`.
+  Hoy se permite pasar en diagonal entre dos celdas bloqueadas (lectura simple de A* en 8
+  direcciones). La recomendación es prohibirlo cuando los dos ortogonales estén bloqueados; queda
+  pendiente de decisión del dueño.
 - **Origen igual a destino** devuelve un plan factible vacío, con coste y ticks 0 (no hay nada que
   construir).
 - **Coste por celda**, no por longitud: una celda diagonal cuesta lo mismo que una ortogonal, igual
@@ -98,21 +100,23 @@ inputs ⇒ misma ruta, en cualquier JVM. Los tests cubren una simetría con dos 
 - **Tope de expansión** (`MAX_EXPANDED_NODES = 1_000_000`): el terreno procedural no tiene límites y
   un destino inalcanzable podría expandir sin fin. Al agotarlo se devuelve infactible con motivo;
   no afecta a distancias de autoría razonables.
-- **Extremos estrictos**: agua/roca como origen o destino se rechazan en este spike, aunque la
-  política permita cruzar esos terrenos por el medio. Un `connect` futuro podría relajarlo.
+- **Extremos estrictos**: agua/roca como origen o destino se rechazan. Confirmado por el dueño: no
+  se permite empezar ni terminar sobre agua o roca, aunque la política permita cruzar esos terrenos
+  por el medio.
 
 ## Golden path del dueño
 
 1. El autor marca dos puntos lejanos (`start`, `end`).
-2. El sistema llama a `plan(...)` una vez por política y muestra las opciones: p. ej. `DIRECT`
-   (más corta, cara por puentes/túneles), `AVOID_MOUNTAINS` (rodea la montaña), `AVOID_BOTH` o
-   `CHEAPEST` (la más barata), cada una con `totalCost()` y `totalConstructionTicks()`.
-3. El autor elige una; la capa de construcción (futura) materializa `steps()`.
-4. Si una opción no existe, se muestra `reason()` en vez de una ruta vacía.
+2. El sistema calcula un plan para la política elegida y muestra **un solo plan** con su
+   `totalCost()` y `totalConstructionTicks()`. El autor puede descartarlo y pedir otra política
+   (`DIRECT`, `AVOID_MOUNTAINS`, `AVOID_WATER`, `AVOID_BOTH` o `CHEAPEST`) o ejecutarlo.
+3. Si el plan es factible, la capa de construcción (futura) materializa `steps()`; si no, se
+   muestra `reason()` en vez de una ruta vacía.
+4. La obra puede cancelarse; lo ya construido queda a medio terminar.
 
 ## Fuera de alcance del spike
 
-- Previsualización en UI (2D/3D) y comparador visual de opciones.
+- Previsualización en UI (2D/3D); se mostrará un plan cada vez, no un comparador de varios.
 - Cola de construcción, cancelación, reanudación o guardado/carga a mitad de obra.
 - Comando de alto nivel `connect` en el DSL, wiring de escenarios o CLI.
 - Puertas (`*_GATE_TRACK`), desvíos, estaciones, sensores o señalización dentro del plan.
@@ -120,6 +124,18 @@ inputs ⇒ misma ruta, en cualquier JVM. Los tests cubren una simetría con dos 
   no de explotación.
 - Reutilizar vía ya construida (`RailMap`) en el cálculo de coste: este spike planifica sobre
   terreno desnudo.
+
+## Decisiones del dueño para la capa de construcción (2026-10-25)
+
+- **Un plan a la vez**: se descarta o se ejecuta; no hay comparador de varios planes.
+- **Una sola obra/cursor a la vez**: mientras se construye la ruta, el jugador no puede construir
+  otras vías con el cursor.
+- **Cancelación**: cancelar detiene la obra; lo ya construido queda a medio terminar.
+- **Sin reutilizar vía existente ni crear forks**: la ruta puede atravesar vías existentes en
+  diagonal o perpendicular, pero no se acopla a ellas ni crea bifurcaciones.
+- **Celda de origen**: como el spike planifica sobre terreno desnudo y no reutiliza vía, el
+  `connect` construye todas las celdas del plan, incluida la de origen. La pregunta de saltarse la
+  celda de origen solo aplica si en el futuro se reutiliza vía/estación.
 
 ## Consecuencias
 
@@ -130,14 +146,13 @@ inputs ⇒ misma ruta, en cualquier JVM. Los tests cubren una simetría con dos 
 - El coste de búsqueda es acotado; rutas muy largas pueden devolver infactible por tope antes que
   por ausencia real de ruta (motivo visible). Si molesta, se sube el tope o se pasa a búsqueda con
   caja envolvente.
-- La decisión de no recortar esquinas y de no modelar puertas deja preguntas abiertas para la
-  siguiente iteración (ver PR).
+- La decisión sobre recortar esquinas sigue pendiente; la de no modelar puertas queda para la
+  capa de construcción.
 
-## Preguntas abiertas para la siguiente iteración
+## Pendiente
 
-- ¿Debe el `connect` cobrar/construir también la celda de origen si ya hay vía?
-- ¿Debe `CHEAPEST` considerar reutilizar vía existente y no solo terreno desnudo?
-- ¿Prohibir el paso diagonal entre dos celdas no construibles?
-- ¿Cómo se reparte el coste/tiempo entre varios planes mostrados a la vez y cómo se cancela una
-  obra en curso?
-- ¿Los extremos sobre agua/roca deben permitirse y construir puente/túnel desde el primer tile?
+- **Diagonal entre celdas no construibles**: definir si se prohíbe cuando los dos ortogonales están
+  bloqueados. Recomendación: prohibirlo. Una celda no construible es agua/roca bloqueada por la
+  política, o un valor de terreno fuera de `GROUND`/`WATER`/`ROCK`.
+- **Celda de origen con vía/estación existente**: solo aplica si en el futuro se permite reutilizar
+  vía; de momento el plan construye todas las celdas.
