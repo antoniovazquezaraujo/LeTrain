@@ -44,7 +44,7 @@ Se añade un modo modal al cliente de terminal. En 3D se hará más adelante con
    - El cursor está libre; `A` queda marcado.
    - `Enter` fija `B` y pide el primer plan.
    - Si `B` no es válido, se muestra el motivo y se sigue en `PICK_END`.
-   - `Esc` vuelve a `PICK_START` (o cancela, a decidir).
+   - `Esc` cancela directamente el modo.
 3. `PREVIEW`
    - Se muestra **un solo** `RoutePlan`.
    - `←`/`→` cambian de política y recalculan.
@@ -98,9 +98,12 @@ Connect · AVOID_BOTH · sin ruta: no se puede cruzar agua ni montaña
 
 - El coste es la moneda del juego; el tiempo, tiempo de juego.
 - Los ticks del planner se convierten a minutos/horas para mostrarlos.
-- Con los delays actuales, la vía normal tarda 0; una ruta sin puentes/túneles mostrará `0 min`.
-  Si se quiere que toda obra tarde, habrá que añadir un tiempo base por celda o subir
-  `delay.NORMAL_TRACK`; queda como decisión abierta.
+- La construcción automática usa un **tiempo base por celda** además de los delays de puente/túnel.
+  Propuesta inicial: **1 tick por celda** (3 segundos de juego; 20 celdas = 1 minuto). Se sumará a
+  los delays actuales y será configurable más adelante en `letrain.cfg`
+  (`route.construction.baseDelayTicks`, nombre provisional).
+- La vía normal manual sigue con `delay.NORMAL_TRACK=0`; el tiempo base es propio de la
+  construcción automática de rutas, no cambia la construcción manual.
 
 ### Aceptar y descartar
 
@@ -108,8 +111,7 @@ Connect · AVOID_BOTH · sin ruta: no se puede cruzar agua ni montaña
 - `Esc` descarta el plan y cierra la preview.
 - El `pendingRoutePlan` queda disponible para la futura cola de construcción, pero esta rama no la
   implementa.
-- Si el dueño prefiere que `Enter` no cierre todavía, se puede dejar el plan seleccionado en
-  pantalla y añadir un segundo `Enter` para confirmar. No es la propuesta inicial.
+- Confirmado por el dueño: un solo `Enter` basta; no hay segundo paso de confirmación.
 
 ## Fuera de alcance de esta rama
 
@@ -130,12 +132,22 @@ Connect · AVOID_BOTH · sin ruta: no se puede cruzar agua ni montaña
 - La rama queda pequeña y se puede revisar sin la cola de obra.
 - Si el flujo gusta, la siguiente rama materializa `pendingRoutePlan` con la cola de construcción.
 
-## Preguntas para el dueño
+## Decisiones de la revisión del dueño (2026-10-25)
 
-1. ¿`Shift+C` o prefieres otra tecla?
-2. ¿`CHEAPEST` como política inicial o `DIRECT`?
-3. ¿Extremos con cursor + `Enter`, o quieres seleccionar estaciones/nombres existentes?
-4. ¿Aceptamos que la vía normal tarde 0 con los delays actuales, o añadimos un tiempo base por celda?
-5. ¿`Enter` solo selecciona y cierra, o quieres un segundo `Enter` de confirmación?
-6. ¿La barra de estado es suficiente, o prefieres un panel pequeño con el resumen?
-7. Si `Esc` en `PICK_END` vuelve a `PICK_START` o cancela directamente, ¿qué prefieres?
+1. **Tecla de entrada**: `Shift+C`; la `c` minúscula sigue siendo link.
+2. **Política inicial**: `CHEAPEST`.
+3. **Extremos**: cursor + `Enter`; de momento no se seleccionan estaciones ni nombres existentes.
+4. **Tiempo**: la construcción automática es más lenta que la manual. Se añade un tiempo base por
+   celda (propuesta inicial: 1 tick/celda, configurable más adelante). Los delays de puente/túnel se
+   suman encima.
+5. **Confirmación**: un solo `Enter` selecciona y cierra; no hay segundo paso.
+6. **Resumen**: la barra de estado es suficiente; no hace falta panel aparte.
+7. **Cancelar**: `Esc` en `PICK_END` cancela directamente el modo.
+
+### Pendiente de implementación
+
+- Nombre definitivo de la clave de configuración del tiempo base
+  (`route.construction.baseDelayTicks` es provisional).
+- API exacta para pasar el tiempo base al `RoutePlanner`: parámetro adicional en `plan(...)` o un
+  `RoutePlanningOptions`; el planner seguirá siendo puro y read-only.
+- El tiempo base se aplicará a todas las celdas del plan, incluidas las de los extremos.
