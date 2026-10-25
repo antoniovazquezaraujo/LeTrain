@@ -5,9 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 import letrain.economy.EconomyManager;
 import letrain.economy.EconomyManager.ExpenseType;
 import letrain.ground.GroundMap;
@@ -40,8 +43,26 @@ class RoutePreviewSessionTest {
         RoutePreviewSession session = new RoutePreviewSession(terrain, economy());
         session.begin(p(0, 0));
         session.enter(p(0, 0));
-        session.enter(p(3, 0));
+        assertEquals(RoutePreviewSession.State.PLANNING, session.enter(p(3, 0)));
+        awaitPreview(session);
         return session;
+    }
+
+    /**
+     * Polls until the session leaves PLANNING. The timeout keeps the test honest without arbitrary
+     * sleeps; route planning on the tiny fake maps normally completes in microseconds.
+     */
+    private static void awaitPreview(RoutePreviewSession session) {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (System.nanoTime() < deadline) {
+            session.poll();
+            if (session.state() != RoutePreviewSession.State.PLANNING) {
+                assertEquals(RoutePreviewSession.State.PREVIEW, session.state());
+                return;
+            }
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1));
+        }
+        fail("session did not reach PREVIEW before the timeout; state=" + session.state());
     }
 
     @Test
@@ -60,11 +81,15 @@ class RoutePreviewSessionTest {
         assertTrue(session.end().isEmpty());
         assertEquals(RoutePolicy.CHEAPEST, session.policy());
 
-        assertEquals(RoutePreviewSession.State.PREVIEW, session.enter(p(3, 0)));
+        assertEquals(RoutePreviewSession.State.PLANNING, session.enter(p(3, 0)));
         assertEquals(p(3, 0), session.end().orElseThrow());
+        assertEquals(0, session.effectiveConstructionTicks());
+        awaitPreview(session);
         assertTrue(session.lastPlan().orElseThrow().feasible());
         assertEquals(4, session.lastPlan().orElseThrow().steps().size());
         assertEquals(4, session.effectiveConstructionTicks());
+        assertTrue(session.planningProgress().isEmpty());
+        assertTrue(session.planningSnapshot().isEmpty());
 
         assertEquals(RoutePreviewSession.State.SELECTED, session.enter(p(3, 0)));
         assertEquals(session.lastPlan(), session.selectedPlan());
@@ -74,14 +99,15 @@ class RoutePreviewSessionTest {
     }
 
     @Test
-    @DisplayName("an invalid end point keeps PICK_END and exposes the planner reason")
-    void should_StayInPickEnd_When_EndPointIsNotBuildable() {
+    @DisplayName("an invalid end point reaches PREVIEW with the planner reason")
+    void should_ShowInfeasiblePlan_When_EndPointIsNotBuildable() {
         FakeGroundMap terrain = new FakeGroundMap().rect(-1, -1, 4, 1, NORMAL).put(3, 0, WATER);
         RoutePreviewSession session = new RoutePreviewSession(terrain, economy());
         session.begin(p(0, 0));
         session.enter(p(0, 0));
 
-        assertEquals(RoutePreviewSession.State.PICK_END, session.enter(p(3, 0)));
+        assertEquals(RoutePreviewSession.State.PLANNING, session.enter(p(3, 0)));
+        awaitPreview(session);
         assertFalse(session.lastPlan().orElseThrow().feasible());
         assertTrue(session.lastMessage().orElseThrow().contains("End"));
         assertTrue(session.selectedPlan().isEmpty());
@@ -89,8 +115,8 @@ class RoutePreviewSessionTest {
     }
 
     @Test
-    @DisplayName("an unreachable destination keeps PICK_END with the planner reason")
-    void should_StayInPickEnd_When_NoRouteExists() {
+    @DisplayName("an unreachable destination reaches PREVIEW with the planner reason")
+    void should_ShowInfeasiblePlan_When_NoRouteExists() {
         // Two islands separated by cells with no terrain data (blocked for every policy).
         FakeGroundMap terrain =
                 new FakeGroundMap().rect(0, 0, 2, 0, NORMAL).rect(4, 0, 6, 0, NORMAL);
@@ -98,7 +124,8 @@ class RoutePreviewSessionTest {
         session.begin(p(1, 0));
         session.enter(p(1, 0));
 
-        assertEquals(RoutePreviewSession.State.PICK_END, session.enter(p(5, 0)));
+        assertEquals(RoutePreviewSession.State.PLANNING, session.enter(p(5, 0)));
+        awaitPreview(session);
         assertFalse(session.lastPlan().orElseThrow().feasible());
         assertTrue(session.lastMessage().orElseThrow().contains("No route"));
     }
@@ -115,21 +142,49 @@ class RoutePreviewSessionTest {
                 .noneMatch(step -> step.trackType() == TrackType.BRIDGE_TRACK));
 
         assertEquals(RoutePolicy.DIRECT, session.nextPolicy());
+        assertEquals(RoutePreviewSession.State.PLANNING, session.state());
+        awaitPreview(session);
         RoutePlan direct = session.lastPlan().orElseThrow();
         assertNotEquals(cheapest, direct);
         assertTrue(direct.steps().stream()
                 .anyMatch(step -> step.trackType() == TrackType.BRIDGE_TRACK));
 
         assertEquals(RoutePolicy.AVOID_MOUNTAINS, session.nextPolicy());
+        awaitPreview(session);
         assertEquals(RoutePolicy.AVOID_WATER, session.nextPolicy());
+        awaitPreview(session);
         assertEquals(RoutePolicy.AVOID_ALL, session.nextPolicy());
+        awaitPreview(session);
         assertEquals(RoutePolicy.CHEAPEST, session.nextPolicy());
+        awaitPreview(session);
 
         assertEquals(RoutePolicy.AVOID_ALL, session.previousPolicy());
+        awaitPreview(session);
         assertEquals(RoutePolicy.AVOID_WATER, session.previousPolicy());
+        awaitPreview(session);
         assertEquals(RoutePolicy.AVOID_MOUNTAINS, session.previousPolicy());
+        awaitPreview(session);
         assertEquals(RoutePolicy.DIRECT, session.previousPolicy());
+        awaitPreview(session);
         assertEquals(RoutePolicy.CHEAPEST, session.previousPolicy());
+        assertEquals(RoutePreviewSession.State.PREVIEW, session.state(),
+                "a cached policy must be shown immediately");
+    }
+
+    @Test
+    @DisplayName("returning to a cached policy does not start another job")
+    void should_ShowCachedPlanImmediately_When_PolicyWasAlreadyCalculated() {
+        FakeGroundMap terrain = new FakeGroundMap().rect(-1, -1, 4, 1, NORMAL).put(1, 0, WATER);
+        RoutePreviewSession session = previewOn(terrain);
+        RoutePlan cheapest = session.lastPlan().orElseThrow();
+
+        assertEquals(RoutePolicy.DIRECT, session.nextPolicy());
+        awaitPreview(session);
+        assertEquals(RoutePolicy.CHEAPEST, session.previousPolicy());
+
+        assertEquals(RoutePreviewSession.State.PREVIEW, session.state());
+        assertEquals(cheapest, session.lastPlan().orElseThrow());
+        assertTrue(session.planningSnapshot().isEmpty());
     }
 
     @Test
@@ -158,12 +213,17 @@ class RoutePreviewSessionTest {
         RoutePreviewSession session = new RoutePreviewSession(terrain, economy());
         session.begin(p(0, 0));
         session.enter(p(0, 0));
-        assertEquals(RoutePreviewSession.State.PREVIEW, session.enter(p(5, 0)));
+        assertEquals(RoutePreviewSession.State.PLANNING, session.enter(p(5, 0)));
+        awaitPreview(session);
 
         assertEquals(RoutePolicy.DIRECT, session.nextPolicy());
+        awaitPreview(session);
         assertEquals(RoutePolicy.AVOID_MOUNTAINS, session.nextPolicy());
+        awaitPreview(session);
         assertEquals(RoutePolicy.AVOID_WATER, session.nextPolicy());
+        awaitPreview(session);
         assertEquals(RoutePolicy.AVOID_ALL, session.nextPolicy());
+        awaitPreview(session);
         assertEquals(RoutePreviewSession.State.PREVIEW, session.state());
         assertFalse(session.lastPlan().orElseThrow().feasible());
         assertTrue(session.lastMessage().orElseThrow().contains("AVOID_ALL"));
@@ -196,6 +256,39 @@ class RoutePreviewSessionTest {
         assertEquals(RoutePreviewSession.State.CANCELLED, session.escape());
         assertTrue(session.start().isEmpty());
         assertTrue(session.end().isEmpty());
+    }
+
+    @Test
+    @DisplayName("Esc cancels a running planning job without leaking a plan")
+    void should_CancelJob_When_EscapeInPlanning() {
+        FakeGroundMap terrain = new FakeGroundMap().rect(-1, -1, 4, 1, NORMAL);
+        RoutePreviewSession session = new RoutePreviewSession(terrain, economy());
+        session.begin(p(0, 0));
+        session.enter(p(0, 0));
+        assertEquals(RoutePreviewSession.State.PLANNING, session.enter(p(3, 0)));
+        assertTrue(session.planningSnapshot().isPresent());
+
+        // Enter during PLANNING is a no-op; only Esc cancels.
+        assertEquals(RoutePreviewSession.State.PLANNING, session.enter(p(2, 0)));
+
+        assertEquals(RoutePreviewSession.State.CANCELLED, session.escape());
+        assertTrue(session.lastPlan().isEmpty());
+        assertTrue(session.planningProgress().isEmpty());
+        assertTrue(session.planningSnapshot().isEmpty());
+        assertEquals(0, session.effectiveConstructionTicks());
+    }
+
+    @Test
+    @DisplayName("begin resets any previous job and cached plans")
+    void should_ResetJobAndCache_When_BeginIsCalledAgain() {
+        FakeGroundMap terrain = new FakeGroundMap().rect(-1, -1, 4, 1, NORMAL);
+        RoutePreviewSession session = previewOn(terrain);
+        assertEquals(RoutePreviewSession.State.PREVIEW, session.state());
+
+        assertEquals(RoutePreviewSession.State.PICK_START, session.begin(p(1, 1)));
+        assertTrue(session.lastPlan().isEmpty());
+        assertTrue(session.planningSnapshot().isEmpty());
+        assertTrue(session.selectedPlan().isEmpty());
     }
 
     @Test
@@ -232,6 +325,7 @@ class RoutePreviewSessionTest {
         flatSession.begin(p(0, 0));
         flatSession.enter(p(0, 0));
         flatSession.enter(p(3, 0));
+        awaitPreview(flatSession);
 
         RoutePlan flatPlan = flatSession.lastPlan().orElseThrow();
         assertEquals(0, flatPlan.totalConstructionTicks());
@@ -243,8 +337,9 @@ class RoutePreviewSessionTest {
         waterSession.begin(p(0, 0));
         waterSession.enter(p(0, 0));
         waterSession.enter(p(2, 0));
-        assertEquals(RoutePreviewSession.State.PREVIEW, waterSession.state());
+        awaitPreview(waterSession);
         waterSession.nextPolicy();
+        awaitPreview(waterSession);
 
         RoutePlan bridgePlan = waterSession.lastPlan().orElseThrow();
         assertEquals(RoutePolicy.DIRECT, waterSession.policy());

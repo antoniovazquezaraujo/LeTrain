@@ -10,6 +10,8 @@ import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import letrain.economy.EconomyManager;
 import letrain.economy.EconomyManager.ExpenseType;
 import letrain.ground.GroundMap;
@@ -884,6 +886,108 @@ class RoutePlannerTest {
                 () -> RoutePlanner.plan(terrain, economy, p(0, 0), null, RoutePolicy.DIRECT));
         assertThrows(NullPointerException.class,
                 () -> RoutePlanner.plan(terrain, economy, p(0, 0), p(2, 0), null));
+    }
+
+    @Test
+    @DisplayName("progress is reported at phase start, throttled intervals and the end")
+    void should_ReportThrottledProgress_When_PlanningALongRoute() {
+        FakeGroundMap terrain = new FakeGroundMap().rect(0, 0, 3_000, 0, NORMAL);
+        List<RoutePlanningProgress> reports = new ArrayList<>();
+
+        RoutePlan plan = RoutePlanner.plan(terrain, economy(), p(0, 0), p(3_000, 0),
+                RoutePolicy.DIRECT, reports::add, () -> false);
+
+        assertTrue(plan.feasible());
+        assertFalse(reports.isEmpty());
+        RoutePlanningProgress first = reports.get(0);
+        RoutePlanningProgress last = reports.get(reports.size() - 1);
+        assertEquals(RoutePlanningProgress.Phase.FALLBACK, first.phase());
+        assertEquals(0, first.expandedNodes());
+        assertEquals(p(0, 0), first.current());
+        assertTrue(last.expandedNodes() >= RoutePlanner.PROGRESS_INTERVAL_EXPANSIONS);
+        assertEquals(p(3_000, 0), last.current());
+        assertTrue(
+                reports.stream()
+                        .anyMatch(report -> report
+                                .expandedNodes() == RoutePlanner.PROGRESS_INTERVAL_EXPANSIONS),
+                "expected a report at the throttled interval: " + reports.size() + " reports");
+        for (int i = 1; i < reports.size(); i++) {
+            assertTrue(reports.get(i).expandedNodes() >= reports.get(i - 1).expandedNodes());
+            assertTrue(reports.get(i).elapsedMillis() >= reports.get(i - 1).elapsedMillis());
+        }
+    }
+
+    @Test
+    @DisplayName("avoid policies report CLEARANCE when the hard pass succeeds")
+    void should_ReportClearancePhase_When_HardPassFindsTheRoute() {
+        FakeGroundMap terrain = new FakeGroundMap().rect(-4, -6, 12, 6, NORMAL);
+        for (int x = 3; x <= 5; x++) {
+            for (int y = -2; y <= 2; y++) {
+                terrain.put(x, y, WATER);
+            }
+        }
+        List<RoutePlanningProgress> reports = new ArrayList<>();
+
+        RoutePlan plan = RoutePlanner.plan(terrain, economy(), p(0, 0), p(8, 0),
+                RoutePolicy.AVOID_MOUNTAINS, reports::add, () -> false);
+
+        assertTrue(plan.feasible());
+        assertFalse(reports.isEmpty());
+        assertTrue(reports.stream()
+                .allMatch(report -> report.phase() == RoutePlanningProgress.Phase.CLEARANCE));
+    }
+
+    @Test
+    @DisplayName("avoid policies report a FALLBACK phase when the hard clearance pass fails")
+    void should_ReportFallbackPhase_When_HardPassIsInfeasible() {
+        FakeGroundMap terrain = new FakeGroundMap().rect(0, -1, 4, 1, ROCK);
+        for (int x = 0; x <= 4; x++) {
+            terrain.put(x, 0, NORMAL);
+        }
+        List<RoutePlanningProgress> reports = new ArrayList<>();
+
+        RoutePlan plan = RoutePlanner.plan(terrain, economy(), p(0, 0), p(4, 0),
+                RoutePolicy.AVOID_MOUNTAINS, reports::add, () -> false);
+
+        assertTrue(plan.feasible());
+        assertEquals(RoutePlanningProgress.Phase.CLEARANCE, reports.get(0).phase());
+        assertTrue(reports.stream()
+                .anyMatch(report -> report.phase() == RoutePlanningProgress.Phase.FALLBACK));
+        assertEquals(RoutePlanningProgress.Phase.FALLBACK, reports.get(reports.size() - 1).phase());
+    }
+
+    @Test
+    @DisplayName("an already-cancelled plan stops before touching the terrain")
+    void should_ThrowCancellation_When_CancelledAtStart() {
+        FakeGroundMap terrain = new FakeGroundMap().rect(0, 0, 30, 0, NORMAL);
+        AtomicBoolean cancelled = new AtomicBoolean(true);
+
+        assertThrows(CancellationException.class,
+                () -> RoutePlanner.plan(terrain, economy(), p(0, 0), p(30, 0), RoutePolicy.DIRECT,
+                        RoutePlanningListener.NO_OP, cancelled::get));
+    }
+
+    @Test
+    @DisplayName("cancellation is polled at a throttled interval and stops a long search")
+    void should_StopPromptly_When_CancelledDuringPlanning() {
+        FakeGroundMap terrain = new FakeGroundMap().rect(0, 0, 3_000, 0, NORMAL);
+        AtomicBoolean cancelled = new AtomicBoolean(false);
+        List<RoutePlanningProgress> reports = new ArrayList<>();
+
+        assertThrows(CancellationException.class, () -> RoutePlanner.plan(terrain, economy(),
+                p(0, 0), p(3_000, 0), RoutePolicy.DIRECT, progress -> {
+                    reports.add(progress);
+                    if (progress.expandedNodes() >= RoutePlanner.PROGRESS_INTERVAL_EXPANSIONS) {
+                        cancelled.set(true);
+                    }
+                }, cancelled::get));
+
+        assertTrue(cancelled.get());
+        assertTrue(
+                reports.stream()
+                        .anyMatch(report -> report
+                                .expandedNodes() == RoutePlanner.PROGRESS_INTERVAL_EXPANSIONS),
+                "the listener must observe the interval before cancellation is checked");
     }
 
     private static TrackType typeAt(RoutePlan plan, int x, int y) {

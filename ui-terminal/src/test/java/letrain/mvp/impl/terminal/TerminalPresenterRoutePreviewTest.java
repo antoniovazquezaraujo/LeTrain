@@ -5,10 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 import letrain.audio.AudioController;
 import letrain.ground.GroundMap;
 import letrain.map.Point;
@@ -70,6 +73,23 @@ class TerminalPresenterRoutePreviewTest {
         int[] count = {0};
         model.getRailMap().forEach(track -> count[0]++);
         return count[0];
+    }
+
+    /**
+     * Drives the new asynchronous session until it leaves PLANNING. The production presenter will
+     * poll from its frame loop in the next slice; these tests only need the preview state.
+     */
+    private static void awaitPreview(RoutePreviewSession session) {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (System.nanoTime() < deadline) {
+            session.poll();
+            if (session.state() != RoutePreviewSession.State.PLANNING) {
+                assertEquals(RoutePreviewSession.State.PREVIEW, session.state());
+                return;
+            }
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1));
+        }
+        fail("route preview did not leave PLANNING before the timeout");
     }
 
     @Test
@@ -142,7 +162,9 @@ class TerminalPresenterRoutePreviewTest {
 
         model.getCursor().setPosition(points.get(1));
         presenter.onChar(enter());
-        assertEquals(RoutePreviewSession.State.PREVIEW, presenter.getRoutePreviewSession().state());
+        assertEquals(RoutePreviewSession.State.PLANNING,
+                presenter.getRoutePreviewSession().state());
+        awaitPreview(presenter.getRoutePreviewSession());
         assertTrue(presenter.getRoutePreviewSession().lastPlan().orElseThrow().feasible());
 
         presenter.onChar(enter());
@@ -166,6 +188,7 @@ class TerminalPresenterRoutePreviewTest {
         presenter.onChar(enter());
         model.getCursor().setPosition(points.get(1));
         presenter.onChar(enter());
+        awaitPreview(presenter.getRoutePreviewSession());
 
         RoutePreviewSession session = presenter.getRoutePreviewSession();
         assertEquals(letrain.planner.RoutePolicy.CHEAPEST, session.policy());
@@ -173,11 +196,15 @@ class TerminalPresenterRoutePreviewTest {
 
         presenter.onChar(new InputEvent(KeyType.ArrowRight));
         assertEquals(letrain.planner.RoutePolicy.DIRECT, session.policy());
+        assertEquals(RoutePreviewSession.State.PLANNING, session.state());
         assertEquals(before, model.getCursor().getPosition(),
                 "the policy arrow must not move the cursor in PREVIEW");
+        awaitPreview(session);
 
         presenter.onChar(new InputEvent(KeyType.ArrowLeft));
         assertEquals(letrain.planner.RoutePolicy.CHEAPEST, session.policy());
+        assertEquals(RoutePreviewSession.State.PREVIEW, session.state(),
+                "the cheapest plan is cached, so going back is immediate");
     }
 
     @Test
@@ -193,6 +220,7 @@ class TerminalPresenterRoutePreviewTest {
         presenter.onChar(enter());
         model.getCursor().setPosition(points.get(1));
         presenter.onChar(enter());
+        awaitPreview(presenter.getRoutePreviewSession());
 
         RoutePreviewSession session = presenter.getRoutePreviewSession();
         Point before = new Point(model.getCursor().getPosition());
@@ -203,12 +231,15 @@ class TerminalPresenterRoutePreviewTest {
                 "h must select the previous policy in PREVIEW");
         assertEquals(before, model.getCursor().getPosition(),
                 "h must not move the cursor in PREVIEW");
+        awaitPreview(session);
 
         presenter.onChar(new InputEvent(KeyType.Character, 'l', false, false, false));
         assertEquals(RoutePolicy.CHEAPEST, session.policy(),
                 "l must select the next policy in PREVIEW");
         assertEquals(before, model.getCursor().getPosition(),
                 "l must not move the cursor in PREVIEW");
+        assertEquals(RoutePreviewSession.State.PREVIEW, session.state(),
+                "the cheapest plan is cached, so going back is immediate");
     }
 
     @Test
