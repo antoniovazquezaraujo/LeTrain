@@ -88,11 +88,13 @@ inputs ⇒ misma ruta, en cualquier JVM. Los tests cubren una simetría con dos 
 
 ## Decisiones menores tomadas para no expandir el alcance
 
-- **Movimiento diagonal y celdas no construibles**: una celda no construible es el agua o la roca
-  cuando la política las bloquea, o cualquier valor de terreno fuera de `GROUND`/`WATER`/`ROCK`.
-  Hoy se permite pasar en diagonal entre dos celdas bloqueadas (lectura simple de A* en 8
-  direcciones). La recomendación es prohibirlo cuando los dos ortogonales estén bloqueados; queda
-  pendiente de decisión del dueño.
+- **Movimiento diagonal sin recortar esquinas**: una celda está bloqueada si no tiene datos de
+  terreno, si su valor no es construible (`GROUND`/`WATER`/`ROCK`) o si la `RoutePolicy` la
+  bloquea. Un movimiento diagonal se **rechaza** cuando ambos ortogonales adyacentes están
+  bloqueados; si al menos uno es transitable, se permite. Aplica a todas las políticas: en
+  `DIRECT`/`CHEAPEST` el agua y la roca son transitables, así que solo bloquean los valores
+  ausentes o no construibles. Consecuencia: no se puede cruzar en diagonal por la esquina entre
+  dos celdas no construibles; si eso deja el destino encerrado, el plan es infactible con motivo.
 - **Origen igual a destino** devuelve un plan factible vacío, con coste y ticks 0 (no hay nada que
   construir).
 - **Coste por celda**, no por longitud: una celda diagonal cuesta lo mismo que una ortogonal, igual
@@ -146,13 +148,10 @@ inputs ⇒ misma ruta, en cualquier JVM. Los tests cubren una simetría con dos 
 - El coste de búsqueda es acotado; rutas muy largas pueden devolver infactible por tope antes que
   por ausencia real de ruta (motivo visible). Si molesta, se sube el tope o se pasa a búsqueda con
   caja envolvente.
-- La decisión sobre recortar esquinas sigue pendiente; la de no modelar puertas queda para la
-  capa de construcción.
+- El planificador no recorta esquinas entre celdas bloqueadas (regla diagonal decidida); la de no
+  modelar puertas queda para la capa de construcción.
 
 ## Pendiente
 
-- **Diagonal entre celdas no construibles**: definir si se prohíbe cuando los dos ortogonales están
-  bloqueados. Recomendación: prohibirlo. Una celda no construible es agua/roca bloqueada por la
-  política, o un valor de terreno fuera de `GROUND`/`WATER`/`ROCK`.
 - **Celda de origen con vía/estación existente**: solo aplica si en el futuro se permite reutilizar
   vía; de momento el plan construye todas las celdas.

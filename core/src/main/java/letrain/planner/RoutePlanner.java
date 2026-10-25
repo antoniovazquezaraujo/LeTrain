@@ -132,8 +132,13 @@ public final class RoutePlanner {
             }
 
             for (int[] direction : NEIGHBOURS) {
-                int nx = currentKey.x() + direction[0];
-                int ny = currentKey.y() + direction[1];
+                int dx = direction[0];
+                int dy = direction[1];
+                if (dx != 0 && dy != 0 && !diagonalIsAllowed(terrain, policy, currentKey, dx, dy)) {
+                    continue;
+                }
+                int nx = currentKey.x() + dx;
+                int ny = currentKey.y() + dy;
                 Integer rawTerrain = terrain.getValueAt(nx, ny);
                 if (rawTerrain == null) {
                     continue; // No terrain data: cannot build there.
@@ -147,9 +152,8 @@ public final class RoutePlanner {
                 if (neighbour.equals(startKey)) {
                     continue; // The start has no entry cost.
                 }
-                double moveCost =
-                        distanceMetric ? (direction[0] != 0 && direction[1] != 0 ? SQRT_2 : 1.0)
-                                : constructionCost(economy, normalized);
+                double moveCost = distanceMetric ? (dx != 0 && dy != 0 ? SQRT_2 : 1.0)
+                        : constructionCost(economy, normalized);
                 double tentative = current.g() + moveCost;
                 Double old = gScore.get(neighbour);
                 if (old != null && tentative >= old) {
@@ -235,6 +239,30 @@ public final class RoutePlanner {
                 normalizedTerrain == GroundMap.WATER || normalizedTerrain == GroundMap.ROCK;
             case DIRECT, CHEAPEST -> false;
         };
+    }
+
+    /**
+     * A diagonal move is allowed only when at least one of its two orthogonal neighbours is
+     * traversable. If both orthogonals are blocked (no terrain data, non-buildable value, or
+     * blocked by the policy), the move would cut a corner between two cells and is rejected. This
+     * applies to every policy; for {@code DIRECT}/{@code CHEAPEST} water and rock are traversable,
+     * so only missing/unknown terrain blocks them.
+     */
+    private static boolean diagonalIsAllowed(GroundMap terrain, RoutePolicy policy, CellKey from,
+            int dx, int dy) {
+        boolean horizontal = isTraversable(terrain, policy, from.x() + dx, from.y());
+        boolean vertical = isTraversable(terrain, policy, from.x(), from.y() + dy);
+        return horizontal || vertical;
+    }
+
+    /** True when a cell exists, is buildable and the current policy does not block it. */
+    private static boolean isTraversable(GroundMap terrain, RoutePolicy policy, int x, int y) {
+        Integer rawTerrain = terrain.getValueAt(x, y);
+        if (rawTerrain == null) {
+            return false;
+        }
+        int normalized = normalize(rawTerrain);
+        return isBuildable(normalized) && !isBlocked(policy, normalized);
     }
 
     private static TrackType trackTypeFor(int normalizedTerrain) {

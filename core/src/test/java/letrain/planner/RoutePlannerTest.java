@@ -157,6 +157,63 @@ class RoutePlannerTest {
     }
 
     @Test
+    @DisplayName("diagonal shortcut between two policy-blocked orthogonal cells is rejected")
+    void should_RejectDiagonal_When_BothOrthogonalsAreBlockedByPolicy() {
+        FakeGroundMap terrain =
+                new FakeGroundMap().rect(0, 0, 1, 1, NORMAL).put(1, 0, ROCK).put(0, 1, ROCK);
+
+        RoutePlan plan = RoutePlanner.plan(terrain, economy(), p(0, 0), p(1, 1),
+                RoutePolicy.AVOID_MOUNTAINS);
+
+        assertFalse(plan.feasible());
+        assertTrue(plan.reason().orElseThrow().contains("No route"));
+    }
+
+    @Test
+    @DisplayName("diagonal is allowed when at least one orthogonal cell is free")
+    void should_AllowDiagonal_When_OnlyOneOrthogonalIsBlocked() {
+        FakeGroundMap terrain = new FakeGroundMap().rect(0, 0, 1, 1, NORMAL).put(1, 0, ROCK);
+
+        RoutePlan plan = RoutePlanner.plan(terrain, economy(), p(0, 0), p(1, 1),
+                RoutePolicy.AVOID_MOUNTAINS);
+
+        assertTrue(plan.feasible());
+        assertEquals(List.of(p(0, 0), p(1, 1)), points(plan));
+        assertEquals(200.0, plan.totalCost(), 1e-9);
+    }
+
+    @Test
+    @DisplayName("a corner blocked for diagonals forces the planner to detour")
+    void should_Detour_When_DiagonalWouldCutABlockedCorner() {
+        FakeGroundMap terrain =
+                new FakeGroundMap().rect(-1, -1, 3, 2, NORMAL).put(1, 0, ROCK).put(0, 1, ROCK);
+        RoutePlan plan = RoutePlanner.plan(terrain, economy(), p(0, 0), p(2, 1),
+                RoutePolicy.AVOID_MOUNTAINS);
+
+        assertTrue(plan.feasible());
+        assertFalse(contains(plan, 1, 1));
+        assertTrue(plan.steps().size() > 3);
+        assertTrue(plan.steps().stream()
+                .noneMatch(step -> step.trackType() == TrackType.TUNNEL_TRACK));
+    }
+
+    @Test
+    @DisplayName("non-buildable and missing terrain count as blocked for diagonal moves")
+    void should_TreatUnknownAndMissingTerrainAsBlocked_When_DecidingDiagonal() {
+        FakeGroundMap unknownTerrain =
+                new FakeGroundMap().rect(0, 0, 1, 1, NORMAL).put(1, 0, 5).put(0, 1, 5);
+        RoutePlan unknownPlan =
+                RoutePlanner.plan(unknownTerrain, economy(), p(0, 0), p(1, 1), RoutePolicy.DIRECT);
+        assertFalse(unknownPlan.feasible());
+
+        FakeGroundMap missingTerrain =
+                new FakeGroundMap().rect(0, 0, 0, 0, NORMAL).put(1, 1, NORMAL);
+        RoutePlan missingPlan =
+                RoutePlanner.plan(missingTerrain, economy(), p(0, 0), p(1, 1), RoutePolicy.DIRECT);
+        assertFalse(missingPlan.feasible());
+    }
+
+    @Test
     @DisplayName("DIRECT follows the shortest line even over water and reports its real cost")
     void should_IgnoreTerrainCost_When_PolicyIsDirect() {
         FakeGroundMap terrain = new FakeGroundMap().rect(-1, -1, 3, 1, NORMAL).put(1, 0, WATER);
