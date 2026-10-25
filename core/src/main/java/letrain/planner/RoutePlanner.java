@@ -100,7 +100,7 @@ public final class RoutePlanner {
     static final double AVOID_TURN_FRACTION = 0.25;
 
     /** Avoid-policy comfort: search cost per blocked neighbour, per cell. */
-    static final double AVOID_CLEARANCE_FACTOR = 1.0;
+    static final double AVOID_CLEARANCE_FACTOR = 0.5;
 
     /** Avoid-policy comfort: search cost per cell of Euclidean deviation from the straight line. */
     static final double AVOID_DEVIATION_FRACTION = 0.05;

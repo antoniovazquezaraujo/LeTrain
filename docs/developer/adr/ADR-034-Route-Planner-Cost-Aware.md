@@ -94,7 +94,7 @@ se suma, **solo al coste de búsqueda**, un término de comodidad determinista. 
 ```
 coste_búsqueda = coste_construcción(celda)
                + 0,25 × baseline × nº_giros_45
-               + 1,00 × baseline × vecinos_bloqueados(celda)
+               + 0,50 × baseline × vecinos_bloqueados(celda)
                + 0,05 × baseline × desviación_euclídea(celda)
 ```
 
@@ -107,10 +107,13 @@ donde:
 - `desviación_euclídea`: distancia de la celda al segmento recto inicio-fin, en celdas.
 - `nº_giros_45`: 1 por cada cambio de rumbo de 45°.
 
-Estos pesos son **deliberadamente fuertes**: una ruta un poco más cara en construcción puede ganar
-si ahorra al menos cuatro giros (25 × 4 = 100 = una celda normal) o si deja de tener vecinos
-bloqueados. El dueño prefiere una ruta algo más costosa pero cómoda y lejos del agua/roca antes que
-la más barata pegada a la costa. Es un intercambio intencional, no un empate.
+Estos pesos son **deliberadamente relevantes**: una ruta un poco más cara en construcción puede
+ganar si ahorra al menos cuatro giros (25 × 4 = 100 = una celda normal) o si cambia varios vecinos
+bloqueados por ninguno. El peso 0,5 de la limpieza evita que un obstáculo pequeño (por ejemplo,
+una columna de agua de tres celdas) provoque un rodeo de varias celdas; en una costa larga la suma
+de muchas celdas costeras sigue pesando lo suficiente para separar la ruta del agua. El dueño
+prefiere una ruta algo más costosa pero cómoda y lejos del agua/roca antes que la más barata pegada
+a la costa. Es un intercambio intencional, no un empate.
 
 `DIRECT` y `CHEAPEST` conservan su semántica primaria y solo usan desempates deterministas
 diminutos: `1e-3` del coste primario mínimo por celda y giro, y `1e-5` para

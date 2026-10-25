@@ -186,9 +186,8 @@ class RoutePlannerTest {
                 plan.steps().stream().anyMatch(step -> step.trackType() == TrackType.BRIDGE_TRACK));
         assertTrue(plan.steps().stream().anyMatch(step -> Math.abs(step.point().getY()) == 2));
         // The old four-move detour was SE,SE,NE,NE: the SE->NE bend is 90 degrees and is now
-        // rejected. Clearance then pushes the route one cell further from the water column, so it
-        // trades two extra normal cells for zero water-neighbour cells.
-        assertEquals(800.0, plan.totalCost(), 1e-9);
+        // rejected. The legal six-cell detour keeps its apex one cell from the water column.
+        assertEquals(600.0, plan.totalCost(), 1e-9);
         assertLegalTurns(plan);
     }
 
@@ -345,9 +344,8 @@ class RoutePlannerTest {
             assertEquals(first, again);
         }
         // Fixed neighbour order (N, NE, E, SE, ...) plus FIFO tie-break: the northern detour wins
-        // over its mirror image through the south, and comfort keeps it one cell clear of the rock.
-        assertEquals(List.of(p(0, 0), p(1, -1), p(2, -2), p(3, -2), p(4, -1), p(4, 0)),
-                points(first));
+        // over its mirror image through the south.
+        assertEquals(List.of(p(0, 0), p(1, -1), p(2, -1), p(3, -1), p(4, 0)), points(first));
     }
 
     @Test
@@ -384,7 +382,7 @@ class RoutePlannerTest {
             }
         }
         assertTrue(hasEastNorthEastAndNorth, "expected an E->NE->N bend in " + directions);
-        assertEquals(600.0, plan.totalCost(), 1e-9);
+        assertEquals(400.0, plan.totalCost(), 1e-9);
     }
 
     @Test
