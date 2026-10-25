@@ -114,6 +114,27 @@ sumar a lo largo de una costa y separar la vía del borde, pero no convierte en 
 mucho más larga. El dueño prefiere una ruta algo más larga pero cómoda y lejos del terreno
 bloqueado antes que la más corta pegada a la costa; es un intercambio intencional, no un empate.
 
+### Desempate de agua en `CHEAPEST`
+
+`CHEAPEST` sigue minimizando el **coste real de construcción**. Sobre él se suman los desempates
+diminutos de giro/desviación y, además, una preferencia suave por no ir pegado al agua:
+
+```
+coste_búsqueda = coste_construcción(celda)
+               + desempates de giro/desviación
+               + 0,005 × coste_mínimo_por_celda × vecinos_agua(celda)
+```
+
+- `vecinos_agua` cuenta los 8 vecinos que son agua **solo para celdas de tierra**. Las celdas de
+  agua/puente están exentas, así que cruzar un lago sigue siendo posible y no se penaliza por ello.
+- No es un bloqueo duro: es un término de búsqueda que nunca se suma al `totalCost()` reportado.
+- Es pequeño frente a una celda: con vía normal a 100, son 0,5 por vecino de agua. Una ruta una
+  celda más cara (100) necesitaría 200 vecinos de agua de diferencia para empatar, así que no
+  puede ganar una ruta materialmente más costosa solo por evitar la orilla.
+- Es mayor que los desempates de giro/desviación, de modo que entre dos rutas de coste igual (o
+  casi igual) gana la que se separa una celda del agua aunque la otra tenga alguna curva menos.
+- `DIRECT` y las políticas `AVOID_*` no usan este término.
+
 ### Paso duro de limpieza (dos pasadas)
 
 Para `AVOID_MOUNTAINS`, `AVOID_WATER` y `AVOID_ALL` la comodidad anterior no basta: una ruta puede

@@ -73,6 +73,10 @@ import letrain.utils.ValidationUtils;
  * {@code DIRECT} and {@code CHEAPEST} use tiny deterministic tie-breakers (relative to the unit
  * distance step and to the cheapest per-cell construction cost respectively); they keep their
  * original primary semantics. See {@link #TIE_TURN_FRACTION} and {@link #TIE_SHAPE_FRACTION}.
+ * Additionally, {@code CHEAPEST} adds a small soft penalty per water-adjacent land cell so that, at
+ * equal or near-equal construction cost, the route prefers staying inland instead of hugging a
+ * shore. Water cells themselves are exempt, so a bridge crossing is never penalised by this term;
+ * it is never a hard block and cannot make a materially more expensive route win.
  *
  * <p>
  * <b>Clearance.</b> A cell's clearance penalty is the number of its eight neighbours that are
@@ -107,6 +111,14 @@ public final class RoutePlanner {
      * per-cell primary cost.
      */
     static final double TIE_SHAPE_FRACTION = 1e-5;
+
+    /**
+     * {@code CHEAPEST} water-edge tie-breaker, as a fraction of the cheapest per-cell construction
+     * cost per water-adjacent land cell. Small enough that it only breaks equal or near-equal
+     * construction costs, but above the turn/deviation tie-breakers so an otherwise equal route can
+     * move one cell inland.
+     */
+    static final double TIE_WATER_FRACTION = 5e-3;
 
     /** Avoid-policy comfort: search cost per 45-degree turn, in distance units. */
     static final double AVOID_TURN_FRACTION = 0.25;
@@ -195,6 +207,7 @@ public final class RoutePlanner {
         double turnPenalty;
         double clearancePenalty;
         double deviationPenalty;
+        double waterClearancePenalty = 0;
         if (avoidPolicy) {
             // Comfort weights are in distance units so they cannot overwhelm geometric distance.
             turnPenalty = AVOID_TURN_FRACTION;
@@ -211,9 +224,10 @@ public final class RoutePlanner {
             turnPenalty = tieBase * TIE_TURN_FRACTION;
             clearancePenalty = tieBase * TIE_SHAPE_FRACTION;
             deviationPenalty = tieBase * TIE_SHAPE_FRACTION;
+            waterClearancePenalty = tieBase * TIE_WATER_FRACTION;
         }
         return new SearchCosts(distanceMetric, avoidPolicy, minCellCost, turnPenalty,
-                clearancePenalty, deviationPenalty);
+                clearancePenalty, deviationPenalty, waterClearancePenalty);
     }
 
     private static RoutePlan search(GroundMap terrain, EconomyManager economy, Point start,
@@ -223,6 +237,7 @@ public final class RoutePlanner {
         double turnPenalty = costs.turnPenalty();
         double clearancePenalty = costs.clearancePenalty();
         double deviationPenalty = costs.deviationPenalty();
+        double waterClearancePenalty = costs.waterClearancePenalty();
 
         CellKey startKey = CellKey.of(start);
         CellKey endKey = CellKey.of(end);
@@ -295,8 +310,12 @@ public final class RoutePlanner {
                         ? 1
                         : 0;
                 double deviation = deviation(neighbour, startKey, endKey);
+                int waterNeighbours = waterClearancePenalty > 0 && normalized != GroundMap.WATER
+                        ? waterNeighbourCount(terrain, neighbour)
+                        : 0;
                 double tentative = current.g() + primary + turnPenalty * turn
-                        + clearancePenalty * blockedNeighbours + deviationPenalty * deviation;
+                        + clearancePenalty * blockedNeighbours + deviationPenalty * deviation
+                        + waterClearancePenalty * waterNeighbours;
                 Double old = gScore.get(neighbourState);
                 if (old != null && tentative >= old) {
                     continue;
@@ -425,6 +444,27 @@ public final class RoutePlanner {
         return blockedNeighbourCount(terrain, policy, CellKey.of(point)) == 0;
     }
 
+    /** Package-private test hook for the {@code CHEAPEST} water-edge tie-breaker. */
+    static int waterNeighboursAt(GroundMap terrain, Point point) {
+        return waterNeighbourCount(terrain, CellKey.of(point));
+    }
+
+    /**
+     * Counts the eight neighbours of {@code cell} that are actual water. Used only by
+     * {@code CHEAPEST} as a soft water-edge tie-breaker; water cells themselves are exempt at the
+     * call site, so crossing a lake is still allowed.
+     */
+    private static int waterNeighbourCount(GroundMap terrain, CellKey cell) {
+        int water = 0;
+        for (Move move : MOVES) {
+            Integer rawTerrain = terrain.getValueAt(cell.x() + move.dx(), cell.y() + move.dy());
+            if (rawTerrain != null && normalize(rawTerrain) == GroundMap.WATER) {
+                water++;
+            }
+        }
+        return water;
+    }
+
     /**
      * Counts the eight neighbours of {@code cell} that are blocked under the active policy. Missing
      * or non-buildable terrain and the policy's own blocked water/rock all count; buildable water
@@ -501,7 +541,8 @@ public final class RoutePlanner {
 
     /** Immutable per-plan weights so the clearance pass and its fallback use identical costs. */
     private record SearchCosts(boolean distanceMetric, boolean avoidPolicy, double minCellCost,
-            double turnPenalty, double clearancePenalty, double deviationPenalty) {
+            double turnPenalty, double clearancePenalty, double deviationPenalty,
+            double waterClearancePenalty) {
     }
 
     /** One of the eight grid steps and the heading it represents. */

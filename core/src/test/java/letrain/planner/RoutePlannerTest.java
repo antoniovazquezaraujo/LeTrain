@@ -439,6 +439,39 @@ class RoutePlannerTest {
     }
 
     @Test
+    @DisplayName("CHEAPEST prefers an inland equal-cost detour over hugging the water")
+    void should_PreferInlandDetour_When_CheapestCostTies() {
+        // A mountain wall at x=3..5 blocks the straight line; the northern and southern detours
+        // both cost 900 (nine normal cells). Only the north one runs next to the water at y=-3,
+        // so the soft water-clearance tie-break must choose the southern, inland route.
+        FakeGroundMap terrain = new FakeGroundMap().rect(-4, -6, 12, 8, NORMAL);
+        for (int x = 3; x <= 5; x++) {
+            for (int y = -1; y <= 1; y++) {
+                terrain.put(x, y, ROCK);
+            }
+        }
+        for (int x = -4; x <= 12; x++) {
+            terrain.put(x, -3, WATER);
+        }
+
+        RoutePlan plan =
+                RoutePlanner.plan(terrain, economy(), p(0, 0), p(8, 0), RoutePolicy.CHEAPEST);
+
+        assertTrue(plan.feasible());
+        assertEquals(List.of(p(0, 0), p(1, 1), p(2, 2), p(3, 2), p(4, 2), p(5, 2), p(6, 2), p(7, 1),
+                p(8, 0)), points(plan));
+        assertEquals(900.0, plan.totalCost(), 1e-9);
+        assertEquals(0, plan.totalConstructionTicks());
+        assertTrue(
+                plan.steps().stream().allMatch(step -> step.trackType() == TrackType.NORMAL_TRACK));
+        assertLegalTurns(plan);
+        for (int i = 1; i < plan.steps().size() - 1; i++) {
+            assertEquals(0, RoutePlanner.waterNeighboursAt(terrain, plan.steps().get(i).point()),
+                    "interior cell touches water: " + points(plan));
+        }
+    }
+
+    @Test
     @DisplayName("industry cells count as ground, as RailTrackMaker does")
     void should_TreatIndustryAsGround_When_EndpointsOrRouteUseIt() {
         FakeGroundMap terrain =
@@ -612,14 +645,14 @@ class RoutePlannerTest {
     }
 
     @Test
-    @DisplayName("at equal cost, turns and clearance, the route closest to the straight line wins")
+    @DisplayName("at equal cost, turns and water clearance, the closest to the straight line wins")
     void should_PreferLessDeviation_When_OtherPreferencesTie() {
-        // Under CHEAPEST water is expensive but not blocked, so the comfort terms stay tiny. A
-        // water wall at y=0 forces two seven-cell, two-turn detours of equal primary cost; the
-        // nearer one (y=-1) must win on deviation.
+        // Under CHEAPEST the rock wall is expensive but not blocked, so the construction and
+        // comfort terms stay tiny. It forces two seven-cell, two-turn detours of equal cost with
+        // no water nearby; the nearer one (y=-1) must win on deviation.
         FakeGroundMap terrain = new FakeGroundMap().rect(-3, -5, 9, 5, NORMAL);
         for (int x = 1; x <= 5; x++) {
-            terrain.put(x, 0, WATER);
+            terrain.put(x, 0, ROCK);
         }
         RoutePlan plan =
                 RoutePlanner.plan(terrain, economy(), p(0, 0), p(6, 0), RoutePolicy.CHEAPEST);
