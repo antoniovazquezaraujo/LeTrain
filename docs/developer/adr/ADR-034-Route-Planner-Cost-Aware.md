@@ -114,26 +114,29 @@ sumar a lo largo de una costa y separar la vía del borde, pero no convierte en 
 mucho más larga. El dueño prefiere una ruta algo más larga pero cómoda y lejos del terreno
 bloqueado antes que la más corta pegada a la costa; es un intercambio intencional, no un empate.
 
-### Desempate de agua en `CHEAPEST`
+### Orden lexicográfico de forma en `CHEAPEST`
 
-`CHEAPEST` sigue minimizando el **coste real de construcción**. Sobre él se suman los desempates
-diminutos de giro/desviación y, además, una preferencia suave por no ir pegado al agua:
+`CHEAPEST` sigue minimizando el **coste real de construcción** y usa un A* con coste
+**lexicográfico** (tupla), no una suma de penalizaciones. El orden es:
 
-```
-coste_búsqueda = coste_construcción(celda)
-               + desempates de giro/desviación
-               + 0,005 × coste_mínimo_por_celda × vecinos_agua(celda)
-```
+1. **coste real de construcción** (clave primaria),
+2. **adyacencia a obstáculos**: suma de vecinos de agua o roca de las celdas de tierra de la ruta;
+   las celdas de agua/roca (puente/túnel) están exentas,
+3. **número de giros de 45°**,
+4. **desviación euclídea** acumulada respecto al segmento recto inicio-fin.
 
-- `vecinos_agua` cuenta los 8 vecinos que son agua **solo para celdas de tierra**. Las celdas de
-  agua/puente están exentas, así que cruzar un lago sigue siendo posible y no se penaliza por ello.
-- No es un bloqueo duro: es un término de búsqueda que nunca se suma al `totalCost()` reportado.
-- Es pequeño frente a una celda: con vía normal a 100, son 0,5 por vecino de agua. Una ruta una
-  celda más cara (100) necesitaría 200 vecinos de agua de diferencia para empatar, así que no
-  puede ganar una ruta materialmente más costosa solo por evitar la orilla.
-- Es mayor que los desempates de giro/desviación, de modo que entre dos rutas de coste igual (o
-  casi igual) gana la que se separa una celda del agua aunque la otra tenga alguna curva menos.
-- `DIRECT` y las políticas `AVOID_*` no usan este término.
+Consecuencias:
+
+- Una ruta estrictamente más barata gana siempre, por poco que sea la diferencia; las claves de
+  forma solo se comparan cuando el coste acumulado es exactamente igual (los costes reales de la
+  economía son discretos, así que las rutas con las mismas celdas empatan).
+- Esto evita orillas y recovecos de roca donde la ruta toca varios vecinos bloqueados, y después
+  prefiere menos curvas y una línea más recta.
+- Las claves secundarias son no negativas y aditivas; la heurística solo estima construcción, así
+  que sigue siendo admisible y consistente y el primer objetivo extraído es óptimo en ese orden.
+- No hay bloqueo duro ni penalización en `totalCost()`: el plan reporta solo el coste y tiempo
+  reales de las celdas.
+- `DIRECT` y las políticas `AVOID_*` no usan este orden.
 
 ### Paso duro de limpieza (dos pasadas)
 
