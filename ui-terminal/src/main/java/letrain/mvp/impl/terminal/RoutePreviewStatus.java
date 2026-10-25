@@ -50,7 +50,7 @@ final class RoutePreviewStatus {
 
     private static String previewLine(RoutePolicy policy, RoutePlan plan, long effectiveTicks,
             String message) {
-        String policyName = policy == null ? "?" : policy.name();
+        String policyName = policyLabel(policy);
         String hints = " · ←/→ policy · Esc discard";
         if (plan == null || !plan.feasible()) {
             String reason =
@@ -60,6 +60,24 @@ final class RoutePreviewStatus {
         return "Connect · " + policyName + " · " + formatCost(plan.totalCost()) + " · "
                 + formatTicks(effectiveTicks) + " · " + plan.steps().size()
                 + " cells · Enter select" + hints;
+    }
+
+    /**
+     * Policy name plus a short reminder of what it blocks. The status line is the only place where
+     * the author can see why a route is allowed to cross rock or water, so "AVOID_MOUNTAINS" must
+     * not be confused with "AVOID_WATER" or with the unrestricted DIRECT/CHEAPEST policies.
+     */
+    static String policyLabel(RoutePolicy policy) {
+        if (policy == null) {
+            return "?";
+        }
+        return switch (policy) {
+            case CHEAPEST -> "CHEAPEST (may cross)";
+            case DIRECT -> "DIRECT (crosses all)";
+            case AVOID_MOUNTAINS -> "AVOID_MOUNTAINS (no rock)";
+            case AVOID_WATER -> "AVOID_WATER (no water)";
+            case AVOID_BOTH -> "AVOID_BOTH (no rock/water)";
+        };
     }
 
     /** Game currency with dot grouping, matching the ADR examples ({@code $1.234.500}). */

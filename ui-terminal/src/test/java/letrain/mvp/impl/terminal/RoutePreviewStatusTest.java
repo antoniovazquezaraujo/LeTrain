@@ -48,7 +48,7 @@ class RoutePreviewStatusTest {
         String status = RoutePreviewStatus.format(RoutePreviewSession.State.PREVIEW,
                 RoutePolicy.CHEAPEST, plan, 280, null);
 
-        assertTrue(status.contains("Connect · CHEAPEST"), status);
+        assertTrue(status.contains("Connect · CHEAPEST (may cross)"), status);
         assertTrue(status.contains("$123.400"), status);
         assertTrue(status.contains("14 min"), status);
         assertTrue(status.contains("2 cells"), status);
@@ -64,10 +64,22 @@ class RoutePreviewStatusTest {
                 RoutePolicy.AVOID_BOTH, RoutePlan.infeasible("No route can cross water and rock"),
                 0, "No route can cross water and rock");
 
-        assertTrue(status.contains("AVOID_BOTH"), status);
+        assertTrue(status.contains("AVOID_BOTH (no rock/water)"), status);
         assertTrue(status.contains("no route: No route can cross water and rock"), status);
         assertTrue(status.contains("←/→ policy"), status);
         assertTrue(!status.contains("$"), "an infeasible plan must not show a price: " + status);
+    }
+
+    @Test
+    @DisplayName("the policy label says what each avoid policy blocks")
+    void labelsPoliciesWithTheirBlockedTerrain() {
+        assertEquals("AVOID_MOUNTAINS (no rock)",
+                RoutePreviewStatus.policyLabel(RoutePolicy.AVOID_MOUNTAINS));
+        assertEquals("AVOID_WATER (no water)",
+                RoutePreviewStatus.policyLabel(RoutePolicy.AVOID_WATER));
+        assertEquals("AVOID_BOTH (no rock/water)",
+                RoutePreviewStatus.policyLabel(RoutePolicy.AVOID_BOTH));
+        assertEquals("DIRECT (crosses all)", RoutePreviewStatus.policyLabel(RoutePolicy.DIRECT));
     }
 
     @Test
