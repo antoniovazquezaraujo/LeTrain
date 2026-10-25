@@ -242,6 +242,7 @@ public interface Model {
             case SPEED_SIGNALS:
             case FORKS:
             case TRAINS:
+            case CONNECT:
             case COMMAND:
             case PROGRAM:
                 return true;
@@ -316,9 +317,10 @@ public interface Model {
                                 "Create trains"), LINK("Link trains"), UNLINK(
                                         "Divide trains"), SENSORS("Manage sensors"), STATIONS(
                                                 "Stations"), LOAD_TRAINS(
-                                                        "Use load Stations"), PROGRAM(
-                                                                "Program"), COMMAND(
-                                                                        "Command Line Interface");
+                                                        "Use load Stations"), CONNECT(
+                                                                "Preview a route connection"), PROGRAM(
+                                                                        "Program"), COMMAND(
+                                                                                "Command Line Interface");
 
         private String name;
 

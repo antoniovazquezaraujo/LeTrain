@@ -1,5 +1,6 @@
 package letrain.mvp.impl.terminal;
 
+import static letrain.mvp.Model.GameMode.CONNECT;
 import static letrain.mvp.Model.GameMode.DRIVE;
 import static letrain.mvp.Model.GameMode.FORKS;
 import static letrain.mvp.Model.GameMode.LINK;
@@ -13,6 +14,8 @@ import static letrain.mvp.Model.GameMode.UNLINK;
 
 import letrain.mvp.input.InputEvent;
 import letrain.mvp.input.KeyType;
+import letrain.planner.RoutePlan;
+import letrain.planner.RoutePreviewSession;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -134,6 +137,24 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
      * exit, so the user can try things in the live simulation without consequences.
      */
     private letrain.command.ExperimentSession experimentSession;
+
+    /**
+     * ADR-035 CONNECT session, created lazily from the current terrain/economy on first entry. It
+     * is presenter-owned state: it never lives in the model and is recreated on every model swap.
+     */
+    private RoutePreviewSession routePreviewSession;
+
+    /** Mode the player came from; CONNECT returns there on cancel or selection. */
+    private Model.GameMode routePreviewReturnMode = RAILS;
+
+    /**
+     * Plan accepted in CONNECT, kept for the future construction queue. This slice does not build
+     * anything; it only stores the plan and closes the preview.
+     */
+    private RoutePlan pendingRoutePlan;
+
+    private String routePreviewConfirmation;
+    private long routePreviewConfirmationUntilMillis;
 
     private static final int AMBIENT_BASE_CELLS = 80 * 25;
     private static final int AMBIENT_FULL_CELLS = 120 * 40;
@@ -299,6 +320,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         } else {
             this.model = new letrain.mvp.impl.Model();
         }
+        resetRoutePreviewState();
         wireUserMessageSink();
         // Re-create audio controller for the new model
         if (this.audioController != null) {
@@ -333,6 +355,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         // reload / mixer restart) and rebuild only the cheap simulation controller. The view reads
         // the model field every frame.
         this.model = newModel;
+        resetRoutePreviewState();
         wireUserMessageSink();
         if (this.audioController == null) {
             this.audioController = new letrain.audio.AudioController(this.model);
@@ -539,6 +562,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 updateAmbientAudio();
                 renderer.visitModel(model);
                 informer.visitModel(model);
+                drawRoutePreviewOverlay();
                 view.paint();
                 if (model.getEffectiveMode() == DRIVE) {
                     Locomotive selectedLocomotive = model.getSelectedLocomotive();
@@ -829,6 +853,187 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 model.getCursor().getPosition().getY());
     }
 
+    /**
+     * Resets all CONNECT state. Called whenever the model is swapped (load, new game, undo/redo),
+     * because a session is bound to one terrain/economy and must never survive into another world.
+     */
+    private void resetRoutePreviewState() {
+        routePreviewSession = null;
+        routePreviewReturnMode = RAILS;
+        pendingRoutePlan = null;
+        routePreviewConfirmation = null;
+        routePreviewConfirmationUntilMillis = 0;
+    }
+
+    private RoutePreviewSession routePreviewSession() {
+        if (routePreviewSession == null) {
+            routePreviewSession =
+                    new RoutePreviewSession(model.getGroundMap(), model.getEconomyManager());
+        }
+        return routePreviewSession;
+    }
+
+    /** {@code Shift+C}: uppercase C, or a lower-case c delivered with the shift flag. */
+    private static boolean isConnectEntry(InputEvent event) {
+        if (event.getKeyType() != KeyType.Character || event.getCharacter() == null) {
+            return false;
+        }
+        char c = event.getCharacter();
+        return c == 'C' || (c == 'c' && event.isShiftDown());
+    }
+
+    /**
+     * CONNECT is a normal map/edit tool; it is not offered from the console, editor or TRAINS/ADD.
+     */
+    private static boolean canEnterConnectMode(Model.GameMode mode) {
+        switch (mode) {
+            case COMMAND:
+            case PROGRAM:
+            case TRAINS:
+            case ADD:
+            case CONNECT:
+                return false;
+            default:
+                return true;
+        }
+    }
+
+    private void enterConnectMode() {
+        routePreviewReturnMode = model.getMode();
+        routePreviewSession().begin(model.getCursor().getPosition());
+        model.setMode(CONNECT);
+        routePreviewConfirmation = null;
+        routePreviewConfirmationUntilMillis = 0;
+    }
+
+    private void leaveConnectMode() {
+        Model.GameMode returnMode =
+                routePreviewReturnMode == CONNECT ? RAILS : routePreviewReturnMode;
+        model.setMode(returnMode);
+        routePreviewSession = null;
+    }
+
+    /**
+     * Handles every key while CONNECT is active, before the global Enter/Esc/mode-hotkey routing.
+     * Movement never builds or deletes track: only a sanitized movement event reaches
+     * {@link RailTrackMaker}, with shift/ctrl cleared so drawing and erasing cannot trigger.
+     */
+    private void handleConnectKey(InputEvent keyEvent) {
+        RoutePreviewSession session = routePreviewSession();
+        if (keyEvent.getKeyType() == KeyType.Escape) {
+            session.escape();
+            leaveConnectMode();
+            return;
+        }
+        if (keyEvent.getKeyType() == KeyType.Enter) {
+            long ticksBefore = session.effectiveConstructionTicks();
+            RoutePreviewSession.State state = session.enter(model.getCursor().getPosition());
+            if (state == RoutePreviewSession.State.SELECTED) {
+                pendingRoutePlan = session.selectedPlan().orElse(null);
+                if (pendingRoutePlan != null) {
+                    routePreviewConfirmation = "Connect · selected · "
+                            + RoutePreviewStatus.formatCost(pendingRoutePlan.totalCost()) + " · "
+                            + RoutePreviewStatus.formatTicks(ticksBefore) + " · "
+                            + pendingRoutePlan.steps().size() + " tramos · not built yet";
+                    routePreviewConfirmationUntilMillis = System.currentTimeMillis() + 2_500;
+                }
+                leaveConnectMode();
+            }
+            return;
+        }
+        if (isConnectEntry(keyEvent)) {
+            session.escape();
+            leaveConnectMode();
+            return;
+        }
+        if (session.state() == RoutePreviewSession.State.PREVIEW) {
+            if (keyEvent.getKeyType() == KeyType.ArrowLeft) {
+                session.previousPolicy();
+                return;
+            }
+            if (keyEvent.getKeyType() == KeyType.ArrowRight) {
+                session.nextPolicy();
+                return;
+            }
+        }
+        InputEvent movement = movementOnly(keyEvent);
+        if (movement != null) {
+            railTrackMaker.onChar(movement);
+        }
+    }
+
+    /**
+     * Converts arrows/hjkl/Page keys into a movement event with all modifiers cleared. Any other
+     * key returns {@code null} and is swallowed in CONNECT, so no construction or mode shortcut
+     * leaks through.
+     */
+    private static InputEvent movementOnly(InputEvent event) {
+        KeyType type = event.getKeyType();
+        if (type == KeyType.ArrowUp || type == KeyType.ArrowDown || type == KeyType.ArrowLeft
+                || type == KeyType.ArrowRight || type == KeyType.PageUp
+                || type == KeyType.PageDown) {
+            return new InputEvent(type, null, false, false, false);
+        }
+        if (type == KeyType.Character && event.getCharacter() != null) {
+            char c = Character.toLowerCase(event.getCharacter());
+            KeyType direction = switch (c) {
+                case 'k' -> KeyType.ArrowUp;
+                case 'j' -> KeyType.ArrowDown;
+                case 'h' -> KeyType.ArrowLeft;
+                case 'l' -> KeyType.ArrowRight;
+                default -> null;
+            };
+            if (direction != null) {
+                return new InputEvent(direction, null, false, false, false);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Paints the CONNECT overlay after the world renderer: the single current plan plus A/B, and
+     * the one-line status. It is deliberately a per-frame draw, so leaving CONNECT (or an
+     * infeasible policy) simply stops painting and nothing persists into the next frame.
+     */
+    private void drawRoutePreviewOverlay() {
+        if (model.getMode() == CONNECT) {
+            if (routePreviewSession == null) {
+                return;
+            }
+            Point start = routePreviewSession.start().orElse(null);
+            Point end = routePreviewSession.end().orElse(null);
+            RoutePlan plan = routePreviewSession.lastPlan().orElse(null);
+            if (plan != null && !plan.feasible()) {
+                // Infeasible: keep only the endpoints, never a stale route.
+                plan = null;
+            }
+            for (RoutePreviewOverlay.Cell cell : RoutePreviewOverlay.cells(plan, start, end)) {
+                view.drawRoutePreviewCell(cell.x(), cell.y(), cell.glyph(), cell.endpoint());
+            }
+            view.drawRoutePreviewStatus(RoutePreviewStatus.format(routePreviewSession));
+            return;
+        }
+        if (routePreviewConfirmation != null) {
+            if (System.currentTimeMillis() <= routePreviewConfirmationUntilMillis) {
+                view.drawRoutePreviewStatus(routePreviewConfirmation);
+            } else {
+                routePreviewConfirmation = null;
+            }
+        }
+    }
+
+    /** Plan accepted in CONNECT and waiting for the future construction queue (ADR-035). */
+    RoutePlan getPendingRoutePlan() {
+        return pendingRoutePlan;
+    }
+
+    /**
+     * Current CONNECT session, exposed for focused presenter tests; {@code null} outside CONNECT.
+     */
+    RoutePreviewSession getRoutePreviewSession() {
+        return routePreviewSession;
+    }
+
     @Override
     public void onChar(InputEvent keyEvent) {
         if (coverActive) {
@@ -949,6 +1154,18 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 return;
             }
             return; // Ignore other keys in COMMAND mode
+        }
+
+        // CONNECT (ADR-035) owns all keys while active. It is checked before the global
+        // Enter/Esc/mode-hotkey routing so preview actions never fall through to menu or editing
+        // shortcuts.
+        if (model.getMode() == CONNECT) {
+            handleConnectKey(keyEvent);
+            return;
+        }
+        if (isConnectEntry(keyEvent) && canEnterConnectMode(model.getMode())) {
+            enterConnectMode();
+            return;
         }
 
         if (keyEvent.getKeyType() == KeyType.Character && keyEvent.getCharacter() != null) {

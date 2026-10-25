@@ -309,6 +309,58 @@ public class TerminalView implements letrain.mvp.View {
         // Implementation for status bar updates in terminal
     }
 
+    /** Bright foreground for the route trace, chosen to read over day and night terrain. */
+    static final TextColor ROUTE_PREVIEW_FG = TextColor.ANSI.CYAN_BRIGHT;
+    /** Endpoint markers are brighter still, so A/B never get lost in the trace. */
+    static final TextColor ROUTE_PREVIEW_ENDPOINT_FG = TextColor.ANSI.YELLOW_BRIGHT;
+    private static final TextColor ROUTE_PREVIEW_STATUS_FG = TextColor.ANSI.WHITE_BRIGHT;
+    private static final TextColor ROUTE_PREVIEW_STATUS_BG = TextColor.ANSI.BLACK;
+
+    /**
+     * Paints one route-preview cell over the 2D map (ADR-035). Only the foreground and glyph
+     * change: the terrain background is preserved, so the trace reads as an overlay instead of a
+     * recoloured tile. Out-of-view cells are ignored.
+     */
+    public void drawRoutePreviewCell(int x, int y, String glyph, boolean endpoint) {
+        if (glyph == null || glyph.isEmpty() || gameBox == null || gameBoxSize == null) {
+            return;
+        }
+        int screenX = x - scrollOffset.getX();
+        int screenY = y - scrollOffset.getY();
+        if (screenX < 0 || screenX >= getCols() || screenY < 0 || screenY >= getRows()) {
+            return;
+        }
+        TerminalPosition position = new TerminalPosition(screenX, screenY);
+        TextCharacter previous = gameBox.getCharacter(position);
+        TextColor background = previous == null ? null : previous.getBackgroundColor();
+        TextColor foreground = endpoint ? ROUTE_PREVIEW_ENDPOINT_FG : ROUTE_PREVIEW_FG;
+        gameBox.setCharacter(position,
+                TextCharacter.fromCharacter(glyph.charAt(0), foreground, background)[0]);
+    }
+
+    /**
+     * Draws the one-line CONNECT status at the bottom of the map. Unlike
+     * {@link #setStatusBarText(String)} (a no-op kept for interface compatibility), this paints
+     * immediately in the game buffer, so the main loop can call it after the world renderer and
+     * before {@link #paint()}.
+     */
+    public void drawRoutePreviewStatus(String text) {
+        if (gameBox == null || gameBoxSize == null) {
+            return;
+        }
+        int row = gameBoxSize.getRows() - 1;
+        int cols = gameBoxSize.getColumns();
+        if (row < 0 || cols <= 0) {
+            return;
+        }
+        String message = text == null ? "" : text;
+        for (int col = 0; col < cols; col++) {
+            char character = col < message.length() ? message.charAt(col) : ' ';
+            gameBox.setCharacter(col, row, TextCharacter.fromCharacter(character,
+                    ROUTE_PREVIEW_STATUS_FG, ROUTE_PREVIEW_STATUS_BG)[0]);
+        }
+    }
+
     private void putStringWithColors(com.googlecode.lanterna.graphics.TextGraphics tg,
             com.googlecode.lanterna.TerminalPosition pos, String text) {
         int x = pos.getColumn();
