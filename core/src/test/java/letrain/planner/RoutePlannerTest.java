@@ -206,14 +206,14 @@ class RoutePlannerTest {
     }
 
     @Test
-    @DisplayName("AVOID_BOTH routes through the ground gap between water and rock")
+    @DisplayName("AVOID_ALL routes through the ground gap between water and rock")
     void should_AvoidWaterAndRock_When_PolicyIsAvoidBoth() {
         FakeGroundMap terrain = new FakeGroundMap().rect(-1, -2, 6, 3, NORMAL);
         for (int y = -1; y <= 1; y++) {
             terrain.put(2, y, WATER).put(3, y, ROCK);
         }
         RoutePlan plan =
-                RoutePlanner.plan(terrain, economy(), p(0, 0), p(5, 0), RoutePolicy.AVOID_BOTH);
+                RoutePlanner.plan(terrain, economy(), p(0, 0), p(5, 0), RoutePolicy.AVOID_ALL);
 
         assertTrue(plan.feasible());
         assertTrue(
@@ -242,18 +242,18 @@ class RoutePlannerTest {
     }
 
     @Test
-    @DisplayName("AVOID_BOTH is infeasible when water and rock form a closed wall")
+    @DisplayName("AVOID_ALL is infeasible when water and rock form a closed wall")
     void should_ReturnInfeasible_When_NoAllowedCellConnectsStartAndEnd() {
         FakeGroundMap terrain = new FakeGroundMap().rect(-1, -1, 6, 1, NORMAL);
         for (int y = -1; y <= 1; y++) {
             terrain.put(2, y, WATER).put(3, y, ROCK);
         }
         RoutePlan plan =
-                RoutePlanner.plan(terrain, economy(), p(0, 0), p(5, 0), RoutePolicy.AVOID_BOTH);
+                RoutePlanner.plan(terrain, economy(), p(0, 0), p(5, 0), RoutePolicy.AVOID_ALL);
 
         assertFalse(plan.feasible());
         assertTrue(plan.reason().isPresent());
-        assertTrue(plan.reason().orElseThrow().contains("AVOID_BOTH"));
+        assertTrue(plan.reason().orElseThrow().contains("AVOID_ALL"));
         assertTrue(plan.steps().isEmpty());
         assertEquals(0.0, plan.totalCost(), 1e-9);
         assertEquals(0, plan.totalConstructionTicks());

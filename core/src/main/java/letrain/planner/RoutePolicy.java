@@ -17,8 +17,11 @@ public enum RoutePolicy {
     AVOID_MOUNTAINS,
     /** Block {@code WATER} cells; rock (tunnels) is allowed. Minimise geometric distance. */
     AVOID_WATER,
-    /** Block both {@code WATER} and {@code ROCK} cells. Minimise geometric distance. */
-    AVOID_BOTH,
+    /**
+     * Block every avoidable terrain (today {@code WATER} and {@code ROCK}). Ground/industry and
+     * endpoints remain buildable; "all" never means all cells. Minimise geometric distance.
+     */
+    AVOID_ALL,
     /** No terrain blocking; minimise real construction cost (normal/bridge/tunnel). */
     CHEAPEST
 }

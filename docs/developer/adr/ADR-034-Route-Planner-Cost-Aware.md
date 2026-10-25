@@ -38,7 +38,7 @@ tocar el mundo. El planificador no conoce presentadores, visores ni el reloj de 
 
 Paquete nuevo `letrain.planner` en `core`:
 
-- `RoutePolicy` (`DIRECT`, `AVOID_MOUNTAINS`, `AVOID_WATER`, `AVOID_BOTH`, `CHEAPEST`).
+- `RoutePolicy` (`DIRECT`, `AVOID_MOUNTAINS`, `AVOID_WATER`, `AVOID_ALL`, `CHEAPEST`).
 - `RoutePlanner.plan(GroundMap terrain, EconomyManager economy, Point start, Point end,
   RoutePolicy policy) -> RoutePlan` (método estático puro).
 - `RoutePlan`: `List<RouteStep> steps()`, `double totalCost()`,
@@ -59,7 +59,8 @@ construible; agua o roca como extremo devuelven un plan infactible con motivo.
   después reporta el coste y tiempo **reales** de las celdas elegidas.
 - `AVOID_MOUNTAINS`: bloquea solo `ROCK`; el agua (puente) está permitida. Minimiza distancia.
 - `AVOID_WATER`: bloquea solo `WATER`; la roca (túnel) está permitida. Minimiza distancia.
-- `AVOID_BOTH`: bloquea `WATER` y `ROCK`. Minimiza distancia.
+- `AVOID_ALL`: bloquea todos los terrenos evitables (hoy `WATER` y `ROCK`); no bloquea suelo ni
+  industrias, y los extremos siguen siendo construibles. Minimiza distancia.
 - `CHEAPEST`: sin bloqueo; minimiza el coste real de construcción.
 
 Las políticas `AVOID_*` son **literales**: evitan únicamente el terreno que nombran y optimizan
@@ -86,7 +87,7 @@ la dirección con la que se llegó a ella.
 
 ### Coste de búsqueda: comodidad en `AVOID_*`
 
-El coste primario en `AVOID_MOUNTAINS`, `AVOID_WATER` y `AVOID_BOTH` es la **distancia
+El coste primario en `AVOID_MOUNTAINS`, `AVOID_WATER` y `AVOID_ALL` es la **distancia
 geométrica**. Sobre él se suma, **solo al coste de búsqueda**, un término de comodidad determinista
 expresado en las mismas **unidades de distancia**:
 
@@ -101,7 +102,7 @@ donde:
 
 - `vecinos_bloqueados`: cuántos de los 8 vecinos están bloqueados **según la política activa**
   (falta de datos, terreno no construible y el bloqueo propio de la política). Bajo
-  `AVOID_WATER` cuenta el agua; bajo `AVOID_MOUNTAINS`, la roca; bajo `AVOID_BOTH`, ambos. Bajo
+  `AVOID_WATER` cuenta el agua; bajo `AVOID_MOUNTAINS`, la roca; bajo `AVOID_ALL`, ambos. Bajo
   `AVOID_MOUNTAINS` el agua permitida **no** cuenta como bloqueada, y bajo `AVOID_WATER` la roca
   permitida tampoco.
 - `desviación_euclídea`: distancia de la celda al segmento recto inicio-fin, en celdas.
@@ -115,14 +116,14 @@ bloqueado antes que la más corta pegada a la costa; es un intercambio intencion
 
 ### Paso duro de limpieza (dos pasadas)
 
-Para `AVOID_MOUNTAINS`, `AVOID_WATER` y `AVOID_BOTH` la comodidad anterior no basta: una ruta puede
+Para `AVOID_MOUNTAINS`, `AVOID_WATER` y `AVOID_ALL` la comodidad anterior no basta: una ruta puede
 seguir pegada a la costa si esa es la más corta. Por eso el planificador hace **dos pasadas** con
 el mismo A*, las mismas reglas de giro/esquina, la misma métrica y el mismo determinismo:
 
 1. **Pasada con limpieza dura (primera).** Además de bloquear el terreno de la política, ninguna
    celda de la ruta puede tener un vecino bloqueado. Es decir, toda celda intermedia debe cumplir
    `vecinos_bloqueados = 0`, quedando al menos a una celda del terreno **nombrado** por la política
-   (roca en `AVOID_MOUNTAINS`, agua en `AVOID_WATER`, ambos en `AVOID_BOTH`). El terreno permitido
+   (roca en `AVOID_MOUNTAINS`, agua en `AVOID_WATER`, ambos en `AVOID_ALL`). El terreno permitido
    no exige limpieza dura. **Origen y destino están exentos** (pueden estar en costa o cerca de un
    borde). Si esta pasada encuentra ruta, se devuelve.
 2. **Fallback (segunda).** Si la pasada dura es infactible (corredor de una celda, destino
@@ -189,7 +190,7 @@ igual coste.
 1. El autor marca dos puntos lejanos (`start`, `end`).
 2. El sistema calcula un plan para la política elegida y muestra **un solo plan** con su
    `totalCost()` y `totalConstructionTicks()`. El autor puede descartarlo y pedir otra política
-   (`DIRECT`, `AVOID_MOUNTAINS`, `AVOID_WATER`, `AVOID_BOTH` o `CHEAPEST`) o ejecutarlo.
+   (`DIRECT`, `AVOID_MOUNTAINS`, `AVOID_WATER`, `AVOID_ALL` o `CHEAPEST`) o ejecutarlo.
 3. Si el plan es factible, la capa de construcción (futura) materializa `steps()`; si no, se
    muestra `reason()` en vez de una ruta vacía.
 4. La obra puede cancelarse; lo ya construido queda a medio terminar.

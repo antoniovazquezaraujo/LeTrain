@@ -44,7 +44,7 @@ import letrain.utils.ValidationUtils;
  * They are never added to the reported cost/time.
  *
  * <p>
- * For the avoid policies ({@code AVOID_MOUNTAINS}, {@code AVOID_WATER}, {@code AVOID_BOTH}) the
+ * For the avoid policies ({@code AVOID_MOUNTAINS}, {@code AVOID_WATER}, {@code AVOID_ALL}) the
  * comfort terms are expressed in <b>distance units</b>, so they refine near-equal routes without
  * overwhelming the geometric metric:
  *
@@ -62,11 +62,12 @@ import letrain.utils.ValidationUtils;
  * <b>Hard clearance pass.</b> Avoid policies first run the search with a hard constraint: every
  * chosen cell except the start and end must have zero blocked neighbours under the active policy,
  * keeping the track at least one cell away from the <em>named blocked</em> terrain (rock for
- * {@code AVOID_MOUNTAINS}, water for {@code AVOID_WATER}, both for {@code AVOID_BOTH}). Allowed
- * terrain gets no hard clearance. If that pass is infeasible (narrow corridor, enclosed endpoint,
- * map edge) the same search runs again without the hard constraint and its best plan is returned.
- * The comfort terms still apply in both passes and are search-only; reported cost/time are always
- * the real cells. {@code DIRECT} and {@code CHEAPEST} never use the hard clearance pass.
+ * {@code AVOID_MOUNTAINS}, water for {@code AVOID_WATER}, every avoidable terrain for
+ * {@code AVOID_ALL}). Allowed terrain gets no hard clearance. If that pass is infeasible (narrow
+ * corridor, enclosed endpoint, map edge) the same search runs again without the hard constraint and
+ * its best plan is returned. The comfort terms still apply in both passes and are search-only;
+ * reported cost/time are always the real cells. {@code DIRECT} and {@code CHEAPEST} never use the
+ * hard clearance pass.
  *
  * <p>
  * {@code DIRECT} and {@code CHEAPEST} use tiny deterministic tie-breakers (relative to the unit
@@ -76,9 +77,9 @@ import letrain.utils.ValidationUtils;
  * <p>
  * <b>Clearance.</b> A cell's clearance penalty is the number of its eight neighbours that are
  * blocked <em>under the active policy</em>: missing/non-buildable terrain plus the policy's own
- * block (water under {@code AVOID_WATER}, rock under {@code AVOID_MOUNTAINS}, both under
- * {@code AVOID_BOTH}). Under {@code DIRECT} and {@code CHEAPEST} buildable water and rock are not
- * blocked, so they do not penalise clearance; those policies already cross them.
+ * block (water under {@code AVOID_WATER}, rock under {@code AVOID_MOUNTAINS}, all avoidable terrain
+ * under {@code AVOID_ALL}). Under {@code DIRECT} and {@code CHEAPEST} buildable water and rock are
+ * not blocked, so they do not penalise clearance; those policies already cross them.
  *
  * <p>
  * <b>Determinism.</b> Neighbours are expanded in a fixed order and the open set breaks f-score ties
@@ -385,7 +386,7 @@ public final class RoutePlanner {
         return switch (policy) {
             case AVOID_MOUNTAINS -> normalizedTerrain == GroundMap.ROCK;
             case AVOID_WATER -> normalizedTerrain == GroundMap.WATER;
-            case AVOID_BOTH ->
+            case AVOID_ALL ->
                 normalizedTerrain == GroundMap.WATER || normalizedTerrain == GroundMap.ROCK;
             case DIRECT, CHEAPEST -> false;
         };
