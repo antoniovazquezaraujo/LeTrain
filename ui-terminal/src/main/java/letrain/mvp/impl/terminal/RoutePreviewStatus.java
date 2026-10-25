@@ -36,7 +36,8 @@ final class RoutePreviewStatus {
             case PICK_START:
                 return "Connect · PICK_START · move + Enter · Esc cancel";
             case PICK_END:
-                return "Connect · PICK_END · A set · move + Enter · Esc cancel";
+                String reason = message == null || message.isBlank() ? "" : " · " + message;
+                return "Connect · PICK_END · A set · move + Enter" + reason + " · Esc cancel";
             case PREVIEW:
                 return previewLine(policy, plan, effectiveTicks, message);
             case SELECTED:
@@ -58,7 +59,7 @@ final class RoutePreviewStatus {
         }
         return "Connect · " + policyName + " · " + formatCost(plan.totalCost()) + " · "
                 + formatTicks(effectiveTicks) + " · " + plan.steps().size()
-                + " tramos · Enter select" + hints;
+                + " cells · Enter select" + hints;
     }
 
     /** Game currency with dot grouping, matching the ADR examples ({@code $1.234.500}). */

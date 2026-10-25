@@ -51,7 +51,7 @@ class RoutePreviewStatusTest {
         assertTrue(status.contains("Connect · CHEAPEST"), status);
         assertTrue(status.contains("$123.400"), status);
         assertTrue(status.contains("14 min"), status);
-        assertTrue(status.contains("2 tramos"), status);
+        assertTrue(status.contains("2 cells"), status);
         assertTrue(status.contains("Enter select"), status);
         assertTrue(status.contains("←/→ policy"), status);
         assertTrue(status.contains("Esc discard"), status);
@@ -77,5 +77,7 @@ class RoutePreviewStatusTest {
                 .format(RoutePreviewSession.State.PICK_START, RoutePolicy.CHEAPEST, null, 0, null));
         assertEquals("Connect · PICK_END · A set · move + Enter · Esc cancel", RoutePreviewStatus
                 .format(RoutePreviewSession.State.PICK_END, RoutePolicy.CHEAPEST, null, 0, null));
+        assertTrue(RoutePreviewStatus.format(RoutePreviewSession.State.PICK_END,
+                RoutePolicy.CHEAPEST, null, 0, "End is water").contains("End is water"));
     }
 }

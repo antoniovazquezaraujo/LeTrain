@@ -934,7 +934,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     routePreviewConfirmation = "Connect · selected · "
                             + RoutePreviewStatus.formatCost(pendingRoutePlan.totalCost()) + " · "
                             + RoutePreviewStatus.formatTicks(ticksBefore) + " · "
-                            + pendingRoutePlan.steps().size() + " tramos · not built yet";
+                            + pendingRoutePlan.steps().size() + " cells · not built yet";
                     routePreviewConfirmationUntilMillis = System.currentTimeMillis() + 2_500;
                 }
                 leaveConnectMode();
