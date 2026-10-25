@@ -23,15 +23,13 @@ import letrain.planner.RouteStep;
  */
 public final class RoutePreviewOverlay {
 
-    public static final String NORMAL_GLYPH = "═";
-    public static final String BRIDGE_GLYPH = "≈";
     /**
-     * Tunnels use the same glyph as the tunnel entrance in the 2D renderer
-     * ({@code RenderVisitor.TUNNEL_GATE_RAILTRACK_ASPECT}). The literal is duplicated here on
-     * purpose to keep this class free of renderer dependencies; {@code RoutePreviewOverlayTest}
-     * asserts that both stay identical.
+     * One glyph for every route cell: a large filled circle. A route is just a sequence of cells,
+     * so the overlay does not suggest a direction. The circle also avoids the Unicode
+     * double-diagonal ambiguity of box-drawing glyphs and reads as continuous regardless of the
+     * direction the route takes.
      */
-    public static final String TUNNEL_GLYPH = "⋂";
+    public static final String ROUTE_GLYPH = "⬤";
     public static final String START_GLYPH = "A";
     public static final String END_GLYPH = "B";
 
@@ -39,9 +37,8 @@ public final class RoutePreviewOverlay {
      * How the view should paint a route cell.
      *
      * <ul>
-     * <li>{@link #NORMAL}: route foreground, terrain background preserved.</li>
-     * <li>{@link #SPECIAL}: tunnel/bridge, painted on an opaque white background so it stands out
-     * from both water and rock.</li>
+     * <li>{@link #NORMAL}: white foreground, terrain background preserved.</li>
+     * <li>{@link #SPECIAL}: tunnel/bridge, red foreground, terrain background preserved.</li>
      * </ul>
      */
     public enum Style {
@@ -84,15 +81,9 @@ public final class RoutePreviewOverlay {
         return List.copyOf(byPosition.values());
     }
 
-    /** Glyph for a planned track kind: normal, bridge or tunnel. */
+    /** Every route cell uses the same circle; only the style (colour) depends on the track kind. */
     public static String glyphFor(TrackType type) {
-        if (isTunnel(type)) {
-            return TUNNEL_GLYPH;
-        }
-        if (isBridge(type)) {
-            return BRIDGE_GLYPH;
-        }
-        return NORMAL_GLYPH;
+        return ROUTE_GLYPH;
     }
 
     /** Special style for tunnels and bridges, normal for plain track. */

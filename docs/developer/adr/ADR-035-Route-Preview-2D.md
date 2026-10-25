@@ -77,14 +77,16 @@ rutas a la vez.
 
   | Celda | Glifo | Frente | Fondo |
   | --- | --- | --- | --- |
-  | Vía normal | `═` | cian brillante | terreno (se conserva) |
-  | Puente | `≈` | rojo brillante | blanco (opaco) |
-  | Túnel | `⋂` (el mismo glifo que la entrada de túnel del renderer) | rojo brillante | blanco (opaco) |
+  | Vía normal | `⬤` | blanco brillante | terreno (se conserva) |
+  | Puente | `⬤` | rojo brillante | terreno (se conserva) |
+  | Túnel | `⬤` | rojo brillante | terreno (se conserva) |
   | Extremo `A`/`B` | `A` / `B` | amarillo brillante | terreno (se conserva) |
 
-- Las celdas normales y los extremos conservan el fondo del terreno: solo cambian glifo y frente.
-  Puentes y túneles usan fondo blanco opaco porque ningún color de frente se lee bien a la vez
-  sobre roca y agua.
+- La ruta es una secuencia de celdas, no una línea direccional: todas usan el mismo círculo grande
+  (`⬤`, U+2B24 BLACK LARGE CIRCLE). Así el trazo se ve continuo en cualquier dirección y se evita
+  el problema de doble diagonal de los glifos Unicode de dibujo de cajas.
+- Solo cambian el glifo y el frente; el fondo del terreno se conserva siempre. Los puentes y
+  túneles se distinguen por el color (rojo), no por un glifo ni un fondo distintos.
 - El extremo gana si comparte celda con un paso de la ruta.
 - Solo se pintan las celdas visibles; si la ruta sale de pantalla, se indica en la barra de estado.
 - El resto del mapa sigue visible; no se oscurece ni se sustituye.

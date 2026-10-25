@@ -11,7 +11,6 @@ import letrain.mvp.Presenter.TrackType;
 import letrain.mvp.impl.terminal.RoutePreviewOverlay.Style;
 import letrain.planner.RoutePlan;
 import letrain.planner.RouteStep;
-import letrain.visitor.terminal.RenderVisitor;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -23,27 +22,27 @@ class RoutePreviewOverlayTest {
     }
 
     @Test
-    @DisplayName("normal, bridge and tunnel steps map to their glyphs and styles")
-    void mapsTrackTypesToGlyphsAndStyles() {
+    @DisplayName("every route kind uses the same circle; only the style differs")
+    void mapsTrackTypesToTheSameGlyphAndDifferentStyles() {
         RoutePlan plan = RoutePlan.feasible(List.of(step(0, 0, TrackType.NORMAL_TRACK),
                 step(1, 0, TrackType.BRIDGE_TRACK), step(2, 0, TrackType.TUNNEL_TRACK)), 0, 0);
 
         List<RoutePreviewOverlay.Cell> cells = RoutePreviewOverlay.cells(plan, null, null);
 
         assertEquals(3, cells.size());
-        assertEquals("═", cells.get(0).glyph());
+        assertEquals("⬤", cells.get(0).glyph());
         assertSame(Style.NORMAL, cells.get(0).style());
-        assertEquals("≈", cells.get(1).glyph());
+        assertEquals("⬤", cells.get(1).glyph());
         assertSame(Style.SPECIAL, cells.get(1).style());
-        assertEquals("⋂", cells.get(2).glyph());
+        assertEquals("⬤", cells.get(2).glyph());
         assertSame(Style.SPECIAL, cells.get(2).style());
     }
 
     @Test
-    @DisplayName("tunnel cells reuse the renderer's tunnel-gate glyph")
-    void tunnelGlyphMatchesRendererEntrance() {
-        assertEquals(RenderVisitor.TUNNEL_GATE_RAILTRACK_ASPECT, RoutePreviewOverlay.TUNNEL_GLYPH);
-        assertEquals("⋂", RoutePreviewOverlay.TUNNEL_GLYPH);
+    @DisplayName("the route glyph is the documented large black circle")
+    void routeGlyphIsTheLargeBlackCircle() {
+        assertEquals("\u2B24", RoutePreviewOverlay.ROUTE_GLYPH);
+        assertEquals("⬤", RoutePreviewOverlay.ROUTE_GLYPH);
     }
 
     @Test
@@ -60,7 +59,7 @@ class RoutePreviewOverlayTest {
         assertEquals("B", cells.get(0).glyph());
         assertTrue(cells.get(0).endpoint());
         assertSame(Style.NORMAL, cells.get(0).style());
-        assertEquals("═", cells.get(1).glyph());
+        assertEquals("⬤", cells.get(1).glyph());
         assertFalse(cells.get(1).endpoint());
     }
 
@@ -79,10 +78,10 @@ class RoutePreviewOverlayTest {
     }
 
     @Test
-    @DisplayName("gate variants are bridged/tunnelled like their plain steps")
+    @DisplayName("gate variants keep the circle and the special style")
     void mapsGateVariants() {
-        assertEquals("≈", RoutePreviewOverlay.glyphFor(TrackType.BRIDGE_GATE_TRACK));
-        assertEquals("⋂", RoutePreviewOverlay.glyphFor(TrackType.TUNNEL_GATE_TRACK));
+        assertEquals("⬤", RoutePreviewOverlay.glyphFor(TrackType.BRIDGE_GATE_TRACK));
+        assertEquals("⬤", RoutePreviewOverlay.glyphFor(TrackType.TUNNEL_GATE_TRACK));
         assertSame(Style.SPECIAL, RoutePreviewOverlay.styleFor(TrackType.BRIDGE_GATE_TRACK));
         assertSame(Style.SPECIAL, RoutePreviewOverlay.styleFor(TrackType.TUNNEL_GATE_TRACK));
         assertSame(Style.NORMAL, RoutePreviewOverlay.styleFor(TrackType.NORMAL_TRACK));

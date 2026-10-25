@@ -78,15 +78,17 @@ as its previous mode.
 
   | Cell | Glyph | Foreground | Background |
   | --- | --- | --- | --- |
-  | Normal track | `═` | cyan bright | terrain (preserved) |
-  | Bridge | `≈` | red bright | white (opaque) |
-  | Tunnel | `⋂` (same as the renderer's tunnel entrance) | red bright | white (opaque) |
+  | Normal track | `⬤` | white bright | terrain (preserved) |
+  | Bridge | `⬤` | red bright | terrain (preserved) |
+  | Tunnel | `⬤` | red bright | terrain (preserved) |
   | Endpoint `A`/`B` | `A` / `B` | yellow bright | terrain (preserved) |
 
 - During `PLANNING` there is no route (`lastPlan` is null), so only A/B are painted.
-- Normal cells and endpoints only change the foreground and glyph, so the terrain background is
-  preserved. Tunnel and bridge cells use an opaque white background because no single foreground
-  colour reads over both rock and water.
+- The route is a sequence of cells, not a directional line: every route cell uses the large black
+  circle `⬤` (U+2B24). The circle looks continuous whichever way the route turns and avoids the
+  Unicode double-diagonal problem of box-drawing glyphs.
+- Only the foreground changes: white for normal track, red for bridges/tunnels. The terrain
+  background is always preserved, so the route reads as an overlay.
 - Endpoint markers win if an endpoint shares a cell with a route step.
 - `RoutePreviewOverlay` is the pure plan → cells mapping; `RoutePreviewStatus` formats the status
   line (`cost`, game time from `effectiveConstructionTicks()`, segment count, progress and hints).

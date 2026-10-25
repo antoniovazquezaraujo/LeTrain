@@ -13,23 +13,23 @@ class TerminalViewRoutePreviewPaintTest {
     private static final TextColor TERRAIN_BG = TextColor.ANSI.GREEN;
 
     @Test
-    @DisplayName("normal route cells keep the terrain background with a cyan foreground")
-    void normalKeepsTerrainBackground() {
+    @DisplayName("normal route cells are white and keep the terrain background")
+    void normalIsWhiteOnTerrain() {
         TerminalView.PreviewPaint paint =
                 TerminalView.routePreviewPaint(false, Style.NORMAL, TERRAIN_BG);
 
-        assertEquals(TerminalView.ROUTE_PREVIEW_FG, paint.foreground());
+        assertEquals(TextColor.ANSI.WHITE_BRIGHT, paint.foreground());
         assertEquals(TERRAIN_BG, paint.background());
     }
 
     @Test
-    @DisplayName("tunnel/bridge cells are red on opaque white")
-    void specialIsRedOnWhite() {
+    @DisplayName("tunnel/bridge cells are red and keep the terrain background")
+    void specialIsRedOnTerrain() {
         TerminalView.PreviewPaint paint =
                 TerminalView.routePreviewPaint(false, Style.SPECIAL, TERRAIN_BG);
 
         assertEquals(TextColor.ANSI.RED_BRIGHT, paint.foreground());
-        assertEquals(TextColor.ANSI.WHITE, paint.background());
+        assertEquals(TERRAIN_BG, paint.background());
     }
 
     @Test
@@ -38,7 +38,7 @@ class TerminalViewRoutePreviewPaintTest {
         TerminalView.PreviewPaint paint =
                 TerminalView.routePreviewPaint(true, Style.SPECIAL, TERRAIN_BG);
 
-        assertEquals(TerminalView.ROUTE_PREVIEW_ENDPOINT_FG, paint.foreground());
+        assertEquals(TextColor.ANSI.YELLOW_BRIGHT, paint.foreground());
         assertEquals(TERRAIN_BG, paint.background());
     }
 }
