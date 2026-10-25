@@ -49,13 +49,22 @@ import letrain.utils.ValidationUtils;
  *
  * <ul>
  * <li>{@code 0.25 × baseline} per 45-degree turn,
- * <li>{@code 1.0 × baseline} per blocked neighbour (clearance),
+ * <li>{@code 0.5 × baseline} per blocked neighbour (clearance),
  * <li>{@code 0.05 × baseline} per cell of Euclidean deviation from the straight segment.
  * </ul>
  *
  * These terms are intentionally strong enough to let an avoid route be a little more expensive than
  * the absolute cheapest one when it buys clearance from water/rock or fewer bends. The primary
  * construction cost still carries the most weight per cell, and the reported totals stay real.
+ *
+ * <p>
+ * <b>Hard clearance pass.</b> Avoid policies first run the search with a hard constraint: every
+ * chosen cell except the start and end must have zero blocked neighbours under the active policy,
+ * keeping the track at least one cell away from the offending terrain. If that pass is infeasible
+ * (narrow corridor, enclosed endpoint, map edge) the same search runs again without the hard
+ * constraint and its best plan is returned. The comfort terms still apply in both passes and are
+ * search-only; reported cost/time are always the real cells. {@code DIRECT} and {@code CHEAPEST}
+ * never use the hard clearance pass.
  *
  * <p>
  * For {@code DIRECT} and {@code CHEAPEST} the comfort terms are tiny deterministic tie-breakers
@@ -160,6 +169,19 @@ public final class RoutePlanner {
             return RoutePlan.feasible(List.of(), 0, 0);
         }
 
+        SearchCosts costs = searchCosts(economy, policy);
+        if (costs.avoidPolicy()) {
+            // First pass: keep every non-endpoint cell at least one cell away from the terrain the
+            // policy blocks. Narrow corridors and coastal endpoints fall back to the old search.
+            RoutePlan clear = search(terrain, economy, start, end, policy, costs, true);
+            if (clear.feasible()) {
+                return clear;
+            }
+        }
+        return search(terrain, economy, start, end, policy, costs, false);
+    }
+
+    private static SearchCosts searchCosts(EconomyManager economy, RoutePolicy policy) {
         boolean distanceMetric = policy == RoutePolicy.DIRECT;
         boolean avoidPolicy = !distanceMetric && policy != RoutePolicy.CHEAPEST;
         double minCellCost = minCellCost(economy);
@@ -180,6 +202,17 @@ public final class RoutePlanner {
             clearancePenalty = tieBase * TIE_SHAPE_FRACTION;
             deviationPenalty = tieBase * TIE_SHAPE_FRACTION;
         }
+        return new SearchCosts(distanceMetric, avoidPolicy, minCellCost, turnPenalty,
+                clearancePenalty, deviationPenalty);
+    }
+
+    private static RoutePlan search(GroundMap terrain, EconomyManager economy, Point start,
+            Point end, RoutePolicy policy, SearchCosts costs, boolean requireClearance) {
+        boolean distanceMetric = costs.distanceMetric();
+        double minCellCost = costs.minCellCost();
+        double turnPenalty = costs.turnPenalty();
+        double clearancePenalty = costs.clearancePenalty();
+        double deviationPenalty = costs.deviationPenalty();
 
         CellKey startKey = CellKey.of(start);
         CellKey endKey = CellKey.of(end);
@@ -239,6 +272,12 @@ public final class RoutePlanner {
                 if (neighbour.equals(startKey)) {
                     continue; // The start has no entry cost.
                 }
+                int blockedNeighbours = blockedNeighbourCount(terrain, policy, neighbour);
+                // Hard clearance: start/end are exempt, every other chosen cell must be at least
+                // one cell away from policy-blocked terrain.
+                if (requireClearance && !neighbour.equals(endKey) && blockedNeighbours > 0) {
+                    continue;
+                }
                 SearchState neighbourState = new SearchState(neighbour, nextDirection);
                 double primary = distanceMetric ? (dx != 0 && dy != 0 ? SQRT_2 : 1.0)
                         : constructionCost(economy, normalized);
@@ -246,7 +285,6 @@ public final class RoutePlanner {
                         ? 1
                         : 0;
                 double deviation = deviation(neighbour, startKey, endKey);
-                int blockedNeighbours = blockedNeighbourCount(terrain, policy, neighbour);
                 double tentative = current.g() + primary + turnPenalty * turn
                         + clearancePenalty * blockedNeighbours + deviationPenalty * deviation;
                 Double old = gScore.get(neighbourState);
@@ -369,6 +407,15 @@ public final class RoutePlanner {
     }
 
     /**
+     * True when none of the eight neighbours of {@code point} is blocked under the active policy,
+     * i.e. the hard-clearance condition for a non-endpoint cell. Package-private so tests can
+     * assert the invariant directly.
+     */
+    static boolean hasClearance(GroundMap terrain, RoutePolicy policy, Point point) {
+        return blockedNeighbourCount(terrain, policy, CellKey.of(point)) == 0;
+    }
+
+    /**
      * Counts the eight neighbours of {@code cell} that are blocked under the active policy. Missing
      * or non-buildable terrain and the policy's own blocked water/rock all count; buildable water
      * and rock do not count under {@code DIRECT}/{@code CHEAPEST}. Higher means less clearance.
@@ -440,6 +487,11 @@ public final class RoutePlanner {
         int min = Math.min(dx, dy);
         int max = Math.max(dx, dy);
         return (max - min) + SQRT_2 * min;
+    }
+
+    /** Immutable per-plan weights so the clearance pass and its fallback use identical costs. */
+    private record SearchCosts(boolean distanceMetric, boolean avoidPolicy, double minCellCost,
+            double turnPenalty, double clearancePenalty, double deviationPenalty) {
     }
 
     /** One of the eight grid steps and the heading it represents. */

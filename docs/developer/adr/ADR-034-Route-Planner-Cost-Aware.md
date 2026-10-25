@@ -102,8 +102,7 @@ donde:
 
 - `vecinos_bloqueados`: cuántos de los 8 vecinos están bloqueados **según la política activa**
   (falta de datos, terreno no construible y el bloqueo propio de la política). Bajo
-  `AVOID_WATER` cuenta el agua; bajo `AVOID_MOUNTAINS`, la roca; bajo `AVOID_BOTH`, ambos. Es lo que
-  empuja la ruta una celda tierra adentro en vez de ir pegada a la costa/roca.
+  `AVOID_WATER` cuenta el agua; bajo `AVOID_MOUNTAINS`, la roca; bajo `AVOID_BOTH`, ambos.
 - `desviación_euclídea`: distancia de la celda al segmento recto inicio-fin, en celdas.
 - `nº_giros_45`: 1 por cada cambio de rumbo de 45°.
 
@@ -115,12 +114,31 @@ de muchas celdas costeras sigue pesando lo suficiente para separar la ruta del a
 prefiere una ruta algo más costosa pero cómoda y lejos del agua/roca antes que la más barata pegada
 a la costa. Es un intercambio intencional, no un empate.
 
-`DIRECT` y `CHEAPEST` conservan su semántica primaria y solo usan desempates deterministas
-diminutos: `1e-3` del coste primario mínimo por celda y giro, y `1e-5` para
-`desviación + vecinos_bloqueados`. Ahí la comodidad no puede cambiar de forma material el resultado.
+### Paso duro de limpieza (dos pasadas)
 
-En todos los casos las penalizaciones **no** se suman a `totalCost()` ni a
-`totalConstructionTicks()`: el plan reporta solo el coste y tiempo reales de las celdas elegidas.
+Para `AVOID_MOUNTAINS`, `AVOID_WATER` y `AVOID_BOTH` la comodidad anterior no basta: una ruta puede
+seguir pegada a la costa si esa es la más barata. Por eso el planificador hace **dos pasadas** con
+el mismo A*, las mismas reglas de giro/esquina, los mismos costes y el mismo determinismo:
+
+1. **Pasada con limpieza dura (primera).** Además de bloquear el terreno de la política, ninguna
+   celda de la ruta puede tener un vecino bloqueado. Es decir, toda celda intermedia debe cumplir
+   `vecinos_bloqueados = 0`, quedando al menos a una celda del agua/roca. **Origen y destino están
+   exentos** (pueden estar en costa o cerca de un borde). Si esta pasada encuentra ruta, se devuelve.
+2. **Fallback (segunda).** Si la pasada dura es infactible (corredor de una celda, destino
+   encerrado, borde del mapa), se repite la búsqueda sin la restricción dura y se devuelve su mejor
+   plan. Así los corredores estrechos siguen siendo transitables aunque la vía toque el borde.
+
+El término de comodidad por vecinos bloqueados se mantiene en ambas pasadas: en la primera es
+redundante para los vecinos inmediatos (todas las celdas intermedias tienen cero), pero sigue
+distinguiendo rutas a dos o tres celdas del obstáculo. En el fallback es lo que evita, dentro de lo
+posible, ir pegado a la costa. El fallback es raro y no se registra nada: simplemente se devuelve el
+mejor plan posible.
+
+`DIRECT` y `CHEAPEST` **nunca** usan la pasada dura: conservan su semántica primaria y solo usan
+desempates deterministas diminutos (`1e-3` del coste primario mínimo por celda y giro, y `1e-5` para
+`desviación + vecinos_bloqueados`). En todos los casos las penalizaciones **no** se suman a
+`totalCost()` ni a `totalConstructionTicks()`: el plan reporta solo el coste y tiempo reales de las
+celdas elegidas.
 
 ### Coste y tiempo
 
@@ -209,6 +227,9 @@ igual coste.
   caja envolvente.
 - Al respetar la curvatura real de 45°, algunas rutas son más largas que la distancia geométrica
   mínima (hay que girar gradualmente). Es intencional: el plan debe poder construirse.
+- La pasada dura de limpieza hace que las rutas `AVOID_*` dejen al menos una celda libre respecto
+  al agua/roca; cuando el terreno no lo permite (corredores), el fallback garantiza que siga
+  habiendo un plan transitable aunque toque el borde.
 - El planificador no recorta esquinas entre celdas bloqueadas (regla diagonal decidida); la de no
   modelar puertas queda para la capa de construcción.
 

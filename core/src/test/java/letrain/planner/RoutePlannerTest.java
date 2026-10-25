@@ -76,6 +76,17 @@ class RoutePlannerTest {
         return directions;
     }
 
+    /** Asserts hard clearance for every cell except the start and end (which are exempt). */
+    private static void assertInteriorClearance(RoutePlan plan, GroundMap terrain,
+            RoutePolicy policy) {
+        List<RouteStep> steps = plan.steps();
+        for (int i = 1; i < steps.size() - 1; i++) {
+            Point point = steps.get(i).point();
+            assertTrue(RoutePlanner.hasClearance(terrain, policy, point),
+                    "cell " + point + " touches blocked terrain in " + points(plan));
+        }
+    }
+
     private static Dir directionBetween(Point from, Point to) {
         int dx = to.getX() - from.getX();
         int dy = to.getY() - from.getY();
@@ -170,7 +181,9 @@ class RoutePlannerTest {
         assertFalse(
                 plan.steps().stream().anyMatch(step -> step.trackType() == TrackType.TUNNEL_TRACK));
         assertTrue(plan.steps().size() > 3);
+        assertEquals(900.0, plan.totalCost(), 1e-9);
         assertLegalTurns(plan);
+        assertInteriorClearance(plan, terrain, RoutePolicy.AVOID_MOUNTAINS);
     }
 
     @Test
@@ -184,11 +197,12 @@ class RoutePlannerTest {
         assertTrue(plan.feasible());
         assertFalse(
                 plan.steps().stream().anyMatch(step -> step.trackType() == TrackType.BRIDGE_TRACK));
-        assertTrue(plan.steps().stream().anyMatch(step -> Math.abs(step.point().getY()) == 2));
-        // The old four-move detour was SE,SE,NE,NE: the SE->NE bend is 90 degrees and is now
-        // rejected. The legal six-cell detour keeps its apex one cell from the water column.
-        assertEquals(600.0, plan.totalCost(), 1e-9);
+        assertTrue(plan.steps().stream().anyMatch(step -> Math.abs(step.point().getY()) == 3));
+        // The hard-clearance pass keeps every non-endpoint cell at least one cell away from the
+        // three-cell water column, so the detour is wider than the old six-cell fallback.
+        assertEquals(900.0, plan.totalCost(), 1e-9);
         assertLegalTurns(plan);
+        assertInteriorClearance(plan, terrain, RoutePolicy.AVOID_WATER);
     }
 
     @Test
@@ -206,6 +220,25 @@ class RoutePlannerTest {
                 plan.steps().stream().allMatch(step -> step.trackType() == TrackType.NORMAL_TRACK));
         assertTrue(plan.steps().stream().anyMatch(step -> Math.abs(step.point().getY()) == 2));
         assertLegalTurns(plan);
+    }
+
+    @Test
+    @DisplayName("hard clearance falls back when a one-cell corridor is the only route")
+    void should_FallBack_When_HardClearanceIsImpossible() {
+        // One-cell-wide ground corridor with rock on both sides: every interior cell touches rock,
+        // so the constrained pass cannot succeed and the fallback must still return the corridor.
+        FakeGroundMap terrain = new FakeGroundMap().rect(0, -1, 4, 1, ROCK);
+        for (int x = 0; x <= 4; x++) {
+            terrain.put(x, 0, NORMAL);
+        }
+        RoutePlan plan = RoutePlanner.plan(terrain, economy(), p(0, 0), p(4, 0),
+                RoutePolicy.AVOID_MOUNTAINS);
+
+        assertTrue(plan.feasible());
+        assertEquals(List.of(p(0, 0), p(1, 0), p(2, 0), p(3, 0), p(4, 0)), points(plan));
+        assertEquals(500.0, plan.totalCost(), 1e-9);
+        assertLegalTurns(plan);
+        assertFalse(RoutePlanner.hasClearance(terrain, RoutePolicy.AVOID_MOUNTAINS, p(2, 0)));
     }
 
     @Test
@@ -297,6 +330,31 @@ class RoutePlannerTest {
     }
 
     @Test
+    @DisplayName("DIRECT and CHEAPEST do not apply the hard clearance detour")
+    void should_KeepCoastalStraightLine_When_PolicyIsDirectOrCheapest() {
+        // Rock wall at y=0, ground from y=1 up. Avoid policies move inland; DIRECT and CHEAPEST
+        // keep the straight line because they never apply the hard clearance pass.
+        FakeGroundMap terrain = new FakeGroundMap().rect(-2, 0, 12, 6, NORMAL);
+        for (int x = -2; x <= 12; x++) {
+            terrain.put(x, 0, ROCK);
+        }
+        List<Point> straight = List.of(p(0, 1), p(1, 1), p(2, 1), p(3, 1), p(4, 1), p(5, 1),
+                p(6, 1), p(7, 1), p(8, 1));
+
+        RoutePlan direct =
+                RoutePlanner.plan(terrain, economy(), p(0, 1), p(8, 1), RoutePolicy.DIRECT);
+        RoutePlan cheapest =
+                RoutePlanner.plan(terrain, economy(), p(0, 1), p(8, 1), RoutePolicy.CHEAPEST);
+
+        assertTrue(direct.feasible());
+        assertEquals(straight, points(direct));
+        assertTrue(cheapest.feasible());
+        assertEquals(straight, points(cheapest));
+        assertEquals(900.0, direct.totalCost(), 1e-9);
+        assertEquals(900.0, cheapest.totalCost(), 1e-9);
+    }
+
+    @Test
     @DisplayName("CHEAPEST detours over ground instead of paying for a bridge")
     void should_PreferNormalDetour_When_PolicyIsCheapest() {
         FakeGroundMap terrain = new FakeGroundMap().rect(-4, -4, 6, 4, NORMAL).put(1, 0, WATER);
@@ -344,8 +402,11 @@ class RoutePlannerTest {
             assertEquals(first, again);
         }
         // Fixed neighbour order (N, NE, E, SE, ...) plus FIFO tie-break: the northern detour wins
-        // over its mirror image through the south.
-        assertEquals(List.of(p(0, 0), p(1, -1), p(2, -1), p(3, -1), p(4, 0)), points(first));
+        // over its mirror image through the south, one full cell clear of the rock.
+        assertEquals(List.of(p(0, 0), p(0, -1), p(1, -2), p(2, -2), p(3, -2), p(4, -1), p(4, 0)),
+                points(first));
+        assertEquals(700.0, first.totalCost(), 1e-9);
+        assertInteriorClearance(first, terrain, RoutePolicy.AVOID_MOUNTAINS);
     }
 
     @Test
@@ -382,7 +443,8 @@ class RoutePlannerTest {
             }
         }
         assertTrue(hasEastNorthEastAndNorth, "expected an E->NE->N bend in " + directions);
-        assertEquals(400.0, plan.totalCost(), 1e-9);
+        assertEquals(600.0, plan.totalCost(), 1e-9);
+        assertInteriorClearance(plan, terrain, RoutePolicy.AVOID_MOUNTAINS);
     }
 
     @Test
@@ -428,10 +490,11 @@ class RoutePlannerTest {
                 RoutePlanner.plan(terrain, economy(), p(0, 0), p(6, 0), RoutePolicy.AVOID_WATER);
 
         assertTrue(plan.feasible());
-        assertEquals(List.of(p(0, 0), p(1, -1), p(2, -2), p(3, -2), p(4, -2), p(5, -1), p(6, 0)),
-                points(plan));
-        assertEquals(700.0, plan.totalCost(), 1e-9);
+        assertEquals(List.of(p(0, 0), p(0, -1), p(1, -2), p(2, -2), p(3, -2), p(4, -2), p(5, -2),
+                p(6, -1), p(6, 0)), points(plan));
+        assertEquals(900.0, plan.totalCost(), 1e-9);
         assertLegalTurns(plan);
+        assertInteriorClearance(plan, terrain, RoutePolicy.AVOID_WATER);
     }
 
     @Test
@@ -455,6 +518,7 @@ class RoutePlannerTest {
         assertFalse(
                 plan.steps().stream().anyMatch(step -> step.trackType() == TrackType.BRIDGE_TRACK));
         assertLegalTurns(plan);
+        assertInteriorClearance(plan, terrain, RoutePolicy.AVOID_WATER);
         assertEquals(900.0, plan.totalCost(), 1e-9);
         assertEquals(0, plan.totalConstructionTicks());
     }
@@ -477,6 +541,7 @@ class RoutePlannerTest {
         assertFalse(
                 plan.steps().stream().anyMatch(step -> step.trackType() == TrackType.TUNNEL_TRACK));
         assertLegalTurns(plan);
+        assertInteriorClearance(plan, terrain, RoutePolicy.AVOID_MOUNTAINS);
         assertEquals(900.0, plan.totalCost(), 1e-9);
     }
 
