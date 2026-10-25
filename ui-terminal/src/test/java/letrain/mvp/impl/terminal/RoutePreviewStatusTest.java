@@ -7,6 +7,7 @@ import java.util.List;
 import letrain.map.Point;
 import letrain.mvp.Presenter.TrackType;
 import letrain.planner.RoutePlan;
+import letrain.planner.RoutePlanningProgress;
 import letrain.planner.RoutePolicy;
 import letrain.planner.RoutePreviewSession;
 import letrain.planner.RouteStep;
@@ -53,7 +54,7 @@ class RoutePreviewStatusTest {
         assertTrue(status.contains("14 min"), status);
         assertTrue(status.contains("2 cells"), status);
         assertTrue(status.contains("Enter select"), status);
-        assertTrue(status.contains("←/→/h/l policy"), status);
+        assertTrue(status.contains("[ ] policy"), status);
         assertTrue(status.contains("Esc discard"), status);
     }
 
@@ -66,8 +67,56 @@ class RoutePreviewStatusTest {
 
         assertTrue(status.contains("AVOID_ALL (no water/rock)"), status);
         assertTrue(status.contains("no route: No route can cross water and rock"), status);
-        assertTrue(status.contains("←/→/h/l policy"), status);
+        assertTrue(status.contains("[ ] policy"), status);
         assertTrue(!status.contains("$"), "an infeasible plan must not show a price: " + status);
+    }
+
+    @Test
+    @DisplayName("PLANNING shows phase, nodes, elapsed and an animated bar but no cost or Enter")
+    void formatsPlanning() {
+        RoutePlanningProgress progress = new RoutePlanningProgress(
+                RoutePlanningProgress.Phase.CLEARANCE, 234_000, 3_200, new Point(3, 4));
+
+        String status = RoutePreviewStatus.formatPlanning(progress);
+
+        assertTrue(status.contains("Connect · PLANNING · CLEARANCE"), status);
+        assertTrue(status.contains("234k nodes"), status);
+        assertTrue(status.contains("3.2 s"), status);
+        assertTrue(status.contains("[░░██░░░░]") || status.contains("██"), status);
+        assertTrue(status.contains("Esc cancel"), status);
+        assertTrue(!status.contains("$"), "PLANNING must not show a price: " + status);
+        assertTrue(!status.contains("Enter"), "PLANNING must not offer Enter: " + status);
+    }
+
+    @Test
+    @DisplayName("PLANNING before the first progress report says starting and zeros")
+    void formatsPlanningBeforeFirstReport() {
+        String status = RoutePreviewStatus.formatPlanning(null);
+
+        assertTrue(status.contains("PLANNING · starting · 0 nodes · 0.0 s"), status);
+    }
+
+    @Test
+    @DisplayName("node, second and bar helpers are deterministic and bounded")
+    void formatsPlanningHelpers() {
+        assertEquals("0 nodes", RoutePreviewStatus.formatNodes(0));
+        assertEquals("1 node", RoutePreviewStatus.formatNodes(1));
+        assertEquals("999 nodes", RoutePreviewStatus.formatNodes(999));
+        assertEquals("1.0k nodes", RoutePreviewStatus.formatNodes(1_000));
+        assertEquals("234k nodes", RoutePreviewStatus.formatNodes(234_000));
+        assertEquals("1.2M nodes", RoutePreviewStatus.formatNodes(1_200_000));
+
+        assertEquals("0.0 s", RoutePreviewStatus.formatSeconds(0));
+        assertEquals("3.2 s", RoutePreviewStatus.formatSeconds(3_200));
+
+        String bar = RoutePreviewStatus.progressBar(234_000, 3_200);
+        assertEquals(RoutePreviewStatus.PLANNING_BAR_WIDTH + 2, bar.length(), bar);
+        assertTrue(bar.startsWith("["), bar);
+        assertTrue(bar.endsWith("]"), bar);
+        assertEquals(2, bar.chars().filter(c -> c == '█').count(), bar);
+        assertEquals(bar, RoutePreviewStatus.progressBar(234_000, 3_200));
+        assertTrue(!bar.equals(RoutePreviewStatus.progressBar(234_000, 3_500)),
+                "the bar must move with the snapshot");
     }
 
     @Test

@@ -2,11 +2,13 @@ package letrain.mvp.impl.terminal;
 
 import java.util.Locale;
 import letrain.planner.RoutePlan;
+import letrain.planner.RoutePlanningProgress;
 import letrain.planner.RoutePolicy;
 import letrain.planner.RoutePreviewSession;
 
 /**
- * Builds the one-line status shown at the bottom of the 2D map while CONNECT is active (ADR-035).
+ * Builds the one-line status shown at the bottom of the 2D map while CONNECT is active
+ * (ADR-035/ADR-036).
  *
  * <p>
  * Pure string formatting so it can be unit tested without a terminal: the presenter only feeds it
@@ -21,10 +23,16 @@ final class RoutePreviewStatus {
 
     private RoutePreviewStatus() {}
 
+    /** Width of the animated progress bar while PLANNING, excluding the brackets. */
+    static final int PLANNING_BAR_WIDTH = 8;
+
     /** Status line for the current session, or an empty string when there is no session. */
     static String format(RoutePreviewSession session) {
         if (session == null) {
             return "";
+        }
+        if (session.state() == RoutePreviewSession.State.PLANNING) {
+            return formatPlanning(session.planningProgress().orElse(null));
         }
         return format(session.state(), session.policy(), session.lastPlan().orElse(null),
                 session.effectiveConstructionTicks(), session.lastMessage().orElse(null));
@@ -38,6 +46,8 @@ final class RoutePreviewStatus {
             case PICK_END:
                 String reason = message == null || message.isBlank() ? "" : " · " + message;
                 return "Connect · PICK_END · A set · move + Enter" + reason + " · Esc cancel";
+            case PLANNING:
+                return formatPlanning(null);
             case PREVIEW:
                 return previewLine(policy, plan, effectiveTicks, message);
             case SELECTED:
@@ -48,10 +58,60 @@ final class RoutePreviewStatus {
         }
     }
 
+    /**
+     * PLANNING status: phase, expanded nodes, elapsed time and an indeterminate/animated bar. The
+     * bar is driven from the progress snapshot (nodes and elapsed time), never from a fake
+     * percentage, and contains no cost or Enter hint because there is no plan yet.
+     */
+    static String formatPlanning(RoutePlanningProgress progress) {
+        int nodes = progress == null ? 0 : progress.expandedNodes();
+        long elapsedMillis = progress == null ? 0 : progress.elapsedMillis();
+        String phase = progress == null ? "starting" : progress.phase().name();
+        return "Connect · PLANNING · " + phase + " · " + formatNodes(nodes) + " · "
+                + formatSeconds(elapsedMillis) + " · " + progressBar(nodes, elapsedMillis) + " · "
+                + "Esc cancel";
+    }
+
+    /** Expanded-node count: exact below 1000, {@code 234k} in the thousands, {@code 1.2M} above. */
+    static String formatNodes(int nodes) {
+        if (nodes < 1_000) {
+            return nodes + (nodes == 1 ? " node" : " nodes");
+        }
+        if (nodes < 1_000_000) {
+            double thousands = nodes / 1_000.0;
+            if (thousands < 10) {
+                return String.format(Locale.ROOT, "%.1fk nodes", thousands);
+            }
+            return Math.round(thousands) + "k nodes";
+        }
+        return String.format(Locale.ROOT, "%.1fM nodes", nodes / 1_000_000.0);
+    }
+
+    /** Elapsed planning time with one decimal: {@code 3.2 s}. */
+    static String formatSeconds(long millis) {
+        return String.format(Locale.ROOT, "%.1f s", Math.max(0, millis) / 1_000.0);
+    }
+
+    /**
+     * Indeterminate bar with a two-cell activity window that travels with the snapshot. Same
+     * snapshot always renders the same bar, so status tests stay deterministic, while successive
+     * frames move the window and show that the worker is alive.
+     */
+    static String progressBar(int expandedNodes, long elapsedMillis) {
+        int width = PLANNING_BAR_WIDTH;
+        int travel = (int) Math.floorMod(elapsedMillis / 120 + expandedNodes / 250, (long) width);
+        StringBuilder bar = new StringBuilder(width);
+        for (int cell = 0; cell < width; cell++) {
+            int distance = Math.floorMod(cell - travel, width);
+            bar.append(distance < 2 ? '█' : '░');
+        }
+        return "[" + bar + "]";
+    }
+
     private static String previewLine(RoutePolicy policy, RoutePlan plan, long effectiveTicks,
             String message) {
         String policyName = policyLabel(policy);
-        String hints = " · ←/→/h/l policy · Esc discard";
+        String hints = " · [ ] policy · Esc discard";
         if (plan == null || !plan.feasible()) {
             String reason =
                     message == null || message.isBlank() ? "no route" : "no route: " + message;

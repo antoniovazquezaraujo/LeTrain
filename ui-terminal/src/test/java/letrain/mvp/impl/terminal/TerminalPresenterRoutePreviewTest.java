@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +40,12 @@ class TerminalPresenterRoutePreviewTest {
     }
 
     private static TerminalPresenter silentPresenter(Model model) {
-        TerminalPresenter presenter = new TerminalPresenter(model, mock(TerminalView.class));
+        TerminalView view = mock(TerminalView.class);
+        when(view.getScrollOffset()).thenReturn(new Point(0, 0));
+        when(view.getCols()).thenReturn(80);
+        when(view.getRows()).thenReturn(25);
+        when(view.isCameraPagination()).thenReturn(false);
+        TerminalPresenter presenter = new TerminalPresenter(model, view);
         AudioController realAudio = presenter.audioController;
         presenter.audioController = mock(AudioController.class);
         if (realAudio != null) {
@@ -76,13 +82,15 @@ class TerminalPresenterRoutePreviewTest {
     }
 
     /**
-     * Drives the new asynchronous session until it leaves PLANNING. The production presenter will
-     * poll from its frame loop in the next slice; these tests only need the preview state.
+     * Drives the presenter poll hook (the same one the frame loop calls) until the session leaves
+     * PLANNING. Using the presenter instead of the session also covers the polling wiring.
      */
-    private static void awaitPreview(RoutePreviewSession session) {
+    private static void awaitPreview(TerminalPresenter presenter) {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
         while (System.nanoTime() < deadline) {
-            session.poll();
+            presenter.pollRoutePreview();
+            RoutePreviewSession session = presenter.getRoutePreviewSession();
+            assertNotNull(session, "preview session disappeared while planning");
             if (session.state() != RoutePreviewSession.State.PLANNING) {
                 assertEquals(RoutePreviewSession.State.PREVIEW, session.state());
                 return;
@@ -164,7 +172,7 @@ class TerminalPresenterRoutePreviewTest {
         presenter.onChar(enter());
         assertEquals(RoutePreviewSession.State.PLANNING,
                 presenter.getRoutePreviewSession().state());
-        awaitPreview(presenter.getRoutePreviewSession());
+        awaitPreview(presenter);
         assertTrue(presenter.getRoutePreviewSession().lastPlan().orElseThrow().feasible());
 
         presenter.onChar(enter());
@@ -176,8 +184,8 @@ class TerminalPresenterRoutePreviewTest {
     }
 
     @Test
-    @DisplayName("left/right cycle the policy only in PREVIEW and leave the cursor alone")
-    void arrowsCyclePolicy_onlyInPreview() {
+    @DisplayName("brackets cycle the policy, using the cache when going back")
+    void bracketsCyclePolicy_onlyInPreview() {
         Model model = seededModel();
         List<Point> points = buildablePoints(model);
         model.getCursor().setPosition(points.get(0));
@@ -188,28 +196,28 @@ class TerminalPresenterRoutePreviewTest {
         presenter.onChar(enter());
         model.getCursor().setPosition(points.get(1));
         presenter.onChar(enter());
-        awaitPreview(presenter.getRoutePreviewSession());
+        awaitPreview(presenter);
 
         RoutePreviewSession session = presenter.getRoutePreviewSession();
-        assertEquals(letrain.planner.RoutePolicy.CHEAPEST, session.policy());
+        assertEquals(RoutePolicy.CHEAPEST, session.policy());
         Point before = new Point(model.getCursor().getPosition());
 
-        presenter.onChar(new InputEvent(KeyType.ArrowRight));
-        assertEquals(letrain.planner.RoutePolicy.DIRECT, session.policy());
+        presenter.onChar(new InputEvent(KeyType.Character, ']', false, false, false));
+        assertEquals(RoutePolicy.DIRECT, session.policy());
         assertEquals(RoutePreviewSession.State.PLANNING, session.state());
         assertEquals(before, model.getCursor().getPosition(),
-                "the policy arrow must not move the cursor in PREVIEW");
-        awaitPreview(session);
+                "the policy key must not move the cursor in PREVIEW");
+        awaitPreview(presenter);
 
-        presenter.onChar(new InputEvent(KeyType.ArrowLeft));
-        assertEquals(letrain.planner.RoutePolicy.CHEAPEST, session.policy());
+        presenter.onChar(new InputEvent(KeyType.Character, '[', false, false, false));
+        assertEquals(RoutePolicy.CHEAPEST, session.policy());
         assertEquals(RoutePreviewSession.State.PREVIEW, session.state(),
                 "the cheapest plan is cached, so going back is immediate");
     }
 
     @Test
-    @DisplayName("h/l cycle the policy only in PREVIEW and leave the cursor alone")
-    void hAndLCyclePolicy_onlyInPreview() {
+    @DisplayName("h/l and arrows navigate in PREVIEW without changing policy or plan")
+    void navigationKeys_keepPolicyAndPlanInPreview() {
         Model model = seededModel();
         List<Point> points = buildablePoints(model);
         model.getCursor().setPosition(points.get(0));
@@ -220,26 +228,148 @@ class TerminalPresenterRoutePreviewTest {
         presenter.onChar(enter());
         model.getCursor().setPosition(points.get(1));
         presenter.onChar(enter());
-        awaitPreview(presenter.getRoutePreviewSession());
+        awaitPreview(presenter);
 
         RoutePreviewSession session = presenter.getRoutePreviewSession();
-        Point before = new Point(model.getCursor().getPosition());
-        assertEquals(RoutePolicy.CHEAPEST, session.policy());
+        RoutePolicy policyBefore = session.policy();
+        Point startBefore = session.start().orElseThrow();
+        Point endBefore = session.end().orElseThrow();
+        RoutePolicy policyAfterPicks = session.policy();
+        letrain.map.Dir dirBefore = model.getCursor().getDir();
 
         presenter.onChar(new InputEvent(KeyType.Character, 'h', false, false, false));
-        assertEquals(RoutePolicy.AVOID_ALL, session.policy(),
-                "h must select the previous policy in PREVIEW");
-        assertEquals(before, model.getCursor().getPosition(),
-                "h must not move the cursor in PREVIEW");
-        awaitPreview(session);
+        assertEquals(dirBefore.turnLeft(), model.getCursor().getDir(),
+                "h must turn the cursor left in PREVIEW");
 
         presenter.onChar(new InputEvent(KeyType.Character, 'l', false, false, false));
-        assertEquals(RoutePolicy.CHEAPEST, session.policy(),
-                "l must select the next policy in PREVIEW");
-        assertEquals(before, model.getCursor().getPosition(),
-                "l must not move the cursor in PREVIEW");
-        assertEquals(RoutePreviewSession.State.PREVIEW, session.state(),
-                "the cheapest plan is cached, so going back is immediate");
+        assertEquals(dirBefore, model.getCursor().getDir(),
+                "l must turn the cursor right in PREVIEW");
+
+        Point positionBefore = new Point(model.getCursor().getPosition());
+        presenter.onChar(new InputEvent(KeyType.ArrowUp));
+        assertNotEquals(positionBefore, model.getCursor().getPosition(),
+                "arrows must move the cursor in PREVIEW");
+
+        presenter.onChar(new InputEvent(KeyType.PageDown));
+        presenter.onChar(new InputEvent(KeyType.Character, 'z', false, false, false));
+        presenter.onChar(new InputEvent(KeyType.Character, 'Z', false, false, false));
+
+        assertEquals(policyBefore, session.policy(), "navigation must not change the policy");
+        assertEquals(policyBefore, policyAfterPicks);
+        assertEquals(startBefore, session.start().orElseThrow());
+        assertEquals(endBefore, session.end().orElseThrow());
+        assertTrue(session.lastPlan().orElseThrow().feasible(),
+                "navigation must not discard the plan");
+        assertEquals(RoutePreviewSession.State.PREVIEW, session.state());
+    }
+
+    @Test
+    @DisplayName("PLANNING ignores navigation, route keys and the console; Esc cancels")
+    void planning_blocksEverythingButCancel() {
+        Model model = seededModel();
+        List<Point> points = buildablePoints(model);
+        model.getCursor().setPosition(points.get(0));
+        model.setMode(Model.GameMode.RAILS);
+        TerminalPresenter presenter = silentPresenter(model);
+
+        presenter.onChar(shiftC());
+        presenter.onChar(enter());
+        model.getCursor().setPosition(points.get(1));
+        presenter.onChar(enter());
+
+        RoutePreviewSession session = presenter.getRoutePreviewSession();
+        assertEquals(RoutePreviewSession.State.PLANNING, session.state());
+        Point positionBefore = new Point(model.getCursor().getPosition());
+        letrain.map.Dir dirBefore = model.getCursor().getDir();
+
+        presenter.onChar(new InputEvent(KeyType.ArrowUp));
+        presenter.onChar(new InputEvent(KeyType.Character, 'h', false, false, false));
+        presenter.onChar(new InputEvent(KeyType.Character, ']', false, false, false));
+        presenter.onChar(new InputEvent(KeyType.Character, ':', false, false, false));
+        presenter.onChar(new InputEvent(KeyType.Character, 'z', false, false, false));
+        presenter.onChar(enter());
+
+        assertEquals(RoutePreviewSession.State.PLANNING, session.state());
+        assertEquals(Model.GameMode.CONNECT, model.getMode());
+        assertEquals(positionBefore, model.getCursor().getPosition());
+        assertEquals(dirBefore, model.getCursor().getDir());
+        assertTrue(model.getCommandText().isEmpty(), "PLANNING must not open the console");
+
+        presenter.onChar(escape());
+
+        assertEquals(Model.GameMode.RAILS, model.getMode());
+        assertNull(presenter.getRoutePreviewSession());
+    }
+
+    @Test
+    @DisplayName(": opens the console from PREVIEW and Esc returns with the session intact")
+    void colonOpensConsole_andReturnsToPreview() {
+        Model model = seededModel();
+        List<Point> points = buildablePoints(model);
+        model.getCursor().setPosition(points.get(0));
+        model.setMode(Model.GameMode.RAILS);
+        TerminalPresenter presenter = silentPresenter(model);
+
+        presenter.onChar(shiftC());
+        presenter.onChar(enter());
+        model.getCursor().setPosition(points.get(1));
+        presenter.onChar(enter());
+        awaitPreview(presenter);
+
+        RoutePreviewSession session = presenter.getRoutePreviewSession();
+        Point startBefore = session.start().orElseThrow();
+        Point endBefore = session.end().orElseThrow();
+
+        presenter.onChar(new InputEvent(KeyType.Character, ':', false, false, false));
+        assertEquals(Model.GameMode.COMMAND, model.getMode());
+
+        presenter.onChar(escape());
+
+        assertEquals(Model.GameMode.CONNECT, model.getMode());
+        assertEquals(session, presenter.getRoutePreviewSession());
+        assertEquals(startBefore, session.start().orElseThrow());
+        assertEquals(endBefore, session.end().orElseThrow());
+        assertEquals(RoutePreviewSession.State.PREVIEW, session.state());
+    }
+
+    @Test
+    @DisplayName("console blocks editing commands while previewing and keeps the console open")
+    void consoleWhitelist_blocksEditingCommands() {
+        Model model = seededModel();
+        List<Point> points = buildablePoints(model);
+        model.getCursor().setPosition(points.get(0));
+        model.setMode(Model.GameMode.RAILS);
+        TerminalPresenter presenter = silentPresenter(model);
+
+        presenter.onChar(shiftC());
+        presenter.onChar(enter());
+        model.getCursor().setPosition(points.get(1));
+        presenter.onChar(enter());
+        awaitPreview(presenter);
+
+        RoutePreviewSession session = presenter.getRoutePreviewSession();
+        Point startBefore = session.start().orElseThrow();
+        Point endBefore = session.end().orElseThrow();
+
+        presenter.onChar(new InputEvent(KeyType.Character, ':', false, false, false));
+        model.setCommandText("del 0,0");
+        presenter.onChar(enter());
+
+        assertEquals(Model.GameMode.COMMAND, model.getMode(),
+                "a blocked command must keep the console open");
+        assertEquals(RoutePreviewConsolePolicy.BLOCKED_MESSAGE, model.getCommandError());
+        assertEquals(startBefore, session.start().orElseThrow());
+        assertEquals(endBefore, session.end().orElseThrow());
+        assertEquals(RoutePreviewSession.State.PREVIEW, session.state());
+
+        model.setCommandText("go 0,0");
+        presenter.onChar(enter());
+
+        assertEquals(Model.GameMode.CONNECT, model.getMode(),
+                "an allowed navigation command returns to the preview");
+        assertEquals(session, presenter.getRoutePreviewSession());
+        assertEquals(startBefore, session.start().orElseThrow());
+        assertEquals(endBefore, session.end().orElseThrow());
     }
 
     @Test

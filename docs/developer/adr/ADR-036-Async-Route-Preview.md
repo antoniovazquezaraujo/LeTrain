@@ -1,10 +1,15 @@
 # ADR-036: Previsualización asíncrona de rutas largas
 
-## Estado: PROPUESTO
+## Estado: ACEPTADO
 
 > Depende de [[ADR-034-Route-Planner-Cost-Aware|ADR-034]] y
 > [[ADR-035-Route-Preview-2D|ADR-035]]. Sustituye el flujo síncrono y modal de ADR-035 para que
 > las rutas largas no congelen la interacción ni la inspección del mapa.
+>
+> El core asíncrono (`RoutePlanningJob`, `RoutePlanningProgress`, `poll()`/`advance()`) y esta
+> primera rebanada de UI para terminal están implementados. `CHOOSING` se representa en el código
+> como `RoutePreviewSession.State.PREVIEW`; la UI consulta el progreso con
+> `planningProgress()`/`planningSnapshot()` una vez por frame desde el hilo principal.
 
 ## Contexto
 
@@ -29,7 +34,8 @@ La preview pasa a tener estos estados:
 - `PICK_START`: esperando el primer extremo.
 - `PICK_END`: primer extremo fijado; se mueve el cursor para elegir el segundo.
 - `PLANNING`: hay un job de planificación en curso. Solo `Esc` cancela.
-- `CHOOSING`: hay un plan (factible o no) y el mapa vuelve a ser navegable.
+- `CHOOSING` (`PREVIEW` en `RoutePreviewSession.State`): hay un plan (factible o no) y el mapa
+  vuelve a ser navegable.
 - `SELECTED`: plan factible aceptado; queda disponible para la futura cola de construcción.
 - `CANCELLED`: preview descartada.
 
@@ -58,7 +64,7 @@ Mientras `PLANNING`, la barra de estado muestra una barra **indeterminada/animad
 de nodos y tiempo:
 
 ```text
-Connect · PLANNING · CLEARANCE · 234k nodes · 3.2 s · [████░░] · Esc cancel
+Connect · PLANNING · CLEARANCE · 234k nodes · 3.2 s · [░░██░░░░] · Esc cancel
 ```
 
 No se inventa un porcentaje: A* no conoce el total de nodos que explorará. La barra es una señal de
@@ -77,6 +83,7 @@ navegación:
 - 3D: cuando llegue, la orientación de cámara tendrá sus propias teclas; la selección de ruta no
   las tocará.
 - El plan y los extremos A/B quedan fijos; navegar no replanifica.
+- La barra de estado de `PREVIEW` anuncia las teclas de ruta como `[ ] policy`.
 
 Teclas de ruta, únicas y fuera de la navegación:
 
@@ -94,10 +101,11 @@ decisión anterior de la preview síncrona, incompatible con la navegación libr
 Mientras hay plan, `:` abre la consola. El plan y la sesión se conservan; al salir se vuelve a
 `CHOOSING`. Solo se permiten comandos de **navegación/consulta** que no editan el mundo:
 
-- Permitidos: `go`, `face`, `mark`, `info`, `ls` y equivalentes de navegación.
+- Permitidos: `go`/`g`, `face`, `mark`/`m`, `info`, `ls` y equivalentes de navegación.
 - Bloqueados: `new`, `del`, `clear`, `slide`, `turtle`, `undo`, `redo`, `load`, `new game`, `quit`
   y cualquier otro que pueda cambiar terreno, vías, economía o endpoints.
-- Un comando bloqueado muestra un aviso y no cancela la preview.
+- Un comando bloqueado muestra un aviso (`Only navigation commands are available while
+  previewing`) y no cancela la preview ni cierra la consola.
 - Los comandos permitidos no invalidan el plan; `go` solo mueve el cursor.
 
 En una fase posterior, el comando `connect` automatizará planificar + encolar la construcción y

@@ -558,6 +558,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 if (endOfGame) {
                     break;
                 }
+                pollRoutePreview();
                 simulationController.tick();
                 updateAmbientAudio();
                 renderer.visitModel(model);
@@ -634,6 +635,15 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private void executeCommand(String cmd) {
         log.info("Execute command: " + cmd);
         boolean fromConsole = model.getMode() == letrain.mvp.Model.GameMode.COMMAND;
+        if (fromConsole && routePreviewSession != null
+                && !RoutePreviewConsolePolicy.isAllowed(cmd)) {
+            // ADR-036: while previewing, the console only navigates; the world, the route and A/B
+            // must survive until the author selects or cancels. Keep the console open so the
+            // notice stays readable.
+            model.setCommandError(RoutePreviewConsolePolicy.BLOCKED_MESSAGE);
+            model.setCommandNotice("");
+            return;
+        }
         letrain.mvp.Model.GameMode returnMode = model.getPreviousMode();
         // Capture the cursor BEFORE executing so the journaled copy is self-positioned and the
         // replay (undo) is deterministic regardless of any (unrecorded) keyboard navigation.
@@ -914,21 +924,36 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     /**
-     * Handles every key while CONNECT is active, before the global Enter/Esc/mode-hotkey routing.
-     * Movement never builds or deletes track: only a sanitized movement event reaches
-     * {@link RailTrackMaker}, with shift/ctrl cleared so drawing and erasing cannot trigger.
+     * Handles every key while CONNECT is active, before the global Enter/Esc/mode-hotkey routing
+     * (ADR-036).
+     *
+     * <p>
+     * Route keys are unique and come first in {@code PREVIEW}: {@code [}/{@code ]} switch policy,
+     * {@code Enter} selects and {@code Esc}/{@code Shift+C} cancel. In {@code PLANNING} only cancel
+     * keys are accepted. Everything else in {@code PREVIEW} is navigation and goes through the
+     * sanitized path, so movement never builds or deletes track even when Shift/Ctrl are held.
      */
     private void handleConnectKey(InputEvent keyEvent) {
         RoutePreviewSession session = routePreviewSession();
+        RoutePreviewSession.State state = session.state();
         if (keyEvent.getKeyType() == KeyType.Escape) {
             session.escape();
             leaveConnectMode();
             return;
         }
+        if (isConnectEntry(keyEvent)) {
+            session.escape();
+            leaveConnectMode();
+            return;
+        }
+        if (state == RoutePreviewSession.State.PLANNING) {
+            // The worker owns the plan; only Esc / Shift+C (handled above) can interrupt it.
+            return;
+        }
         if (keyEvent.getKeyType() == KeyType.Enter) {
             long ticksBefore = session.effectiveConstructionTicks();
-            RoutePreviewSession.State state = session.enter(model.getCursor().getPosition());
-            if (state == RoutePreviewSession.State.SELECTED) {
+            RoutePreviewSession.State next = session.enter(model.getCursor().getPosition());
+            if (next == RoutePreviewSession.State.SELECTED) {
                 pendingRoutePlan = session.selectedPlan().orElse(null);
                 if (pendingRoutePlan != null) {
                     routePreviewConfirmation = "Connect · selected · "
@@ -941,18 +966,26 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             }
             return;
         }
-        if (isConnectEntry(keyEvent)) {
-            session.escape();
-            leaveConnectMode();
-            return;
-        }
-        if (session.state() == RoutePreviewSession.State.PREVIEW) {
-            if (keyEvent.getKeyType() == KeyType.ArrowLeft || isPlainCharacter(keyEvent, 'h')) {
+        if (state == RoutePreviewSession.State.PREVIEW) {
+            if (isPlainCharacter(keyEvent, '[')) {
                 session.previousPolicy();
                 return;
             }
-            if (keyEvent.getKeyType() == KeyType.ArrowRight || isPlainCharacter(keyEvent, 'l')) {
+            if (isPlainCharacter(keyEvent, ']')) {
                 session.nextPolicy();
+                return;
+            }
+            if (isPlainCharacter(keyEvent, ':')) {
+                openCommandFromRoutePreview();
+                return;
+            }
+            if (isPlainCharacter(keyEvent, 'z')) {
+                cycleCameraDeadzone();
+                return;
+            }
+            if (isPlainCharacter(keyEvent, 'Z')) {
+                view.setCameraPagination(!view.isCameraPagination());
+                view.flashCameraDeadzone();
                 return;
             }
         }
@@ -963,25 +996,42 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     /**
-     * True for a plain {@code h}/{@code l} character; used only in PREVIEW, where those keys cycle
-     * the policy instead of moving. Ctrl/Alt combinations are left alone.
+     * Opens the console without dropping the route preview. {@code Model.setMode} remembers
+     * {@code CONNECT} as the previous mode, so leaving the console returns to {@code CHOOSING}
+     * (represented by {@code PREVIEW}).
      */
-    private static boolean isPlainCharacter(InputEvent event, char expected) {
-        return event.getKeyType() == KeyType.Character && event.getCharacter() != null
-                && Character.toLowerCase(event.getCharacter()) == expected && !event.isCtrlDown()
-                && !event.isAltDown();
+    private void openCommandFromRoutePreview() {
+        model.setMode(letrain.mvp.Model.GameMode.COMMAND);
+        model.setCommandText("");
+        model.setCommandError("");
+        model.setCommandNotice("");
     }
 
     /**
-     * Converts arrows/hjkl/Page keys into a movement event with all modifiers cleared. Any other
-     * key returns {@code null} and is swallowed in CONNECT, so no construction or mode shortcut
-     * leaks through.
+     * True for an unmodified character key (Ctrl/Alt combinations are left alone). Used for the
+     * route-preview keys, which must not clash with navigation or console shortcuts.
+     */
+    private static boolean isPlainCharacter(InputEvent event, char expected) {
+        return event.getKeyType() == KeyType.Character && event.getCharacter() != null
+                && event.getCharacter() == expected && !event.isCtrlDown() && !event.isAltDown();
+    }
+
+    /**
+     * Converts arrows/hjkl/Page keys into a movement event. Arrows and letters are stripped of all
+     * modifiers so Shift/Ctrl cannot turn navigation into drawing, erasing or paging the wrong way.
+     * Page keys keep Ctrl because the existing map navigation uses it for horizontal paging.
+     *
+     * <p>
+     * Any other key returns {@code null} and is swallowed in CONNECT, so no construction or mode
+     * shortcut leaks through.
      */
     private static InputEvent movementOnly(InputEvent event) {
         KeyType type = event.getKeyType();
+        if (type == KeyType.PageUp || type == KeyType.PageDown) {
+            return new InputEvent(type, null, event.isCtrlDown(), false, false);
+        }
         if (type == KeyType.ArrowUp || type == KeyType.ArrowDown || type == KeyType.ArrowLeft
-                || type == KeyType.ArrowRight || type == KeyType.PageUp
-                || type == KeyType.PageDown) {
+                || type == KeyType.ArrowRight) {
             return new InputEvent(type, null, false, false, false);
         }
         if (type == KeyType.Character && event.getCharacter() != null) {
@@ -998,6 +1048,17 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             }
         }
         return null;
+    }
+
+    /**
+     * Drives the asynchronous preview state machine from the UI thread once per frame (ADR-036).
+     * Outside CONNECT it does nothing: a session created for a preview never runs while another
+     * mode owns the screen.
+     */
+    void pollRoutePreview() {
+        if (routePreviewSession != null && model.getMode() == CONNECT) {
+            routePreviewSession.poll();
+        }
     }
 
     /**
