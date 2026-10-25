@@ -947,11 +947,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             return;
         }
         if (session.state() == RoutePreviewSession.State.PREVIEW) {
-            if (keyEvent.getKeyType() == KeyType.ArrowLeft) {
+            if (keyEvent.getKeyType() == KeyType.ArrowLeft || isPlainCharacter(keyEvent, 'h')) {
                 session.previousPolicy();
                 return;
             }
-            if (keyEvent.getKeyType() == KeyType.ArrowRight) {
+            if (keyEvent.getKeyType() == KeyType.ArrowRight || isPlainCharacter(keyEvent, 'l')) {
                 session.nextPolicy();
                 return;
             }
@@ -960,6 +960,16 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         if (movement != null) {
             railTrackMaker.onChar(movement);
         }
+    }
+
+    /**
+     * True for a plain {@code h}/{@code l} character; used only in PREVIEW, where those keys cycle
+     * the policy instead of moving. Ctrl/Alt combinations are left alone.
+     */
+    private static boolean isPlainCharacter(InputEvent event, char expected) {
+        return event.getKeyType() == KeyType.Character && event.getCharacter() != null
+                && Character.toLowerCase(event.getCharacter()) == expected && !event.isCtrlDown()
+                && !event.isAltDown();
     }
 
     /**
@@ -1008,7 +1018,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 plan = null;
             }
             for (RoutePreviewOverlay.Cell cell : RoutePreviewOverlay.cells(plan, start, end)) {
-                view.drawRoutePreviewCell(cell.x(), cell.y(), cell.glyph(), cell.endpoint());
+                view.drawRoutePreviewCell(cell.x(), cell.y(), cell.glyph(), cell.endpoint(),
+                        cell.style());
             }
             view.drawRoutePreviewStatus(RoutePreviewStatus.format(routePreviewSession));
             return;

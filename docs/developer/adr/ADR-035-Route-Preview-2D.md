@@ -47,7 +47,8 @@ Se añade un modo modal al cliente de terminal. En 3D se hará más adelante con
    - `Esc` cancela directamente el modo.
 3. `PREVIEW`
    - Se muestra **un solo** `RoutePlan`.
-   - `←`/`→` cambian de política y recalculan.
+   - `←`/`→` y `h`/`l` cambian de política y recalculan. En `PICK_START`/`PICK_END`, `h`/`l`
+     conservan su comportamiento actual de giro del cursor.
    - `Enter` acepta el plan y pasa a `SELECTED`.
    - `Esc` descarta y cancela.
    - Si la política no tiene ruta, se muestra el motivo y no se permite aceptar.
@@ -72,13 +73,21 @@ rutas a la vez.
 ### Vista del mapa
 
 - `A` y `B` marcan los extremos.
-- La ruta se pinta encima del terreno con un color propio:
-  - `═` vía normal,
-  - `≈` puente,
-  - `▒` túnel.
+- La ruta se pinta encima del terreno con este estilo:
+
+  | Celda | Glifo | Frente | Fondo |
+  | --- | --- | --- | --- |
+  | Vía normal | `═` | cian brillante | terreno (se conserva) |
+  | Puente | `≈` | rojo brillante | blanco (opaco) |
+  | Túnel | `⋂` (el mismo glifo que la entrada de túnel del renderer) | rojo brillante | blanco (opaco) |
+  | Extremo `A`/`B` | `A` / `B` | amarillo brillante | terreno (se conserva) |
+
+- Las celdas normales y los extremos conservan el fondo del terreno: solo cambian glifo y frente.
+  Puentes y túneles usan fondo blanco opaco porque ningún color de frente se lee bien a la vez
+  sobre roca y agua.
+- El extremo gana si comparte celda con un paso de la ruta.
 - Solo se pintan las celdas visibles; si la ruta sale de pantalla, se indica en la barra de estado.
 - El resto del mapa sigue visible; no se oscurece ni se sustituye.
-- No se pinta el terreno de la ruta de otro color de fondo: el trazo debe leerse sobre el mapa.
 
 ### Barra de estado
 
@@ -86,14 +95,14 @@ En `PREVIEW`:
 
 ```text
 Connect · CHEAPEST · $1.234.500 · 1 h 12 min · 87 tramos
-←/→ política   Enter seleccionar   Esc descartar
+←/→/h/l política   Enter seleccionar   Esc descartar
 ```
 
 Si no hay ruta:
 
 ```text
 Connect · AVOID_BOTH · sin ruta: no se puede cruzar agua ni montaña
-←/→ política   Esc descartar
+←/→/h/l política   Esc descartar
 ```
 
 - El coste es la moneda del juego; el tiempo, tiempo de juego.

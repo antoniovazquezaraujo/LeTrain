@@ -15,6 +15,7 @@ import letrain.map.Point;
 import letrain.mvp.impl.Model;
 import letrain.mvp.input.InputEvent;
 import letrain.mvp.input.KeyType;
+import letrain.planner.RoutePolicy;
 import letrain.planner.RoutePreviewSession;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -177,6 +178,69 @@ class TerminalPresenterRoutePreviewTest {
 
         presenter.onChar(new InputEvent(KeyType.ArrowLeft));
         assertEquals(letrain.planner.RoutePolicy.CHEAPEST, session.policy());
+    }
+
+    @Test
+    @DisplayName("h/l cycle the policy only in PREVIEW and leave the cursor alone")
+    void hAndLCyclePolicy_onlyInPreview() {
+        Model model = seededModel();
+        List<Point> points = buildablePoints(model);
+        model.getCursor().setPosition(points.get(0));
+        model.setMode(Model.GameMode.RAILS);
+        TerminalPresenter presenter = silentPresenter(model);
+
+        presenter.onChar(shiftC());
+        presenter.onChar(enter());
+        model.getCursor().setPosition(points.get(1));
+        presenter.onChar(enter());
+
+        RoutePreviewSession session = presenter.getRoutePreviewSession();
+        Point before = new Point(model.getCursor().getPosition());
+        assertEquals(RoutePolicy.CHEAPEST, session.policy());
+
+        presenter.onChar(new InputEvent(KeyType.Character, 'h', false, false, false));
+        assertEquals(RoutePolicy.AVOID_BOTH, session.policy(),
+                "h must select the previous policy in PREVIEW");
+        assertEquals(before, model.getCursor().getPosition(),
+                "h must not move the cursor in PREVIEW");
+
+        presenter.onChar(new InputEvent(KeyType.Character, 'l', false, false, false));
+        assertEquals(RoutePolicy.CHEAPEST, session.policy(),
+                "l must select the next policy in PREVIEW");
+        assertEquals(before, model.getCursor().getPosition(),
+                "l must not move the cursor in PREVIEW");
+    }
+
+    @Test
+    @DisplayName("h/l still move the cursor and do not touch the policy in PICK_END")
+    void hAndLMoveCursor_inPickEnd() {
+        Model model = seededModel();
+        List<Point> points = buildablePoints(model);
+        model.getCursor().setPosition(points.get(0));
+        model.setMode(Model.GameMode.RAILS);
+        TerminalPresenter presenter = silentPresenter(model);
+
+        presenter.onChar(shiftC());
+        presenter.onChar(enter());
+        RoutePreviewSession session = presenter.getRoutePreviewSession();
+        assertEquals(RoutePreviewSession.State.PICK_END, session.state());
+        Point before = new Point(model.getCursor().getPosition());
+        letrain.map.Dir dirBefore = model.getCursor().getDir();
+        RoutePolicy policyBefore = session.policy();
+
+        presenter.onChar(new InputEvent(KeyType.Character, 'h', false, false, false));
+        assertEquals(dirBefore.turnLeft(), model.getCursor().getDir(),
+                "h must keep turning the cursor left in PICK_END");
+        assertEquals(before, model.getCursor().getPosition(),
+                "h must not move the cursor in PICK_END");
+        assertEquals(policyBefore, session.policy(), "h must not cycle the policy in PICK_END");
+
+        presenter.onChar(new InputEvent(KeyType.Character, 'l', false, false, false));
+        assertEquals(dirBefore, model.getCursor().getDir(),
+                "l must keep turning the cursor right in PICK_END");
+        assertEquals(before, model.getCursor().getPosition(),
+                "l must not move the cursor in PICK_END");
+        assertEquals(policyBefore, session.policy(), "l must not cycle the policy in PICK_END");
     }
 
     @Test

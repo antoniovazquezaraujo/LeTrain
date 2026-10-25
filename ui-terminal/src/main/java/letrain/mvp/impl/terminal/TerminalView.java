@@ -313,15 +313,43 @@ public class TerminalView implements letrain.mvp.View {
     static final TextColor ROUTE_PREVIEW_FG = TextColor.ANSI.CYAN_BRIGHT;
     /** Endpoint markers are brighter still, so A/B never get lost in the trace. */
     static final TextColor ROUTE_PREVIEW_ENDPOINT_FG = TextColor.ANSI.YELLOW_BRIGHT;
+    /**
+     * Tunnels and bridges are painted red on white: the opaque background makes them readable over
+     * both rock ({@code *}) and water ({@code ~}), which no single foreground colour can do.
+     */
+    static final TextColor ROUTE_PREVIEW_SPECIAL_FG = TextColor.ANSI.RED_BRIGHT;
+    static final TextColor ROUTE_PREVIEW_SPECIAL_BG = TextColor.ANSI.WHITE;
     private static final TextColor ROUTE_PREVIEW_STATUS_FG = TextColor.ANSI.WHITE_BRIGHT;
     private static final TextColor ROUTE_PREVIEW_STATUS_BG = TextColor.ANSI.BLACK;
 
+    /** Foreground/background pair used to paint one route-preview cell. */
+    record PreviewPaint(TextColor foreground, TextColor background) {
+    }
+
     /**
-     * Paints one route-preview cell over the 2D map (ADR-035). Only the foreground and glyph
-     * change: the terrain background is preserved, so the trace reads as an overlay instead of a
-     * recoloured tile. Out-of-view cells are ignored.
+     * Resolves the colours for one overlay cell. Endpoints win over the route style; special cells
+     * (tunnels/bridges) replace the terrain background with opaque white; everything else keeps the
+     * terrain background. Pure so it can be asserted without opening a terminal.
      */
-    public void drawRoutePreviewCell(int x, int y, String glyph, boolean endpoint) {
+    static PreviewPaint routePreviewPaint(boolean endpoint, RoutePreviewOverlay.Style style,
+            TextColor terrainBackground) {
+        if (endpoint) {
+            return new PreviewPaint(ROUTE_PREVIEW_ENDPOINT_FG, terrainBackground);
+        }
+        if (style == RoutePreviewOverlay.Style.SPECIAL) {
+            return new PreviewPaint(ROUTE_PREVIEW_SPECIAL_FG, ROUTE_PREVIEW_SPECIAL_BG);
+        }
+        return new PreviewPaint(ROUTE_PREVIEW_FG, terrainBackground);
+    }
+
+    /**
+     * Paints one route-preview cell over the 2D map (ADR-035). Normal route cells and endpoints
+     * keep the terrain background and only change the glyph/foreground; special cells (tunnels and
+     * bridges) get an opaque white background. Endpoints win over any route style. Out-of-view
+     * cells are ignored.
+     */
+    public void drawRoutePreviewCell(int x, int y, String glyph, boolean endpoint,
+            RoutePreviewOverlay.Style style) {
         if (glyph == null || glyph.isEmpty() || gameBox == null || gameBoxSize == null) {
             return;
         }
@@ -332,10 +360,10 @@ public class TerminalView implements letrain.mvp.View {
         }
         TerminalPosition position = new TerminalPosition(screenX, screenY);
         TextCharacter previous = gameBox.getCharacter(position);
-        TextColor background = previous == null ? null : previous.getBackgroundColor();
-        TextColor foreground = endpoint ? ROUTE_PREVIEW_ENDPOINT_FG : ROUTE_PREVIEW_FG;
-        gameBox.setCharacter(position,
-                TextCharacter.fromCharacter(glyph.charAt(0), foreground, background)[0]);
+        TextColor terrainBackground = previous == null ? null : previous.getBackgroundColor();
+        PreviewPaint paint = routePreviewPaint(endpoint, style, terrainBackground);
+        gameBox.setCharacter(position, TextCharacter.fromCharacter(glyph.charAt(0),
+                paint.foreground(), paint.background())[0]);
     }
 
     /**

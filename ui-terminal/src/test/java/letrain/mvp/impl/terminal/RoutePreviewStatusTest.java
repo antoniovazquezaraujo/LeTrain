@@ -53,7 +53,7 @@ class RoutePreviewStatusTest {
         assertTrue(status.contains("14 min"), status);
         assertTrue(status.contains("2 cells"), status);
         assertTrue(status.contains("Enter select"), status);
-        assertTrue(status.contains("←/→ policy"), status);
+        assertTrue(status.contains("←/→/h/l policy"), status);
         assertTrue(status.contains("Esc discard"), status);
     }
 
@@ -66,7 +66,7 @@ class RoutePreviewStatusTest {
 
         assertTrue(status.contains("AVOID_BOTH (no rock/water)"), status);
         assertTrue(status.contains("no route: No route can cross water and rock"), status);
-        assertTrue(status.contains("←/→ policy"), status);
+        assertTrue(status.contains("←/→/h/l policy"), status);
         assertTrue(!status.contains("$"), "an infeasible plan must not show a price: " + status);
     }
 

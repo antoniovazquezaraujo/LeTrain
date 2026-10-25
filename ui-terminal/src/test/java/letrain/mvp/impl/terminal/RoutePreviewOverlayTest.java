@@ -2,13 +2,16 @@ package letrain.mvp.impl.terminal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import letrain.map.Point;
 import letrain.mvp.Presenter.TrackType;
+import letrain.mvp.impl.terminal.RoutePreviewOverlay.Style;
 import letrain.planner.RoutePlan;
 import letrain.planner.RouteStep;
+import letrain.visitor.terminal.RenderVisitor;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -20,28 +23,34 @@ class RoutePreviewOverlayTest {
     }
 
     @Test
-    @DisplayName("normal, bridge and tunnel steps map to their glyphs")
-    void mapsTrackTypesToGlyphs() {
+    @DisplayName("normal, bridge and tunnel steps map to their glyphs and styles")
+    void mapsTrackTypesToGlyphsAndStyles() {
         RoutePlan plan = RoutePlan.feasible(List.of(step(0, 0, TrackType.NORMAL_TRACK),
                 step(1, 0, TrackType.BRIDGE_TRACK), step(2, 0, TrackType.TUNNEL_TRACK)), 0, 0);
 
-        List<RoutePreviewOverlay.Cell> cells =
-                RoutePreviewOverlay.cells(plan, new Point(0, 0), new Point(2, 0));
+        List<RoutePreviewOverlay.Cell> cells = RoutePreviewOverlay.cells(plan, null, null);
 
         assertEquals(3, cells.size());
-        assertEquals("A", cells.get(0).glyph());
-        assertTrue(cells.get(0).endpoint());
+        assertEquals("═", cells.get(0).glyph());
+        assertSame(Style.NORMAL, cells.get(0).style());
         assertEquals("≈", cells.get(1).glyph());
-        assertFalse(cells.get(1).endpoint());
-        assertEquals("B", cells.get(2).glyph());
-        assertTrue(cells.get(2).endpoint());
+        assertSame(Style.SPECIAL, cells.get(1).style());
+        assertEquals("⋂", cells.get(2).glyph());
+        assertSame(Style.SPECIAL, cells.get(2).style());
     }
 
     @Test
-    @DisplayName("the endpoint marker wins over the route glyph on the same cell")
+    @DisplayName("tunnel cells reuse the renderer's tunnel-gate glyph")
+    void tunnelGlyphMatchesRendererEntrance() {
+        assertEquals(RenderVisitor.TUNNEL_GATE_RAILTRACK_ASPECT, RoutePreviewOverlay.TUNNEL_GLYPH);
+        assertEquals("⋂", RoutePreviewOverlay.TUNNEL_GLYPH);
+    }
+
+    @Test
+    @DisplayName("the endpoint marker wins over the route glyph and stays normal-styled")
     void endpointsWinOverRouteGlyphs() {
         RoutePlan plan = RoutePlan.feasible(
-                List.of(step(0, 0, TrackType.NORMAL_TRACK), step(1, 0, TrackType.NORMAL_TRACK)), 0,
+                List.of(step(0, 0, TrackType.TUNNEL_TRACK), step(1, 0, TrackType.NORMAL_TRACK)), 0,
                 0);
 
         List<RoutePreviewOverlay.Cell> cells =
@@ -49,7 +58,10 @@ class RoutePreviewOverlayTest {
 
         assertEquals(2, cells.size());
         assertEquals("B", cells.get(0).glyph());
+        assertTrue(cells.get(0).endpoint());
+        assertSame(Style.NORMAL, cells.get(0).style());
         assertEquals("═", cells.get(1).glyph());
+        assertFalse(cells.get(1).endpoint());
     }
 
     @Test
@@ -63,12 +75,16 @@ class RoutePreviewOverlayTest {
         assertEquals(4, cells.get(0).x());
         assertEquals(5, cells.get(0).y());
         assertEquals("B", cells.get(1).glyph());
+        assertSame(Style.NORMAL, cells.get(1).style());
     }
 
     @Test
     @DisplayName("gate variants are bridged/tunnelled like their plain steps")
     void mapsGateVariants() {
         assertEquals("≈", RoutePreviewOverlay.glyphFor(TrackType.BRIDGE_GATE_TRACK));
-        assertEquals("▒", RoutePreviewOverlay.glyphFor(TrackType.TUNNEL_GATE_TRACK));
+        assertEquals("⋂", RoutePreviewOverlay.glyphFor(TrackType.TUNNEL_GATE_TRACK));
+        assertSame(Style.SPECIAL, RoutePreviewOverlay.styleFor(TrackType.BRIDGE_GATE_TRACK));
+        assertSame(Style.SPECIAL, RoutePreviewOverlay.styleFor(TrackType.TUNNEL_GATE_TRACK));
+        assertSame(Style.NORMAL, RoutePreviewOverlay.styleFor(TrackType.NORMAL_TRACK));
     }
 }

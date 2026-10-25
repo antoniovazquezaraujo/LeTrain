@@ -13,8 +13,8 @@ import letrain.planner.RouteStep;
  *
  * <p>
  * This class deliberately knows nothing about Lanterna, the viewport or colours: it returns map
- * coordinates and one-character glyphs, so the mapping can be tested without a terminal. The
- * presenter/view layer decides which cells are visible and how to colour them.
+ * coordinates, one-character glyphs and a {@link Style} hint, so the mapping can be tested without
+ * a terminal. The presenter/view layer decides which cells are visible and how to colour them.
  *
  * <p>
  * A and B are drawn last, so an endpoint always wins over the route glyph on the same cell. Only
@@ -25,14 +25,36 @@ public final class RoutePreviewOverlay {
 
     public static final String NORMAL_GLYPH = "═";
     public static final String BRIDGE_GLYPH = "≈";
-    public static final String TUNNEL_GLYPH = "▒";
+    /**
+     * Tunnels use the same glyph as the tunnel entrance in the 2D renderer
+     * ({@code RenderVisitor.TUNNEL_GATE_RAILTRACK_ASPECT}). The literal is duplicated here on
+     * purpose to keep this class free of renderer dependencies; {@code RoutePreviewOverlayTest}
+     * asserts that both stay identical.
+     */
+    public static final String TUNNEL_GLYPH = "⋂";
     public static final String START_GLYPH = "A";
     public static final String END_GLYPH = "B";
 
+    /**
+     * How the view should paint a route cell.
+     *
+     * <ul>
+     * <li>{@link #NORMAL}: route foreground, terrain background preserved.</li>
+     * <li>{@link #SPECIAL}: tunnel/bridge, painted on an opaque white background so it stands out
+     * from both water and rock.</li>
+     * </ul>
+     */
+    public enum Style {
+        NORMAL, SPECIAL
+    }
+
     private RoutePreviewOverlay() {}
 
-    /** One map cell to paint: coordinates, glyph and whether it is an endpoint marker. */
-    public record Cell(int x, int y, String glyph, boolean endpoint) {
+    /**
+     * One map cell to paint: coordinates, glyph, whether it is an endpoint marker and its style.
+     * Endpoints always carry {@link Style#NORMAL}; the view paints endpoint markers on top.
+     */
+    public record Cell(int x, int y, String glyph, boolean endpoint, Style style) {
     }
 
     /**
@@ -47,28 +69,43 @@ public final class RoutePreviewOverlay {
         if (plan != null && plan.feasible()) {
             for (RouteStep step : plan.steps()) {
                 Point point = step.point();
-                byPosition.put(key(point),
-                        new Cell(point.getX(), point.getY(), glyphFor(step.trackType()), false));
+                byPosition.put(key(point), new Cell(point.getX(), point.getY(),
+                        glyphFor(step.trackType()), false, styleFor(step.trackType())));
             }
         }
         if (start != null) {
-            byPosition.put(key(start), new Cell(start.getX(), start.getY(), START_GLYPH, true));
+            byPosition.put(key(start),
+                    new Cell(start.getX(), start.getY(), START_GLYPH, true, Style.NORMAL));
         }
         if (end != null) {
-            byPosition.put(key(end), new Cell(end.getX(), end.getY(), END_GLYPH, true));
+            byPosition.put(key(end),
+                    new Cell(end.getX(), end.getY(), END_GLYPH, true, Style.NORMAL));
         }
         return List.copyOf(byPosition.values());
     }
 
     /** Glyph for a planned track kind: normal, bridge or tunnel. */
     public static String glyphFor(TrackType type) {
-        if (type == TrackType.TUNNEL_TRACK || type == TrackType.TUNNEL_GATE_TRACK) {
+        if (isTunnel(type)) {
             return TUNNEL_GLYPH;
         }
-        if (type == TrackType.BRIDGE_TRACK || type == TrackType.BRIDGE_GATE_TRACK) {
+        if (isBridge(type)) {
             return BRIDGE_GLYPH;
         }
         return NORMAL_GLYPH;
+    }
+
+    /** Special style for tunnels and bridges, normal for plain track. */
+    public static Style styleFor(TrackType type) {
+        return isTunnel(type) || isBridge(type) ? Style.SPECIAL : Style.NORMAL;
+    }
+
+    private static boolean isTunnel(TrackType type) {
+        return type == TrackType.TUNNEL_TRACK || type == TrackType.TUNNEL_GATE_TRACK;
+    }
+
+    private static boolean isBridge(TrackType type) {
+        return type == TrackType.BRIDGE_TRACK || type == TrackType.BRIDGE_GATE_TRACK;
     }
 
     private static long key(Point point) {
