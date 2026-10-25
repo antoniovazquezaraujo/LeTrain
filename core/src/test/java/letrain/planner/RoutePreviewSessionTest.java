@@ -122,10 +122,10 @@ class RoutePreviewSessionTest {
 
         assertEquals(RoutePolicy.AVOID_MOUNTAINS, session.nextPolicy());
         assertEquals(RoutePolicy.AVOID_WATER, session.nextPolicy());
-        assertEquals(RoutePolicy.AVOID_BOTH, session.nextPolicy());
+        assertEquals(RoutePolicy.AVOID_ALL, session.nextPolicy());
         assertEquals(RoutePolicy.CHEAPEST, session.nextPolicy());
 
-        assertEquals(RoutePolicy.AVOID_BOTH, session.previousPolicy());
+        assertEquals(RoutePolicy.AVOID_ALL, session.previousPolicy());
         assertEquals(RoutePolicy.AVOID_WATER, session.previousPolicy());
         assertEquals(RoutePolicy.AVOID_MOUNTAINS, session.previousPolicy());
         assertEquals(RoutePolicy.DIRECT, session.previousPolicy());
@@ -149,7 +149,7 @@ class RoutePreviewSessionTest {
     @Test
     @DisplayName("an infeasible policy stays in PREVIEW and cannot be selected")
     void should_NotSelect_When_ActivePolicyHasNoRoute() {
-        // A closed wall of water and rock makes AVOID_BOTH infeasible while CHEAPEST crosses it.
+        // A closed wall of water and rock makes AVOID_ALL infeasible while CHEAPEST crosses it.
         FakeGroundMap terrain = new FakeGroundMap().rect(-1, -1, 6, 1, NORMAL);
         for (int y = -1; y <= 1; y++) {
             terrain.put(2, y, WATER);
@@ -163,10 +163,10 @@ class RoutePreviewSessionTest {
         assertEquals(RoutePolicy.DIRECT, session.nextPolicy());
         assertEquals(RoutePolicy.AVOID_MOUNTAINS, session.nextPolicy());
         assertEquals(RoutePolicy.AVOID_WATER, session.nextPolicy());
-        assertEquals(RoutePolicy.AVOID_BOTH, session.nextPolicy());
+        assertEquals(RoutePolicy.AVOID_ALL, session.nextPolicy());
         assertEquals(RoutePreviewSession.State.PREVIEW, session.state());
         assertFalse(session.lastPlan().orElseThrow().feasible());
-        assertTrue(session.lastMessage().orElseThrow().contains("AVOID_BOTH"));
+        assertTrue(session.lastMessage().orElseThrow().contains("AVOID_ALL"));
         assertEquals(0, session.effectiveConstructionTicks());
 
         assertEquals(RoutePreviewSession.State.PREVIEW, session.enter(p(5, 0)));

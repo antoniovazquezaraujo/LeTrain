@@ -199,7 +199,7 @@ class TerminalPresenterRoutePreviewTest {
         assertEquals(RoutePolicy.CHEAPEST, session.policy());
 
         presenter.onChar(new InputEvent(KeyType.Character, 'h', false, false, false));
-        assertEquals(RoutePolicy.AVOID_BOTH, session.policy(),
+        assertEquals(RoutePolicy.AVOID_ALL, session.policy(),
                 "h must select the previous policy in PREVIEW");
         assertEquals(before, model.getCursor().getPosition(),
                 "h must not move the cursor in PREVIEW");

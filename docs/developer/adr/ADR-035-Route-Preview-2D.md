@@ -65,7 +65,7 @@ Orden de ciclo:
 2. `DIRECT`
 3. `AVOID_MOUNTAINS`
 4. `AVOID_WATER`
-5. `AVOID_BOTH`
+5. `AVOID_ALL`
 
 La política activa y su descripción corta se muestran en la barra de estado. No se muestran varias
 rutas a la vez.
@@ -101,7 +101,7 @@ Connect · CHEAPEST · $1.234.500 · 1 h 12 min · 87 tramos
 Si no hay ruta:
 
 ```text
-Connect · AVOID_BOTH · sin ruta: no se puede cruzar agua ni montaña
+Connect · AVOID_ALL · sin ruta: no se puede cruzar agua ni montaña
 ←/→/h/l política   Esc descartar
 ```
 

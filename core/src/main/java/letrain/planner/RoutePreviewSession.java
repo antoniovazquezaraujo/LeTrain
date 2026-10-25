@@ -48,7 +48,7 @@ public final class RoutePreviewSession {
     /** Policy cycle order requested by the owner; {@link RoutePolicy#CHEAPEST} comes first. */
     private static final List<RoutePolicy> POLICY_CYCLE =
             List.of(RoutePolicy.CHEAPEST, RoutePolicy.DIRECT, RoutePolicy.AVOID_MOUNTAINS,
-                    RoutePolicy.AVOID_WATER, RoutePolicy.AVOID_BOTH);
+                    RoutePolicy.AVOID_WATER, RoutePolicy.AVOID_ALL);
 
     private final GroundMap terrain;
     private final EconomyManager economy;
@@ -185,7 +185,7 @@ public final class RoutePreviewSession {
 
     /**
      * Moves to the previous policy and recomputes the plan. Only valid in {@link State#PREVIEW};
-     * the cycle wraps back to {@link RoutePolicy#AVOID_BOTH}.
+     * the cycle wraps back to {@link RoutePolicy#AVOID_ALL}.
      *
      * @return the active policy
      */

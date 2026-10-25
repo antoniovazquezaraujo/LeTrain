@@ -61,10 +61,10 @@ class RoutePreviewStatusTest {
     @DisplayName("an infeasible PREVIEW shows the reason and no cost")
     void formatsInfeasiblePreview() {
         String status = RoutePreviewStatus.format(RoutePreviewSession.State.PREVIEW,
-                RoutePolicy.AVOID_BOTH, RoutePlan.infeasible("No route can cross water and rock"),
-                0, "No route can cross water and rock");
+                RoutePolicy.AVOID_ALL, RoutePlan.infeasible("No route can cross water and rock"), 0,
+                "No route can cross water and rock");
 
-        assertTrue(status.contains("AVOID_BOTH (no rock/water)"), status);
+        assertTrue(status.contains("AVOID_ALL (no water/rock)"), status);
         assertTrue(status.contains("no route: No route can cross water and rock"), status);
         assertTrue(status.contains("←/→/h/l policy"), status);
         assertTrue(!status.contains("$"), "an infeasible plan must not show a price: " + status);
@@ -77,8 +77,8 @@ class RoutePreviewStatusTest {
                 RoutePreviewStatus.policyLabel(RoutePolicy.AVOID_MOUNTAINS));
         assertEquals("AVOID_WATER (no water)",
                 RoutePreviewStatus.policyLabel(RoutePolicy.AVOID_WATER));
-        assertEquals("AVOID_BOTH (no rock/water)",
-                RoutePreviewStatus.policyLabel(RoutePolicy.AVOID_BOTH));
+        assertEquals("AVOID_ALL (no water/rock)",
+                RoutePreviewStatus.policyLabel(RoutePolicy.AVOID_ALL));
         assertEquals("DIRECT (crosses all)", RoutePreviewStatus.policyLabel(RoutePolicy.DIRECT));
     }
 

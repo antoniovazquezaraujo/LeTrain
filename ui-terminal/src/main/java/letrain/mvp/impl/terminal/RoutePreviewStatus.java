@@ -76,7 +76,7 @@ final class RoutePreviewStatus {
             case DIRECT -> "DIRECT (crosses all)";
             case AVOID_MOUNTAINS -> "AVOID_MOUNTAINS (no rock)";
             case AVOID_WATER -> "AVOID_WATER (no water)";
-            case AVOID_BOTH -> "AVOID_BOTH (no rock/water)";
+            case AVOID_ALL -> "AVOID_ALL (no water/rock)";
         };
     }
 
