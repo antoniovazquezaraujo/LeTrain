@@ -12,6 +12,7 @@ import java.util.List;
 import letrain.economy.EconomyManager;
 import letrain.economy.EconomyManager.ExpenseType;
 import letrain.ground.GroundMap;
+import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.mvp.Presenter.TrackType;
 import org.junit.jupiter.api.DisplayName;
@@ -45,6 +46,60 @@ class RoutePlannerTest {
 
     private static List<Point> points(RoutePlan plan) {
         return plan.steps().stream().map(RouteStep::point).toList();
+    }
+
+    /**
+     * Fails unless every consecutive pair of steps turns at most 45 degrees, like RailTrackMaker.
+     */
+    private static void assertLegalTurns(RoutePlan plan) {
+        List<Point> points = points(plan);
+        for (int i = 1; i < points.size(); i++) {
+            Point from = points.get(i - 1);
+            Point to = points.get(i);
+            Dir direction = directionBetween(from, to);
+            assertNotNull(direction, "non-adjacent steps in plan: " + points);
+            if (i >= 2) {
+                Dir previous = directionBetween(points.get(i - 2), from);
+                assertTrue(RoutePlanner.isTurnAllowed(previous, direction),
+                        "illegal turn at step " + i + ": " + points);
+            }
+        }
+    }
+
+    private static Dir directionBetween(Point from, Point to) {
+        int dx = to.getX() - from.getX();
+        int dy = to.getY() - from.getY();
+        if (dx < -1 || dx > 1 || dy < -1 || dy > 1) {
+            return null;
+        }
+        if (dx == 0 && dy == 0) {
+            return null;
+        }
+        if (dx == 1 && dy == 0) {
+            return Dir.E;
+        }
+        if (dx == 1 && dy == -1) {
+            return Dir.NE;
+        }
+        if (dx == 0 && dy == -1) {
+            return Dir.N;
+        }
+        if (dx == -1 && dy == -1) {
+            return Dir.NW;
+        }
+        if (dx == -1 && dy == 0) {
+            return Dir.W;
+        }
+        if (dx == -1 && dy == 1) {
+            return Dir.SW;
+        }
+        if (dx == 0 && dy == 1) {
+            return Dir.S;
+        }
+        if (dx == 1 && dy == 1) {
+            return Dir.SE;
+        }
+        return null;
     }
 
     @Test
@@ -110,7 +165,7 @@ class RoutePlannerTest {
     @Test
     @DisplayName("AVOID_WATER routes around water and never plans a bridge")
     void should_AvoidWater_When_PolicyIsAvoidWater() {
-        FakeGroundMap terrain = new FakeGroundMap().rect(-1, -2, 5, 2, NORMAL).put(2, -1, WATER)
+        FakeGroundMap terrain = new FakeGroundMap().rect(-3, -4, 8, 4, NORMAL).put(2, -1, WATER)
                 .put(2, 0, WATER).put(2, 1, WATER);
         RoutePlan plan =
                 RoutePlanner.plan(terrain, economy(), p(0, 0), p(4, 0), RoutePolicy.AVOID_WATER);
@@ -119,7 +174,10 @@ class RoutePlannerTest {
         assertFalse(
                 plan.steps().stream().anyMatch(step -> step.trackType() == TrackType.BRIDGE_TRACK));
         assertTrue(plan.steps().stream().anyMatch(step -> Math.abs(step.point().getY()) == 2));
-        assertEquals(500.0, plan.totalCost(), 1e-9);
+        // The old four-move detour was SE,SE,NE,NE: the SE->NE bend is 90 degrees and is now
+        // rejected, so the planner needs two more cells to turn legally.
+        assertEquals(600.0, plan.totalCost(), 1e-9);
+        assertLegalTurns(plan);
     }
 
     @Test
@@ -136,6 +194,7 @@ class RoutePlannerTest {
         assertTrue(
                 plan.steps().stream().allMatch(step -> step.trackType() == TrackType.NORMAL_TRACK));
         assertTrue(plan.steps().stream().anyMatch(step -> Math.abs(step.point().getY()) == 2));
+        assertLegalTurns(plan);
     }
 
     @Test
@@ -229,16 +288,19 @@ class RoutePlannerTest {
     @Test
     @DisplayName("CHEAPEST detours over ground instead of paying for a bridge")
     void should_PreferNormalDetour_When_PolicyIsCheapest() {
-        FakeGroundMap terrain = new FakeGroundMap().rect(-1, -1, 3, 1, NORMAL).put(1, 0, WATER);
+        FakeGroundMap terrain = new FakeGroundMap().rect(-4, -4, 6, 4, NORMAL).put(1, 0, WATER);
         RoutePlan cheapest =
                 RoutePlanner.plan(terrain, economy(), p(0, 0), p(2, 0), RoutePolicy.CHEAPEST);
 
         assertTrue(cheapest.feasible());
         assertFalse(cheapest.steps().stream()
                 .anyMatch(step -> step.trackType() == TrackType.BRIDGE_TRACK));
-        assertEquals(3, cheapest.steps().size());
-        assertEquals(300.0, cheapest.totalCost(), 1e-9);
+        // With the 45-degree rule, going around a single blocked cell needs a wider sweep than
+        // the old three-cell detour (which turned NE->SE, 90 degrees).
+        assertEquals(8, cheapest.steps().size());
+        assertEquals(800.0, cheapest.totalCost(), 1e-9);
         assertEquals(0, cheapest.totalConstructionTicks());
+        assertLegalTurns(cheapest);
     }
 
     @Test
@@ -261,18 +323,112 @@ class RoutePlannerTest {
     @Test
     @DisplayName("equal-cost symmetric routes always resolve to the same one")
     void should_BreakTiesDeterministically_When_TwoRoutesHaveEqualCost() {
-        FakeGroundMap terrain = new FakeGroundMap().rect(-1, -2, 3, 2, NORMAL).put(1, 0, ROCK);
-        RoutePlan first = RoutePlanner.plan(terrain, economy(), p(0, 0), p(2, 0),
+        FakeGroundMap terrain = new FakeGroundMap().rect(-4, -4, 8, 4, NORMAL).put(2, 0, ROCK);
+        RoutePlan first = RoutePlanner.plan(terrain, economy(), p(0, 0), p(4, 0),
                 RoutePolicy.AVOID_MOUNTAINS);
 
         for (int i = 0; i < 20; i++) {
-            RoutePlan again = RoutePlanner.plan(terrain, economy(), p(0, 0), p(2, 0),
+            RoutePlan again = RoutePlanner.plan(terrain, economy(), p(0, 0), p(4, 0),
                     RoutePolicy.AVOID_MOUNTAINS);
             assertEquals(first, again);
         }
-        // Fixed neighbour order (N, NE, E, SE, ...) plus FIFO tie-break: the first diagonal
-        // candidate (1,-1) wins over its symmetric (1,1) counterpart.
-        assertEquals(List.of(p(0, 0), p(1, -1), p(2, 0)), points(first));
+        // Fixed neighbour order (N, NE, E, SE, ...) plus FIFO tie-break: the northern detour wins
+        // over its mirror image through the south.
+        assertEquals(List.of(p(0, 0), p(1, -1), p(2, -1), p(3, -1), p(4, 0)), points(first));
+    }
+
+    @Test
+    @DisplayName("the 45-degree rule rejects a direct 90-degree turn but allows two 45-degree steps")
+    void should_EnforceRailCurvature_When_CheckingTurns() {
+        assertFalse(RoutePlanner.isTurnAllowed(Dir.E, Dir.N));
+        assertFalse(RoutePlanner.isTurnAllowed(Dir.E, Dir.S));
+        assertFalse(RoutePlanner.isTurnAllowed(Dir.N, Dir.W));
+        assertTrue(RoutePlanner.isTurnAllowed(Dir.E, Dir.SE));
+        assertTrue(RoutePlanner.isTurnAllowed(Dir.E, Dir.NE));
+        assertTrue(RoutePlanner.isTurnAllowed(Dir.NE, Dir.N));
+        assertTrue(RoutePlanner.isTurnAllowed(Dir.E, Dir.E));
+        assertTrue(RoutePlanner.isTurnAllowed(null, Dir.N));
+    }
+
+    @Test
+    @DisplayName("a net 90-degree bend is built as two legal 45-degree steps")
+    void should_ReachNinetyDegreeBend_When_BuiltAsTwoFortyFiveSteps() {
+        // Rocks at (1,-1) and (0,-1) force the route east first; it then climbs NE and N, so the
+        // E->N change is split into E->NE and NE->N.
+        FakeGroundMap terrain =
+                new FakeGroundMap().rect(-2, -4, 4, 2, NORMAL).put(1, -1, ROCK).put(0, -1, ROCK);
+        RoutePlan plan = RoutePlanner.plan(terrain, economy(), p(0, 0), p(2, -2),
+                RoutePolicy.AVOID_MOUNTAINS);
+
+        assertTrue(plan.feasible());
+        assertEquals(List.of(p(0, 0), p(1, 0), p(2, -1), p(2, -2)), points(plan));
+        assertLegalTurns(plan);
+        assertEquals(400.0, plan.totalCost(), 1e-9);
+    }
+
+    @Test
+    @DisplayName("a shortest route with a 90-degree bend is not returned")
+    void should_NotReturnShortestRoute_When_ItViolatesCurvature() {
+        FakeGroundMap terrain = new FakeGroundMap().rect(-3, -4, 8, 4, NORMAL).put(2, -1, WATER)
+                .put(2, 0, WATER).put(2, 1, WATER);
+        RoutePlan plan =
+                RoutePlanner.plan(terrain, economy(), p(0, 0), p(4, 0), RoutePolicy.AVOID_WATER);
+
+        // SE,SE,NE,NE is the shortest geometric detour but its second NE is a 90-degree turn.
+        List<Point> illegalShortcut = List.of(p(0, 0), p(1, -1), p(2, -2), p(3, -1), p(4, 0));
+        assertTrue(plan.feasible());
+        assertFalse(points(plan).equals(illegalShortcut));
+        assertTrue(plan.steps().size() > illegalShortcut.size());
+        assertLegalTurns(plan);
+    }
+
+    @Test
+    @DisplayName("equal-cost routes prefer the one with fewer turns")
+    void should_PreferFewerTurns_When_PrimaryCostTies() {
+        FakeGroundMap terrain = new FakeGroundMap().rect(-3, -5, 9, 5, NORMAL);
+        RoutePlan plan =
+                RoutePlanner.plan(terrain, economy(), p(0, 0), p(6, 0), RoutePolicy.CHEAPEST);
+
+        // The straight route has no turns; an E,NE,E,E,SE,E route costs the same per cell.
+        assertEquals(List.of(p(0, 0), p(1, 0), p(2, 0), p(3, 0), p(4, 0), p(5, 0), p(6, 0)),
+                points(plan));
+        assertEquals(700.0, plan.totalCost(), 1e-9);
+        assertEquals(0, plan.totalConstructionTicks());
+    }
+
+    @Test
+    @DisplayName("at equal cost and turns, a coastal route loses to a one-cell-inland one")
+    void should_PreferClearanceFromWater_When_PrimaryCostAndTurnsTie() {
+        // A lake occupies x=2..4, y=0..1. Both the y=-1 (coastal) and y=-2 (inland) detours need
+        // seven cells and two turns, so only the clearance preference separates them.
+        FakeGroundMap terrain = new FakeGroundMap().rect(-3, -5, 9, 5, NORMAL);
+        for (int x = 2; x <= 4; x++) {
+            terrain.put(x, 0, WATER).put(x, 1, WATER);
+        }
+        RoutePlan plan =
+                RoutePlanner.plan(terrain, economy(), p(0, 0), p(6, 0), RoutePolicy.AVOID_WATER);
+
+        assertTrue(plan.feasible());
+        assertEquals(List.of(p(0, 0), p(1, -1), p(2, -2), p(3, -2), p(4, -2), p(5, -1), p(6, 0)),
+                points(plan));
+        assertEquals(700.0, plan.totalCost(), 1e-9);
+        assertLegalTurns(plan);
+    }
+
+    @Test
+    @DisplayName("at equal cost, turns and clearance, the route closest to the straight line wins")
+    void should_PreferLessDeviation_When_OtherPreferencesTie() {
+        // Two seven-cell, two-turn detours around water at (3,0) and (4,1), both three cells away
+        // from blocked water; the northern one stays closer to the straight segment.
+        FakeGroundMap terrain =
+                new FakeGroundMap().rect(-3, -5, 9, 5, NORMAL).put(3, 0, WATER).put(4, 1, WATER);
+        RoutePlan plan =
+                RoutePlanner.plan(terrain, economy(), p(0, 0), p(6, 0), RoutePolicy.AVOID_WATER);
+
+        assertTrue(plan.feasible());
+        assertEquals(List.of(p(0, 0), p(1, -1), p(2, -1), p(3, -1), p(4, -1), p(5, -1), p(6, 0)),
+                points(plan));
+        assertLegalTurns(plan);
     }
 
     @Test

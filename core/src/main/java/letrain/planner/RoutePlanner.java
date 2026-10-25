@@ -10,6 +10,7 @@ import java.util.PriorityQueue;
 import letrain.economy.EconomyManager;
 import letrain.economy.EconomyManager.ExpenseType;
 import letrain.ground.GroundMap;
+import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.mvp.Presenter.TrackType;
 import letrain.utils.ValidationUtils;
@@ -31,9 +32,38 @@ import letrain.utils.ValidationUtils;
  * cost/time of its cells regardless of the optimisation metric.
  *
  * <p>
+ * <b>Curvature.</b> The search state is a cell <em>plus the heading used to arrive at it</em>. The
+ * first step may take any of the eight directions; every following step must turn at most 45
+ * degrees, i.e. {@code Math.abs(previous.angularDistance(next)) <= 1}. This is the same rule
+ * {@code RailTrackMaker} enforces when placing track, so a plan never asks for an unbuildable
+ * 90/135/180-degree bend. The diagonal corner-cutting rule is unchanged.
+ *
+ * <p>
+ * <b>Shape preferences.</b> Primary cost stays dominant; shape is a deterministic tie-breaker added
+ * to the search cost (never to the reported cost):
+ *
+ * <ul>
+ * <li>a small penalty per 45-degree turn (fewer turns preferred),
+ * <li>a smaller penalty per accumulated {@code deviation + blockedNeighbours} (straighter and
+ * further from blocked terrain preferred).
+ * </ul>
+ *
+ * Both penalties are fractions of the cheapest possible per-cell primary cost, so they cannot turn
+ * a materially more expensive route into the winner. See {@link #TURN_PENALTY_FRACTION} and
+ * {@link #SHAPE_PENALTY_FRACTION} for the exact values.
+ *
+ * <p>
+ * <b>Clearance.</b> A cell's clearance penalty is the number of its eight neighbours that are
+ * blocked <em>under the active policy</em>: missing/non-buildable terrain plus the policy's own
+ * block (water under {@code AVOID_WATER}, rock under {@code AVOID_MOUNTAINS}, both under
+ * {@code AVOID_BOTH}). Under {@code DIRECT} and {@code CHEAPEST} buildable water and rock are not
+ * blocked, so they do not penalise clearance; those policies already cross them.
+ *
+ * <p>
  * <b>Determinism.</b> Neighbours are expanded in a fixed order and the open set breaks f-score ties
  * by insertion sequence (FIFO), so the same inputs always produce the same route. The heuristic is
- * admissible and consistent for both metrics.
+ * admissible and consistent for both primary metrics because the shape penalties are non-negative
+ * and ignored by the heuristic.
  *
  * <p>
  * <b>Terrain normalisation.</b> Industry values {@code 10..29} are treated as {@code GROUND}, the
@@ -43,6 +73,19 @@ import letrain.utils.ValidationUtils;
 public final class RoutePlanner {
 
     private static final double SQRT_2 = Math.sqrt(2.0);
+
+    /**
+     * Search-cost penalty for each 45-degree turn, as a fraction of the cheapest per-cell primary
+     * cost. Kept tiny so turns only break near-ties in primary cost.
+     */
+    static final double TURN_PENALTY_FRACTION = 1e-3;
+
+    /**
+     * Search-cost weight of one unit of shape penalty (deviation plus blocked-neighbour count), as
+     * a fraction of the cheapest per-cell primary cost. Much smaller than
+     * {@link #TURN_PENALTY_FRACTION} so turns outrank shape.
+     */
+    static final double SHAPE_PENALTY_FRACTION = 1e-5;
 
     /**
      * Safety cap for pathological searches over the procedural (unbounded) terrain. Reaching it
@@ -55,8 +98,9 @@ public final class RoutePlanner {
      * Fixed neighbour order (N, NE, E, SE, S, SW, W, NW). Together with the insertion-sequence
      * tie-break it makes equal-cost routes reproducible across runs and JVMs.
      */
-    private static final int[][] NEIGHBOURS =
-            {{0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}};
+    private static final List<Move> MOVES = List.of(new Move(0, -1, Dir.N), new Move(1, -1, Dir.NE),
+            new Move(1, 0, Dir.E), new Move(1, 1, Dir.SE), new Move(0, 1, Dir.S),
+            new Move(-1, 1, Dir.SW), new Move(-1, 0, Dir.W), new Move(-1, -1, Dir.NW));
 
     private static final Comparator<QueueEntry> QUEUE_ORDER =
             Comparator.comparingDouble(QueueEntry::f).thenComparingLong(QueueEntry::seq);
@@ -100,40 +144,52 @@ public final class RoutePlanner {
 
         boolean distanceMetric = policy == RoutePolicy.DIRECT;
         double minCellCost = minCellCost(economy);
+        // Penalties are fractions of the cheapest primary step. For the distance metric that is 1;
+        // for construction cost it is the cheapest cell, with a floor of 1 for free-price setups.
+        double penaltyBase = distanceMetric ? 1.0 : Math.max(1.0, minCellCost);
+        double turnPenalty = penaltyBase * TURN_PENALTY_FRACTION;
+        double shapeWeight = penaltyBase * SHAPE_PENALTY_FRACTION;
+
         CellKey startKey = CellKey.of(start);
         CellKey endKey = CellKey.of(end);
 
-        Map<CellKey, Double> gScore = new HashMap<>();
-        Map<CellKey, CellKey> cameFrom = new HashMap<>();
+        Map<SearchState, Double> gScore = new HashMap<>();
+        Map<SearchState, SearchState> cameFrom = new HashMap<>();
         Map<CellKey, Integer> terrainByKey = new HashMap<>();
         PriorityQueue<QueueEntry> open = new PriorityQueue<>(QUEUE_ORDER);
         long sequence = 0;
 
-        gScore.put(startKey, 0.0);
+        SearchState startState = new SearchState(startKey, null);
+        gScore.put(startState, 0.0);
         terrainByKey.put(startKey, GroundMap.GROUND);
         double startHeuristic = distanceMetric ? octile(startKey, endKey)
                 : minCellCost * chebyshev(startKey, endKey);
-        open.add(new QueueEntry(startHeuristic, 0.0, sequence++, startKey));
+        open.add(new QueueEntry(startHeuristic, 0.0, sequence++, startState));
 
         int expanded = 0;
         while (!open.isEmpty()) {
             QueueEntry current = open.poll();
-            CellKey currentKey = current.key();
-            Double bestKnown = gScore.get(currentKey);
+            SearchState currentState = current.state();
+            CellKey currentKey = currentState.cell();
+            Double bestKnown = gScore.get(currentState);
             if (bestKnown == null || current.g() > bestKnown) {
                 continue; // Stale queue entry.
             }
             if (currentKey.equals(endKey)) {
-                return buildFeasiblePlan(terrainByKey, cameFrom, endKey, economy);
+                return buildFeasiblePlan(terrainByKey, cameFrom, currentState, economy);
             }
             if (++expanded > MAX_EXPANDED_NODES) {
                 return RoutePlan.infeasible("Route search exceeded " + MAX_EXPANDED_NODES
                         + " expanded cells for policy " + policy + "; no route found");
             }
 
-            for (int[] direction : NEIGHBOURS) {
-                int dx = direction[0];
-                int dy = direction[1];
+            for (Move move : MOVES) {
+                Dir nextDirection = move.direction();
+                if (!isTurnAllowed(currentState.heading(), nextDirection)) {
+                    continue; // RailTrackMaker's 45-degree rule.
+                }
+                int dx = move.dx();
+                int dy = move.dy();
                 if (dx != 0 && dy != 0 && !diagonalIsAllowed(terrain, policy, currentKey, dx, dy)) {
                     continue;
                 }
@@ -152,34 +208,41 @@ public final class RoutePlanner {
                 if (neighbour.equals(startKey)) {
                     continue; // The start has no entry cost.
                 }
-                double moveCost = distanceMetric ? (dx != 0 && dy != 0 ? SQRT_2 : 1.0)
+                SearchState neighbourState = new SearchState(neighbour, nextDirection);
+                double primary = distanceMetric ? (dx != 0 && dy != 0 ? SQRT_2 : 1.0)
                         : constructionCost(economy, normalized);
-                double tentative = current.g() + moveCost;
-                Double old = gScore.get(neighbour);
+                int turn = currentState.heading() != null && currentState.heading() != nextDirection
+                        ? 1
+                        : 0;
+                double shape = deviation(neighbour, startKey, endKey)
+                        + blockedNeighbourCount(terrain, policy, neighbour);
+                double tentative = current.g() + primary + turnPenalty * turn + shapeWeight * shape;
+                Double old = gScore.get(neighbourState);
                 if (old != null && tentative >= old) {
                     continue;
                 }
-                gScore.put(neighbour, tentative);
-                cameFrom.put(neighbour, currentKey);
+                gScore.put(neighbourState, tentative);
+                cameFrom.put(neighbourState, currentState);
                 terrainByKey.put(neighbour, normalized);
                 double heuristic = distanceMetric ? octile(neighbour, endKey)
                         : minCellCost * chebyshev(neighbour, endKey);
-                open.add(new QueueEntry(tentative + heuristic, tentative, sequence++, neighbour));
+                open.add(new QueueEntry(tentative + heuristic, tentative, sequence++,
+                        neighbourState));
             }
         }
 
         return RoutePlan.infeasible("No route from " + start + " to " + end + " under policy "
-                + policy + " (blocked by terrain or map bounds)");
+                + policy + " (blocked by terrain, 45-degree curvature or map bounds)");
     }
 
     private static RoutePlan buildFeasiblePlan(Map<CellKey, Integer> terrainByKey,
-            Map<CellKey, CellKey> cameFrom, CellKey endKey, EconomyManager economy) {
+            Map<SearchState, SearchState> cameFrom, SearchState endState, EconomyManager economy) {
         List<CellKey> path = new ArrayList<>();
-        CellKey cursor = endKey;
-        path.add(cursor);
+        SearchState cursor = endState;
+        path.add(cursor.cell());
         while (cameFrom.containsKey(cursor)) {
             cursor = cameFrom.get(cursor);
-            path.add(cursor);
+            path.add(cursor.cell());
         }
         Collections.reverse(path);
 
@@ -231,6 +294,14 @@ public final class RoutePlanner {
                 || normalizedTerrain == GroundMap.ROCK;
     }
 
+    /**
+     * Rail curvature rule shared with {@code RailTrackMaker}: consecutive headings may differ by at
+     * most one 45-degree step. The first step ({@code previous == null}) is always allowed.
+     */
+    static boolean isTurnAllowed(Dir previous, Dir next) {
+        return previous == null || Math.abs(previous.angularDistance(next)) <= 1;
+    }
+
     private static boolean isBlocked(RoutePolicy policy, int normalizedTerrain) {
         return switch (policy) {
             case AVOID_MOUNTAINS -> normalizedTerrain == GroundMap.ROCK;
@@ -263,6 +334,41 @@ public final class RoutePlanner {
         }
         int normalized = normalize(rawTerrain);
         return isBuildable(normalized) && !isBlocked(policy, normalized);
+    }
+
+    /**
+     * Counts the eight neighbours of {@code cell} that are blocked under the active policy. Missing
+     * or non-buildable terrain and the policy's own blocked water/rock all count; buildable water
+     * and rock do not count under {@code DIRECT}/{@code CHEAPEST}. Higher means less clearance.
+     */
+    private static int blockedNeighbourCount(GroundMap terrain, RoutePolicy policy, CellKey cell) {
+        int blocked = 0;
+        for (Move move : MOVES) {
+            if (!isTraversable(terrain, policy, cell.x() + move.dx(), cell.y() + move.dy())) {
+                blocked++;
+            }
+        }
+        return blocked;
+    }
+
+    /**
+     * Euclidean distance from {@code cell} to the straight segment {@code start}-{@code end}. Used
+     * as the "stay close to the direct line" shape term.
+     */
+    private static double deviation(CellKey cell, CellKey start, CellKey end) {
+        double vx = end.x() - start.x();
+        double vy = end.y() - start.y();
+        double lengthSquared = vx * vx + vy * vy;
+        if (lengthSquared == 0) {
+            return 0;
+        }
+        double wx = cell.x() - start.x();
+        double wy = cell.y() - start.y();
+        double t = (wx * vx + wy * vy) / lengthSquared;
+        t = Math.max(0, Math.min(1, t));
+        double projectedX = start.x() + t * vx;
+        double projectedY = start.y() + t * vy;
+        return Math.hypot(cell.x() - projectedX, cell.y() - projectedY);
     }
 
     private static TrackType trackTypeFor(int normalizedTerrain) {
@@ -304,6 +410,14 @@ public final class RoutePlanner {
         return (max - min) + SQRT_2 * min;
     }
 
+    /** One of the eight grid steps and the heading it represents. */
+    private record Move(int dx, int dy, Dir direction) {
+    }
+
+    /** A* state: the cell plus the heading used to reach it ({@code null} only for the start). */
+    private record SearchState(CellKey cell, Dir heading) {
+    }
+
     /** Coordinates with value semantics; {@link Point} intentionally has no meaningful hashCode. */
     private record CellKey(int x, int y) {
         static CellKey of(Point point) {
@@ -311,6 +425,6 @@ public final class RoutePlanner {
         }
     }
 
-    private record QueueEntry(double f, double g, long seq, CellKey key) {
+    private record QueueEntry(double f, double g, long seq, SearchState state) {
     }
 }

@@ -66,6 +66,43 @@ En las políticas `AVOID_*`, tras bloquear se optimiza el **coste real** de las 
 de modo que la ruta devuelta es la más barata que respeta la restricción. Si el destino no es
 alcanzable se devuelve `infeasible` con un motivo que nombra la política y los puntos.
 
+### Curvatura máxima: 45° por paso
+
+La ruta planificada debe poder construirse con `RailTrackMaker`, que rechaza cualquier cambio de
+rumbo cuyo valor absoluto supere un paso angular (`Math.abs(oldDir.inverse().angularDistance(dir))
+> 1`, es decir, 90°, 135° o 180°). Por eso el estado de A* **no es solo la celda**: incluye también
+la dirección con la que se llegó a ella.
+
+- El primer paso puede elegir cualquiera de las 8 direcciones.
+- Cada paso siguiente exige `Math.abs(previous.angularDistance(next)) <= 1`.
+- Se rechazan por tanto los giros de 90°, 135° y 180°; un giro neto de 90° solo se consigue con dos
+  pasos de 45° (por ejemplo E → NE → N).
+- La regla diagonal existente (no recortar esquinas entre dos ortogonales bloqueados) se mantiene.
+- Consecuencia: un desvío alrededor de un obstáculo puede necesitar más celdas que la distancia
+  geométrica mínima, porque hay que "girar" gradualmente. Los tests fijan las rutas esperadas.
+
+### Preferencias de forma (desempate)
+
+El coste primario sigue mandando: `DIRECT` minimiza distancia geométrica y el resto minimiza el
+coste real de construcción. Sobre él se añaden, **solo al coste de búsqueda**, dos términos pequeños
+y deterministas para desempatar rutas de coste primario (casi) igual:
+
+1. **Curvas**: penalización por cada giro de 45° (`TURN_PENALTY_FRACTION = 1e-3` del coste primario
+   mínimo por celda). Prefiere menos curvas.
+2. **Forma**: peso pequeño (`SHAPE_PENALTY_FRACTION = 1e-5` del mismo coste mínimo) aplicado a
+   `desviación + vecinos bloqueados` por celda:
+   - `desviación`: distancia euclídea de la celda al segmento recto inicio-fin.
+   - `vecinos bloqueados`: cuántos de los 8 vecinos están bloqueados **según la política activa**
+     (falta de datos, terreno no construible y el bloqueo propio de la política). Bajo
+     `DIRECT`/`CHEAPEST` el agua y la roca construibles no cuentan, porque esas políticas ya las
+     cruzan; bajo `AVOID_WATER`/`AVOID_MOUNTAINS`/`AVOID_BOTH` sí. Esto favorece alejarse de la
+     costa/roca en lugar de ir pegado a ella.
+
+Ambos términos son fracciones del coste primario por celda, de modo que **no pueden elegir una ruta
+materialmente más cara**: como mucho rompen empates o diferencias ínfimas. Las penalizaciones no se
+suman al `totalCost()` ni a `totalConstructionTicks()` reportados, que siguen siendo los reales de
+las celdas elegidas.
+
 ### Coste y tiempo
 
 No se inventan valores económicos. Se leen del `EconomyManager` existente:
@@ -83,8 +120,10 @@ construir la unión completa.
 
 Los vecinos se expanden en un orden fijo (N, NE, E, SE, S, SW, W, NW) y la cola de abiertos rompe
 empates de `f` por secuencia de inserción (FIFO). La heurística es admisible y consistente para
-ambas métricas (octile para distancia; coste mínimo por celda × Chebyshev para coste). Mismos
-inputs ⇒ misma ruta, en cualquier JVM. Los tests cubren una simetría con dos rutas de igual coste.
+ambas métricas (octile para distancia; coste mínimo por celda × Chebyshev para coste), y sigue
+siendo admisible con las penalizaciones de forma porque estas son no negativas y la heurística las
+ignora. Mismos inputs ⇒ misma ruta, en cualquier JVM. Los tests cubren una simetría con dos rutas de
+igual coste.
 
 ## Decisiones menores tomadas para no expandir el alcance
 
@@ -122,8 +161,9 @@ inputs ⇒ misma ruta, en cualquier JVM. Los tests cubren una simetría con dos 
 - Cola de construcción, cancelación, reanudación o guardado/carga a mitad de obra.
 - Comando de alto nivel `connect` en el DSL, wiring de escenarios o CLI.
 - Puertas (`*_GATE_TRACK`), desvíos, estaciones, sensores o señalización dentro del plan.
-- Modelo de pendientes, curvas, velocidad o capacidad; el planificador es geométrico/económico,
-  no de explotación.
+- Modelo de pendientes, velocidad o capacidad; la curvatura solo se valida como regla de
+  construcción (máximo 45° por paso), no se modela la velocidad por curva. El planificador es
+  geométrico/económico, no de explotación.
 - Reutilizar vía ya construida (`RailMap`) en el cálculo de coste: este spike planifica sobre
   terreno desnudo.
 
@@ -148,6 +188,8 @@ inputs ⇒ misma ruta, en cualquier JVM. Los tests cubren una simetría con dos 
 - El coste de búsqueda es acotado; rutas muy largas pueden devolver infactible por tope antes que
   por ausencia real de ruta (motivo visible). Si molesta, se sube el tope o se pasa a búsqueda con
   caja envolvente.
+- Al respetar la curvatura real de 45°, algunas rutas son más largas que la distancia geométrica
+  mínima (hay que girar gradualmente). Es intencional: el plan debe poder construirse.
 - El planificador no recorta esquinas entre celdas bloqueadas (regla diagonal decidida); la de no
   modelar puertas queda para la capa de construcción.
 
