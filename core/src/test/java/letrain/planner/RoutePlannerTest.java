@@ -355,6 +355,72 @@ class RoutePlannerTest {
     }
 
     @Test
+    @DisplayName("AVOID_MOUNTAINS crosses a lake by bridge; CHEAPEST takes the cheaper detour")
+    void should_CrossWater_When_AvoidingMountainsOnLake() {
+        FakeGroundMap terrain = new FakeGroundMap().rect(-4, -6, 12, 6, NORMAL);
+        for (int x = 3; x <= 5; x++) {
+            for (int y = -2; y <= 2; y++) {
+                terrain.put(x, y, WATER);
+            }
+        }
+
+        RoutePlan avoid = RoutePlanner.plan(terrain, economy(), p(0, 0), p(8, 0),
+                RoutePolicy.AVOID_MOUNTAINS);
+        assertTrue(avoid.feasible());
+        assertEquals(List.of(p(0, 0), p(1, 0), p(2, 0), p(3, 0), p(4, 0), p(5, 0), p(6, 0), p(7, 0),
+                p(8, 0)), points(avoid));
+        assertEquals(TrackType.BRIDGE_TRACK, typeAt(avoid, 3, 0));
+        assertEquals(TrackType.BRIDGE_TRACK, typeAt(avoid, 4, 0));
+        assertEquals(TrackType.BRIDGE_TRACK, typeAt(avoid, 5, 0));
+        assertFalse(avoid.steps().stream()
+                .anyMatch(step -> step.trackType() == TrackType.TUNNEL_TRACK));
+        assertEquals(6 * 100 + 3 * 20_000, avoid.totalCost(), 1e-9);
+        assertEquals(3 * 20, avoid.totalConstructionTicks());
+        assertLegalTurns(avoid);
+
+        RoutePlan cheapest =
+                RoutePlanner.plan(terrain, economy(), p(0, 0), p(8, 0), RoutePolicy.CHEAPEST);
+        assertTrue(cheapest.feasible());
+        assertFalse(cheapest.steps().stream()
+                .anyMatch(step -> step.trackType() == TrackType.BRIDGE_TRACK));
+        assertEquals(900.0, cheapest.totalCost(), 1e-9);
+        assertEquals(0, cheapest.totalConstructionTicks());
+    }
+
+    @Test
+    @DisplayName("AVOID_WATER crosses a rock wall by tunnel; CHEAPEST takes the cheaper detour")
+    void should_CrossRock_When_AvoidingWaterOnRockWall() {
+        FakeGroundMap terrain = new FakeGroundMap().rect(-4, -6, 12, 6, NORMAL);
+        for (int x = 3; x <= 5; x++) {
+            for (int y = -2; y <= 2; y++) {
+                terrain.put(x, y, ROCK);
+            }
+        }
+
+        RoutePlan avoid =
+                RoutePlanner.plan(terrain, economy(), p(0, 0), p(8, 0), RoutePolicy.AVOID_WATER);
+        assertTrue(avoid.feasible());
+        assertEquals(List.of(p(0, 0), p(1, 0), p(2, 0), p(3, 0), p(4, 0), p(5, 0), p(6, 0), p(7, 0),
+                p(8, 0)), points(avoid));
+        assertEquals(TrackType.TUNNEL_TRACK, typeAt(avoid, 3, 0));
+        assertEquals(TrackType.TUNNEL_TRACK, typeAt(avoid, 4, 0));
+        assertEquals(TrackType.TUNNEL_TRACK, typeAt(avoid, 5, 0));
+        assertFalse(avoid.steps().stream()
+                .anyMatch(step -> step.trackType() == TrackType.BRIDGE_TRACK));
+        assertEquals(6 * 100 + 3 * 70_000, avoid.totalCost(), 1e-9);
+        assertEquals(3 * 30, avoid.totalConstructionTicks());
+        assertLegalTurns(avoid);
+
+        RoutePlan cheapest =
+                RoutePlanner.plan(terrain, economy(), p(0, 0), p(8, 0), RoutePolicy.CHEAPEST);
+        assertTrue(cheapest.feasible());
+        assertFalse(cheapest.steps().stream()
+                .anyMatch(step -> step.trackType() == TrackType.TUNNEL_TRACK));
+        assertEquals(900.0, cheapest.totalCost(), 1e-9);
+        assertEquals(0, cheapest.totalConstructionTicks());
+    }
+
+    @Test
     @DisplayName("CHEAPEST detours over ground instead of paying for a bridge")
     void should_PreferNormalDetour_When_PolicyIsCheapest() {
         FakeGroundMap terrain = new FakeGroundMap().rect(-4, -4, 6, 4, NORMAL).put(1, 0, WATER);

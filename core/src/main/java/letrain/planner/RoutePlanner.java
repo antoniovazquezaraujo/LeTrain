@@ -26,10 +26,11 @@ import letrain.utils.ValidationUtils;
  * described in ADR-034.
  *
  * <p>
- * <b>Grid and metric.</b> A* over the 8-direction grid. {@link RoutePolicy#DIRECT} optimises
- * geometric distance (orthogonal 1, diagonal {@code sqrt(2)}); the other policies optimise the real
- * per-cell construction cost after blocking. Every returned plan reports the real construction
- * cost/time of its cells regardless of the optimisation metric.
+ * <b>Grid and metric.</b> A* over the 8-direction grid. {@link RoutePolicy#DIRECT} and the three
+ * avoid policies optimise geometric distance (orthogonal 1, diagonal {@code sqrt(2)}) after
+ * blocking their named terrain; only {@link RoutePolicy#CHEAPEST} optimises the real per-cell
+ * construction cost. Every returned plan reports the real construction cost/time of its cells
+ * regardless of the optimisation metric.
  *
  * <p>
  * <b>Curvature.</b> The search state is a cell <em>plus the heading used to arrive at it</em>. The
@@ -39,37 +40,38 @@ import letrain.utils.ValidationUtils;
  * 90/135/180-degree bend. The diagonal corner-cutting rule is unchanged.
  *
  * <p>
- * <b>Comfort preferences.</b> Search cost is the primary construction cost (or geometric distance
- * for {@code DIRECT}) plus policy-specific comfort terms. They are never added to the reported
- * cost/time.
+ * <b>Comfort preferences.</b> Search cost is the primary metric plus policy-specific comfort terms.
+ * They are never added to the reported cost/time.
  *
  * <p>
  * For the avoid policies ({@code AVOID_MOUNTAINS}, {@code AVOID_WATER}, {@code AVOID_BOTH}) the
- * comfort terms are fractions of the <b>normal-track cost</b> (floor 1 when it is free):
+ * comfort terms are expressed in <b>distance units</b>, so they refine near-equal routes without
+ * overwhelming the geometric metric:
  *
  * <ul>
- * <li>{@code 0.25 × baseline} per 45-degree turn,
- * <li>{@code 0.5 × baseline} per blocked neighbour (clearance),
- * <li>{@code 0.05 × baseline} per cell of Euclidean deviation from the straight segment.
+ * <li>{@code 0.25} per 45-degree turn,
+ * <li>{@code 0.5} per blocked neighbour (clearance),
+ * <li>{@code 0.05} per cell of Euclidean deviation from the straight segment.
  * </ul>
  *
- * These terms are intentionally strong enough to let an avoid route be a little more expensive than
- * the absolute cheapest one when it buys clearance from water/rock or fewer bends. The primary
- * construction cost still carries the most weight per cell, and the reported totals stay real.
+ * Allowed water/rock is never made expensive by the avoid optimisation: under
+ * {@code AVOID_MOUNTAINS} a bridge may still be the geometric shortcut, and under
+ * {@code AVOID_WATER} a tunnel may be. The reported cost/time then includes those real prices.
  *
  * <p>
  * <b>Hard clearance pass.</b> Avoid policies first run the search with a hard constraint: every
  * chosen cell except the start and end must have zero blocked neighbours under the active policy,
- * keeping the track at least one cell away from the offending terrain. If that pass is infeasible
- * (narrow corridor, enclosed endpoint, map edge) the same search runs again without the hard
- * constraint and its best plan is returned. The comfort terms still apply in both passes and are
- * search-only; reported cost/time are always the real cells. {@code DIRECT} and {@code CHEAPEST}
- * never use the hard clearance pass.
+ * keeping the track at least one cell away from the <em>named blocked</em> terrain (rock for
+ * {@code AVOID_MOUNTAINS}, water for {@code AVOID_WATER}, both for {@code AVOID_BOTH}). Allowed
+ * terrain gets no hard clearance. If that pass is infeasible (narrow corridor, enclosed endpoint,
+ * map edge) the same search runs again without the hard constraint and its best plan is returned.
+ * The comfort terms still apply in both passes and are search-only; reported cost/time are always
+ * the real cells. {@code DIRECT} and {@code CHEAPEST} never use the hard clearance pass.
  *
  * <p>
- * For {@code DIRECT} and {@code CHEAPEST} the comfort terms are tiny deterministic tie-breakers
- * relative to the cheapest per-cell primary cost; those policies keep their original primary
- * semantics. See {@link #TIE_TURN_FRACTION} and {@link #TIE_SHAPE_FRACTION}.
+ * {@code DIRECT} and {@code CHEAPEST} use tiny deterministic tie-breakers (relative to the unit
+ * distance step and to the cheapest per-cell construction cost respectively); they keep their
+ * original primary semantics. See {@link #TIE_TURN_FRACTION} and {@link #TIE_SHAPE_FRACTION}.
  *
  * <p>
  * <b>Clearance.</b> A cell's clearance penalty is the number of its eight neighbours that are
@@ -105,13 +107,13 @@ public final class RoutePlanner {
      */
     static final double TIE_SHAPE_FRACTION = 1e-5;
 
-    /** Avoid-policy comfort: search cost per 45-degree turn, as a fraction of normal-track cost. */
+    /** Avoid-policy comfort: search cost per 45-degree turn, in distance units. */
     static final double AVOID_TURN_FRACTION = 0.25;
 
-    /** Avoid-policy comfort: search cost per blocked neighbour, per cell. */
+    /** Avoid-policy comfort: search cost per blocked neighbour, per cell, in distance units. */
     static final double AVOID_CLEARANCE_FACTOR = 0.5;
 
-    /** Avoid-policy comfort: search cost per cell of Euclidean deviation from the straight line. */
+    /** Avoid-policy comfort: search cost per cell of Euclidean deviation, in distance units. */
     static final double AVOID_DEVIATION_FRACTION = 0.05;
 
     /**
@@ -182,22 +184,29 @@ public final class RoutePlanner {
     }
 
     private static SearchCosts searchCosts(EconomyManager economy, RoutePolicy policy) {
-        boolean distanceMetric = policy == RoutePolicy.DIRECT;
-        boolean avoidPolicy = !distanceMetric && policy != RoutePolicy.CHEAPEST;
+        boolean avoidPolicy = policy != RoutePolicy.DIRECT && policy != RoutePolicy.CHEAPEST;
+        // Avoid policies are literal: they only block the named terrain and then minimise
+        // geometric distance. Allowed water/rock is crossed when that is shorter, even if the
+        // bridge/tunnel is expensive. CHEAPEST is the policy that optimises construction cost.
+        boolean distanceMetric = policy == RoutePolicy.DIRECT || avoidPolicy;
         double minCellCost = minCellCost(economy);
-        double normalCost = economy.getCost(ExpenseType.CONSTRUCTED_NORMAL_RAIL_TRACK);
-        double baseline = Math.max(1.0, normalCost);
 
         double turnPenalty;
         double clearancePenalty;
         double deviationPenalty;
         if (avoidPolicy) {
-            turnPenalty = baseline * AVOID_TURN_FRACTION;
-            clearancePenalty = baseline * AVOID_CLEARANCE_FACTOR;
-            deviationPenalty = baseline * AVOID_DEVIATION_FRACTION;
+            // Comfort weights are in distance units so they cannot overwhelm geometric distance.
+            turnPenalty = AVOID_TURN_FRACTION;
+            clearancePenalty = AVOID_CLEARANCE_FACTOR;
+            deviationPenalty = AVOID_DEVIATION_FRACTION;
+        } else if (distanceMetric) {
+            // DIRECT: tiny deterministic tie-breakers relative to the unit distance step.
+            turnPenalty = TIE_TURN_FRACTION;
+            clearancePenalty = TIE_SHAPE_FRACTION;
+            deviationPenalty = TIE_SHAPE_FRACTION;
         } else {
-            // Keep DIRECT/CHEAPEST primary semantics: tiny deterministic tie-breakers only.
-            double tieBase = distanceMetric ? 1.0 : Math.max(1.0, minCellCost);
+            // CHEAPEST: tiny deterministic tie-breakers relative to the cheapest per-cell cost.
+            double tieBase = Math.max(1.0, minCellCost);
             turnPenalty = tieBase * TIE_TURN_FRACTION;
             clearancePenalty = tieBase * TIE_SHAPE_FRACTION;
             deviationPenalty = tieBase * TIE_SHAPE_FRACTION;
