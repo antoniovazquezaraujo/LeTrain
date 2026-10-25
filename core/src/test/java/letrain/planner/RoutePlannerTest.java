@@ -693,24 +693,26 @@ class RoutePlannerTest {
     @Test
     @DisplayName("CHEAPEST avoids an equal-cost reentrant rock nook")
     void should_AvoidRockNook_When_CheapestCostTies() {
-        // A rock pocket between (1,-2), (2,-2), (2,-1), (2,1), (2,2), (4,-2) and (5,-1). Two
-        // seven-cell routes cost 700: the northern one stays outside the pocket, the southern one
-        // dips into it and hugs rock on several sides.
-        FakeGroundMap terrain = new FakeGroundMap().rect(-3, -6, 9, 6, NORMAL);
-        int[][] rocks = {{1, -2}, {2, -2}, {2, -1}, {2, 1}, {2, 2}, {4, -2}, {5, -1}};
+        // A rocky corridor with reentrant pockets on both sides. Both eight-cell routes cost 800
+        // and make three turns; the old shape picks the inner route along the rock, the chosen one
+        // stays one cell outside the pockets.
+        FakeGroundMap terrain = new FakeGroundMap().rect(-3, -7, 9, 7, NORMAL);
+        int[][] rocks = {{1, 3}, {2, -2}, {3, -2}, {3, -1}, {4, -3}, {4, 1}, {5, -2}, {5, -1},
+                {5, 0}, {5, 1}, {5, 3}};
         for (int[] rock : rocks) {
             terrain.put(rock[0], rock[1], ROCK);
         }
         List<Point> nookRoute =
-                List.of(p(0, 0), p(1, 0), p(2, 0), p(3, -1), p(4, -1), p(5, 0), p(6, 0));
+                List.of(p(0, 0), p(1, 1), p(2, 2), p(3, 2), p(4, 2), p(5, 2), p(6, 1), p(6, 0));
 
         RoutePlan plan =
                 RoutePlanner.plan(terrain, economy(), p(0, 0), p(6, 0), RoutePolicy.CHEAPEST);
 
         assertTrue(plan.feasible());
-        assertEquals(List.of(p(0, 0), p(1, 0), p(2, 0), p(3, 0), p(4, 1), p(5, 1), p(6, 0)),
+        assertEquals(
+                List.of(p(0, 0), p(1, 1), p(2, 2), p(3, 3), p(4, 3), p(5, 2), p(6, 1), p(6, 0)),
                 points(plan));
-        assertEquals(700.0, plan.totalCost(), 1e-9);
+        assertEquals(800.0, plan.totalCost(), 1e-9);
         assertEquals(0, plan.totalConstructionTicks());
         assertLegalTurns(plan);
         int chosenObstacles = points(plan).stream()
@@ -719,8 +721,8 @@ class RoutePlannerTest {
                 .mapToInt(point -> RoutePlanner.obstacleNeighboursAt(terrain, point)).sum();
         assertTrue(chosenObstacles < nookObstacles,
                 "expected fewer obstacle neighbours: " + chosenObstacles + " vs " + nookObstacles);
-        assertTrue(turnCount(points(plan)) < turnCount(nookRoute),
-                "expected fewer turns than the nook route");
+        assertTrue(turnCount(points(plan)) <= turnCount(nookRoute),
+                "expected no more turns than the nook route");
     }
 
     @Test
