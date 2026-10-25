@@ -81,27 +81,43 @@ la dirección con la que se llegó a ella.
 - Consecuencia: un desvío alrededor de un obstáculo puede necesitar más celdas que la distancia
   geométrica mínima, porque hay que "girar" gradualmente. Los tests fijan las rutas esperadas.
 
-### Preferencias de forma (desempate)
+### Coste de búsqueda: comodidad en `AVOID_*`
 
-El coste primario sigue mandando: `DIRECT` minimiza distancia geométrica y el resto minimiza el
-coste real de construcción. Sobre él se añaden, **solo al coste de búsqueda**, dos términos pequeños
-y deterministas para desempatar rutas de coste primario (casi) igual:
+El coste primario sigue siendo el de construcción real (`DIRECT` usa distancia geométrica). Sobre él
+se suma, **solo al coste de búsqueda**, un término de comodidad determinista. Sea
 
-1. **Curvas**: penalización por cada giro de 45° (`TURN_PENALTY_FRACTION = 1e-3` del coste primario
-   mínimo por celda). Prefiere menos curvas.
-2. **Forma**: peso pequeño (`SHAPE_PENALTY_FRACTION = 1e-5` del mismo coste mínimo) aplicado a
-   `desviación + vecinos bloqueados` por celda:
-   - `desviación`: distancia euclídea de la celda al segmento recto inicio-fin.
-   - `vecinos bloqueados`: cuántos de los 8 vecinos están bloqueados **según la política activa**
-     (falta de datos, terreno no construible y el bloqueo propio de la política). Bajo
-     `DIRECT`/`CHEAPEST` el agua y la roca construibles no cuentan, porque esas políticas ya las
-     cruzan; bajo `AVOID_WATER`/`AVOID_MOUNTAINS`/`AVOID_BOTH` sí. Esto favorece alejarse de la
-     costa/roca en lugar de ir pegado a ella.
+`baseline = max(1, coste de CONSTRUCTED_NORMAL_RAIL_TRACK)`
 
-Ambos términos son fracciones del coste primario por celda, de modo que **no pueden elegir una ruta
-materialmente más cara**: como mucho rompen empates o diferencias ínfimas. Las penalizaciones no se
-suman al `totalCost()` ni a `totalConstructionTicks()` reportados, que siguen siendo los reales de
-las celdas elegidas.
+(la vía normal como referencia, con suelo 1 si es gratis). En `AVOID_MOUNTAINS`, `AVOID_WATER` y
+`AVOID_BOTH` el coste de búsqueda de un paso es:
+
+```
+coste_búsqueda = coste_construcción(celda)
+               + 0,25 × baseline × nº_giros_45
+               + 1,00 × baseline × vecinos_bloqueados(celda)
+               + 0,05 × baseline × desviación_euclídea(celda)
+```
+
+donde:
+
+- `vecinos_bloqueados`: cuántos de los 8 vecinos están bloqueados **según la política activa**
+  (falta de datos, terreno no construible y el bloqueo propio de la política). Bajo
+  `AVOID_WATER` cuenta el agua; bajo `AVOID_MOUNTAINS`, la roca; bajo `AVOID_BOTH`, ambos. Es lo que
+  empuja la ruta una celda tierra adentro en vez de ir pegada a la costa/roca.
+- `desviación_euclídea`: distancia de la celda al segmento recto inicio-fin, en celdas.
+- `nº_giros_45`: 1 por cada cambio de rumbo de 45°.
+
+Estos pesos son **deliberadamente fuertes**: una ruta un poco más cara en construcción puede ganar
+si ahorra al menos cuatro giros (25 × 4 = 100 = una celda normal) o si deja de tener vecinos
+bloqueados. El dueño prefiere una ruta algo más costosa pero cómoda y lejos del agua/roca antes que
+la más barata pegada a la costa. Es un intercambio intencional, no un empate.
+
+`DIRECT` y `CHEAPEST` conservan su semántica primaria y solo usan desempates deterministas
+diminutos: `1e-3` del coste primario mínimo por celda y giro, y `1e-5` para
+`desviación + vecinos_bloqueados`. Ahí la comodidad no puede cambiar de forma material el resultado.
+
+En todos los casos las penalizaciones **no** se suman a `totalCost()` ni a
+`totalConstructionTicks()`: el plan reporta solo el coste y tiempo reales de las celdas elegidas.
 
 ### Coste y tiempo
 

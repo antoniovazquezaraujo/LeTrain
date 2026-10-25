@@ -39,18 +39,28 @@ import letrain.utils.ValidationUtils;
  * 90/135/180-degree bend. The diagonal corner-cutting rule is unchanged.
  *
  * <p>
- * <b>Shape preferences.</b> Primary cost stays dominant; shape is a deterministic tie-breaker added
- * to the search cost (never to the reported cost):
+ * <b>Comfort preferences.</b> Search cost is the primary construction cost (or geometric distance
+ * for {@code DIRECT}) plus policy-specific comfort terms. They are never added to the reported
+ * cost/time.
+ *
+ * <p>
+ * For the avoid policies ({@code AVOID_MOUNTAINS}, {@code AVOID_WATER}, {@code AVOID_BOTH}) the
+ * comfort terms are fractions of the <b>normal-track cost</b> (floor 1 when it is free):
  *
  * <ul>
- * <li>a small penalty per 45-degree turn (fewer turns preferred),
- * <li>a smaller penalty per accumulated {@code deviation + blockedNeighbours} (straighter and
- * further from blocked terrain preferred).
+ * <li>{@code 0.25 × baseline} per 45-degree turn,
+ * <li>{@code 1.0 × baseline} per blocked neighbour (clearance),
+ * <li>{@code 0.05 × baseline} per cell of Euclidean deviation from the straight segment.
  * </ul>
  *
- * Both penalties are fractions of the cheapest possible per-cell primary cost, so they cannot turn
- * a materially more expensive route into the winner. See {@link #TURN_PENALTY_FRACTION} and
- * {@link #SHAPE_PENALTY_FRACTION} for the exact values.
+ * These terms are intentionally strong enough to let an avoid route be a little more expensive than
+ * the absolute cheapest one when it buys clearance from water/rock or fewer bends. The primary
+ * construction cost still carries the most weight per cell, and the reported totals stay real.
+ *
+ * <p>
+ * For {@code DIRECT} and {@code CHEAPEST} the comfort terms are tiny deterministic tie-breakers
+ * relative to the cheapest per-cell primary cost; those policies keep their original primary
+ * semantics. See {@link #TIE_TURN_FRACTION} and {@link #TIE_SHAPE_FRACTION}.
  *
  * <p>
  * <b>Clearance.</b> A cell's clearance penalty is the number of its eight neighbours that are
@@ -62,7 +72,7 @@ import letrain.utils.ValidationUtils;
  * <p>
  * <b>Determinism.</b> Neighbours are expanded in a fixed order and the open set breaks f-score ties
  * by insertion sequence (FIFO), so the same inputs always produce the same route. The heuristic is
- * admissible and consistent for both primary metrics because the shape penalties are non-negative
+ * admissible and consistent for both primary metrics because the comfort penalties are non-negative
  * and ignored by the heuristic.
  *
  * <p>
@@ -75,17 +85,25 @@ public final class RoutePlanner {
     private static final double SQRT_2 = Math.sqrt(2.0);
 
     /**
-     * Search-cost penalty for each 45-degree turn, as a fraction of the cheapest per-cell primary
-     * cost. Kept tiny so turns only break near-ties in primary cost.
+     * Tiny turn tie-breaker for {@code DIRECT}/{@code CHEAPEST}, as a fraction of the cheapest
+     * per-cell primary cost.
      */
-    static final double TURN_PENALTY_FRACTION = 1e-3;
+    static final double TIE_TURN_FRACTION = 1e-3;
 
     /**
-     * Search-cost weight of one unit of shape penalty (deviation plus blocked-neighbour count), as
-     * a fraction of the cheapest per-cell primary cost. Much smaller than
-     * {@link #TURN_PENALTY_FRACTION} so turns outrank shape.
+     * Tiny shape tie-breaker for {@code DIRECT}/{@code CHEAPEST}, as a fraction of the cheapest
+     * per-cell primary cost.
      */
-    static final double SHAPE_PENALTY_FRACTION = 1e-5;
+    static final double TIE_SHAPE_FRACTION = 1e-5;
+
+    /** Avoid-policy comfort: search cost per 45-degree turn, as a fraction of normal-track cost. */
+    static final double AVOID_TURN_FRACTION = 0.25;
+
+    /** Avoid-policy comfort: search cost per blocked neighbour, per cell. */
+    static final double AVOID_CLEARANCE_FACTOR = 1.0;
+
+    /** Avoid-policy comfort: search cost per cell of Euclidean deviation from the straight line. */
+    static final double AVOID_DEVIATION_FRACTION = 0.05;
 
     /**
      * Safety cap for pathological searches over the procedural (unbounded) terrain. Reaching it
@@ -143,12 +161,25 @@ public final class RoutePlanner {
         }
 
         boolean distanceMetric = policy == RoutePolicy.DIRECT;
+        boolean avoidPolicy = !distanceMetric && policy != RoutePolicy.CHEAPEST;
         double minCellCost = minCellCost(economy);
-        // Penalties are fractions of the cheapest primary step. For the distance metric that is 1;
-        // for construction cost it is the cheapest cell, with a floor of 1 for free-price setups.
-        double penaltyBase = distanceMetric ? 1.0 : Math.max(1.0, minCellCost);
-        double turnPenalty = penaltyBase * TURN_PENALTY_FRACTION;
-        double shapeWeight = penaltyBase * SHAPE_PENALTY_FRACTION;
+        double normalCost = economy.getCost(ExpenseType.CONSTRUCTED_NORMAL_RAIL_TRACK);
+        double baseline = Math.max(1.0, normalCost);
+
+        double turnPenalty;
+        double clearancePenalty;
+        double deviationPenalty;
+        if (avoidPolicy) {
+            turnPenalty = baseline * AVOID_TURN_FRACTION;
+            clearancePenalty = baseline * AVOID_CLEARANCE_FACTOR;
+            deviationPenalty = baseline * AVOID_DEVIATION_FRACTION;
+        } else {
+            // Keep DIRECT/CHEAPEST primary semantics: tiny deterministic tie-breakers only.
+            double tieBase = distanceMetric ? 1.0 : Math.max(1.0, minCellCost);
+            turnPenalty = tieBase * TIE_TURN_FRACTION;
+            clearancePenalty = tieBase * TIE_SHAPE_FRACTION;
+            deviationPenalty = tieBase * TIE_SHAPE_FRACTION;
+        }
 
         CellKey startKey = CellKey.of(start);
         CellKey endKey = CellKey.of(end);
@@ -214,9 +245,10 @@ public final class RoutePlanner {
                 int turn = currentState.heading() != null && currentState.heading() != nextDirection
                         ? 1
                         : 0;
-                double shape = deviation(neighbour, startKey, endKey)
-                        + blockedNeighbourCount(terrain, policy, neighbour);
-                double tentative = current.g() + primary + turnPenalty * turn + shapeWeight * shape;
+                double deviation = deviation(neighbour, startKey, endKey);
+                int blockedNeighbours = blockedNeighbourCount(terrain, policy, neighbour);
+                double tentative = current.g() + primary + turnPenalty * turn
+                        + clearancePenalty * blockedNeighbours + deviationPenalty * deviation;
                 Double old = gScore.get(neighbourState);
                 if (old != null && tentative >= old) {
                     continue;
