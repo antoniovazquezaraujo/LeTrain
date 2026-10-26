@@ -42,34 +42,16 @@ import letrain.utils.ValidationUtils;
  * policy-allowed cell.
  *
  * <p>
- * <b>Comfort preferences.</b> Search cost is the primary metric plus policy-specific comfort terms.
- * They are never added to the reported cost/time.
+ * <b>Shape preferences.</b> Search cost is the primary metric plus small secondary terms. They are
+ * never added to the reported cost/time.
  *
  * <p>
  * For the avoid policies ({@code AVOID_MOUNTAINS}, {@code AVOID_WATER}, {@code AVOID_ALL}) the
- * comfort terms are expressed in <b>distance units</b>, so they refine near-equal routes without
- * overwhelming the geometric metric:
- *
- * <ul>
- * <li>{@code 0.25} per 45-degree turn,
- * <li>{@code 0.5} per blocked neighbour (clearance),
- * <li>{@code 0.05} per cell of Euclidean deviation from the straight segment.
- * </ul>
- *
- * Allowed water/rock is never made expensive by the avoid optimisation: under
- * {@code AVOID_MOUNTAINS} a bridge may still be the geometric shortcut, and under
- * {@code AVOID_WATER} a tunnel may be. The reported cost/time then includes those real prices.
- *
- * <p>
- * <b>Hard clearance pass.</b> Avoid policies first run the search with a hard constraint: every
- * chosen cell except the start and end must have zero blocked neighbours under the active policy,
- * keeping the track at least one cell away from the <em>named blocked</em> terrain (rock for
- * {@code AVOID_MOUNTAINS}, water for {@code AVOID_WATER}, every avoidable terrain for
- * {@code AVOID_ALL}). Allowed terrain gets no hard clearance. If that pass is infeasible (narrow
- * corridor, enclosed endpoint, map edge) the same search runs again without the hard constraint and
- * its best plan is returned. The comfort terms still apply in both passes and are search-only;
- * reported cost/time are always the real cells. {@code DIRECT} and {@code CHEAPEST} never use the
- * hard clearance pass.
+ * secondary terms are expressed in <b>distance units</b>: {@code 0.25} per 45-degree turn and
+ * {@code 0.05} per cell of Euclidean deviation from the straight segment. There is no
+ * clearance/proximity term: avoiding a terrain is a <b>binary block</b>. A route may run directly
+ * alongside blocked water/rock and may cross allowed water/rock when that is the shortest path; the
+ * reported cost/time then includes the real bridge/tunnel price.
  *
  * <p>
  * {@code DIRECT} keeps tiny deterministic distance tie-breakers; see {@link #TIE_TURN_FRACTION} and
@@ -77,24 +59,14 @@ import letrain.utils.ValidationUtils;
  *
  * <p>
  * <b>CHEAPEST ordering.</b> {@code CHEAPEST} uses a true lexicographic A* cost, in this order: (1)
- * real construction cost, (2) obstacle-adjacent land cells (water or rock neighbours; bridge and
- * tunnel cells themselves are exempt), (3) 45-degree turns, (4) deviation from the straight
- * start-end segment. So an equal-cost route avoids water shores and reentrant rock nooks, then
- * prefers fewer bends and a straighter line. Shape keys are never allowed to beat a lower
- * construction cost of any size, and the reported cost/time remain the real cells' values.
- *
- * <p>
- * <b>Clearance.</b> A cell's clearance penalty is the number of its eight neighbours that are
- * blocked <em>under the active policy</em>: missing/non-buildable terrain plus the policy's own
- * block (water under {@code AVOID_WATER}, rock under {@code AVOID_MOUNTAINS}, all avoidable terrain
- * under {@code AVOID_ALL}). Under {@code DIRECT} and {@code CHEAPEST} buildable water and rock are
- * not blocked, so this policy clearance does not apply; {@code CHEAPEST}'s separate
- * obstacle-adjacency key is the only shape penalty on them.
+ * real construction cost, (2) 45-degree turns, (3) deviation from the straight start-end segment.
+ * Shape keys never beat a lower construction cost of any size, and the reported cost/time remain
+ * the real cells' values.
  *
  * <p>
  * <b>Determinism.</b> Neighbours are expanded in a fixed order and the open set breaks f-score ties
  * by insertion sequence (FIFO), so the same inputs always produce the same route. The heuristic is
- * admissible and consistent for both primary metrics because the comfort penalties are non-negative
+ * admissible and consistent for both primary metrics because the secondary terms are non-negative
  * and ignored by the heuristic.
  *
  * <p>
@@ -112,13 +84,10 @@ public final class RoutePlanner {
     /** Tiny shape tie-breaker for {@code DIRECT}, as a fraction of the unit distance step. */
     static final double TIE_SHAPE_FRACTION = 1e-5;
 
-    /** Avoid-policy comfort: search cost per 45-degree turn, in distance units. */
+    /** Avoid-policy shape: search cost per 45-degree turn, in distance units. */
     static final double AVOID_TURN_FRACTION = 0.25;
 
-    /** Avoid-policy comfort: search cost per blocked neighbour, per cell, in distance units. */
-    static final double AVOID_CLEARANCE_FACTOR = 0.5;
-
-    /** Avoid-policy comfort: search cost per cell of Euclidean deviation, in distance units. */
+    /** Avoid-policy shape: search cost per cell of Euclidean deviation, in distance units. */
     static final double AVOID_DEVIATION_FRACTION = 0.05;
 
     /**
@@ -183,49 +152,21 @@ public final class RoutePlanner {
             return searchCheapest(terrain, economy, start, end);
         }
 
-        SearchCosts costs = searchCosts(economy, policy);
-        if (costs.avoidPolicy()) {
-            // First pass: keep every non-endpoint cell at least one cell away from the terrain the
-            // policy blocks. Narrow corridors and coastal endpoints fall back to the old search.
-            RoutePlan clear = search(terrain, economy, start, end, policy, costs, true);
-            if (clear.feasible()) {
-                return clear;
-            }
-        }
-        return search(terrain, economy, start, end, policy, costs, false);
+        return search(terrain, economy, start, end, policy, searchCosts(policy));
     }
 
-    private static SearchCosts searchCosts(EconomyManager economy, RoutePolicy policy) {
-        boolean avoidPolicy = policy != RoutePolicy.DIRECT;
-        // Both DIRECT and avoid policies minimise geometric distance; only CHEAPEST uses the
-        // lexicographic construction-cost search below.
-        boolean distanceMetric = true;
-        double minCellCost = minCellCost(economy);
-
-        double turnPenalty;
-        double clearancePenalty;
-        double deviationPenalty;
-        if (avoidPolicy) {
-            // Comfort weights are in distance units so they cannot overwhelm geometric distance.
-            turnPenalty = AVOID_TURN_FRACTION;
-            clearancePenalty = AVOID_CLEARANCE_FACTOR;
-            deviationPenalty = AVOID_DEVIATION_FRACTION;
-        } else {
+    private static SearchCosts searchCosts(RoutePolicy policy) {
+        if (policy == RoutePolicy.DIRECT) {
             // DIRECT: tiny deterministic tie-breakers relative to the unit distance step.
-            turnPenalty = TIE_TURN_FRACTION;
-            clearancePenalty = TIE_SHAPE_FRACTION;
-            deviationPenalty = TIE_SHAPE_FRACTION;
+            return new SearchCosts(TIE_TURN_FRACTION, TIE_SHAPE_FRACTION);
         }
-        return new SearchCosts(distanceMetric, avoidPolicy, minCellCost, turnPenalty,
-                clearancePenalty, deviationPenalty);
+        // Avoid policies: distance first, then turns and deviation in distance units.
+        return new SearchCosts(AVOID_TURN_FRACTION, AVOID_DEVIATION_FRACTION);
     }
 
     private static RoutePlan search(GroundMap terrain, EconomyManager economy, Point start,
-            Point end, RoutePolicy policy, SearchCosts costs, boolean requireClearance) {
-        boolean distanceMetric = costs.distanceMetric();
-        double minCellCost = costs.minCellCost();
+            Point end, RoutePolicy policy, SearchCosts costs) {
         double turnPenalty = costs.turnPenalty();
-        double clearancePenalty = costs.clearancePenalty();
         double deviationPenalty = costs.deviationPenalty();
 
         CellKey startKey = CellKey.of(start);
@@ -240,8 +181,7 @@ public final class RoutePlanner {
         SearchState startState = new SearchState(startKey, null);
         gScore.put(startState, 0.0);
         terrainByKey.put(startKey, GroundMap.GROUND);
-        double startHeuristic = distanceMetric ? octile(startKey, endKey)
-                : minCellCost * chebyshev(startKey, endKey);
+        double startHeuristic = octile(startKey, endKey);
         open.add(new QueueEntry(startHeuristic, 0.0, sequence++, startState));
 
         int expanded = 0;
@@ -286,21 +226,14 @@ public final class RoutePlanner {
                 if (neighbour.equals(startKey)) {
                     continue; // The start has no entry cost.
                 }
-                int blockedNeighbours = blockedNeighbourCount(terrain, policy, neighbour);
-                // Hard clearance: start/end are exempt, every other chosen cell must be at least
-                // one cell away from policy-blocked terrain.
-                if (requireClearance && !neighbour.equals(endKey) && blockedNeighbours > 0) {
-                    continue;
-                }
                 SearchState neighbourState = new SearchState(neighbour, nextDirection);
-                double primary = distanceMetric ? (dx != 0 && dy != 0 ? SQRT_2 : 1.0)
-                        : constructionCost(economy, normalized);
+                double primary = dx != 0 && dy != 0 ? SQRT_2 : 1.0;
                 int turn = currentState.heading() != null && currentState.heading() != nextDirection
                         ? 1
                         : 0;
                 double deviation = deviation(neighbour, startKey, endKey);
-                double tentative = current.g() + primary + turnPenalty * turn
-                        + clearancePenalty * blockedNeighbours + deviationPenalty * deviation;
+                double tentative =
+                        current.g() + primary + turnPenalty * turn + deviationPenalty * deviation;
                 Double old = gScore.get(neighbourState);
                 if (old != null && tentative >= old) {
                     continue;
@@ -308,8 +241,7 @@ public final class RoutePlanner {
                 gScore.put(neighbourState, tentative);
                 cameFrom.put(neighbourState, currentState);
                 terrainByKey.put(neighbour, normalized);
-                double heuristic = distanceMetric ? octile(neighbour, endKey)
-                        : minCellCost * chebyshev(neighbour, endKey);
+                double heuristic = octile(neighbour, endKey);
                 open.add(new QueueEntry(tentative + heuristic, tentative, sequence++,
                         neighbourState));
             }
@@ -321,10 +253,9 @@ public final class RoutePlanner {
 
     /**
      * {@code CHEAPEST} search with a true lexicographic cost: construction cost first, then
-     * obstacle-adjacent land cells, then 45-degree turns, then deviation from the straight segment.
-     * The heuristic only estimates construction cost, so it stays admissible and consistent; the
-     * secondary keys are non-negative and additive. The first goal popped is therefore optimal in
-     * that order.
+     * 45-degree turns, then deviation from the straight segment. The heuristic only estimates
+     * construction cost, so it stays admissible and consistent; the secondary keys are non-negative
+     * and additive. The first goal popped is therefore optimal in that order.
      */
     private static RoutePlan searchCheapest(GroundMap terrain, EconomyManager economy, Point start,
             Point end) {
@@ -339,7 +270,7 @@ public final class RoutePlanner {
         long sequence = 0;
 
         SearchState startState = new SearchState(startKey, null);
-        PathCost startCost = new PathCost(0, 0, 0, 0);
+        PathCost startCost = new PathCost(0, 0, 0);
         gScore.put(startState, startCost);
         terrainByKey.put(startKey, GroundMap.GROUND);
         double startHeuristic = minCellCost * chebyshev(startKey, endKey);
@@ -394,10 +325,7 @@ public final class RoutePlanner {
                         : 0;
                 double primary = constructionCost(economy, normalized);
                 double deviation = deviation(neighbour, startKey, endKey);
-                int obstacleNeighbours =
-                        normalized == GroundMap.WATER || normalized == GroundMap.ROCK ? 0
-                                : obstacleNeighbourCount(terrain, neighbour);
-                PathCost tentative = current.g().add(primary, obstacleNeighbours, turn, deviation);
+                PathCost tentative = current.g().add(primary, turn, deviation);
                 PathCost old = gScore.get(neighbourState);
                 if (old != null && tentative.compareTo(old) >= 0) {
                     continue;
@@ -512,77 +440,6 @@ public final class RoutePlanner {
         return rawTerrain != null && isBuildable(normalize(rawTerrain));
     }
 
-    /** True when a cell exists, is buildable and the current policy does not block it. */
-    private static boolean isTraversable(GroundMap terrain, RoutePolicy policy, int x, int y) {
-        Integer rawTerrain = terrain.getValueAt(x, y);
-        if (rawTerrain == null) {
-            return false;
-        }
-        int normalized = normalize(rawTerrain);
-        return isBuildable(normalized) && !isBlocked(policy, normalized);
-    }
-
-    /**
-     * True when none of the eight neighbours of {@code point} is blocked under the active policy,
-     * i.e. the hard-clearance condition for a non-endpoint cell. Package-private so tests can
-     * assert the invariant directly.
-     */
-    static boolean hasClearance(GroundMap terrain, RoutePolicy policy, Point point) {
-        return blockedNeighbourCount(terrain, policy, CellKey.of(point)) == 0;
-    }
-
-    /** Package-private test hook for the {@code CHEAPEST} obstacle-adjacency key. */
-    static int obstacleNeighboursAt(GroundMap terrain, Point point) {
-        return obstacleNeighbourCount(terrain, CellKey.of(point));
-    }
-
-    /** Package-private test hook for asserting water clearance independently of rock. */
-    static int waterNeighboursAt(GroundMap terrain, Point point) {
-        int water = 0;
-        for (Move move : MOVES) {
-            Integer rawTerrain =
-                    terrain.getValueAt(point.getX() + move.dx(), point.getY() + move.dy());
-            if (rawTerrain != null && normalize(rawTerrain) == GroundMap.WATER) {
-                water++;
-            }
-        }
-        return water;
-    }
-
-    /**
-     * Counts the eight neighbours of a land {@code cell} that are water or rock. Used only by
-     * {@code CHEAPEST} as its second lexicographic key; water/rock route cells are exempt at the
-     * call site, so crossing a lake or tunnelling is still allowed.
-     */
-    private static int obstacleNeighbourCount(GroundMap terrain, CellKey cell) {
-        int obstacles = 0;
-        for (Move move : MOVES) {
-            Integer rawTerrain = terrain.getValueAt(cell.x() + move.dx(), cell.y() + move.dy());
-            if (rawTerrain != null) {
-                int normalized = normalize(rawTerrain);
-                if (normalized == GroundMap.WATER || normalized == GroundMap.ROCK) {
-                    obstacles++;
-                }
-            }
-        }
-        return obstacles;
-    }
-
-    /**
-     * Counts the eight neighbours of {@code cell} that are blocked under the active policy. Missing
-     * or non-buildable terrain and the policy's own blocked water/rock all count; buildable water
-     * and rock do not count under {@code DIRECT}/{@code CHEAPEST}. Higher means less clearance.
-     */
-    private static int blockedNeighbourCount(GroundMap terrain, RoutePolicy policy, CellKey cell) {
-        int blocked = 0;
-        for (Move move : MOVES) {
-            if (!isTraversable(terrain, policy, cell.x() + move.dx(), cell.y() + move.dy())) {
-                blocked++;
-            }
-        }
-        return blocked;
-    }
-
     /**
      * Euclidean distance from {@code cell} to the straight segment {@code start}-{@code end}. Used
      * as the "stay close to the direct line" shape term.
@@ -642,37 +499,30 @@ public final class RoutePlanner {
         return (max - min) + SQRT_2 * min;
     }
 
-    /** Immutable per-plan weights so the clearance pass and its fallback use identical costs. */
-    private record SearchCosts(boolean distanceMetric, boolean avoidPolicy, double minCellCost,
-            double turnPenalty, double clearancePenalty, double deviationPenalty) {
+    /** Immutable secondary weights for the distance-first DIRECT/AVOID search. */
+    private record SearchCosts(double turnPenalty, double deviationPenalty) {
     }
 
     /**
-     * Lexicographic cost for {@code CHEAPEST}: construction cost, then obstacle-adjacent land
-     * cells, then 45-degree turns, then deviation. All components are additive and non-negative.
+     * Lexicographic cost for {@code CHEAPEST}: construction cost, then 45-degree turns, then
+     * deviation. All components are additive and non-negative.
      */
-    private record PathCost(double constructionCost, int obstacleNeighbours, int turns,
+    private record PathCost(double constructionCost, int turns,
             double deviation) implements Comparable<PathCost> {
 
-        PathCost add(double constructionDelta, int obstacleDelta, int turnDelta,
-                double deviationDelta) {
-            return new PathCost(constructionCost + constructionDelta,
-                    obstacleNeighbours + obstacleDelta, turns + turnDelta,
+        PathCost add(double constructionDelta, int turnDelta, double deviationDelta) {
+            return new PathCost(constructionCost + constructionDelta, turns + turnDelta,
                     deviation + deviationDelta);
         }
 
         /** Adds a heuristic estimate to the primary key only, leaving the tie-break keys alone. */
         PathCost withPrimaryAdded(double extra) {
-            return new PathCost(constructionCost + extra, obstacleNeighbours, turns, deviation);
+            return new PathCost(constructionCost + extra, turns, deviation);
         }
 
         @Override
         public int compareTo(PathCost other) {
             int comparison = Double.compare(constructionCost, other.constructionCost);
-            if (comparison != 0) {
-                return comparison;
-            }
-            comparison = Integer.compare(obstacleNeighbours, other.obstacleNeighbours);
             if (comparison != 0) {
                 return comparison;
             }

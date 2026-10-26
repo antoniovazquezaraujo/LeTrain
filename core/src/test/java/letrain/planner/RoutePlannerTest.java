@@ -76,31 +76,6 @@ class RoutePlannerTest {
         return directions;
     }
 
-    /** Asserts hard clearance for every cell except the start and end (which are exempt). */
-    private static void assertInteriorClearance(RoutePlan plan, GroundMap terrain,
-            RoutePolicy policy) {
-        List<RouteStep> steps = plan.steps();
-        for (int i = 1; i < steps.size() - 1; i++) {
-            Point point = steps.get(i).point();
-            assertTrue(RoutePlanner.hasClearance(terrain, policy, point),
-                    "cell " + point + " touches blocked terrain in " + points(plan));
-        }
-    }
-
-    private static int turnCount(List<Point> points) {
-        int turns = 0;
-        Dir previous = null;
-        for (int i = 1; i < points.size(); i++) {
-            Dir current = directionBetween(points.get(i - 1), points.get(i));
-            assertNotNull(current, "non-adjacent steps in route: " + points);
-            if (previous != null && previous != current) {
-                turns++;
-            }
-            previous = current;
-        }
-        return turns;
-    }
-
     private static Dir directionBetween(Point from, Point to) {
         int dx = to.getX() - from.getX();
         int dy = to.getY() - from.getY();
@@ -195,9 +170,8 @@ class RoutePlannerTest {
         assertFalse(
                 plan.steps().stream().anyMatch(step -> step.trackType() == TrackType.TUNNEL_TRACK));
         assertTrue(plan.steps().size() > 3);
-        assertEquals(900.0, plan.totalCost(), 1e-9);
+        assertEquals(800.0, plan.totalCost(), 1e-9);
         assertLegalTurns(plan);
-        assertInteriorClearance(plan, terrain, RoutePolicy.AVOID_MOUNTAINS);
     }
 
     @Test
@@ -211,12 +185,8 @@ class RoutePlannerTest {
         assertTrue(plan.feasible());
         assertFalse(
                 plan.steps().stream().anyMatch(step -> step.trackType() == TrackType.BRIDGE_TRACK));
-        assertTrue(plan.steps().stream().anyMatch(step -> Math.abs(step.point().getY()) == 3));
-        // The hard-clearance pass keeps every non-endpoint cell at least one cell away from the
-        // three-cell water column, so the detour is wider than the old six-cell fallback.
-        assertEquals(900.0, plan.totalCost(), 1e-9);
+        assertEquals(600.0, plan.totalCost(), 1e-9);
         assertLegalTurns(plan);
-        assertInteriorClearance(plan, terrain, RoutePolicy.AVOID_WATER);
     }
 
     @Test
@@ -237,10 +207,10 @@ class RoutePlannerTest {
     }
 
     @Test
-    @DisplayName("hard clearance falls back when a one-cell corridor is the only route")
-    void should_FallBack_When_HardClearanceIsImpossible() {
-        // One-cell-wide ground corridor with rock on both sides: every interior cell touches rock,
-        // so the constrained pass cannot succeed and the fallback must still return the corridor.
+    @DisplayName("AVOID routes may run in a one-cell corridor adjacent to blocked terrain")
+    void should_UseCorridor_When_ItRunsAlongsideBlockedTerrain() {
+        // One-cell-wide ground corridor with rock on both sides. Avoid is a binary cell block,
+        // not a clearance constraint, so touching the walls is fine.
         FakeGroundMap terrain = new FakeGroundMap().rect(0, -1, 4, 1, ROCK);
         for (int x = 0; x <= 4; x++) {
             terrain.put(x, 0, NORMAL);
@@ -252,7 +222,6 @@ class RoutePlannerTest {
         assertEquals(List.of(p(0, 0), p(1, 0), p(2, 0), p(3, 0), p(4, 0)), points(plan));
         assertEquals(500.0, plan.totalCost(), 1e-9);
         assertLegalTurns(plan);
-        assertFalse(RoutePlanner.hasClearance(terrain, RoutePolicy.AVOID_MOUNTAINS, p(2, 0)));
     }
 
     @Test
@@ -396,18 +365,16 @@ class RoutePlannerTest {
     }
 
     @Test
-    @DisplayName("DIRECT keeps the coastal line; CHEAPEST uses its soft obstacle tie-break")
-    void should_KeepDirectStraight_When_CheapestSoftClearanceApplies() {
-        // Rock wall at y=0, ground from y=1 up. DIRECT never applies clearance and stays on the
-        // straight line. CHEAPEST keeps its cost but, on an equal 900 tie, moves one cell inland.
+    @DisplayName("CHEAPEST has no obstacle-proximity preference, only cost/turns/deviation")
+    void should_KeepStraightCoastalLine_When_CheapestHasNoProximityTerm() {
+        // Rock wall at y=0, ground from y=1 up. The straight line runs right next to the rock but
+        // is the cheapest, straightest, least-deviating route; running close to rock is allowed.
         FakeGroundMap terrain = new FakeGroundMap().rect(-2, 0, 12, 6, NORMAL);
         for (int x = -2; x <= 12; x++) {
             terrain.put(x, 0, ROCK);
         }
         List<Point> straight = List.of(p(0, 1), p(1, 1), p(2, 1), p(3, 1), p(4, 1), p(5, 1),
                 p(6, 1), p(7, 1), p(8, 1));
-        List<Point> inland = List.of(p(0, 1), p(1, 2), p(2, 2), p(3, 2), p(4, 2), p(5, 2), p(6, 2),
-                p(7, 2), p(8, 1));
 
         RoutePlan direct =
                 RoutePlanner.plan(terrain, economy(), p(0, 1), p(8, 1), RoutePolicy.DIRECT);
@@ -417,7 +384,7 @@ class RoutePlannerTest {
         assertTrue(direct.feasible());
         assertEquals(straight, points(direct));
         assertTrue(cheapest.feasible());
-        assertEquals(inland, points(cheapest));
+        assertEquals(straight, points(cheapest));
         assertEquals(900.0, direct.totalCost(), 1e-9);
         assertEquals(900.0, cheapest.totalCost(), 1e-9);
         assertLegalTurns(cheapest);
@@ -508,39 +475,6 @@ class RoutePlannerTest {
     }
 
     @Test
-    @DisplayName("CHEAPEST prefers an inland equal-cost detour over hugging water or rock")
-    void should_PreferInlandDetour_When_CheapestCostTies() {
-        // A mountain wall at x=3..5 and water at y=-3. The northern detour hugs the water and the
-        // first southern detour hugs the rock; all cost 900, so the lexicographic obstacle key
-        // pushes the route another cell south, away from both.
-        FakeGroundMap terrain = new FakeGroundMap().rect(-4, -6, 12, 8, NORMAL);
-        for (int x = 3; x <= 5; x++) {
-            for (int y = -1; y <= 1; y++) {
-                terrain.put(x, y, ROCK);
-            }
-        }
-        for (int x = -4; x <= 12; x++) {
-            terrain.put(x, -3, WATER);
-        }
-
-        RoutePlan plan =
-                RoutePlanner.plan(terrain, economy(), p(0, 0), p(8, 0), RoutePolicy.CHEAPEST);
-
-        assertTrue(plan.feasible());
-        assertEquals(List.of(p(0, 0), p(1, 1), p(2, 2), p(3, 3), p(4, 3), p(5, 3), p(6, 2), p(7, 1),
-                p(8, 0)), points(plan));
-        assertEquals(900.0, plan.totalCost(), 1e-9);
-        assertEquals(0, plan.totalConstructionTicks());
-        assertTrue(
-                plan.steps().stream().allMatch(step -> step.trackType() == TrackType.NORMAL_TRACK));
-        assertLegalTurns(plan);
-        for (int i = 1; i < plan.steps().size() - 1; i++) {
-            assertEquals(0, RoutePlanner.waterNeighboursAt(terrain, plan.steps().get(i).point()),
-                    "interior cell touches water: " + points(plan));
-        }
-    }
-
-    @Test
     @DisplayName("industry cells count as ground, as RailTrackMaker does")
     void should_TreatIndustryAsGround_When_EndpointsOrRouteUseIt() {
         FakeGroundMap terrain =
@@ -569,12 +503,10 @@ class RoutePlannerTest {
                     RoutePolicy.AVOID_MOUNTAINS);
             assertEquals(first, again);
         }
-        // Fixed neighbour order (N, NE, E, SE, ...) plus FIFO tie-break: the northern detour wins
-        // over its mirror image through the south, one full cell clear of the rock.
-        assertEquals(List.of(p(0, 0), p(0, -1), p(1, -2), p(2, -2), p(3, -2), p(4, -1), p(4, 0)),
-                points(first));
-        assertEquals(700.0, first.totalCost(), 1e-9);
-        assertInteriorClearance(first, terrain, RoutePolicy.AVOID_MOUNTAINS);
+        // Fixed neighbour order (N, NE, E, SE, ...) plus FIFO tie-break: the shortest northern
+        // detour wins over its mirror image through the south.
+        assertEquals(List.of(p(0, 0), p(1, -1), p(2, -1), p(3, -1), p(4, 0)), points(first));
+        assertEquals(500.0, first.totalCost(), 1e-9);
     }
 
     @Test
@@ -611,8 +543,7 @@ class RoutePlannerTest {
             }
         }
         assertTrue(hasEastNorthEastAndNorth, "expected an E->NE->N bend in " + directions);
-        assertEquals(600.0, plan.totalCost(), 1e-9);
-        assertInteriorClearance(plan, terrain, RoutePolicy.AVOID_MOUNTAINS);
+        assertEquals(400.0, plan.totalCost(), 1e-9);
     }
 
     @Test
@@ -646,31 +577,10 @@ class RoutePlannerTest {
     }
 
     @Test
-    @DisplayName("at equal cost and turns, a coastal route loses to a one-cell-inland one")
-    void should_PreferClearanceFromWater_When_PrimaryCostAndTurnsTie() {
-        // A lake occupies x=2..4, y=0..1. Both the y=-1 (coastal) and y=-2 (inland) detours need
-        // seven cells and two turns, so only the clearance preference separates them.
-        FakeGroundMap terrain = new FakeGroundMap().rect(-3, -5, 9, 5, NORMAL);
-        for (int x = 2; x <= 4; x++) {
-            terrain.put(x, 0, WATER).put(x, 1, WATER);
-        }
-        RoutePlan plan =
-                RoutePlanner.plan(terrain, economy(), p(0, 0), p(6, 0), RoutePolicy.AVOID_WATER);
-
-        assertTrue(plan.feasible());
-        assertEquals(List.of(p(0, 0), p(0, -1), p(1, -2), p(2, -2), p(3, -2), p(4, -2), p(5, -2),
-                p(6, -1), p(6, 0)), points(plan));
-        assertEquals(900.0, plan.totalCost(), 1e-9);
-        assertLegalTurns(plan);
-        assertInteriorClearance(plan, terrain, RoutePolicy.AVOID_WATER);
-    }
-
-    @Test
-    @DisplayName("AVOID_WATER prefers one cell inland over hugging the coastline")
-    void should_PreferInlandRoute_When_AvoidingWaterCoast() {
-        // Sea at y=0, ground from y=1 up. The straight coastal route has the same nine cells and
-        // two
-        // turns as the inland one, but every coastal cell touches water; comfort must win.
+    @DisplayName("AVOID_WATER may run adjacent to water but never includes a water cell")
+    void should_AllowWaterAdjacency_When_PolicyIsAvoidWater() {
+        // Sea at y=0, ground from y=1 up. The straight y=1 line touches water all along its side,
+        // but avoids water as a cell, so it is the expected shortest, no-turn route.
         FakeGroundMap terrain = new FakeGroundMap().rect(-2, 0, 12, 6, NORMAL);
         for (int x = -2; x <= 12; x++) {
             terrain.put(x, 0, WATER);
@@ -680,20 +590,19 @@ class RoutePlannerTest {
                 RoutePlanner.plan(terrain, economy(), p(0, 1), p(8, 1), RoutePolicy.AVOID_WATER);
 
         assertTrue(plan.feasible());
-        assertEquals(List.of(p(0, 1), p(1, 2), p(2, 2), p(3, 2), p(4, 2), p(5, 2), p(6, 2), p(7, 2),
+        assertEquals(List.of(p(0, 1), p(1, 1), p(2, 1), p(3, 1), p(4, 1), p(5, 1), p(6, 1), p(7, 1),
                 p(8, 1)), points(plan));
-        assertEquals(9, plan.steps().size());
         assertFalse(
                 plan.steps().stream().anyMatch(step -> step.trackType() == TrackType.BRIDGE_TRACK));
-        assertLegalTurns(plan);
-        assertInteriorClearance(plan, terrain, RoutePolicy.AVOID_WATER);
         assertEquals(900.0, plan.totalCost(), 1e-9);
-        assertEquals(0, plan.totalConstructionTicks());
+        assertLegalTurns(plan);
     }
 
     @Test
-    @DisplayName("AVOID_MOUNTAINS also prefers one cell away from a rock wall")
-    void should_PreferInlandRoute_When_AvoidingMountainWall() {
+    @DisplayName("AVOID_MOUNTAINS may run adjacent to rock but never includes a rock cell")
+    void should_AllowRockAdjacency_When_PolicyIsAvoidMountains() {
+        // Rock wall at y=0, ground from y=1 up. The straight y=1 line runs beside the rock but
+        // never on it, so it is the expected shortest, no-turn route.
         FakeGroundMap terrain = new FakeGroundMap().rect(-2, 0, 12, 6, NORMAL);
         for (int x = -2; x <= 12; x++) {
             terrain.put(x, 0, ROCK);
@@ -703,78 +612,12 @@ class RoutePlannerTest {
                 RoutePolicy.AVOID_MOUNTAINS);
 
         assertTrue(plan.feasible());
-        assertEquals(List.of(p(0, 1), p(1, 2), p(2, 2), p(3, 2), p(4, 2), p(5, 2), p(6, 2), p(7, 2),
+        assertEquals(List.of(p(0, 1), p(1, 1), p(2, 1), p(3, 1), p(4, 1), p(5, 1), p(6, 1), p(7, 1),
                 p(8, 1)), points(plan));
-        assertEquals(9, plan.steps().size());
         assertFalse(
                 plan.steps().stream().anyMatch(step -> step.trackType() == TrackType.TUNNEL_TRACK));
-        assertLegalTurns(plan);
-        assertInteriorClearance(plan, terrain, RoutePolicy.AVOID_MOUNTAINS);
         assertEquals(900.0, plan.totalCost(), 1e-9);
-    }
-
-    @Test
-    @DisplayName("CHEAPEST prefers fewer adjacent rock cells when cost ties")
-    void should_PreferObstacleClearance_When_CheapestCostTies() {
-        // A rock wall at y=0 forces two seven-cell detours of equal cost. The near detour runs
-        // along the wall; the farther one has fewer rock neighbours and must win on the obstacle
-        // key before turns/deviation are considered.
-        FakeGroundMap terrain = new FakeGroundMap().rect(-3, -5, 9, 5, NORMAL);
-        for (int x = 1; x <= 5; x++) {
-            terrain.put(x, 0, ROCK);
-        }
-        RoutePlan plan =
-                RoutePlanner.plan(terrain, economy(), p(0, 0), p(6, 0), RoutePolicy.CHEAPEST);
-
-        List<Point> nearRockRoute =
-                List.of(p(0, 0), p(1, -1), p(2, -1), p(3, -1), p(4, -1), p(5, -1), p(6, 0));
-        int nearRockNeighbours = nearRockRoute.stream()
-                .mapToInt(point -> RoutePlanner.obstacleNeighboursAt(terrain, point)).sum();
-        int chosenRockNeighbours = points(plan).stream()
-                .mapToInt(point -> RoutePlanner.obstacleNeighboursAt(terrain, point)).sum();
-
-        assertTrue(plan.feasible());
-        assertEquals(List.of(p(0, 0), p(1, -1), p(2, -2), p(3, -2), p(4, -2), p(5, -1), p(6, 0)),
-                points(plan));
         assertLegalTurns(plan);
-        assertEquals(700.0, plan.totalCost(), 1e-9);
-        assertTrue(chosenRockNeighbours < nearRockNeighbours, "expected fewer rock neighbours: "
-                + chosenRockNeighbours + " vs " + nearRockNeighbours);
-    }
-
-    @Test
-    @DisplayName("CHEAPEST avoids an equal-cost reentrant rock nook")
-    void should_AvoidRockNook_When_CheapestCostTies() {
-        // A rocky corridor with reentrant pockets on both sides. Both eight-cell routes cost 800
-        // and make three turns; the old shape picks the inner route along the rock, the chosen one
-        // stays one cell outside the pockets.
-        FakeGroundMap terrain = new FakeGroundMap().rect(-3, -7, 9, 7, NORMAL);
-        int[][] rocks = {{1, 3}, {2, -2}, {3, -2}, {3, -1}, {4, -3}, {4, 1}, {5, -2}, {5, -1},
-                {5, 0}, {5, 1}, {5, 3}};
-        for (int[] rock : rocks) {
-            terrain.put(rock[0], rock[1], ROCK);
-        }
-        List<Point> nookRoute =
-                List.of(p(0, 0), p(1, 1), p(2, 2), p(3, 2), p(4, 2), p(5, 2), p(6, 1), p(6, 0));
-
-        RoutePlan plan =
-                RoutePlanner.plan(terrain, economy(), p(0, 0), p(6, 0), RoutePolicy.CHEAPEST);
-
-        assertTrue(plan.feasible());
-        assertEquals(
-                List.of(p(0, 0), p(1, 1), p(2, 2), p(3, 3), p(4, 3), p(5, 2), p(6, 1), p(6, 0)),
-                points(plan));
-        assertEquals(800.0, plan.totalCost(), 1e-9);
-        assertEquals(0, plan.totalConstructionTicks());
-        assertLegalTurns(plan);
-        int chosenObstacles = points(plan).stream()
-                .mapToInt(point -> RoutePlanner.obstacleNeighboursAt(terrain, point)).sum();
-        int nookObstacles = nookRoute.stream()
-                .mapToInt(point -> RoutePlanner.obstacleNeighboursAt(terrain, point)).sum();
-        assertTrue(chosenObstacles < nookObstacles,
-                "expected fewer obstacle neighbours: " + chosenObstacles + " vs " + nookObstacles);
-        assertTrue(turnCount(points(plan)) <= turnCount(nookRoute),
-                "expected no more turns than the nook route");
     }
 
     @Test
