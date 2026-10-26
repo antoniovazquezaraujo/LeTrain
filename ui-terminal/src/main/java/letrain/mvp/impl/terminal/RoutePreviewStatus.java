@@ -111,7 +111,7 @@ final class RoutePreviewStatus {
     private static String previewLine(RoutePolicy policy, RoutePlan plan, long effectiveTicks,
             String message) {
         String policyName = policyLabel(policy);
-        String hints = " · [ ] policy · Esc discard";
+        String hints = " · Space A/B · [ ] policy · Esc discard";
         if (plan == null || !plan.feasible()) {
             String reason =
                     message == null || message.isBlank() ? "no route" : "no route: " + message;

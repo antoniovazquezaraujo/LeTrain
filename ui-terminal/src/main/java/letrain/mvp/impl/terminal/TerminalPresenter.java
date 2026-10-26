@@ -156,6 +156,13 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private String routePreviewConfirmation;
     private long routePreviewConfirmationUntilMillis;
 
+    /**
+     * A/B focus toggle in PREVIEW (ADR-036). {@code false} means the next Space jumps to A and
+     * {@code true} means B; every valid jump flips it. Manual navigation does not change it, so the
+     * next Space resumes from the endpoint the author focused last.
+     */
+    private boolean routePreviewFocusOnEnd;
+
     private static final int AMBIENT_BASE_CELLS = 80 * 25;
     private static final int AMBIENT_FULL_CELLS = 120 * 40;
 
@@ -873,6 +880,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         pendingRoutePlan = null;
         routePreviewConfirmation = null;
         routePreviewConfirmationUntilMillis = 0;
+        routePreviewFocusOnEnd = false;
     }
 
     private RoutePreviewSession routePreviewSession() {
@@ -914,6 +922,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         model.setMode(CONNECT);
         routePreviewConfirmation = null;
         routePreviewConfirmationUntilMillis = 0;
+        routePreviewFocusOnEnd = false;
     }
 
     private void leaveConnectMode() {
@@ -921,6 +930,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 routePreviewReturnMode == CONNECT ? RAILS : routePreviewReturnMode;
         model.setMode(returnMode);
         routePreviewSession = null;
+        routePreviewFocusOnEnd = false;
     }
 
     /**
@@ -967,6 +977,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             return;
         }
         if (state == RoutePreviewSession.State.PREVIEW) {
+            if (isPlainCharacter(keyEvent, ' ')) {
+                focusNextRouteEndpoint(session);
+                return;
+            }
             if (isPlainCharacter(keyEvent, '[')) {
                 session.previousPolicy();
                 return;
@@ -993,6 +1007,23 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         if (movement != null) {
             railTrackMaker.onChar(movement);
         }
+    }
+
+    /**
+     * Jumps to whichever endpoint the toggle points at (A first, then B, repeating) and centres the
+     * view on it. The route, endpoints and policy are untouched: this is only a camera/cursor
+     * shortcut for getting back after panning or zooming around. Outside PREVIEW (or when an
+     * endpoint is still unknown) it does nothing.
+     */
+    private void focusNextRouteEndpoint(RoutePreviewSession session) {
+        Point target =
+                routePreviewFocusOnEnd ? session.end().orElse(null) : session.start().orElse(null);
+        if (target == null) {
+            return;
+        }
+        model.getCursor().setPosition(target);
+        view.centerOn(target.getX(), target.getY());
+        routePreviewFocusOnEnd = !routePreviewFocusOnEnd;
     }
 
     /**

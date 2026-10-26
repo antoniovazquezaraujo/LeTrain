@@ -83,15 +83,21 @@ navegación:
 - 3D: cuando llegue, la orientación de cámara tendrá sus propias teclas; la selección de ruta no
   las tocará.
 - El plan y los extremos A/B quedan fijos; navegar no replanifica.
-- La barra de estado de `PREVIEW` anuncia las teclas de ruta como `[ ] policy`.
+- La barra de estado de `PREVIEW` anuncia las teclas de ruta como `Space A/B` y `[ ] policy`.
 
 Teclas de ruta, únicas y fuera de la navegación:
 
+- `Space`: alterna el foco entre A y B (`A → B → A…`) y mueve el cursor y centra la vista en el
+  extremo elegido. No cambia plan, extremos, coste, política ni selección. Si el autor navega
+  manualmente, el siguiente `Space` continúa desde el último extremo enfocado. El toggle se
+  reinicia al cerrar o reiniciar la preview.
 - `[` / `]`: política/ruta anterior y siguiente.
 - `Enter`: seleccionar el plan actual.
 - `Esc`: cancelar la preview.
 - Si la política pedida no está cacheada, `[`/`]` vuelve a `PLANNING`; si está, se muestra al
   instante.
+- `Space` no hace nada en `PLANNING` (solo `Esc`/`Shift+C`) ni se intercepta en
+  `PICK_START`/`PICK_END`.
 
 `h`/`l` **no** cambian política: son movimiento de cursor, igual que las flechas. Esto revierte la
 decisión anterior de la preview síncrona, incompatible con la navegación libre.

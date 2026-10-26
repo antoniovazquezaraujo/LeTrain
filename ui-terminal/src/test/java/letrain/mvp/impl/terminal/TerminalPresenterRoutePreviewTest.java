@@ -4,9 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
@@ -19,6 +24,7 @@ import letrain.map.Point;
 import letrain.mvp.impl.Model;
 import letrain.mvp.input.InputEvent;
 import letrain.mvp.input.KeyType;
+import letrain.planner.RoutePlan;
 import letrain.planner.RoutePolicy;
 import letrain.planner.RoutePreviewSession;
 import org.junit.jupiter.api.DisplayName;
@@ -39,7 +45,14 @@ class TerminalPresenterRoutePreviewTest {
         return new InputEvent(KeyType.Escape);
     }
 
-    private static TerminalPresenter silentPresenter(Model model) {
+    private static InputEvent space() {
+        return new InputEvent(KeyType.Character, ' ', false, false, false);
+    }
+
+    private record Harness(Model model, TerminalPresenter presenter, TerminalView view) {
+    }
+
+    private static Harness harness(Model model) {
         TerminalView view = mock(TerminalView.class);
         when(view.getScrollOffset()).thenReturn(new Point(0, 0));
         when(view.getCols()).thenReturn(80);
@@ -51,7 +64,11 @@ class TerminalPresenterRoutePreviewTest {
         if (realAudio != null) {
             realAudio.stop();
         }
-        return presenter;
+        return new Harness(model, presenter, view);
+    }
+
+    private static TerminalPresenter silentPresenter(Model model) {
+        return harness(model).presenter();
     }
 
     private static Model seededModel() {
@@ -261,6 +278,106 @@ class TerminalPresenterRoutePreviewTest {
         assertTrue(session.lastPlan().orElseThrow().feasible(),
                 "navigation must not discard the plan");
         assertEquals(RoutePreviewSession.State.PREVIEW, session.state());
+    }
+
+    @Test
+    @DisplayName("Space alternates focus A -> B -> A, centres the view and leaves the plan intact")
+    void spaceTogglesEndpointFocus() {
+        Harness harness = harness(seededModel());
+        Model model = harness.model();
+        TerminalPresenter presenter = harness.presenter();
+        TerminalView view = harness.view();
+        List<Point> points = buildablePoints(model);
+        model.getCursor().setPosition(points.get(0));
+        model.setMode(Model.GameMode.RAILS);
+
+        presenter.onChar(shiftC());
+        presenter.onChar(enter());
+        model.getCursor().setPosition(points.get(1));
+        presenter.onChar(enter());
+        awaitPreview(presenter);
+
+        RoutePreviewSession session = presenter.getRoutePreviewSession();
+        Point start = session.start().orElseThrow();
+        Point end = session.end().orElseThrow();
+        RoutePlan planBefore = session.lastPlan().orElseThrow();
+        RoutePolicy policyBefore = session.policy();
+
+        presenter.onChar(space());
+
+        assertEquals(start, model.getCursor().getPosition(), "first Space focuses A");
+        verify(view).centerOn(start.getX(), start.getY());
+
+        // Manual navigation must not reset the toggle: after focusing A, the next Space goes to B.
+        presenter.onChar(new InputEvent(KeyType.ArrowUp));
+        presenter.onChar(space());
+
+        assertEquals(end, model.getCursor().getPosition(), "second Space focuses B");
+        verify(view).centerOn(end.getX(), end.getY());
+
+        presenter.onChar(space());
+
+        assertEquals(start, model.getCursor().getPosition(), "third Space focuses A again");
+        verify(view, times(2)).centerOn(start.getX(), start.getY());
+
+        assertSame(planBefore, session.lastPlan().orElseThrow(), "Space must not replan");
+        assertEquals(start, session.start().orElseThrow());
+        assertEquals(end, session.end().orElseThrow());
+        assertEquals(policyBefore, session.policy());
+        assertEquals(RoutePreviewSession.State.PREVIEW, session.state());
+        assertEquals(Model.GameMode.CONNECT, model.getMode());
+        assertEquals(0, trackCount(model), "Space must not build track");
+    }
+
+    @Test
+    @DisplayName("Space is ignored while PLANNING")
+    void spaceIsIgnoredWhilePlanning() {
+        Harness harness = harness(seededModel());
+        Model model = harness.model();
+        TerminalPresenter presenter = harness.presenter();
+        TerminalView view = harness.view();
+        List<Point> points = buildablePoints(model);
+        model.getCursor().setPosition(points.get(0));
+        model.setMode(Model.GameMode.RAILS);
+
+        presenter.onChar(shiftC());
+        presenter.onChar(enter());
+        model.getCursor().setPosition(points.get(1));
+        presenter.onChar(enter());
+
+        RoutePreviewSession session = presenter.getRoutePreviewSession();
+        Point before = new Point(model.getCursor().getPosition());
+
+        presenter.onChar(space());
+
+        assertEquals(RoutePreviewSession.State.PLANNING, session.state());
+        assertEquals(before, model.getCursor().getPosition());
+        verify(view, never()).centerOn(anyInt(), anyInt());
+    }
+
+    @Test
+    @DisplayName("Space in PICK_END keeps the current no-op movement behaviour")
+    void spaceDoesNotFocusEndpointsInPickEnd() {
+        Harness harness = harness(seededModel());
+        Model model = harness.model();
+        TerminalPresenter presenter = harness.presenter();
+        TerminalView view = harness.view();
+        List<Point> points = buildablePoints(model);
+        model.getCursor().setPosition(points.get(0));
+        model.setMode(Model.GameMode.RAILS);
+
+        presenter.onChar(shiftC());
+        presenter.onChar(enter());
+
+        RoutePreviewSession session = presenter.getRoutePreviewSession();
+        assertEquals(RoutePreviewSession.State.PICK_END, session.state());
+        Point before = new Point(model.getCursor().getPosition());
+
+        presenter.onChar(space());
+
+        assertEquals(RoutePreviewSession.State.PICK_END, session.state());
+        assertEquals(before, model.getCursor().getPosition());
+        verify(view, never()).centerOn(anyInt(), anyInt());
     }
 
     @Test
