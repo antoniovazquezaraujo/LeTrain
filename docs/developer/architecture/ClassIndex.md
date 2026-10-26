@@ -55,6 +55,14 @@
 - [[letrain.command.TurtleDelegate|TurtleDelegate]] (core)
 - [[letrain.command.UndoRedoHistory|UndoRedoHistory]] (core)
 
+## letrain.construction
+- [[letrain.construction.ConstructionGuard|ConstructionGuard]] (core)
+- [[letrain.construction.ConstructionProgress|ConstructionProgress]] (core)
+- [[letrain.construction.ConstructionState|ConstructionState]] (core)
+- [[letrain.construction.RouteConstructionJob|RouteConstructionJob]] (core)
+- [[letrain.construction.RouteConstructionQueue|RouteConstructionQueue]] (core)
+- [[letrain.construction.TrackMaterializer|TrackMaterializer]] (core)
+
 ## letrain.economy
 - [[letrain.economy.EconomyManager|EconomyManager]] (core)
 - [[letrain.economy.impl.EconomyManager|EconomyManager]] (core)
@@ -147,6 +155,7 @@
 - [[letrain.mvp.impl.terminal.DialogWindow|DialogWindow]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.NewGameDialog|NewGameDialog]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.ProgramTextBox|ProgramTextBox]] (ui-terminal)
+- [[letrain.mvp.impl.terminal.RoutePreviewConsolePolicy|RoutePreviewConsolePolicy]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.RoutePreviewOverlay|RoutePreviewOverlay]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.RoutePreviewStatus|RoutePreviewStatus]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.SettingsDialog|SettingsDialog]] (ui-terminal)
@@ -161,6 +170,9 @@
 ## letrain.planner
 - [[letrain.planner.RoutePlan|RoutePlan]] (core)
 - [[letrain.planner.RoutePlanner|RoutePlanner]] (core)
+- [[letrain.planner.RoutePlanningJob|RoutePlanningJob]] (core)
+- [[letrain.planner.RoutePlanningListener|RoutePlanningListener]] (core)
+- [[letrain.planner.RoutePlanningProgress|RoutePlanningProgress]] (core)
 - [[letrain.planner.RoutePolicy|RoutePolicy]] (core)
 - [[letrain.planner.RoutePreviewSession|RoutePreviewSession]] (core)
 - [[letrain.planner.RouteStep|RouteStep]] (core)
