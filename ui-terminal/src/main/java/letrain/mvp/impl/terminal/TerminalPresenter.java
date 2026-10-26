@@ -12,6 +12,8 @@ import static letrain.mvp.Model.GameMode.STATIONS;
 import static letrain.mvp.Model.GameMode.TRAINS;
 import static letrain.mvp.Model.GameMode.UNLINK;
 
+import letrain.construction.ConstructionProgress;
+import letrain.construction.RouteConstructionQueue;
 import letrain.mvp.input.InputEvent;
 import letrain.mvp.input.KeyType;
 import letrain.planner.RoutePlan;
@@ -148,13 +150,21 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private Model.GameMode routePreviewReturnMode = RAILS;
 
     /**
-     * Plan accepted in CONNECT, kept for the future construction queue. This slice does not build
-     * anything; it only stores the plan and closes the preview.
+     * Plan accepted in CONNECT, kept for the construction queue. The queue builds it cell by cell
+     * while the simulation keeps running (ADR-037).
      */
     private RoutePlan pendingRoutePlan;
 
-    private String routePreviewConfirmation;
-    private long routePreviewConfirmationUntilMillis;
+    /** Presenter-owned construction queue; recreated on every model swap. */
+    private RouteConstructionQueue constructionQueue;
+
+    /**
+     * First Esc on an active construction only arms the confirmation; the queue pauses meanwhile.
+     */
+    private boolean constructionCancelArmed;
+
+    private String constructionNotice;
+    private long constructionNoticeUntilMillis;
 
     /**
      * A/B focus toggle in PREVIEW (ADR-036). {@code false} means the next Space jumps to A and
@@ -566,11 +576,13 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     break;
                 }
                 pollRoutePreview();
+                tickConstruction();
                 simulationController.tick();
                 updateAmbientAudio();
                 renderer.visitModel(model);
                 informer.visitModel(model);
                 drawRoutePreviewOverlay();
+                drawConstructionOverlay();
                 view.paint();
                 if (model.getEffectiveMode() == DRIVE) {
                     Locomotive selectedLocomotive = model.getSelectedLocomotive();
@@ -642,6 +654,13 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private void executeCommand(String cmd) {
         log.info("Execute command: " + cmd);
         boolean fromConsole = model.getMode() == letrain.mvp.Model.GameMode.COMMAND;
+        if (isConstructionActive() && !RoutePreviewConsolePolicy.isAllowed(cmd)) {
+            // ADR-037: while the works run, the console may still navigate but must not edit the
+            // world, save/load or start a new game. Keep the console open so the notice is read.
+            model.setCommandError(ConstructionStatus.BLOCKED_COMMAND_MESSAGE);
+            model.setCommandNotice("");
+            return;
+        }
         if (fromConsole && routePreviewSession != null
                 && !RoutePreviewConsolePolicy.isAllowed(cmd)) {
             // ADR-036: while previewing, the console only navigates; the world, the route and A/B
@@ -878,9 +897,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         routePreviewSession = null;
         routePreviewReturnMode = RAILS;
         pendingRoutePlan = null;
-        routePreviewConfirmation = null;
-        routePreviewConfirmationUntilMillis = 0;
         routePreviewFocusOnEnd = false;
+        constructionQueue = null;
+        constructionCancelArmed = false;
+        constructionNotice = null;
+        constructionNoticeUntilMillis = 0;
     }
 
     private RoutePreviewSession routePreviewSession() {
@@ -920,8 +941,6 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         routePreviewReturnMode = model.getMode();
         routePreviewSession().begin(model.getCursor().getPosition());
         model.setMode(CONNECT);
-        routePreviewConfirmation = null;
-        routePreviewConfirmationUntilMillis = 0;
         routePreviewFocusOnEnd = false;
     }
 
@@ -961,18 +980,13 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             return;
         }
         if (keyEvent.getKeyType() == KeyType.Enter) {
-            long ticksBefore = session.effectiveConstructionTicks();
             RoutePreviewSession.State next = session.enter(model.getCursor().getPosition());
             if (next == RoutePreviewSession.State.SELECTED) {
                 pendingRoutePlan = session.selectedPlan().orElse(null);
-                if (pendingRoutePlan != null) {
-                    routePreviewConfirmation = "Connect · selected · "
-                            + RoutePreviewStatus.formatCost(pendingRoutePlan.totalCost()) + " · "
-                            + RoutePreviewStatus.formatTicks(ticksBefore) + " · "
-                            + pendingRoutePlan.steps().size() + " cells · not built yet";
-                    routePreviewConfirmationUntilMillis = System.currentTimeMillis() + 2_500;
-                }
                 leaveConnectMode();
+                if (pendingRoutePlan != null) {
+                    startConstruction(pendingRoutePlan);
+                }
             }
             return;
         }
@@ -1093,6 +1107,183 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     /**
+     * Starts the construction queue for an accepted plan (ADR-037). Preflight runs immediately; a
+     * rejection is surfaced as a notice and leaves no job building. A terminal state also unlocks
+     * the editing guard.
+     */
+    boolean startConstruction(RoutePlan plan) {
+        if (plan == null) {
+            return false;
+        }
+        RouteConstructionQueue queue = constructionQueue();
+        boolean started = queue.start(plan, new RailTrackMaterializer(this));
+        constructionCancelArmed = false;
+        ConstructionProgress progress = queue.progress();
+        if (!started) {
+            showConstructionNotice(ConstructionStatus.rejected("another construction is running"));
+            return false;
+        }
+        if (progress.state() == letrain.construction.ConstructionState.REJECTED) {
+            showConstructionNotice(ConstructionStatus
+                    .rejected(progress.reasonOptional().orElse("route cannot be built")));
+            return false;
+        }
+        if (progress.state() == letrain.construction.ConstructionState.DONE) {
+            // Empty feasible plan: nothing to lay, but the job is complete.
+            showConstructionNotice(ConstructionStatus.COMPLETE);
+            return false;
+        }
+        constructionNotice = null;
+        constructionNoticeUntilMillis = 0;
+        return true;
+    }
+
+    /**
+     * Advances the active construction once per frame. While the cancel confirmation is armed the
+     * queue is paused: only the second Esc cancels, any other key resumes on the next frame.
+     */
+    void tickConstruction() {
+        if (constructionQueue == null || !constructionQueue.isActive() || constructionCancelArmed) {
+            return;
+        }
+        ConstructionProgress progress = constructionQueue.tick();
+        if (progress.state() == letrain.construction.ConstructionState.DONE) {
+            showConstructionNotice(ConstructionStatus.COMPLETE);
+        } else if (progress.state() == letrain.construction.ConstructionState.CANCELLED) {
+            showConstructionNotice(ConstructionStatus.CANCELLED);
+        }
+    }
+
+    private RouteConstructionQueue constructionQueue() {
+        if (constructionQueue == null) {
+            constructionQueue = new RouteConstructionQueue(model.getEconomyManager());
+        }
+        return constructionQueue;
+    }
+
+    private void showConstructionNotice(String notice) {
+        constructionNotice = notice;
+        constructionNoticeUntilMillis = System.currentTimeMillis() + 2_500;
+        constructionCancelArmed = false;
+    }
+
+    /** True while a construction job is actively laying cells (and manual editing is locked). */
+    boolean isConstructionActive() {
+        return constructionQueue != null && constructionQueue.isEditingLocked();
+    }
+
+    boolean isConstructionCancelArmed() {
+        return constructionCancelArmed;
+    }
+
+    /**
+     * Two-step Esc confirmation for an active construction: first Esc pauses and arms, second Esc
+     * cancels (partial track remains), any other key resumes. Returns true when the key was
+     * consumed by the confirmation.
+     */
+    private boolean handleConstructionConfirmation(InputEvent keyEvent) {
+        if (!isConstructionActive()) {
+            return false;
+        }
+        if (constructionCancelArmed) {
+            if (keyEvent.getKeyType() == KeyType.Escape) {
+                constructionQueue.cancel();
+                showConstructionNotice(ConstructionStatus.CANCELLED);
+            } else {
+                constructionCancelArmed = false;
+            }
+            return true;
+        }
+        if (keyEvent.getKeyType() == KeyType.Escape) {
+            constructionCancelArmed = true;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Blocks manual editing while construction is active. Navigation, camera keys and mode changes
+     * stay available; DRIVE is left untouched because trains are not restricted by the works.
+     * Returns true when the key was consumed.
+     */
+    private boolean handleConstructionEditLock(InputEvent keyEvent) {
+        if (!isConstructionActive()) {
+            return false;
+        }
+        if (model.getMode() == DRIVE) {
+            return false;
+        }
+        if (isPlainCharacter(keyEvent, ':')) {
+            model.setMode(letrain.mvp.Model.GameMode.COMMAND);
+            model.setCommandText("");
+            model.setCommandError("");
+            model.setCommandNotice("");
+            return true;
+        }
+        if (keyEvent.getKeyType() == KeyType.Character && keyEvent.getCharacter() != null) {
+            Character c = keyEvent.getCharacter();
+            boolean ctrlR = c == 18 || (keyEvent.isCtrlDown() && (c == 'r' || c == 'R'));
+            if (ctrlR) {
+                return true; // no redo while the works are running
+            }
+            if (!keyEvent.isCtrlDown() && !keyEvent.isAltDown()) {
+                if (c == 'R' || c == 'X' || c == 'p' || c == '.') {
+                    return true; // pause-editing, experiment, IDE and repeat-command are edits
+                }
+                if (c == 'u' && model.isSimulationPaused()) {
+                    return true; // undo would rewrite the world under the works
+                }
+            }
+        }
+        if (handleModeHotkey(keyEvent)) {
+            return true;
+        }
+        InputEvent movement = movementOnly(keyEvent);
+        if (movement != null) {
+            railTrackMaker.onChar(movement);
+        }
+        // Everything else is swallowed: no build/erase/infrastructure key reaches its mode handler.
+        return true;
+    }
+
+    /**
+     * Paints the construction HUD after the world renderer: remaining cells as ghost circles, A/B
+     * endpoints and the one-line status. Built cells are real rails, so they are not repainted.
+     */
+    void drawConstructionOverlay() {
+        if (constructionQueue != null && constructionQueue.isActive()) {
+            ConstructionProgress progress = constructionQueue.progress();
+            RoutePlan plan = constructionQueue.job()
+                    .map(letrain.construction.RouteConstructionJob::plan).orElse(null);
+            for (RoutePreviewOverlay.Cell cell : ConstructionOverlay.cells(plan,
+                    progress.builtSteps())) {
+                view.drawRoutePreviewCell(cell.x(), cell.y(), cell.glyph(), cell.endpoint(),
+                        cell.style());
+            }
+            view.drawRoutePreviewStatus(
+                    ConstructionStatus.format(progress, plan, constructionCancelArmed));
+            return;
+        }
+        if (constructionNotice != null) {
+            if (System.currentTimeMillis() <= constructionNoticeUntilMillis) {
+                view.drawRoutePreviewStatus(constructionNotice);
+            } else {
+                constructionNotice = null;
+            }
+        }
+    }
+
+    /** Last construction progress, exposed for focused presenter tests. */
+    ConstructionProgress getConstructionProgress() {
+        return constructionQueue == null ? ConstructionProgress.idle()
+                : constructionQueue.progress();
+    }
+
+    RouteConstructionQueue getConstructionQueue() {
+        return constructionQueue;
+    }
+
+    /**
      * Paints the CONNECT overlay after the world renderer: the single current plan plus A/B, and
      * the one-line status. It is deliberately a per-frame draw, so leaving CONNECT (or an
      * infeasible policy) simply stops painting and nothing persists into the next frame.
@@ -1116,16 +1307,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             view.drawRoutePreviewStatus(RoutePreviewStatus.format(routePreviewSession));
             return;
         }
-        if (routePreviewConfirmation != null) {
-            if (System.currentTimeMillis() <= routePreviewConfirmationUntilMillis) {
-                view.drawRoutePreviewStatus(routePreviewConfirmation);
-            } else {
-                routePreviewConfirmation = null;
-            }
-        }
     }
 
-    /** Plan accepted in CONNECT and waiting for the future construction queue (ADR-035). */
+    /** Plan accepted in CONNECT and handed to the construction queue (ADR-035/ADR-037). */
     RoutePlan getPendingRoutePlan() {
         return pendingRoutePlan;
     }
@@ -1266,8 +1450,20 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             handleConnectKey(keyEvent);
             return;
         }
-        if (isConnectEntry(keyEvent) && canEnterConnectMode(model.getMode())) {
-            enterConnectMode();
+        // ADR-037: Esc on an active construction arms a two-step cancel and never opens the File
+        // menu. Any other key while armed resumes the queue.
+        if (handleConstructionConfirmation(keyEvent)) {
+            return;
+        }
+        if (isConnectEntry(keyEvent)) {
+            if (!isConstructionActive() && canEnterConnectMode(model.getMode())) {
+                enterConnectMode();
+            }
+            return;
+        }
+        // While the construction queue builds, manual edits are locked; navigation, camera, mode
+        // changes and the read-only console remain available.
+        if (handleConstructionEditLock(keyEvent)) {
             return;
         }
 
@@ -1331,8 +1527,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             view.setHelpLevel(next);
             return;
         } else if (keyEvent.getKeyType() == KeyType.Escape) {
-            // Esc opens the File menu (owner decision D11); Quit lives inside it now.
-            view.showFileMenu();
+            // Esc opens the File menu (owner decision D11); Quit lives inside it now. During an
+            // active construction Esc is consumed by the two-step cancel confirmation above.
+            if (!isConstructionActive()) {
+                view.showFileMenu();
+            }
         } else if (handleModeHotkey(keyEvent)) {
             return;
         }
