@@ -62,7 +62,7 @@ class RoutePlanningJobTest {
         assertEquals(RoutePlanningJob.State.DONE, snapshot.state());
         assertTrue(snapshot.result().isPresent());
         assertTrue(snapshot.progress().isPresent());
-        assertEquals(RoutePlanningProgress.Phase.FALLBACK, snapshot.phase().orElseThrow());
+        assertEquals(RoutePlanningProgress.Phase.SEARCH, snapshot.phase().orElseThrow());
         assertTrue(snapshot.expandedNodes() >= 0);
     }
 

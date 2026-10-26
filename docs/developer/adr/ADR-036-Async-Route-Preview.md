@@ -46,7 +46,7 @@ sustituye al antiguo `PREVIEW` como estado navegable.
 
 - Nuevo `RoutePlanningJob` en `core`, UI-free, con un `ExecutorService` de un solo worker.
 - `RoutePlanner.plan(...)` gana una sobrecarga con:
-  - `ProgressListener`: fase (`CLEARANCE` / `FALLBACK`), nodos expandidos, tiempo transcurrido y
+  - `ProgressListener`: fase (`SEARCH`), nodos expandidos, tiempo transcurrido y
     posición actual opcional.
   - `BooleanSupplier` de cancelación.
 - La sobrecarga antigua delega en la nueva con un listener vacío y cancelación falsa.
@@ -64,7 +64,7 @@ Mientras `PLANNING`, la barra de estado muestra una barra **indeterminada/animad
 de nodos y tiempo:
 
 ```text
-Connect · PLANNING · CLEARANCE · 234k nodes · 3.2 s · [░░██░░░░] · Esc cancel
+Connect · PLANNING · SEARCH · 234k nodes · 3.2 s · [░░██░░░░] · Esc cancel
 ```
 
 No se inventa un porcentaje: A* no conoce el total de nodos que explorará. La barra es una señal de

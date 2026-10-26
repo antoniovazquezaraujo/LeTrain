@@ -21,16 +21,8 @@ public record RoutePlanningProgress(Phase phase, int expandedNodes, long elapsed
 
     /** Search phase that produced this report. */
     public enum Phase {
-        /**
-         * Hard-clearance pass of an avoid policy: the route must keep at least one cell away from
-         * the terrain that policy blocks.
-         */
-        CLEARANCE,
-        /**
-         * Unconstrained search. Used by {@code DIRECT}/{@code CHEAPEST} and as the fallback of an
-         * avoid policy when the clearance pass finds no route.
-         */
-        FALLBACK
+        /** The single A* search that produces the plan. */
+        SEARCH
     }
 
     public RoutePlanningProgress {

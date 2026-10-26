@@ -85,87 +85,46 @@ la dirección con la que se llegó a ella.
 - Consecuencia: un desvío alrededor de un obstáculo puede necesitar más celdas que la distancia
   geométrica mínima, porque hay que "girar" gradualmente. Los tests fijan las rutas esperadas.
 
-### Coste de búsqueda: comodidad en `AVOID_*`
+### `AVOID_*`: bloqueo binario, sin preferencia de proximidad
 
-El coste primario en `AVOID_MOUNTAINS`, `AVOID_WATER` y `AVOID_ALL` es la **distancia
-geométrica**. Sobre él se suma, **solo al coste de búsqueda**, un término de comodidad determinista
-expresado en las mismas **unidades de distancia**:
+`AVOID_MOUNTAINS`, `AVOID_WATER` y `AVOID_ALL` son un **bloqueo binario de celda**: la ruta no
+puede incluir una celda del terreno nombrado, pero puede ir pegada a él. No hay pasada de limpieza,
+ni penalización por vecinos bloqueados, ni preferencia por separarse de la costa/roca. Una ruta
+adyacente al agua o a la roca es válida y esperada si es la más corta o la de menos curvas.
+
+El coste de búsqueda es la **distancia geométrica** más dos desempates en unidades de distancia:
 
 ```
 coste_búsqueda = distancia_geométrica(paso)
                + 0,25 × nº_giros_45
-               + 0,50 × vecinos_bloqueados(celda)
                + 0,05 × desviación_euclídea(celda)
 ```
 
-donde:
-
-- `vecinos_bloqueados`: cuántos de los 8 vecinos están bloqueados **según la política activa**
-  (falta de datos, terreno no construible y el bloqueo propio de la política). Bajo
-  `AVOID_WATER` cuenta el agua; bajo `AVOID_MOUNTAINS`, la roca; bajo `AVOID_ALL`, ambos. Bajo
-  `AVOID_MOUNTAINS` el agua permitida **no** cuenta como bloqueada, y bajo `AVOID_WATER` la roca
-  permitida tampoco.
 - `desviación_euclídea`: distancia de la celda al segmento recto inicio-fin, en celdas.
 - `nº_giros_45`: 1 por cada cambio de rumbo de 45°.
 
-Al estar en unidades de distancia, la comodidad solo refina rutas de longitud parecida: una celda
-ortogonal extra cuesta 1, un giro 0,25 y la desviación 0,05 por celda. El peso 0,5 de limpieza puede
-sumar a lo largo de una costa y separar la vía del borde, pero no convierte en ganadora una ruta
-mucho más larga. El dueño prefiere una ruta algo más larga pero cómoda y lejos del terreno
-bloqueado antes que la más corta pegada a la costa; es un intercambio intencional, no un empate.
+El terreno permitido (agua bajo `AVOID_MOUNTAINS`, roca bajo `AVOID_WATER`) puede cruzarse si es el
+atajo más corto; el plan reporta el coste/tiempo real del puente o túnel. El terreno bloqueado se
+prohíbe solo como celda; los extremos siguen las reglas estrictas de siempre.
+
+`DIRECT` usa la misma distancia primero y desempates deterministas diminutos (`1e-3` por giro y
+`1e-5` para la desviación) sobre la distancia unitaria.
 
 ### Orden lexicográfico de forma en `CHEAPEST`
 
 `CHEAPEST` sigue minimizando el **coste real de construcción** y usa un A* con coste
-**lexicográfico** (tupla), no una suma de penalizaciones. El orden es:
+**lexicográfico** (tupla). El orden es:
 
 1. **coste real de construcción** (clave primaria),
-2. **adyacencia a obstáculos**: suma de vecinos de agua o roca de las celdas de tierra de la ruta;
-   las celdas de agua/roca (puente/túnel) están exentas,
-3. **número de giros de 45°**,
-4. **desviación euclídea** acumulada respecto al segmento recto inicio-fin.
+2. **número de giros de 45°**,
+3. **desviación euclídea** acumulada respecto al segmento recto inicio-fin.
 
-Consecuencias:
-
-- Una ruta estrictamente más barata gana siempre, por poco que sea la diferencia; las claves de
-  forma solo se comparan cuando el coste acumulado es exactamente igual (los costes reales de la
-  economía son discretos, así que las rutas con las mismas celdas empatan).
-- Esto evita orillas y recovecos de roca donde la ruta toca varios vecinos bloqueados, y después
-  prefiere menos curvas y una línea más recta.
-- Las claves secundarias son no negativas y aditivas; la heurística solo estima construcción, así
-  que sigue siendo admisible y consistente y el primer objetivo extraído es óptimo en ese orden.
-- No hay bloqueo duro ni penalización en `totalCost()`: el plan reporta solo el coste y tiempo
-  reales de las celdas.
-- `DIRECT` y las políticas `AVOID_*` no usan este orden.
-
-### Paso duro de limpieza (dos pasadas)
-
-Para `AVOID_MOUNTAINS`, `AVOID_WATER` y `AVOID_ALL` la comodidad anterior no basta: una ruta puede
-seguir pegada a la costa si esa es la más corta. Por eso el planificador hace **dos pasadas** con
-el mismo A*, las mismas reglas de giro/esquina, la misma métrica y el mismo determinismo:
-
-1. **Pasada con limpieza dura (primera).** Además de bloquear el terreno de la política, ninguna
-   celda de la ruta puede tener un vecino bloqueado. Es decir, toda celda intermedia debe cumplir
-   `vecinos_bloqueados = 0`, quedando al menos a una celda del terreno **nombrado** por la política
-   (roca en `AVOID_MOUNTAINS`, agua en `AVOID_WATER`, ambos en `AVOID_ALL`). El terreno permitido
-   no exige limpieza dura. **Origen y destino están exentos** (pueden estar en costa o cerca de un
-   borde). Si esta pasada encuentra ruta, se devuelve.
-2. **Fallback (segunda).** Si la pasada dura es infactible (corredor de una celda, destino
-   encerrado, borde del mapa), se repite la búsqueda sin la restricción dura y se devuelve su mejor
-   plan. Así los corredores estrechos siguen siendo transitables aunque la vía toque el borde.
-
-El término de comodidad por vecinos bloqueados se mantiene en ambas pasadas: en la primera es
-redundante para los vecinos inmediatos (todas las celdas intermedias tienen cero), pero sigue
-distinguiendo rutas a dos o tres celdas del obstáculo. En el fallback es lo que evita, dentro de lo
-posible, ir pegado a la costa. El fallback es raro y no se registra nada: simplemente se devuelve el
-mejor plan posible.
-
-`DIRECT` y `CHEAPEST` **nunca** usan la pasada dura: conservan su semántica primaria y solo usan
-desempates deterministas diminutos. En `DIRECT` son `1e-3` por giro y `1e-5` para
-`desviación + vecinos_bloqueados` sobre la distancia unitaria; en `CHEAPEST` son esas mismas
-fracciones aplicadas al coste primario mínimo por celda. En todos los casos las penalizaciones
-**no** se suman a `totalCost()` ni a `totalConstructionTicks()`: el plan reporta solo el coste y
-tiempo reales de las celdas elegidas.
+No hay ninguna clave de adyacencia a obstáculos. Una ruta estrictamente más barata gana siempre;
+las claves de forma solo se comparan cuando el coste acumulado es exactamente igual. Si una ruta
+barata va pegada al agua o a la roca, es válida y se devuelve. Las claves secundarias son no
+negativas y aditivas; la heurística solo estima construcción, así que sigue siendo admisible y
+consistente y el primer objetivo extraído es óptimo en ese orden. `totalCost()` y
+`totalConstructionTicks()` siguen reportando solo el coste y tiempo reales de las celdas elegidas.
 
 ### Coste y tiempo
 
@@ -199,8 +158,7 @@ igual coste.
   la esquina, no pisa el agua/roca. Esto elimina la asimetría en la que `CHEAPEST` podía usar un
   paso diagonal que `AVOID_ALL` rechazaba. Consecuencia: no se puede cruzar en diagonal por una
   esquina entre dos celdas no construibles; si eso deja el destino encerrado, el plan es
-  infactible con motivo. La pasada dura de limpieza puede seguir rechazando una celda diagonal
-  adyacente al terreno bloqueado; en ese caso actúa el fallback.
+  infactible con motivo.
 - **Origen igual a destino** devuelve un plan factible vacío, con coste y ticks 0 (no hay nada que
   construir).
 - **Coste por celda**, no por longitud: una celda diagonal cuesta lo mismo que una ortogonal, igual
@@ -257,9 +215,8 @@ igual coste.
   caja envolvente.
 - Al respetar la curvatura real de 45°, algunas rutas son más largas que la distancia geométrica
   mínima (hay que girar gradualmente). Es intencional: el plan debe poder construirse.
-- La pasada dura de limpieza hace que las rutas `AVOID_*` dejen al menos una celda libre respecto
-  al agua/roca; cuando el terreno no lo permite (corredores), el fallback garantiza que siga
-  habiendo un plan transitable aunque toque el borde.
+- Las políticas `AVOID_*` son un bloqueo binario: una ruta puede discurrir pegada al agua/roca y
+  sigue siendo válida; solo se prohíbe construir sobre esa celda.
 - El planificador no recorta esquinas entre celdas bloqueadas (regla diagonal decidida); la de no
   modelar puertas queda para la capa de construcción.
 

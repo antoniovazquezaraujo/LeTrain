@@ -50,7 +50,7 @@ keeps the accepted plan in `pendingRoutePlan` for the future construction queue.
 `PLANNING` status (no cost, no fake percentage, no `Enter`):
 
 ```text
-Connect · PLANNING · CLEARANCE · 234k nodes · 3.2 s · [░░██░░░░] · Esc cancel
+Connect · PLANNING · SEARCH · 234k nodes · 3.2 s · [░░██░░░░] · Esc cancel
 ```
 
 The bar is indeterminate: a two-cell activity window moves according to the progress snapshot

@@ -77,11 +77,11 @@ class RoutePreviewStatusTest {
     @DisplayName("PLANNING shows phase, nodes, elapsed and an animated bar but no cost or Enter")
     void formatsPlanning() {
         RoutePlanningProgress progress = new RoutePlanningProgress(
-                RoutePlanningProgress.Phase.CLEARANCE, 234_000, 3_200, new Point(3, 4));
+                RoutePlanningProgress.Phase.SEARCH, 234_000, 3_200, new Point(3, 4));
 
         String status = RoutePreviewStatus.formatPlanning(progress);
 
-        assertTrue(status.contains("Connect · PLANNING · CLEARANCE"), status);
+        assertTrue(status.contains("Connect · PLANNING · SEARCH"), status);
         assertTrue(status.contains("234k nodes"), status);
         assertTrue(status.contains("3.2 s"), status);
         assertTrue(status.contains("[░░██░░░░]") || status.contains("██"), status);
