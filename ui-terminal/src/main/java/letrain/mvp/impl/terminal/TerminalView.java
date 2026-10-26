@@ -29,9 +29,11 @@ import com.googlecode.lanterna.terminal.Terminal;
 import java.awt.Font;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -68,6 +70,9 @@ public class TerminalView implements letrain.mvp.View {
     private Screen screen;
     private DefaultTerminalFactory terminalFactory;
     private Terminal terminal;
+    /** Original tty mode captured before Lanterna takes over; null when there is no tty. */
+    private String savedSttyMode;
+    private boolean stopped;
     private TerminalSize terminalSize;
     private TextGraphics gameBox;
     private TerminalPosition gameBoxPosition;
@@ -158,6 +163,10 @@ public class TerminalView implements letrain.mvp.View {
         try {
             terminalFactory.setUnixTerminalCtrlCBehaviour(
                     com.googlecode.lanterna.terminal.ansi.UnixLikeTerminal.CtrlCBehaviour.TRAP);
+            // Capture the tty mode before Lanterna switches it to raw mode. Lanterna normally
+            // restores it in close(), but hand it back explicitly as well: the shell must stay
+            // usable even if a screen/terminal teardown path returns without restoring it.
+            savedSttyMode = readSttyMode();
             terminal = terminalFactory.createTerminal();
             terminal.setCursorVisible(false);
             setScreen(createScreen(terminal));
@@ -1896,6 +1905,10 @@ public class TerminalView implements letrain.mvp.View {
     }
 
     public void stop() {
+        if (stopped) {
+            return;
+        }
+        stopped = true;
         if (screen != null) {
             try {
                 screen.stopScreen();
@@ -1908,40 +1921,58 @@ public class TerminalView implements letrain.mvp.View {
                 // Ignore
             }
         }
-        boolean terminalClosed = false;
         if (terminal != null) {
             try {
-                // Lanterna saves the tty mode on construction and restores it here (and in its own
-                // shutdown hook), so it owns the terminal-state handback.
                 terminal.close();
-                terminalClosed = true;
             } catch (Exception e) {
                 // Ignore
             }
         }
-        if (!terminalClosed) {
-            // Lanterna could not hand the terminal back (no terminal object, or close failed):
-            // best-effort recovery so the shell is not left in raw mode (no echo).
-            fallbackSttySane();
-        }
+        // Lanterna normally restores the tty in close(), but do not rely on a successful-looking
+        // close: explicitly hand the original mode back after every teardown path. This also
+        // covers a screen close that returned normally without restoring raw mode.
+        restoreTerminalState();
     }
 
-    /** Last-resort tty recovery, only for when Lanterna could not close the terminal itself. */
-    private void fallbackSttySane() {
+    /**
+     * Best-effort tty restoration. Emits the ANSI reset/leave-alternate/show-cursor sequence and
+     * restores the exact mode captured at startup (or {@code stty sane} when there was no tty).
+     * Failures are ignored so shutdown is never blocked by a missing/non-Unix tty.
+     */
+    private void restoreTerminalState() {
         try {
             System.out.print("\033[0m\033[?1049l\033[?25h");
             System.out.flush();
         } catch (Exception ignored) {
             // Ignore
         }
+        String mode = savedSttyMode == null || savedSttyMode.isBlank() ? "sane" : savedSttyMode;
         try {
-            Process p =
-                    Runtime.getRuntime().exec(new String[] {"sh", "-c", "stty sane < /dev/tty"});
+            Process p = Runtime.getRuntime()
+                    .exec(new String[] {"sh", "-c", "stty " + mode + " < /dev/tty"});
             if (!p.waitFor(2, TimeUnit.SECONDS)) {
                 p.destroyForcibly();
             }
         } catch (Exception ignored) {
             // Not a Unix tty (e.g. Windows/Swing): nothing to restore here
+        }
+    }
+
+    /** Current tty mode ({@code stty -g}), or null when there is no controlling terminal. */
+    private static String readSttyMode() {
+        try {
+            Process p = Runtime.getRuntime().exec(new String[] {"sh", "-c", "stty -g < /dev/tty"});
+            if (!p.waitFor(2, TimeUnit.SECONDS)) {
+                p.destroyForcibly();
+                return null;
+            }
+            try (BufferedReader reader =
+                    new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+                String mode = reader.readLine();
+                return mode == null || mode.isBlank() ? null : mode.trim();
+            }
+        } catch (Exception ignored) {
+            return null;
         }
     }
 

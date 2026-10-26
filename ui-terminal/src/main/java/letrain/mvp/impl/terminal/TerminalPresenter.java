@@ -2969,8 +2969,18 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     @Override
     public void onExitGame() {
+        // Do not tear the terminal down from inside the command/event loop: that would let the
+        // still-running frame paint into a closed screen and can leave the tty in raw mode. Mark
+        // the loop for exit and let start() return normally; the launcher/presenter.stop() owns
+        // the terminal hand-back afterwards.
         running = false;
-        stop();
+        if (view != null) {
+            try {
+                view.setEndOfGame(true);
+            } catch (Exception e) {
+                log.warn("Error requesting end of game", e);
+            }
+        }
     }
 
     @Override
