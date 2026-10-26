@@ -191,13 +191,16 @@ igual coste.
 
 ## Decisiones menores tomadas para no expandir el alcance
 
-- **Movimiento diagonal sin recortar esquinas**: una celda está bloqueada si no tiene datos de
-  terreno, si su valor no es construible (`GROUND`/`WATER`/`ROCK`) o si la `RoutePolicy` la
-  bloquea. Un movimiento diagonal se **rechaza** cuando ambos ortogonales adyacentes están
-  bloqueados; si al menos uno es transitable, se permite. Aplica a todas las políticas: en
-  `DIRECT`/`CHEAPEST` el agua y la roca son transitables, así que solo bloquean los valores
-  ausentes o no construibles. Consecuencia: no se puede cruzar en diagonal por la esquina entre
-  dos celdas no construibles; si eso deja el destino encerrado, el plan es infactible con motivo.
+- **Movimiento diagonal sin recortar esquinas**: el destino diagonal debe ser construible y no
+  estar bloqueado por la política (`GROUND`/`WATER`/`ROCK` normalizados; agua/roca siguen
+  bloqueadas para `AVOID_ALL`). La esquina solo se rechaza cuando **ambos ortogonales no son
+  construibles** (sin datos o valor no soportado). Un ortogonal de agua o roca **sí** permite el
+  paso diagonal entre dos celdas de tierra, aunque la política bloquee ese terreno: la vía cruza
+  la esquina, no pisa el agua/roca. Esto elimina la asimetría en la que `CHEAPEST` podía usar un
+  paso diagonal que `AVOID_ALL` rechazaba. Consecuencia: no se puede cruzar en diagonal por una
+  esquina entre dos celdas no construibles; si eso deja el destino encerrado, el plan es
+  infactible con motivo. La pasada dura de limpieza puede seguir rechazando una celda diagonal
+  adyacente al terreno bloqueado; en ese caso actúa el fallback.
 - **Origen igual a destino** devuelve un plan factible vacío, con coste y ticks 0 (no hay nada que
   construir).
 - **Coste por celda**, no por longitud: una celda diagonal cuesta lo mismo que una ortogonal, igual

@@ -37,7 +37,9 @@ import letrain.utils.ValidationUtils;
  * first step may take any of the eight directions; every following step must turn at most 45
  * degrees, i.e. {@code Math.abs(previous.angularDistance(next)) <= 1}. This is the same rule
  * {@code RailTrackMaker} enforces when placing track, so a plan never asks for an unbuildable
- * 90/135/180-degree bend. The diagonal corner-cutting rule is unchanged.
+ * 90/135/180-degree bend. A diagonal only rejects corners whose two orthogonals are non-buildable;
+ * water/rock orthogonals may be crossed diagonally as long as the target is a buildable,
+ * policy-allowed cell.
  *
  * <p>
  * <b>Comfort preferences.</b> Search cost is the primary metric plus policy-specific comfort terms.
@@ -266,7 +268,7 @@ public final class RoutePlanner {
                 }
                 int dx = move.dx();
                 int dy = move.dy();
-                if (dx != 0 && dy != 0 && !diagonalIsAllowed(terrain, policy, currentKey, dx, dy)) {
+                if (dx != 0 && dy != 0 && !diagonalIsAllowed(terrain, currentKey, dx, dy)) {
                     continue;
                 }
                 int nx = currentKey.x() + dx;
@@ -368,8 +370,7 @@ public final class RoutePlanner {
                 }
                 int dx = move.dx();
                 int dy = move.dy();
-                if (dx != 0 && dy != 0
-                        && !diagonalIsAllowed(terrain, RoutePolicy.CHEAPEST, currentKey, dx, dy)) {
+                if (dx != 0 && dy != 0 && !diagonalIsAllowed(terrain, currentKey, dx, dy)) {
                     continue;
                 }
                 int nx = currentKey.x() + dx;
@@ -493,16 +494,22 @@ public final class RoutePlanner {
 
     /**
      * A diagonal move is allowed only when at least one of its two orthogonal neighbours is
-     * traversable. If both orthogonals are blocked (no terrain data, non-buildable value, or
-     * blocked by the policy), the move would cut a corner between two cells and is rejected. This
-     * applies to every policy; for {@code DIRECT}/{@code CHEAPEST} water and rock are traversable,
-     * so only missing/unknown terrain blocks them.
+     * <b>buildable</b>. Missing or unsupported orthogonals reject the move (it would cut a corner
+     * through non-existent ground), but water/rock orthogonals do not: a diagonal land-to-land move
+     * may cross their corner even under a policy that blocks that terrain. The diagonal target is
+     * still validated by {@code isBuildable} + {@code isBlocked(policy)} by the caller, so a route
+     * never steps onto the forbidden terrain itself.
      */
-    private static boolean diagonalIsAllowed(GroundMap terrain, RoutePolicy policy, CellKey from,
-            int dx, int dy) {
-        boolean horizontal = isTraversable(terrain, policy, from.x() + dx, from.y());
-        boolean vertical = isTraversable(terrain, policy, from.x(), from.y() + dy);
+    private static boolean diagonalIsAllowed(GroundMap terrain, CellKey from, int dx, int dy) {
+        boolean horizontal = isBuildableCell(terrain, from.x() + dx, from.y());
+        boolean vertical = isBuildableCell(terrain, from.x(), from.y() + dy);
         return horizontal || vertical;
+    }
+
+    /** True when a cell exists and its terrain value is buildable (ground, water or rock). */
+    private static boolean isBuildableCell(GroundMap terrain, int x, int y) {
+        Integer rawTerrain = terrain.getValueAt(x, y);
+        return rawTerrain != null && isBuildable(normalize(rawTerrain));
     }
 
     /** True when a cell exists, is buildable and the current policy does not block it. */

@@ -274,16 +274,18 @@ class RoutePlannerTest {
     }
 
     @Test
-    @DisplayName("diagonal shortcut between two policy-blocked orthogonal cells is rejected")
-    void should_RejectDiagonal_When_BothOrthogonalsAreBlockedByPolicy() {
+    @DisplayName("diagonal land-to-land move is allowed across policy-blocked buildable corners")
+    void should_AllowDiagonal_When_BothOrthogonalsArePolicyBlockedButBuildable() {
         FakeGroundMap terrain =
                 new FakeGroundMap().rect(0, 0, 1, 1, NORMAL).put(1, 0, ROCK).put(0, 1, ROCK);
 
         RoutePlan plan = RoutePlanner.plan(terrain, economy(), p(0, 0), p(1, 1),
                 RoutePolicy.AVOID_MOUNTAINS);
 
-        assertFalse(plan.feasible());
-        assertTrue(plan.reason().orElseThrow().contains("No route"));
+        assertTrue(plan.feasible());
+        assertEquals(List.of(p(0, 0), p(1, 1)), points(plan));
+        assertEquals(200.0, plan.totalCost(), 1e-9);
+        assertEquals(TrackType.NORMAL_TRACK, typeAt(plan, 1, 1));
     }
 
     @Test
@@ -300,18 +302,19 @@ class RoutePlannerTest {
     }
 
     @Test
-    @DisplayName("a corner blocked for diagonals forces the planner to detour")
-    void should_Detour_When_DiagonalWouldCutABlockedCorner() {
+    @DisplayName("a policy-blocked but buildable corner no longer forces a detour")
+    void should_UseCorner_When_OrthogonalsArePolicyBlockedButBuildable() {
         FakeGroundMap terrain =
                 new FakeGroundMap().rect(-1, -1, 3, 2, NORMAL).put(1, 0, ROCK).put(0, 1, ROCK);
         RoutePlan plan = RoutePlanner.plan(terrain, economy(), p(0, 0), p(2, 1),
                 RoutePolicy.AVOID_MOUNTAINS);
 
         assertTrue(plan.feasible());
-        assertFalse(contains(plan, 1, 1));
-        assertTrue(plan.steps().size() > 3);
+        assertEquals(List.of(p(0, 0), p(1, 1), p(2, 1)), points(plan));
+        assertEquals(300.0, plan.totalCost(), 1e-9);
         assertTrue(plan.steps().stream()
                 .noneMatch(step -> step.trackType() == TrackType.TUNNEL_TRACK));
+        assertLegalTurns(plan);
     }
 
     @Test
@@ -328,6 +331,55 @@ class RoutePlannerTest {
         RoutePlan missingPlan =
                 RoutePlanner.plan(missingTerrain, economy(), p(0, 0), p(1, 1), RoutePolicy.DIRECT);
         assertFalse(missingPlan.feasible());
+    }
+
+    @Test
+    @DisplayName("AVOID_ALL allows a one-cell diagonal land strip across water/rock")
+    void should_AllowDiagonalLandStrip_When_PolicyBlocksBothTerrains() {
+        // Only the main diagonal is land. Every orthogonal corner is water or rock: buildable, so
+        // the diagonal land-to-land moves are legal even though AVOID_ALL blocks stepping on them.
+        FakeGroundMap terrain = new FakeGroundMap().rect(-1, -1, 3, 3, WATER).put(0, 0, NORMAL)
+                .put(1, 1, NORMAL).put(2, 2, NORMAL).put(1, 0, ROCK).put(0, 1, ROCK).put(2, 1, ROCK)
+                .put(1, 2, ROCK);
+
+        RoutePlan plan =
+                RoutePlanner.plan(terrain, economy(), p(0, 0), p(2, 2), RoutePolicy.AVOID_ALL);
+
+        assertTrue(plan.feasible());
+        assertEquals(List.of(p(0, 0), p(1, 1), p(2, 2)), points(plan));
+        assertEquals(300.0, plan.totalCost(), 1e-9);
+        assertTrue(
+                plan.steps().stream().allMatch(step -> step.trackType() == TrackType.NORMAL_TRACK));
+        assertLegalTurns(plan);
+    }
+
+    @Test
+    @DisplayName("AVOID_WATER allows a land diagonal across water-blocked corners")
+    void should_AllowDiagonal_When_BothOrthogonalsAreWater() {
+        FakeGroundMap terrain =
+                new FakeGroundMap().rect(0, 0, 1, 1, WATER).put(0, 0, NORMAL).put(1, 1, NORMAL);
+
+        RoutePlan plan =
+                RoutePlanner.plan(terrain, economy(), p(0, 0), p(1, 1), RoutePolicy.AVOID_WATER);
+
+        assertTrue(plan.feasible());
+        assertEquals(List.of(p(0, 0), p(1, 1)), points(plan));
+        assertEquals(200.0, plan.totalCost(), 1e-9);
+    }
+
+    @Test
+    @DisplayName("a route still cannot step onto water/rock under AVOID_ALL")
+    void should_RejectRoute_When_DiagonalStepWouldEnterBlockedTerrain() {
+        // The middle of the only diagonal is water; the corner trick does not let the route build
+        // on blocked terrain, so no legal route exists.
+        FakeGroundMap terrain =
+                new FakeGroundMap().rect(-1, -1, 3, 3, WATER).put(0, 0, NORMAL).put(2, 2, NORMAL);
+
+        RoutePlan plan =
+                RoutePlanner.plan(terrain, economy(), p(0, 0), p(2, 2), RoutePolicy.AVOID_ALL);
+
+        assertFalse(plan.feasible());
+        assertTrue(plan.reason().orElseThrow().contains("No route"));
     }
 
     @Test
