@@ -1259,6 +1259,18 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             model.setCommandNotice("");
             return true;
         }
+        // Movement quantifiers (digits, Space reset) are navigation, not editing: keep them
+        // available in RAILS while the works run. The sanitized events cannot build or erase.
+        if (model.getMode() == RAILS && keyEvent.getKeyType() == KeyType.Character
+                && keyEvent.getCharacter() != null && !keyEvent.isCtrlDown()
+                && !keyEvent.isAltDown()) {
+            char quantifier = keyEvent.getCharacter();
+            if ((quantifier >= '0' && quantifier <= '9') || quantifier == ' ') {
+                railTrackMaker
+                        .onChar(new InputEvent(KeyType.Character, quantifier, false, false, false));
+                return true;
+            }
+        }
         if (keyEvent.getKeyType() == KeyType.Character && keyEvent.getCharacter() != null) {
             Character c = keyEvent.getCharacter();
             boolean ctrlR = c == 18 || (keyEvent.isCtrlDown() && (c == 'r' || c == 'R'));

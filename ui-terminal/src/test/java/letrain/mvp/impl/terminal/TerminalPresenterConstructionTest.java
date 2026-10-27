@@ -232,6 +232,23 @@ class TerminalPresenterConstructionTest {
     }
 
     @Test
+    @DisplayName("movement quantifiers stay available while construction is active")
+    void movementQuantifiers_remainAvailableWhileActive() {
+        selectStraightRoute();
+        int tracksBefore = trackCount();
+
+        presenter.onChar(charKey('3'));
+        assertEquals(3, model.getQuantifier());
+
+        presenter.onChar(charKey(' '));
+        assertEquals(1, model.getQuantifier(), "Space resets the movement multiplier");
+
+        presenter.onChar(new InputEvent(KeyType.ArrowUp));
+        assertEquals(tracksBefore, trackCount(), "quantified movement must not build track");
+        assertTrue(presenter.isConstructionActive());
+    }
+
+    @Test
     @DisplayName("manual rail keys are ignored while construction is active")
     void manualEditing_isBlockedWhileActive() {
         selectStraightRoute();
