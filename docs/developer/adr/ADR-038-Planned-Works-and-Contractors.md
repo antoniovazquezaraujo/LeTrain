@@ -98,10 +98,11 @@ Una empresa sin capacidad para un puente o túnel debe marcar la cotización com
 
 ### 4. Zonas de exclusión
 
-Cuando una obra empieza, se reserva una zona alrededor de su ruta. La zona:
+Cuando una obra empieza, se reserva una zona alrededor de su ruta. Para la primera versión se ha
+acordado un **único rectángulo simple** por obra, con un color propio para identificarlo en el
+mapa. Ese rectángulo:
 
-- puede ser un rectángulo o un conjunto de rectángulos;
-- debe cubrir la ruta y un margen de seguridad;
+- cubre la ruta completa y un margen de seguridad;
 - impide que otra obra automática construya dentro;
 - impide que el usuario construya o borre manualmente dentro;
 - se dibuja en el mapa;
@@ -110,36 +111,45 @@ Cuando una obra empieza, se reserva una zona alrededor de su ruta. La zona:
 La intención es que el jugador pueda construir manualmente **fuera** de la zona mientras la obra
 avanza. El margen evita que una construcción exterior se acople sin querer a la obra.
 
-Queda por decidir si el margen es siempre de una celda, si se puede configurar y si las reservas
-se representan internamente como rectángulos, celdas exactas o ambas.
+La posibilidad de usar varios rectángulos por obra queda descartada para la primera versión. Si
+una ruta muy diagonal hace que el rectángulo reserve demasiado terreno, se podrá revisar más
+adelante, pero no se implementará ahora.
 
 ### 5. Orden y simultaneidad
 
 El dueño podrá ordenar la lista de obras. Ejecutar varias a la vez o en un orden concreto puede
-tener distinto precio y duración. Las preguntas abiertas son:
+tener distinto precio y duración. Se ha acordado que habrá un límite de **cuatro equipos** de
+construcción y que la simultaneidad se cobrará **mucho más cara** que ejecutar las obras en
+secuencia. La idea es que el jugador pueda acelerar, pero que no sea gratis.
 
-- ¿Cada obra tiene su propia cuadrilla o varias comparten capacidad?
-- ¿Una obra simultánea cuesta más porque requiere más recursos?
-- ¿El tiempo total es el máximo de las obras o la suma de una ejecución secuencial?
-- ¿Se puede cambiar el orden mientras algunas ya están en marcha?
+Las preguntas que quedan abiertas son las cifras exactas:
 
-La primera versión puede permitir varias obras **solo si sus zonas no se solapan**, con una
-cuadrilla independiente por obra. La limitación de cuadrillas puede llegar después.
+- cómo se reparte el coste extra entre la segunda, tercera y cuarta obra simultánea;
+- si el tiempo total de varias obras es el máximo de sus plazos o una combinación de ejecución
+  secuencial y paralela;
+- si se puede cambiar el orden mientras algunas ya están en marcha;
+- si una obra puede esperar a que se libere un equipo o hay que cancelarla.
+
+La primera versión permitirá varias obras **solo si sus zonas no se solapan** y solo hasta el
+límite de equipos disponibles.
 
 ### 6. Efectivo y reserva
 
-Para empezar una obra subcontratada, el jugador debe disponer de efectivo suficiente. La idea
+Para empezar una obra subcontratada, el jugador debe disponer de efectivo suficiente. La regla
 acordada es:
 
-- no se puede contratar si el saldo no cubre el presupuesto;
-- el presupuesto se reserva al arrancar;
+- no se puede contratar si el saldo disponible no cubre el presupuesto;
+- el presupuesto se reserva **al arrancar la obra**;
+- el dinero de las obras ya en marcha cuenta como reservado y no se puede volver a usar;
 - si se lanzan varias obras, se comprueba la suma de sus reservas;
 - la reserva se consume celda a celda;
 - al cancelar, se devuelve lo no consumido después de aplicar la penalización;
 - la obra automática no debe dejar por sí sola un saldo negativo.
 
-El modo manual sigue disponible si no hay dinero para subcontratar. Queda por decidir si el manual
-paga materiales como ahora, pudiendo quedar en negativo, o si también exige efectivo.
+El modo manual sigue disponible si no hay dinero para subcontratar. Se ha acordado que el manual
+**sí puede quedar en negativo pagando materiales**: el jugador se ahorra la constructora y la mano
+de obra, pero el material se sigue comprando. La reserva de las obras automáticas, en cambio, no
+puede estar descubierta.
 
 ### 7. Cancelación
 
@@ -177,15 +187,28 @@ experiencia final.
 
 ### 10. Comando `connect`
 
-Más adelante, la misma maquinaria podrá exponerse como comando de autoría:
+Más adelante, la misma maquinaria podrá exponerse como comando de autoría. Se ha acordado que
+habrá **un único comando `connect`**, no dos comandos separados para planificar y construir. El
+comando tendrá que ser más rico que el borrador inicial porque, si automatiza directamente sin
+pasar por la lista, necesita saber con qué empresa, material, calidad y ritmo se construye.
+
+Una forma posible, todavía no cerrada, sería:
 
 ```text
 connect <origen> to <destino> <política>
+        [company <constructora>]
+        [material <grado>]
+        [quality <nivel>]
+        [pace <ritmo>]
 ```
 
-Podría aceptar coordenadas, marcas o estaciones, planificar y añadir a la lista o encolar
-directamente. También podría existir una variante con espera para escenarios. No forma parte de
-esta ADR.
+Los parámetros de empresa/material/calidad podrían tener valores por defecto para que el comando
+siga siendo cómodo. También podría existir una variante con espera para escenarios.
+
+La lista de presupuestos **no es un requisito para automatizar**: es una herramienta de gestión y
+comparación. `connect` puede planificar, comprobar efectivo y encolar una obra directamente. La
+lista sirve para preparar y comparar varias obras antes de lanzarlas, no para que el comando
+funcione. No forma parte de esta ADR.
 
 ## Fuera de alcance
 
@@ -205,11 +228,13 @@ esta ADR.
 
 ## Decisiones abiertas
 
-- Cifras de recargo, tiempo base y cancelación.
-- Si el presupuesto se reserva completo o solo se comprueba al arrancar.
-- Si el manual paga materiales en negativo.
+- Cifras de recargo automático, tiempo base y cancelación.
+- Cómo se reparte el sobrecoste entre las obras simultáneas (límite acordado: cuatro equipos).
 - Capacidades exactas de cada constructora.
-- Número de cuadrillas y coste de la simultaneidad.
-- Representación de zonas y margen.
-- Persistencia de la lista en savegames.
+- Persistencia de la lista de obras en savegames.
 - Orden de implementación entre lista, constructoras y zonas.
+- Sintaxis final y valores por defecto de `connect`.
+
+Las decisiones ya cerradas son: reserva de presupuesto al arrancar, el manual puede quedar en
+negativo pagando materiales, una zona rectangular simple por obra y un límite de cuatro equipos
+con simultaneidad más cara.

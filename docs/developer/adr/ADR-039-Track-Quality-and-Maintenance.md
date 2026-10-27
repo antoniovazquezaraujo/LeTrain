@@ -71,7 +71,9 @@ explicar), el jugador elige un ritmo explícito:
 
 El coste de materiales no cambia por el ritmo; lo que cambia es el tiempo y la calidad de
 ejecución. En rutas largas, construir cuidadosamente será más pesado para el jugador, que es
-precisamente el intercambio.
+precisamente el intercambio. El manual sigue pagando los materiales aunque el saldo quede en
+negativo: no hay recargo de constructora, pero el material no es gratis. La reserva de presupuesto
+solo se aplica a las obras automáticas.
 
 La calidad final se obtiene combinando material y ejecución. La fórmula exacta queda abierta, pero
 debe ser determinista y fácil de explicar en la UI.

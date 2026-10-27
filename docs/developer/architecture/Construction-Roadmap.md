@@ -117,24 +117,39 @@ Objetivo: exponer la misma maquinaria fuera de la UI 2D.
 
 Incluye:
 
-- comando `connect` con coordenadas/marcas/estaciones;
-- planificar y encolar o solo planificar;
-- posible `wait` para escenarios;
+- un único comando `connect`, no dos comandos separados para planificar y construir;
+- coordenadas, marcas o estaciones como origen/destino;
+- parámetros de empresa, material, calidad y ritmo cuando el comando automatice directamente;
+- planificar, comprobar efectivo y encolar en una sola operación;
+- posible variante con espera para escenarios;
 - HUD y zonas en 3D;
 - sonido de obras y actividad visible en ambos clientes.
 
-Depende de: lista, cola y constructoras.
+La lista de presupuestos no es un requisito para el comando. La lista sirve para preparar, comparar
+y ordenar varias obras antes de lanzarlas; `connect` puede funcionar sin ella usando valores por
+defecto o parámetros explícitos.
 
-## Decisiones que siguen abiertas
+Depende de: cola, constructoras y economía automática.
 
-- Cifras de recargo automático, ticks base y cancelación.
-- Si el presupuesto se reserva completo o solo se comprueba al arrancar.
-- Si el manual puede quedar en negativo pagando materiales.
-- Capacidades concretas de cada constructora.
-- Cuántas cuadrillas hay y cómo se cobra la simultaneidad.
-- Representación exacta de las zonas y su margen.
-- Persistencia de la lista de obras en savegames.
-- Fórmula de calidad y ritmo de mantenimiento.
+## Decisiones cerradas y pendientes
+
+Ya están decididas:
+
+- el presupuesto se reserva al arrancar cada obra, y el dinero de las obras activas queda
+  comprometido;
+- el manual puede quedar en negativo pagando materiales;
+- una zona de exclusión es un rectángulo simple por obra, con color;
+- hay un límite de cuatro equipos y la simultaneidad se cobra mucho más cara;
+- habrá un único comando `connect`.
+
+Siguen pendientes:
+
+- cifras de recargo automático, ticks base y cancelación;
+- cómo se reparte el sobrecoste entre las obras simultáneas;
+- capacidades concretas de cada constructora;
+- persistencia de la lista de obras en savegames;
+- fórmula de calidad y ritmo de mantenimiento;
+- sintaxis final y valores por defecto de `connect`.
 
 Estas decisiones no bloquean la Fase 1. Se pueden resolver cuando se llegue a cada fase, con datos
 reales de uso.
