@@ -1,101 +1,143 @@
-# ADR-037: Cola de construcción de rutas (core)
+# ADR-037: Cola de construcción de rutas
 
-## Estado: PROPUESTO
+## Estado: ACEPTADO
 
-> Rebanada de core + tests. No hay cambios de UI/terminal todavía; el presenter se cablea en la
-> siguiente rebanada. Depende de [[ADR-034-Route-Planner-Cost-Aware|ADR-034]],
+> Implementado en `core` y en el cliente 2D dentro de la rama `feature/construction-queue`.
+> Depende de [[ADR-034-Route-Planner-Cost-Aware|ADR-034]],
 > [[ADR-035-Route-Preview-2D|ADR-035]] y [[ADR-036-Async-Route-Preview|ADR-036]].
+>
+> Esta ADR describe **lo que existe hoy**: elegir un plan en la preview y construirlo
+> inmediatamente mediante una cola automática. La separación entre presupuestar y ejecutar, las
+> constructoras, las zonas de exclusión, el mantenimiento y la calidad de materiales son ideas
+> posteriores y no forman parte de esta implementación. Están recogidas en
+> [[ADR-038-Planned-Works-and-Contractors|ADR-038]] y
+> [[ADR-039-Track-Quality-and-Maintenance|ADR-039]].
 
 ## Contexto
 
-ADR-034 dejó un `RoutePlan` puro (pasos, coste y ticks reales) y ADR-035/036 dejaron la
-previsualización y la planificación asíncrona. Falta convertir un plan aceptado en vía real sin
-meter lógica de UI en el motor y sin que la operación bloquee la simulación.
+La preview 2D de ADR-035/036 permite elegir dos extremos, calcular varias políticas y seleccionar
+un `RoutePlan`. Falta convertir ese plan en vía real sin bloquear el bucle de juego y sin meter
+lógica de presentación en el planificador.
 
-El dueño fijó estas reglas para la capa de construcción:
+En el momento de escribir esta ADR, el dueño quiere un flujo deliberadamente simple:
 
-- un plan a la vez, una sola obra/cursor a la vez;
-- cancelar detiene la obra y deja lo ya construido;
-- sin reutilizar vía existente ni crear forks;
-- la celda de origen también se construye;
-- tiempo base por celda (1 tick por defecto) sumado a los delays reales de puente/túnel.
+- se elige una ruta en la preview;
+- al aceptarla, la construcción empieza inmediatamente;
+- no hay lista de presupuestos, constructoras ni varias obras a la vez;
+- la ruta se construye de forma aislada y el jugador la conecta manualmente después;
+- los trenes no se bloquean: si entran en una vía en obras, las consecuencias son suyas.
+
+La separación entre planificación y ejecución se considerará más adelante. Esta ADR no la
+anticipa.
 
 ## Decisión
 
-### Paquete `letrain.construction` (core, UI-free)
+### Flujo actual
+
+1. El usuario entra en `CONNECT` y calcula un plan.
+2. Si el plan es factible y construible, `Enter` lo selecciona.
+3. El presenter abandona `CONNECT` y crea una obra automática.
+4. La obra avanza con el reloj de simulación, una celda cada cierto número de ticks.
+5. La vía aparece en el mapa conforme se construye. Las celdas pendientes se muestran como
+   fantasmas y A/B siguen visibles.
+6. Al terminar, la edición manual vuelve a estar disponible.
+7. Si se cancela, la obra se detiene y la vía parcial permanece en el mundo.
+
+No se puede empezar una segunda obra mientras la primera está activa. El trabajo se ejecuta en el
+hilo de UI; no hay hilos de construcción.
+
+### Núcleo: `letrain.construction`
+
+El paquete es UI-free. No conoce `Model`, `RailTrackMaker`, `View` ni Lanterna.
 
 - `ConstructionState`: `IDLE`, `REJECTED`, `BUILDING`, `DONE`, `CANCELLED`.
-- `ConstructionProgress`: record inmutable con estado, celdas construidas/total, paso actual
-  (nullable), ticks restantes del paso actual y motivo de rechazo/cancelación. `IDLE` lo usa una
-  cola vacía; nunca se inventan costes.
+- `ConstructionProgress`: estado, celdas construidas, total, paso actual, ticks restantes y motivo
+  de rechazo/cancelación.
 - `TrackMaterializer`: puerto con `prepare(plan)`, `buildStep(plan, index, previous, next)` y
-  `finish()`. El core no conoce `Model`, `RailTrackMaker`, `View` ni Lanterna.
-- `RouteConstructionJob`: materializa **un** plan, celda a celda, con un tick de juego por avance.
-- `RouteConstructionQueue`: dueña de como máximo un job activo, más `ConstructionGuard`
-  (`isEditingLocked()`) para que la UI futura bloquee la edición manual sin tocar el `Model`.
+  `finish()`. El preflight no debe mutar el mundo.
+- `RouteConstructionJob`: materializa un único plan, una celda por tick disponible. El coste de
+  una celda es `baseDelayTicksPerCell + economy.getConstructionDelay(trackType)`.
+- `RouteConstructionQueue`: admite como máximo un job `BUILDING`, expone progreso, cancelación y
+  `ConstructionGuard.isEditingLocked()`.
+- `ConstructionGuard`: consulta para que la UI bloquee la edición manual sin meter un flag global
+  en `Model`.
 
-### Preflight
+### Materialización real
 
-`prepare(RoutePlan)` se ejecuta una sola vez al crear el job. Debe ser **no mutante**: si devuelve
-un motivo, el job queda `REJECTED`, no se llama a `buildStep` y no se gasta nada. Un plan
-infactible se rechaza con el `reason()` del planner sin llegar a llamar al materializador. Una
-excepción del preflight se convierte en rechazo con mensaje, para no romper el bucle de juego.
+`RailTrackMaterializer` es el adaptador de terminal. Usa la maquinaria existente
+(`RailTrackMaker`/`TurtleBuilder`) para no duplicar la creación de vías, puentes, túneles y gates.
 
-La validación de celdas ocupadas por vía/forks/estaciones pertenece al adaptador (siguiente
-rebanada); esta rebanada solo define el puerto y el camino de rechazo.
+Antes de construir:
 
-### Ticks
+- comprueba todas las celdas del plan;
+- si alguna ya tiene vía o elemento ferroviario, rechaza la obra con un motivo legible;
+- no modifica nada durante el preflight.
 
-Cada celda cuesta `baseDelayTicksPerCell + economy.getConstructionDelay(trackType)` ticks.
+Durante la construcción:
 
-- Por defecto `baseDelayTicksPerCell = 1`; vía normal tiene delay 0, así que se construye **una
-  celda por tick**.
-- Puente y túnel suman su delay configurado real al tiempo base.
-- Como máximo se construye una celda por `tick()`. Una celda de coste 0 se construye en el primer
-  tick; una de coste `n` en el tick `n`.
-- `tick()` fuera de `BUILDING` es no-op: no se puede construir dos veces la misma celda ni seguir
-  después de `DONE`, `REJECTED` o `CANCELLED`.
-- El job es determinista y no depende del reloj de pared; solo avanza cuando el llamador hace
-  `tick()`.
+- coloca exactamente una celda por paso, en el orden del plan;
+- encadena solo las celdas creadas por esta obra;
+- no se acopla a vías existentes, no crea forks y no conecta estaciones;
+- restaura la posición, dirección y modo del cursor del autor;
+- suprime el journal para no contaminar undo/redo.
 
-### Cancelación y fin
+La obra básica construye una **ruta aislada**. El jugador puede conectarla manualmente a la red
+cuando termine. Los cruces automáticos, la reutilización de vía y las bifurcaciones quedan fuera de
+esta implementación.
 
-`cancel()` detiene el job al instante, pasa a `CANCELLED` y conserva `builtSteps`. Las celdas ya
-construidas siguen en el mundo; el adaptador es responsable de ellas. `finish()` se llama una vez
-al terminar (plan vacío, `DONE` o `CANCELLED`) y debe ser seguro incluso sin celdas construidas.
-`cancel()` y `tick()` son idempotentes después de un estado terminal.
+### Tiempo y coste actuales
 
-### Ruta aislada
+- El coste que se cobra es el coste real de las celdas construidas, calculado por la economía
+  existente. No hay recargo de constructora ni presupuesto separado en esta fase.
+- La base actual es **1 tick por celda**, más el delay real de puente/túnel.
+- No se inventan precios ni tiempos: el HUD usa el `RoutePlan` y el progreso reales.
+- Cancelar no devuelve el dinero de lo construido; lo construido se queda.
 
-La cola construye una **ruta aislada**: no se acopla a vía existente, no crea forks ni conecta
-estaciones. El plan puede cruzar vía existente en diagonal o perpendicular, pero no se fusiona con
-ella. Cruces, bifurcaciones y reutilización de vía quedan **fuera de alcance** de este flujo.
+### UI 2D
 
-Los trenes no se bloquean por la obra y no hay lógica de trenes en este paquete.
+- La preview avisa **antes de seleccionar** si el plan pisa una vía o elemento existente. En ese
+  caso `Enter` queda deshabilitado y el autor sigue en `PREVIEW` para cambiar de política,
+  extremos o cancelar.
+- La obra muestra las celdas pendientes como círculos fantasma y A/B como referencias.
+- La barra de estado muestra celdas construidas/total, coste, tiempo y `Esc cancel`.
+- Se permite navegar, hacer zoom, cambiar de página y usar los modos, incluido `Drive`. Los trenes
+  no se restringen.
+- La edición manual de vías e infraestructura está **bloqueada globalmente** mientras la obra está
+  activa. La consola permite navegación/consulta, pero no comandos de edición, guardado, carga,
+  nueva partida, undo/redo o quit.
+- Los multiplicadores de movimiento (dígitos y `Space` para resetear) siguen disponibles en
+  `RAILS`.
+- El menú File está bloqueado durante la obra: `Esc` abre una confirmación en dos pasos. El primer
+  `Esc` pausa la cola y pide confirmación; el segundo cancela, y cualquier otra tecla reanuda.
+- Tras terminar o cancelar, la edición manual se libera y `Esc` vuelve a abrir el menú File normal.
 
-### Cola
+### Límites deliberados de esta fase
 
-- `start(plan, materializer)` crea un job si no hay otro `BUILDING`; si lo hay, devuelve `false` y
-  no toca el job activo.
-- Un job terminal (`DONE`, `REJECTED`, `CANCELLED`) no bloquea: el siguiente `start` lo sustituye,
-  pero se conserva el último `progress()`/`job()` hasta entonces.
-- `isActive()`/`isEditingLocked()` solo son ciertos en `BUILDING`; así un rechazo o una obra
-  terminada no dejan la edición bloqueada.
-- `tick()` sin job devuelve `ConstructionProgress.idle()`.
+- Una sola obra activa.
+- Sin lista de planes ni presupuestos.
+- Sin constructoras, cotizaciones ni recargos.
+- Sin reservas de zona ni construcción manual fuera de la obra.
+- Sin varias obras simultáneas.
+- Sin cruces automáticos, forks, estaciones, sensores o señalización.
+- Sin mantenimiento ni calidad de vía.
+- Sin comando `connect`.
+- Sin sonido de obra.
 
-## Fuera de alcance de esta rebanada
-
-- Cambios de terminal/Lanterna, HUD, menús, confirmación con `Esc` o materializador real.
-- Bloqueo de comandos/consola durante la obra.
-- Reutilización de vía, forks, cruces, estaciones, sensores o señalización.
-- Snapshot del `RailMap`, cambios en el planner o integración con escenarios/`connect`.
-- Coste económico dentro del job: el dinero lo gestiona el adaptador con la maquinaria existente.
+Estas ausencias son intencionadas, no defectos pendientes de esta ADR.
 
 ## Consecuencias
 
-- El motor gana una pieza pequeña, determinista y testeable sin `Model`, con un puerto que la UI
-  puede implementar encima de `RailTrackMaker` en la siguiente rebanada.
-- La semántica de tiempo es explícita y coincide con lo que muestra la preview: ticks del planner
-  más un tick base por celda.
-- Cancelar nunca “deshace” vía: deja la obra a medias, como pidió el dueño.
-- El bloqueo de edición es una consulta, no un estado global; no contamina el `Model`.
+- La construcción está separada en una máquina de estados pequeña y testeable, con un adaptador
+  que reutiliza la maquinaria de vías existente.
+- La UI puede bloquear la edición sin ensuciar `Model`: el bloqueo es una consulta de la cola.
+- La ruta se construye de forma aislada; el jugador conserva el control de la conexión final.
+- El flujo actual es deliberadamente inmediato: planificar y construir es una sola acción.
+- Cualquier coste de automatización, lista de obras o constructora pertenece a una fase posterior.
+
+## Futuro
+
+- [[ADR-038-Planned-Works-and-Contractors|ADR-038]]: lista de planes, presupuestos, constructoras,
+  zonas de exclusión, varias obras, efectivo y cancelación.
+- [[ADR-039-Track-Quality-and-Maintenance|ADR-039]]: materiales, ritmo de construcción manual,
+  calidad y mantenimiento.
+- [[Construction-Roadmap|Roadmap de construcción]]: orden propuesto y dependencias.
