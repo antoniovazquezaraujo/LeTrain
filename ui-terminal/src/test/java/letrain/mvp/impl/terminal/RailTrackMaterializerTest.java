@@ -62,7 +62,7 @@ class RailTrackMaterializerTest {
         Optional<String> rejection = materializer.prepare(plan(3));
 
         assertTrue(rejection.isPresent());
-        assertTrue(rejection.orElseThrow().contains("occupied"));
+        assertEquals("cell (1,0) already has track", rejection.orElseThrow());
         assertEquals(before, trackCount(), "preflight must not add or remove track");
         assertSame(existing, model.getRailMap().getTrackAt(new Point(1, 0)));
     }

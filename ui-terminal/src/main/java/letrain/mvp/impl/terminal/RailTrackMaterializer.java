@@ -9,8 +9,6 @@ import letrain.mvp.Presenter;
 import letrain.mvp.impl.RailTrackMaker;
 import letrain.planner.RoutePlan;
 import letrain.planner.RouteStep;
-import letrain.track.Sensor;
-import letrain.track.Station;
 import letrain.vehicle.Cursor;
 import letrain.vehicle.Cursor.CursorMode;
 
@@ -45,41 +43,8 @@ final class RailTrackMaterializer implements TrackMaterializer {
 
     @Override
     public Optional<String> prepare(RoutePlan plan) {
-        Model model = presenter.getModel();
-        for (RouteStep step : plan.steps()) {
-            Point point = step.point();
-            if (model.getRailMap().getTrackAt(point) != null) {
-                return Optional.of("Cell " + point + " is already occupied by existing track");
-            }
-            if (isOccupiedByRailElement(model, point)) {
-                return Optional.of("Cell " + point + " is already occupied by a rail element");
-            }
-        }
-        return Optional.empty();
-    }
-
-    private static boolean isOccupiedByRailElement(Model model, Point point) {
-        for (Sensor sensor : model.getSensors()) {
-            if (point.equals(sensor.getPosition())) {
-                return true;
-            }
-        }
-        for (Station station : model.getStations()) {
-            if (point.equals(station.getPosition())) {
-                return true;
-            }
-        }
-        for (letrain.track.RailSemaphore semaphore : model.getSemaphores()) {
-            if (point.equals(semaphore.getPosition())) {
-                return true;
-            }
-        }
-        for (letrain.track.SpeedSignal signal : model.getSpeedSignals()) {
-            if (point.equals(signal.getPosition())) {
-                return true;
-            }
-        }
-        return false;
+        return RailBuildability.check(presenter.getModel(), plan)
+                .map(RailBuildability.Issue::description);
     }
 
     @Override

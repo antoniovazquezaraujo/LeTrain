@@ -1,6 +1,7 @@
 package letrain.mvp.impl.terminal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -57,6 +58,42 @@ class RoutePreviewStatusTest {
         assertTrue(status.contains("Space A/B"), status);
         assertTrue(status.contains("[ ] policy"), status);
         assertTrue(status.contains("Esc discard"), status);
+    }
+
+    @Test
+    @DisplayName("a build warning is appended to the feasible line and disables Enter")
+    void formatsBuildWarningWithCostAndPolicy() {
+        RoutePlan plan =
+                RoutePlan.feasible(
+                        List.of(new RouteStep(new Point(0, 0), TrackType.NORMAL_TRACK),
+                                new RouteStep(new Point(1, 0), TrackType.NORMAL_TRACK)),
+                        123_400, 240);
+
+        String status = RoutePreviewStatus.format(RoutePreviewSession.State.PREVIEW,
+                RoutePolicy.CHEAPEST, plan, 280, null, "cell (0,0) already has track");
+
+        assertTrue(status.contains("Connect · CHEAPEST (may cross)"), status);
+        assertTrue(status.contains("$123.400"), status);
+        assertTrue(status.contains("14 min"), status);
+        assertTrue(status.contains("2 cells"), status);
+        assertTrue(status.contains("! cannot build: cell (0,0) already has track"), status);
+        assertTrue(status.contains("Enter disabled"), status);
+        assertFalse(status.contains("Enter select"), status);
+        assertTrue(status.contains("Space A/B"), status);
+        assertTrue(status.contains("[ ] policy"), status);
+        assertTrue(status.contains("Esc discard"), status);
+    }
+
+    @Test
+    @DisplayName("an infeasible plan keeps its planner reason even if a warning is supplied")
+    void infeasibleReasonWinsOverBuildWarning() {
+        String status = RoutePreviewStatus.format(RoutePreviewSession.State.PREVIEW,
+                RoutePolicy.AVOID_ALL, RoutePlan.infeasible("No route can cross water and rock"), 0,
+                "No route can cross water and rock", "cell (0,0) already has track");
+
+        assertTrue(status.contains("no route: No route can cross water and rock"), status);
+        assertFalse(status.contains("cannot build"), status);
+        assertFalse(status.contains("$"), status);
     }
 
     @Test

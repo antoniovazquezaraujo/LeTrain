@@ -13,7 +13,7 @@ is available and the map is navigable again.
 | Key | Effect |
 | --- | --- |
 | `Shift+C` | Enter CONNECT from a normal map/edit mode (not from `COMMAND`, `PROGRAM`, `TRAINS` or `ADD`). |
-| `Enter` | `PICK_START`: fix A. `PICK_END`: fix B and start planning. `PREVIEW` (`CHOOSING`): select the plan and leave CONNECT. Ignored while `PLANNING`. |
+| `Enter` | `PICK_START`: fix A. `PICK_END`: fix B and start planning. `PREVIEW` (`CHOOSING`): select the plan and leave CONNECT (disabled when the shared buildability preflight warns). Ignored while `PLANNING`. |
 | `[` / `]` | In `PREVIEW`, switch to the previous/next policy. Cached policies are shown immediately; uncached ones return to `PLANNING`. |
 | `Space` | In `PREVIEW`, jump the cursor to A, then B, then A…, centring the view on the focused endpoint. Plan, endpoints, cost and policy are untouched. |
 | Arrows / `hjkl` | Navigate: move or turn the cursor. Construction and deletion are disabled. |
@@ -61,6 +61,22 @@ The bar is indeterminate: a two-cell activity window moves according to the prog
 ```text
 Connect · CHEAPEST (may cross) · $1.234.500 · 1 h 12 min · 87 cells · Enter select · Space A/B · [ ] policy · Esc discard
 ```
+
+### Buildability warning
+
+The preview uses the same `RailBuildability` preflight as `RailTrackMaterializer`: a feasible plan
+whose cells already hold track or a rail element (sensor, station, semaphore, speed signal) cannot
+be built by the queue. The check runs once per plan identity while CONNECT is open (the rail map
+does not change there), and the warning stays visible in the status line:
+
+```text
+Connect · CHEAPEST (may cross) · $1.234.500 · 1 h 12 min · 87 cells · ! cannot build: cell (4,2) already has track · Enter disabled · Space A/B · [ ] policy · Esc discard
+```
+
+`Enter` is disabled while the warning is present: the author stays in `PREVIEW` and can still use
+`[`/`]`, `Space`, navigation, zoom or `Esc`. Switching to a buildable plan clears the warning and
+re-enables `Enter`. Infeasible plans keep their planner reason; a build warning never replaces it.
+The materializer/queue preflight remains the last line of defence.
 
 ## Console whitelist
 

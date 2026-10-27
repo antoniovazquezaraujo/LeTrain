@@ -155,6 +155,14 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
      */
     private RoutePlan pendingRoutePlan;
 
+    /**
+     * Buildability preflight cached for the plan currently shown in CONNECT. The rail map cannot
+     * change while the author previews, so the check runs once per plan identity; a different
+     * policy/endpoint plan triggers a fresh check.
+     */
+    private RoutePlan buildabilityPlan;
+    private String buildabilityWarning;
+
     /** Presenter-owned construction queue; recreated on every model swap. */
     private RouteConstructionQueue constructionQueue;
 
@@ -898,6 +906,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         routePreviewReturnMode = RAILS;
         pendingRoutePlan = null;
         routePreviewFocusOnEnd = false;
+        clearBuildabilityCache();
         constructionQueue = null;
         constructionCancelArmed = false;
         constructionNotice = null;
@@ -939,6 +948,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     private void enterConnectMode() {
         routePreviewReturnMode = model.getMode();
+        clearBuildabilityCache();
         routePreviewSession().begin(model.getCursor().getPosition());
         model.setMode(CONNECT);
         routePreviewFocusOnEnd = false;
@@ -950,6 +960,29 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         model.setMode(returnMode);
         routePreviewSession = null;
         routePreviewFocusOnEnd = false;
+        clearBuildabilityCache();
+    }
+
+    /**
+     * Preflights the current feasible plan once per plan identity. The rail map is static during
+     * CONNECT, so switching back and forth between cached plans reuses the result. Returns
+     * {@code null} when the plan is buildable or when it is infeasible (the planner reason wins).
+     */
+    private String buildabilityWarning(RoutePlan plan) {
+        if (plan == null || !plan.feasible()) {
+            return null;
+        }
+        if (plan != buildabilityPlan) {
+            buildabilityPlan = plan;
+            buildabilityWarning = RailBuildability.check(model, plan)
+                    .map(RailBuildability.Issue::description).orElse(null);
+        }
+        return buildabilityWarning;
+    }
+
+    private void clearBuildabilityCache() {
+        buildabilityPlan = null;
+        buildabilityWarning = null;
     }
 
     /**
@@ -980,6 +1013,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             return;
         }
         if (keyEvent.getKeyType() == KeyType.Enter) {
+            if (state == RoutePreviewSession.State.PREVIEW
+                    && buildabilityWarning(session.lastPlan().orElse(null)) != null) {
+                // Keep the author in PREVIEW: selecting would only queue a job the preflight
+                // rejects.
+                return;
+            }
             RoutePreviewSession.State next = session.enter(model.getCursor().getPosition());
             if (next == RoutePreviewSession.State.SELECTED) {
                 pendingRoutePlan = session.selectedPlan().orElse(null);
@@ -1288,7 +1327,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
      * the one-line status. It is deliberately a per-frame draw, so leaving CONNECT (or an
      * infeasible policy) simply stops painting and nothing persists into the next frame.
      */
-    private void drawRoutePreviewOverlay() {
+    void drawRoutePreviewOverlay() {
         if (model.getMode() == CONNECT) {
             if (routePreviewSession == null) {
                 return;
@@ -1296,6 +1335,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             Point start = routePreviewSession.start().orElse(null);
             Point end = routePreviewSession.end().orElse(null);
             RoutePlan plan = routePreviewSession.lastPlan().orElse(null);
+            String buildWarning = buildabilityWarning(plan);
             if (plan != null && !plan.feasible()) {
                 // Infeasible: keep only the endpoints, never a stale route.
                 plan = null;
@@ -1304,7 +1344,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 view.drawRoutePreviewCell(cell.x(), cell.y(), cell.glyph(), cell.endpoint(),
                         cell.style());
             }
-            view.drawRoutePreviewStatus(RoutePreviewStatus.format(routePreviewSession));
+            view.drawRoutePreviewStatus(
+                    RoutePreviewStatus.format(routePreviewSession, buildWarning));
             return;
         }
     }

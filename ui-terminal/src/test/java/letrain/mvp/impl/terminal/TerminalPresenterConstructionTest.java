@@ -88,7 +88,7 @@ class TerminalPresenterConstructionTest {
     }
 
     /** Drives CONNECT from A=(0,0) to B=(4,0) through the real asynchronous planner. */
-    private void selectStraightRoute() {
+    private void previewStraightRoute() {
         model.setMode(Model.GameMode.RAILS);
         model.getCursor().setPosition(new Point(0, 0));
         presenter.onChar(shiftC());
@@ -96,7 +96,20 @@ class TerminalPresenterConstructionTest {
         model.getCursor().setPosition(new Point(4, 0));
         presenter.onChar(enter());
         awaitPreview();
+    }
+
+    /** Same as {@link #previewStraightRoute()} and then selects the plan. */
+    private void selectStraightRoute() {
+        previewStraightRoute();
         presenter.onChar(enter());
+    }
+
+    /** Last CONNECT status painted by the presenter. */
+    private String previewStatus() {
+        presenter.drawRoutePreviewOverlay();
+        ArgumentCaptor<String> status = ArgumentCaptor.forClass(String.class);
+        verify(view, atLeastOnce()).drawRoutePreviewStatus(status.capture());
+        return status.getValue();
     }
 
     private void awaitPreview() {
@@ -280,8 +293,12 @@ class TerminalPresenterConstructionTest {
     @DisplayName("a rejected preflight never starts building and shows a clear notice")
     void rejection_doesNotStartOrBuild() {
         model.getRailMap().addTrack(new Point(2, 0), new letrain.track.rail.RailTrack());
-        selectStraightRoute();
+        previewStraightRoute();
 
+        boolean started = presenter
+                .startConstruction(presenter.getRoutePreviewSession().lastPlan().orElseThrow());
+
+        assertFalse(started);
         assertFalse(presenter.isConstructionActive());
         assertEquals(ConstructionState.REJECTED, presenter.getConstructionProgress().state());
         assertEquals(1, trackCount(), "only the pre-existing rail remains");
@@ -290,6 +307,99 @@ class TerminalPresenterConstructionTest {
         ArgumentCaptor<String> status = ArgumentCaptor.forClass(String.class);
         verify(view, atLeastOnce()).drawRoutePreviewStatus(status.capture());
         assertTrue(status.getAllValues().stream().anyMatch(
-                text -> text.startsWith("Construction rejected · ") && text.contains("occupied")));
+                text -> text.startsWith("Construction rejected · ") && text.contains("track")));
+    }
+
+    @Test
+    @DisplayName("PREVIEW warns about an occupied planned cell and Enter neither selects nor builds")
+    void occupiedPlannedCell_warnsInPreview_andBlocksEnter() {
+        for (int occupiedX : new int[] {0, 2}) {
+            setUp();
+            model.getRailMap().addTrack(new Point(occupiedX, 0),
+                    new letrain.track.rail.RailTrack());
+            previewStraightRoute();
+
+            String status = previewStatus();
+            assertTrue(
+                    status.contains("! cannot build: cell (" + occupiedX + ",0) already has track"),
+                    status);
+            assertTrue(status.contains("Enter disabled"), status);
+            assertFalse(status.contains("Enter select"), status);
+
+            presenter.onChar(enter());
+
+            assertEquals(Model.GameMode.CONNECT, model.getMode(),
+                    "Enter must keep the author in CONNECT");
+            assertEquals(RoutePreviewSession.State.PREVIEW,
+                    presenter.getRoutePreviewSession().state());
+            assertFalse(presenter.isConstructionActive(), "no queue may start for a rejected plan");
+            assertEquals(1, trackCount(), "Enter must not build anything");
+        }
+    }
+
+    @Test
+    @DisplayName("changing endpoints to a clear plan clears the warning and Enter starts the queue")
+    void changingEndpoints_clearsWarning_andAllowsEnter() {
+        model.getRailMap().addTrack(new Point(0, 0), new letrain.track.rail.RailTrack());
+        previewStraightRoute();
+        assertTrue(previewStatus().contains("cannot build"), "the first plan starts occupied");
+
+        presenter.onChar(escape());
+        assertEquals(Model.GameMode.RAILS, model.getMode());
+
+        model.getCursor().setPosition(new Point(1, 0));
+        presenter.onChar(shiftC());
+        presenter.onChar(enter());
+        model.getCursor().setPosition(new Point(4, 0));
+        presenter.onChar(enter());
+        awaitPreview();
+
+        String status = previewStatus();
+        assertFalse(status.contains("cannot build"), status);
+        assertTrue(status.contains("Enter select"), status);
+
+        presenter.onChar(enter());
+
+        assertEquals(Model.GameMode.RAILS, model.getMode());
+        assertTrue(presenter.isConstructionActive(), "a clear plan must still start construction");
+    }
+
+    @Test
+    @DisplayName("a clear plan shows no warning and Enter starts construction as before")
+    void clearPlan_hasNoWarning_andEnterStartsConstruction() {
+        previewStraightRoute();
+
+        String status = previewStatus();
+        assertFalse(status.contains("cannot build"), status);
+        assertTrue(status.contains("Enter select"), status);
+
+        presenter.onChar(enter());
+
+        assertEquals(Model.GameMode.RAILS, model.getMode());
+        assertTrue(presenter.isConstructionActive());
+    }
+
+    @Test
+    @DisplayName("an infeasible plan keeps its planner reason instead of a build warning")
+    void infeasiblePlan_showsPlannerReasonNotBuildWarning() {
+        model.getRailMap().addTrack(new Point(0, 0), new letrain.track.rail.RailTrack());
+        model.getGroundMap().setValueAt(4, 1, GroundMap.WATER);
+        model.setMode(Model.GameMode.RAILS);
+        model.getCursor().setPosition(new Point(0, 0));
+        presenter.onChar(shiftC());
+        presenter.onChar(enter());
+        model.getCursor().setPosition(new Point(4, 1));
+        presenter.onChar(enter());
+        awaitPreview();
+
+        String status = previewStatus();
+        assertTrue(status.contains("no route:"), status);
+        assertFalse(status.contains("cannot build"), status);
+        assertFalse(status.contains("Enter select"), status);
+
+        presenter.onChar(enter());
+
+        assertEquals(Model.GameMode.CONNECT, model.getMode());
+        assertFalse(presenter.isConstructionActive());
     }
 }

@@ -28,6 +28,14 @@ final class RoutePreviewStatus {
 
     /** Status line for the current session, or an empty string when there is no session. */
     static String format(RoutePreviewSession session) {
+        return format(session, null);
+    }
+
+    /**
+     * Status line for the current session, including an optional buildability warning for the
+     * current plan. A warning never hides the planner reason of an infeasible plan.
+     */
+    static String format(RoutePreviewSession session, String buildWarning) {
         if (session == null) {
             return "";
         }
@@ -35,11 +43,17 @@ final class RoutePreviewStatus {
             return formatPlanning(session.planningProgress().orElse(null));
         }
         return format(session.state(), session.policy(), session.lastPlan().orElse(null),
-                session.effectiveConstructionTicks(), session.lastMessage().orElse(null));
+                session.effectiveConstructionTicks(), session.lastMessage().orElse(null),
+                buildWarning);
     }
 
     static String format(RoutePreviewSession.State state, RoutePolicy policy, RoutePlan plan,
             long effectiveTicks, String message) {
+        return format(state, policy, plan, effectiveTicks, message, null);
+    }
+
+    static String format(RoutePreviewSession.State state, RoutePolicy policy, RoutePlan plan,
+            long effectiveTicks, String message, String buildWarning) {
         switch (state) {
             case PICK_START:
                 return "Connect · PICK_START · move + Enter · Esc cancel";
@@ -49,7 +63,7 @@ final class RoutePreviewStatus {
             case PLANNING:
                 return formatPlanning(null);
             case PREVIEW:
-                return previewLine(policy, plan, effectiveTicks, message);
+                return previewLine(policy, plan, effectiveTicks, message, buildWarning);
             case SELECTED:
                 return "Connect · SELECTED · plan stored (no construction)";
             case CANCELLED:
@@ -109,7 +123,7 @@ final class RoutePreviewStatus {
     }
 
     private static String previewLine(RoutePolicy policy, RoutePlan plan, long effectiveTicks,
-            String message) {
+            String message, String buildWarning) {
         String policyName = policyLabel(policy);
         String hints = " · Space A/B · [ ] policy · Esc discard";
         if (plan == null || !plan.feasible()) {
@@ -117,9 +131,22 @@ final class RoutePreviewStatus {
                     message == null || message.isBlank() ? "no route" : "no route: " + message;
             return "Connect · " + policyName + " · " + reason + hints;
         }
+        String warning = warningSuffix(buildWarning);
+        String action = warning.isEmpty() ? " · Enter select" : " · Enter disabled";
         return "Connect · " + policyName + " · " + formatCost(plan.totalCost()) + " · "
-                + formatTicks(effectiveTicks) + " · " + plan.steps().size()
-                + " cells · Enter select" + hints;
+                + formatTicks(effectiveTicks) + " · " + plan.steps().size() + " cells" + action
+                + warning + hints;
+    }
+
+    /**
+     * Short warning suffix shown in PREVIEW when the queue would reject the feasible plan. The
+     * cost/time/cells figures stay before it so the author still sees what the plan would cost.
+     */
+    private static String warningSuffix(String buildWarning) {
+        if (buildWarning == null || buildWarning.isBlank()) {
+            return "";
+        }
+        return " · ! cannot build: " + buildWarning;
     }
 
     /**
