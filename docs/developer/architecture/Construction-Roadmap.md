@@ -33,6 +33,12 @@ Incluye:
 - ver el total de la lista;
 - decidir más tarde cuál se construye.
 
+La interfaz de esta lista necesita una decisión propia: dónde se abre, cómo se navega por las
+entradas y cómo se editan. Una opción natural es un diálogo modal similar al editor de programas,
+con una tabla de trayectos y acciones de editar, recalcular, eliminar y ejecutar. No se ha cerrado
+el diseño, pero conviene resolverlo en esta fase porque la lista será la puerta de entrada a todo
+lo demás.
+
 No incluye constructoras ni zonas de exclusión. Es la fase que convierte la planificación en una
 actividad separada de la ejecución.
 
@@ -52,8 +58,13 @@ Incluye:
 - penalización de cancelación;
 - comparación de ofertas en la lista.
 
-No incluye calidad real ni mantenimiento: la calidad de la constructora se mostrará como promesa,
-pero su efecto llega en la fase de mantenimiento.
+La idea económica es que una obra tenga que repartir su precio entre **calidad** y **rapidez**. Una
+construcción de calidad tarda más; una construcción rápida tenderá a tener peor calidad. Conseguir
+las dos cosas a la vez debe ser muy caro. Como en esta fase todavía no existirá la calidad real, el
+primer modelo solo podrá manejar el tiempo: a menor plazo, mayor precio de constructora. La
+calidad se mostrará como promesa comercial, pero no tendrá efecto hasta la fase de mantenimiento.
+
+No incluye calidad real ni mantenimiento.
 
 Depende de: Fase 1 y ADR-038.
 
@@ -65,7 +76,7 @@ zonas.
 Incluye:
 
 - varias obras activas;
-- zonas rectangulares (o conjuntos de rectángulos) alrededor de cada obra;
+- una zona rectangular simple por obra, con color identificativo;
 - margen de seguridad;
 - visualización de zonas en el mapa;
 - rechazo de obras que se solapen;
@@ -80,34 +91,37 @@ Depende de: Fase 1 y Fase 2.
 
 ## Fase 4: mantenimiento y calidad
 
-Objetivo: que las decisiones de material, prisa y constructora tengan consecuencias.
+Objetivo: que la calidad de construcción y la constructora tengan consecuencias reales.
 
 Incluye:
 
 - `TrackSpec` por celda o tramo;
-- calidad de material y de ejecución;
+- calidad global de construcción (materiales, mano de obra y dirección como un paquete);
 - desgaste por uso;
 - coste de mantenimiento;
 - averías y reparaciones;
 - save/load compatible;
 - vías antiguas con calidad por defecto.
 
-Esta fase debe existir antes de implementar materiales o ritmo manual. Sin mantenimiento, esos
-valores no significan nada.
+Esta fase debe existir antes de implementar la calidad manual. Sin mantenimiento, la calidad sería
+una etiqueta sin efecto.
 
 Depende de: ADR-039 y de la economía de obras de la Fase 2.
 
-## Fase 5: materiales y ritmo manual
+## Fase 5: calidad y ritmo manual
 
-Objetivo: que construir a mano también tenga decisiones de calidad.
+Objetivo: que construir a mano también tenga decisiones de calidad y rapidez.
 
 Incluye:
 
-- material barato/estándar/premium;
+- un nivel de **construcción de calidad** que engloba materiales, mano de obra y dirección;
 - ritmo rápido/normal/cuidadoso;
 - coste y tiempo distintos;
-- calidad final combinada;
 - UI para elegir y consultar.
+
+No habrá una elección separada de materiales. La calidad es un paquete único; si el jugador quiere
+calidad y rapidez al mismo tiempo, será muy caro. La calidad sin rapidez tarda; la rapidez sin
+calidad sale más barata pero dará más mantenimiento.
 
 Depende de: Fase 4.
 
@@ -119,11 +133,14 @@ Incluye:
 
 - un único comando `connect`, no dos comandos separados para planificar y construir;
 - coordenadas, marcas o estaciones como origen/destino;
-- parámetros de empresa, material, calidad y ritmo cuando el comando automatice directamente;
+- parámetros de empresa, calidad y ritmo cuando el comando automatice directamente;
 - planificar, comprobar efectivo y encolar en una sola operación;
 - posible variante con espera para escenarios;
 - HUD y zonas en 3D;
 - sonido de obras y actividad visible en ambos clientes.
+
+Cada empresa ofrecerá su propia calidad y ritmo a un precio. Algunas empresas baratas no harán
+túneles ni puentes. No hay parámetro de material separado: la calidad ya lo engloba.
 
 La lista de presupuestos no es un requisito para el comando. La lista sirve para preparar, comparar
 y ordenar varias obras antes de lanzarlas; `connect` puede funcionar sin ella usando valores por
@@ -140,7 +157,9 @@ Ya están decididas:
 - el manual puede quedar en negativo pagando materiales;
 - una zona de exclusión es un rectángulo simple por obra, con color;
 - hay un límite de cuatro equipos y la simultaneidad se cobra mucho más cara;
-- habrá un único comando `connect`.
+- habrá un único comando `connect`;
+- la calidad es un paquete único (materiales, mano de obra y dirección); no hay materiales
+  separados.
 
 Siguen pendientes:
 
@@ -149,7 +168,11 @@ Siguen pendientes:
 - capacidades concretas de cada constructora;
 - persistencia de la lista de obras en savegames;
 - fórmula de calidad y ritmo de mantenimiento;
-- sintaxis final y valores por defecto de `connect`.
+- sintaxis final y valores por defecto de `connect`;
+- posible comando `construct` futuro para ejecutar una lista de trayectos de forma simultánea,
+  seleccionada u ordenada. No se implementa ahora;
+- posible sistema bancario/créditos para financiar obras. No se implementa ahora;
+- diseño UI de la lista de presupuestos (probablemente un diálogo tipo editor de programas).
 
 Estas decisiones no bloquean la Fase 1. Se pueden resolver cuando se llegue a cada fase, con datos
 reales de uso.

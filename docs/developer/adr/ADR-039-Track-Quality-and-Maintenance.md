@@ -1,27 +1,31 @@
-# ADR-039: Calidad de vía, materiales y mantenimiento
+# ADR-039: Calidad de vía y mantenimiento
 
 ## Estado: PROPUESTO
 
 > Esta ADR recoge ideas para una fase posterior. **No está implementada.** Hoy no existe
-> mantenimiento de vías ni calidad de materiales; el `RailTrack` solo distingue vía normal, puente
-> y túnel. Cualquier etiqueta de calidad sin mantenimiento sería decorativa, así que no se implementa
-> todavía.
+> mantenimiento de vías ni calidad de construcción; el `RailTrack` solo distingue vía normal,
+> puente y túnel.
 >
 > Depende de [[ADR-037-Construction-Queue|ADR-037]] y de
-> [[ADR-038-Planned-Works-and-Contractors|ADR-038]] para el contexto de obras y constructoras.
+> [[ADR-038-Planned-Works-and-Contractors|ADR-038]].
 
 ## Contexto
 
 La construcción manual actual usa un coste fijo por tipo de vía y una vía normal se coloca sin
 espera. El dueño quiere que el jugador pueda decidir **cómo** construye, no solo **por dónde**:
 
-- usar materiales baratos o caros;
 - construir rápido o con cuidado;
 - obtener una vía que dure más o que se degrade antes;
-- que una constructora tenga su propia calidad y materiales.
+- que una constructora tenga su propia calidad de ejecución.
 
-Eso conecta directamente con un futuro sistema de mantenimiento. Sin él, elegir “acero bueno” no
-tendría ninguna consecuencia y sería una decisión falsa.
+En una primera aproximación se pensó en separar “material” y “ritmo” como dos variables. El dueño
+ha simplificado la idea: **no habrá una elección separada de materiales**. Habrá un único concepto
+de **calidad de construcción** que engloba los buenos materiales, la mano de obra profesional y una
+dirección de obra cuidadosa. El jugador decide cuánto dinero pone en calidad y cuánto en rapidez;
+si quiere ambas cosas a la vez, será muy caro.
+
+Sin mantenimiento, la calidad sería una etiqueta sin efecto, así que esta ADR no se implementa
+todavía.
 
 ## Decisiones y propuestas
 
@@ -31,60 +35,63 @@ Cada vía construida guardará, además del tipo visual actual:
 
 ```text
 TrackSpec
-  trackType        // normal, puente, túnel
-  materialGrade    // barato, estándar, premium
-  buildPace        // rápido, normal, cuidadoso
-  quality          // resultado final, derivado
+  trackType     // normal, puente, túnel
+  quality       // calidad global: materiales + mano de obra + dirección
+  buildPace     // rápido, normal, cuidadoso (si se conserva como eje separado)
 ```
 
 La calidad puede guardarse por celda o agregarse por tramo. Para mezclar secciones de distinta
 calidad, lo más flexible es guardarla por celda y agregarla al mostrar mantenimiento.
 
-Las vías antiguas, las de savegames y las ya construidas tendrán un `TrackSpec` por defecto
-(estándar/normal). La compatibilidad de save/load es obligatoria.
+Las vías antiguas, las de savegames y las ya construidas tendrán un `TrackSpec` por defecto. La
+compatibilidad de save/load es obligatoria.
 
-### 2. Materiales
+### 2. Calidad de construcción
 
-Tres niveles iniciales, ajustables:
+La calidad es un **paquete**, no una lista de materiales:
 
-- **Barato:** coste bajo, durabilidad baja, mantenimiento frecuente.
-- **Estándar:** referencia.
-- **Premium:** coste alto, durabilidad alta, mantenimiento menos frecuente.
+- buenos materiales;
+- mano de obra profesional;
+- dirección de obra comprometida;
+- ejecución cuidadosa.
 
-El material afecta al coste de construcción. No todos los materiales tienen por qué servir para
-todo:
+El jugador no elige “acero A o acero B”; elige un nivel de calidad y paga por él. La constructora
+ofrece su propio paquete de calidad, materiales y ejecución.
 
-- un puente puede exigir un mínimo de calidad;
-- un túnel puede exigir materiales y una constructora con capacidad;
-- una vía normal puede aceptar cualquier grado.
+La calidad afecta al coste inicial y, sobre todo, al mantenimiento futuro:
 
-La lista de materiales debe ser datos, no una cadena de `if` repartida por el código.
+- desgaste por uso;
+- coste de mantenimiento;
+- probabilidad de avería o cierre;
+- posibles límites de velocidad;
+- reparaciones.
 
-### 3. Ritmo de construcción manual
+El objetivo de juego es que una vía barata y rápida no sea una ganga a largo plazo. Una vía cara y
+cuidadosa tarda más y cuesta más al principio, pero da menos problemas.
 
-En lugar de inferir la calidad por la velocidad real del cursor (impredecible y difícil de
-explicar), el jugador elige un ritmo explícito:
+### 3. Rapidez de construcción
 
-- **Rápido:** sin espera extra, calidad de ejecución baja.
-- **Normal:** un pequeño coste temporal, calidad estándar.
-- **Cuidadoso:** más ticks por celda, calidad alta.
+La rapidez es un eje distinto del precio:
 
-El coste de materiales no cambia por el ritmo; lo que cambia es el tiempo y la calidad de
-ejecución. En rutas largas, construir cuidadosamente será más pesado para el jugador, que es
-precisamente el intercambio. El manual sigue pagando los materiales aunque el saldo quede en
-negativo: no hay recargo de constructora, pero el material no es gratis. La reserva de presupuesto
-solo se aplica a las obras automáticas.
+- construir rápido ahorra tiempo;
+- construir con calidad cuesta dinero;
+- construir rápido **y** con calidad debe ser carísimo.
 
-La calidad final se obtiene combinando material y ejecución. La fórmula exacta queda abierta, pero
-debe ser determinista y fácil de explicar en la UI.
+No se infiere la calidad por la velocidad real del cursor, porque sería impredecible y difícil de
+explicar. El jugador elige un ritmo explícito o contrata una empresa con un ritmo conocido. La
+calidad no cambia por el ritmo sin que el jugador lo sepa.
+
+La relación exacta entre precio, calidad y tiempo queda abierta, pero la intención es clara: el
+dinero se gasta o en calidad o en rapidez, y conseguir ambas cosas es un lujo.
 
 ### 4. Constructoras
 
-Cada constructora tendrá su propio perfil de material, ritmo y calidad, además de precio, plazo y
-capacidades (ADR-038). Una constructora barata puede usar material barato y ejecución rápida; una
-constructora internacional puede usar material premium y ejecución cuidadosa.
+Cada constructora tendrá su propio paquete de calidad y rapidez, además de precio, plazo y
+capacidades (ADR-038). Una constructora barata puede usar materiales modestos y ejecución rápida;
+una constructora internacional puede ofrecer calidad alta y plazos mejores.
 
-El jugador podrá contratar la calidad como parte del servicio, no solo el trazado.
+El jugador contrata la calidad como parte del servicio, no solo el trazado. Una empresa barata
+puede no hacer túneles o puentes.
 
 ### 5. Mantenimiento
 
@@ -97,10 +104,6 @@ El sistema de mantenimiento debe consumir `TrackSpec` y el uso real:
 - reparaciones que devuelven condición;
 - prioridad de mantenimiento por tramo.
 
-El objetivo de juego es que una vía barata y rápida no sea una ganga a largo plazo: ahorra al
-construir, pero cuesta más mantenerla o se estropea antes. Una vía cara y cuidadosa tarda más y
-cuesta más al principio, pero da menos problemas.
-
 La implementación debe ser determinista con la semilla del mundo; nada de averías aleatorias no
 reproducibles.
 
@@ -108,7 +111,7 @@ reproducibles.
 
 La UI debe permitir:
 
-- elegir material y ritmo antes de construir;
+- elegir calidad y rapidez antes de construir;
 - ver el coste y tiempo resultantes;
 - ver la calidad estimada;
 - ver el estado/desgaste de un tramo;
@@ -128,7 +131,7 @@ mantenimiento no tenga dos caminos distintos.
 
 ## Fuera de alcance
 
-- Implementar `TrackSpec`, materiales, ritmo o mantenimiento ahora.
+- Implementar `TrackSpec`, calidad o mantenimiento ahora.
 - Cambiar el coste fijo actual de las vías antes de que exista mantenimiento.
 - Añadir campos a `RailTrack` sin un plan de compatibilidad de save/load.
 - Cambiar la cola básica o las constructoras de ADR-038.
@@ -143,8 +146,9 @@ mantenimiento no tenga dos caminos distintos.
 
 ## Decisiones abiertas
 
-- Fórmula exacta de calidad a partir de material y ritmo.
-- Niveles y precios de materiales.
+- Fórmula exacta de calidad y su relación con precio/tiempo.
+- Niveles de calidad y precios.
+- Si “calidad” y “rapidez” son dos ejes separados o una sola elección de paquete.
 - Ticks extra del modo cuidadoso.
 - Cómo se guarda la calidad por celda/tramo y cómo se migran saves.
 - Coste/frecuencia del mantenimiento y probabilidad de avería.

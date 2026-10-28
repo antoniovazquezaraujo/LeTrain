@@ -6,7 +6,7 @@
 > construye inmediatamente después de seleccionar un plan y no tiene lista, constructoras ni
 > presupuestos (ver [[ADR-037-Construction-Queue|ADR-037]]).
 >
-> Depende de ADR-034, ADR-035, ADR-036 y ADR-037. La calidad de materiales y el mantenimiento se
+> Depende de ADR-034, ADR-035, ADR-036 y ADR-037. La calidad de construcción y el mantenimiento se
 > separan en [[ADR-039-Track-Quality-and-Maintenance|ADR-039]].
 
 ## Contexto
@@ -34,7 +34,7 @@ En el futuro, aceptar una ruta en la preview no la construirá inmediatamente. L
 - revisar la ruta y sus números;
 - volver a editarla;
 - cambiar la política;
-- cambiar materiales y velocidad de construcción;
+- cambiar calidad y velocidad de construcción;
 - pedir precios a una o varias constructoras;
 - eliminarla;
 - ordenarla respecto a otras obras;
@@ -49,11 +49,11 @@ Cada entrada de la lista debe guardar, como mínimo:
 - origen y destino;
 - política y `RoutePlan` actual;
 - empresa seleccionada o cotizaciones disponibles;
-- coste de materiales;
+- coste de construcción;
 - coste de la constructora;
 - coste total;
 - tiempo estimado;
-- calidad/material/velocidad elegidos;
+- calidad/velocidad elegidas;
 - estado: borrador, presupuestada, contratada, en ejecución, terminada o cancelada;
 - zona de exclusión asociada cuando se ejecute.
 
@@ -68,7 +68,7 @@ compañía puede tener:
 - nombre y descripción;
 - tarifas o multiplicadores de precio;
 - velocidad de ejecución;
-- calidad de materiales/ejecución;
+- calidad de construcción (materiales, mano de obra y dirección como un paquete);
 - capacidades: puentes, túneles, longitud máxima, tipo de terreno;
 - política de cancelación;
 - número de cuadrillas o trabajos simultáneos.
@@ -84,7 +84,7 @@ Para cada plan se generará una **cotización**:
 WorkQuote
   company
   routePlan
-  materialCost
+  constructionCost
   companyPremium
   totalCost
   totalTicks
@@ -170,7 +170,7 @@ Las obras subcontratadas serán, en general, **más lentas y más caras** que ha
 intencionado: el jugador paga por delegar el trabajo y por una ejecución de calidad. El manual es
 más barato en mano de obra, pero exige tiempo del jugador.
 
-La velocidad manual, los materiales y la calidad se detallan en
+La velocidad manual y la calidad de construcción se detallan en
 [[ADR-039-Track-Quality-and-Maintenance|ADR-039]].
 
 ### 9. Actividad visible y sonido
@@ -190,20 +190,22 @@ experiencia final.
 Más adelante, la misma maquinaria podrá exponerse como comando de autoría. Se ha acordado que
 habrá **un único comando `connect`**, no dos comandos separados para planificar y construir. El
 comando tendrá que ser más rico que el borrador inicial porque, si automatiza directamente sin
-pasar por la lista, necesita saber con qué empresa, material, calidad y ritmo se construye.
+pasar por la lista, necesita saber con qué empresa, calidad y ritmo se construye. El dueño ha
+descartado los materiales como parámetro separado: calidad y ritmo resumen el paquete.
 
 Una forma posible, todavía no cerrada, sería:
 
 ```text
 connect <origen> to <destino> <política>
         [company <constructora>]
-        [material <grado>]
         [quality <nivel>]
         [pace <ritmo>]
 ```
 
-Los parámetros de empresa/material/calidad podrían tener valores por defecto para que el comando
-siga siendo cómodo. También podría existir una variante con espera para escenarios.
+Los parámetros de empresa/calidad/ritmo podrían tener valores por defecto para que el comando
+siga siendo cómodo. Cada empresa ofrecerá su propia calidad y ritmo a un precio, y algunas
+empresas baratas no harán túneles ni puentes. También podría existir una variante con espera para
+escenarios.
 
 La lista de presupuestos **no es un requisito para automatizar**: es una herramienta de gestión y
 comparación. `connect` puede planificar, comprobar efectivo y encolar una obra directamente. La
@@ -214,7 +216,7 @@ funcione. No forma parte de esta ADR.
 
 - Implementar la lista, las constructoras, las zonas o el pago por adelantado.
 - Cambiar la cola actual de una obra.
-- Materiales, calidad real y mantenimiento (ADR-039).
+- Calidad real y mantenimiento (ADR-039).
 - Comando `connect`.
 - Integración 3D.
 
@@ -234,7 +236,11 @@ funcione. No forma parte de esta ADR.
 - Persistencia de la lista de obras en savegames.
 - Orden de implementación entre lista, constructoras y zonas.
 - Sintaxis final y valores por defecto de `connect`.
+- Posible comando `construct` futuro para ejecutar una lista de trayectos de forma simultánea,
+  seleccionada u ordenada. No se implementa ahora.
+- Posible sistema bancario/créditos para financiar obras. No se implementa ahora.
 
 Las decisiones ya cerradas son: reserva de presupuesto al arrancar, el manual puede quedar en
 negativo pagando materiales, una zona rectangular simple por obra y un límite de cuatro equipos
-con simultaneidad más cara.
+con simultaneidad más cara. La calidad es un paquete único (materiales, mano de obra y dirección);
+no hay una elección separada de materiales.
