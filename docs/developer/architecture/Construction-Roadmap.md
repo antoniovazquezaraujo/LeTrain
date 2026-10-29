@@ -28,6 +28,7 @@ Incluye:
 
 - guardar un plan en una lista;
 - volver a abrirlo;
+- cambiar su política y actualizar el presupuesto;
 - eliminar una entrada;
 - ver coste y tiempo estimados;
 - ver el total de la lista;
@@ -59,7 +60,7 @@ Obras
 ────────────────────────────────────────────────────────────────────────
 Total: 3 obras · $385.800 · 17 min
 
-[A] Add   [D] Delete   [Esc] Close
+[A] Add   [E] Edit   [D] Delete   [Esc] Close
 [Run] disabled until construction companies and cash are available
 ```
 
@@ -74,12 +75,17 @@ qué está guardando. La columna `Estado` también es necesaria desde el princip
 solo tenga el valor `Borrador`; los estados de ejecución llegarán con las constructoras.
 
 La acción `Run` debe aparecer deshabilitada en esta fase. Primero se preparan y comparan rutas;
-contratarlas y ejecutarlas pertenece a la fase 2. `D` elimina la entrada. `Esc` cierra la lista. La
-fila seleccionada se conserva al reabrir el diálogo.
+contratarlas y ejecutarlas pertenece a la fase 2. `E` edita la ruta seleccionada y `D` elimina la
+entrada. `Esc` cierra la lista. La fila seleccionada se conserva al reabrir el diálogo.
 
-El detalle de una obra, el recálculo y la edición de política quedan fuera de esta primera rebanada.
-El detalle necesita una pantalla propia; el recálculo y la edición requieren decidir cómo recalcular
-sin bloquear y cómo conservar el presupuesto anterior si la nueva política no tiene ruta.
+`Edit` abre la ruta guardada directamente en la preview, con A/B ya fijados y el plan actual
+visible. No vuelve a pedir los extremos y no permite cambiarlos: si el usuario quiere otro origen o
+destino, debe crear otra obra. Solo puede cambiar la política con `[`/`]`; al aceptar, se actualiza
+la fila con el nuevo plan, coste, celdas y tiempo, y las marcas de los extremos no cambian.
+
+El detalle de una obra y el recálculo suelto quedan fuera de esta primera rebanada. El detalle
+necesita una pantalla propia; el recálculo suelto no aportaba nada porque editar la política ya
+recalcula cuando hace falta.
 
 La acción `Add` no devuelve al mapa normal ni crea una obra inmediatamente. Al pulsarla:
 
@@ -124,10 +130,12 @@ Implementación actual de la fase 1:
   coste, tiempo estimado y estado `DRAFT`.
 - `core/.../construction/ConstructionPlanList`: orden de inserción, ids estables, eliminación y
   totales.
+- `core/.../planner/RoutePreviewSession.beginEdit`: abre un plan guardado en PREVIEW sin volver a
+  pedir A/B y permite cambiar la política.
 - `ui-terminal/.../ConstructionPlansDialog`: diálogo modal con tabla, total y acciones; `Run`
   deshabilitado.
-- `TerminalPresenter`: flujo `Add` en modo guardar, apertura con `b`, borrado y creación de las
-  marcas de extremos. El diálogo no se reabre solo.
+- `TerminalPresenter`: flujo `Add` en modo guardar, flujo `Edit` sobre el plan guardado, apertura con
+  `b`, borrado y creación de las marcas de extremos. El diálogo no se reabre solo.
 
 La lista es presenter-owned y se descarta al cambiar de modelo; todavía no se guarda en savegames.
 

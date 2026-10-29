@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import letrain.economy.EconomyManager;
@@ -96,6 +97,47 @@ class RoutePreviewSessionTest {
 
         // A second Enter in a closed state is a no-op.
         assertEquals(RoutePreviewSession.State.SELECTED, session.enter(p(1, 1)));
+    }
+
+    @Test
+    @DisplayName("beginEdit starts in PREVIEW with the saved plan and endpoints")
+    void should_StartInPreview_When_EditingSavedPlan() {
+        FakeGroundMap terrain = new FakeGroundMap().rect(-1, -1, 4, 1, NORMAL);
+        RoutePreviewSession preview = previewOn(terrain);
+        RoutePlan plan = preview.lastPlan().orElseThrow();
+
+        RoutePreviewSession session = new RoutePreviewSession(terrain, economy());
+        assertEquals(RoutePreviewSession.State.PREVIEW,
+                session.beginEdit(p(0, 0), p(3, 0), RoutePolicy.CHEAPEST, plan));
+
+        assertEquals(p(0, 0), session.start().orElseThrow());
+        assertEquals(p(3, 0), session.end().orElseThrow());
+        assertEquals(RoutePolicy.CHEAPEST, session.policy());
+        assertEquals(plan, session.lastPlan().orElseThrow());
+        assertEquals(4, session.effectiveConstructionTicks());
+        assertTrue(session.selectedPlan().isEmpty());
+        assertTrue(session.planningProgress().isEmpty());
+        assertEquals(RoutePreviewSession.State.SELECTED, session.enter(p(1, 1)));
+        assertEquals(plan, session.selectedPlan().orElseThrow());
+    }
+
+    @Test
+    @DisplayName("beginEdit rejects null values and infeasible plans")
+    void should_RejectInvalidEditSeed() {
+        FakeGroundMap terrain = new FakeGroundMap().rect(-1, -1, 4, 1, NORMAL);
+        RoutePreviewSession session = new RoutePreviewSession(terrain, economy());
+        RoutePlan plan = RoutePlan.feasible(List.of(), 0, 0);
+
+        assertThrows(NullPointerException.class,
+                () -> session.beginEdit(null, p(1, 1), RoutePolicy.DIRECT, plan));
+        assertThrows(NullPointerException.class,
+                () -> session.beginEdit(p(0, 0), null, RoutePolicy.DIRECT, plan));
+        assertThrows(NullPointerException.class,
+                () -> session.beginEdit(p(0, 0), p(1, 1), null, plan));
+        assertThrows(NullPointerException.class,
+                () -> session.beginEdit(p(0, 0), p(1, 1), RoutePolicy.DIRECT, null));
+        assertThrows(IllegalArgumentException.class, () -> session.beginEdit(p(0, 0), p(1, 1),
+                RoutePolicy.DIRECT, RoutePlan.infeasible("blocked")));
     }
 
     @Test

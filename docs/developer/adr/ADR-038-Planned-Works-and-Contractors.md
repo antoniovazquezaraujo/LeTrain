@@ -3,11 +3,11 @@
 ## Estado: PROPUESTO (fase 1 implementada)
 
 > La **lista de obras en fase 1** ya está implementada: guarda borradores con origen, destino,
-> política, `RoutePlan`, coste y tiempo estimados, y permite añadirlos, eliminarlos y ver sus
-> totales. Sigue **sin** constructoras, cotizaciones, zonas, efectivo, calidad ni ejecución desde la
-> lista; el recálculo y la edición de política se han aplazado. La cola actual (ADR-037) sigue
-> construyendo inmediatamente cuando se acepta un plan desde `Shift+C`; `Run` está deshabilitado en
-> la lista.
+> política, `RoutePlan`, coste y tiempo estimados, y permite añadirlos, editarlos, eliminarlos y ver
+> sus totales. La edición abre el plan guardado y solo permite cambiar su política; los extremos
+> quedan fijos. Sigue **sin** constructoras, cotizaciones, zonas, efectivo, calidad ni ejecución desde
+> la lista; el recálculo suelto se ha aplazado. La cola actual (ADR-037) sigue construyendo
+> inmediatamente cuando se acepta un plan desde `Shift+C`; `Run` está deshabilitado en la lista.
 >
 > Depende de ADR-034, ADR-035, ADR-036 y ADR-037. La calidad de construcción y el mantenimiento se
 > separan en [[ADR-039-Track-Quality-and-Maintenance|ADR-039]].

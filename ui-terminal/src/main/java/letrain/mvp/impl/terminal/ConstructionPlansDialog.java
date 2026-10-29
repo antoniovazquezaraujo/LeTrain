@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
 /**
  * Modal list of planned works (construction roadmap, phase 1). It is the 2D counterpart of the
  * future planned-works window: a compact table over the frozen game frame with the planner data the
- * author needs to compare routes, a total line and the actions Add/Delete/Close.
+ * author needs to compare routes, a total line and the actions Add/Edit/Delete.
  *
  * <p>
  * The dialog is deliberately presentation only. The presenter builds every {@link Row} with the
@@ -46,7 +46,7 @@ final class ConstructionPlansDialog {
 
     /** What the player chose when the dialog closed. */
     enum Action {
-        CLOSE, ADD, DELETE
+        CLOSE, ADD, EDIT, DELETE
     }
 
     /**
@@ -132,15 +132,19 @@ final class ConstructionPlansDialog {
             window.close();
         };
         Runnable add = () -> closeWith(window, result, Action.ADD, list);
+        Runnable edit = () -> closeWith(window, result, Action.EDIT, list);
         Runnable delete = () -> closeWith(window, result, Action.DELETE, list);
 
         Panel actionRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
         Button addButton = NewGameDialog.mnemonicButton("Add", 'A', add);
+        Button editButton = NewGameDialog.mnemonicButton("Edit", 'E', edit);
         Button deleteButton = NewGameDialog.mnemonicButton("Delete", 'D', delete);
         actionRow.addComponent(addButton);
+        actionRow.addComponent(editButton);
         actionRow.addComponent(deleteButton);
 
         boolean hasSelection = !safeRows.isEmpty();
+        editButton.setEnabled(hasSelection);
         deleteButton.setEnabled(hasSelection);
 
         Panel runRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
@@ -174,6 +178,12 @@ final class ConstructionPlansDialog {
                 switch (Character.toLowerCase(character)) {
                     case 'a' -> {
                         add.run();
+                        deliverEvent.set(false);
+                    }
+                    case 'e' -> {
+                        if (hasSelection) {
+                            edit.run();
+                        }
                         deliverEvent.set(false);
                     }
                     case 'd' -> {

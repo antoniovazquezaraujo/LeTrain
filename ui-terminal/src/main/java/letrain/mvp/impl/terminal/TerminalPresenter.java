@@ -159,7 +159,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
      */
     private boolean routePreviewSaveToList;
 
-    /** Whether the Add-route one-line status is visible; Tab toggles it during save mode. */
+    /** Planned work being edited, or {@code -1} when CONNECT is a new route. */
+    private int routePreviewEditingWorkId = -1;
+
+    /** Whether the Add/Edit one-line status is visible; Tab toggles it during save mode. */
     private boolean routePreviewStatusVisible = true;
 
     /**
@@ -933,6 +936,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         routePreviewSession = null;
         routePreviewReturnMode = RAILS;
         routePreviewSaveToList = false;
+        routePreviewEditingWorkId = -1;
         routePreviewStatusVisible = true;
         pendingRoutePlan = null;
         routePreviewFocusOnEnd = false;
@@ -992,6 +996,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private void enterConnectMode(boolean saveToList) {
         routePreviewReturnMode = model.getMode();
         routePreviewSaveToList = saveToList;
+        routePreviewEditingWorkId = -1;
         routePreviewStatusVisible = true;
         clearBuildabilityCache();
         routePreviewSession().begin(model.getCursor().getPosition());
@@ -1007,6 +1012,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         routePreviewSession = null;
         routePreviewFocusOnEnd = false;
         routePreviewSaveToList = false;
+        routePreviewEditingWorkId = -1;
         routePreviewStatusVisible = true;
         clearBuildabilityCache();
         view.setMenuVisible(true);
@@ -1084,7 +1090,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             RoutePreviewSession.State next = session.enter(model.getCursor().getPosition());
             if (next == RoutePreviewSession.State.SELECTED) {
                 if (routePreviewSaveToList) {
-                    addSelectedPlanToWorks(session);
+                    if (routePreviewEditingWorkId >= 0) {
+                        updateSelectedPlanInWorks(session);
+                    } else {
+                        addSelectedPlanToWorks(session);
+                    }
                     leaveConnectMode();
                     return;
                 }
@@ -1244,6 +1254,39 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     /**
+     * Updates policy/plan/cost/time of the work being edited; endpoints and marks stay unchanged.
+     */
+    private void updateSelectedPlanInWorks(RoutePreviewSession session) {
+        RoutePlan plan = session.selectedPlan().orElse(null);
+        if (plan == null || !plan.feasible()) {
+            showPlannedWorksNotice("Route could not be updated");
+            return;
+        }
+        plannedWorks().find(routePreviewEditingWorkId)
+                .flatMap(work -> plannedWorks().replacePlan(work.id(), session.policy(), plan,
+                        session.effectiveConstructionTicks()))
+                .ifPresentOrElse(work -> showPlannedWorksNotice("Route #" + work.id() + " updated"),
+                        () -> showPlannedWorksNotice("Route could not be updated"));
+    }
+
+    /**
+     * Opens an existing planned work in CONNECT. The endpoints are fixed: only the policy can be
+     * changed, exactly like Add but starting from the saved plan. Accepting updates the row; the
+     * author must create a new work to change origin or destination.
+     */
+    private void startEditingPlannedWork(PlannedWork work) {
+        routePreviewReturnMode = model.getMode();
+        routePreviewSaveToList = true;
+        routePreviewEditingWorkId = work.id();
+        routePreviewStatusVisible = true;
+        clearBuildabilityCache();
+        routePreviewSession().beginEdit(work.start(), work.end(), work.policy(), work.plan());
+        model.setMode(CONNECT);
+        routePreviewFocusOnEnd = false;
+        view.setMenuVisible(false);
+    }
+
+    /**
      * Opens the modal planned-works list and applies its actions. Add leaves the list and starts
      * CONNECT in save mode. Delete keeps the list loop alive. The dialog never reopens itself after
      * Add, by owner decision: the player opens it again when they want.
@@ -1270,6 +1313,15 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 case ADD -> {
                     enterConnectMode(true);
                     return;
+                }
+                case EDIT -> {
+                    if (selectedId >= 0) {
+                        java.util.Optional<PlannedWork> work = plannedWorks().find(selectedId);
+                        if (work.isPresent()) {
+                            startEditingPlannedWork(work.get());
+                            return;
+                        }
+                    }
                 }
                 case DELETE -> {
                     if (selectedId >= 0) {
@@ -1592,7 +1644,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             }
             if (!routePreviewSaveToList || routePreviewStatusVisible) {
                 view.drawRoutePreviewStatus(RoutePreviewStatus.format(routePreviewSession,
-                        buildWarning, routePreviewSaveToList));
+                        buildWarning, routePreviewSaveToList, routePreviewEditingWorkId >= 0));
             }
             return;
         }

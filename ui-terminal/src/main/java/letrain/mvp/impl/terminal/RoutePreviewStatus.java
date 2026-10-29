@@ -36,7 +36,7 @@ final class RoutePreviewStatus {
      * current plan. A warning never hides the planner reason of an infeasible plan.
      */
     static String format(RoutePreviewSession session, String buildWarning) {
-        return format(session, buildWarning, false);
+        return format(session, buildWarning, false, false);
     }
 
     /**
@@ -45,30 +45,47 @@ final class RoutePreviewStatus {
      * construction.
      */
     static String format(RoutePreviewSession session, String buildWarning, boolean saveToList) {
+        return format(session, buildWarning, saveToList, false);
+    }
+
+    /**
+     * Status line for Add ({@code saveToList}) or Edit of an existing work. Edit starts from the
+     * saved plan and only allows changing its policy; Enter updates the row.
+     */
+    static String format(RoutePreviewSession session, String buildWarning, boolean saveToList,
+            boolean editExisting) {
         if (session == null) {
             return "";
         }
         if (session.state() == RoutePreviewSession.State.PLANNING) {
-            return formatPlanning(session.planningProgress().orElse(null), saveToList);
+            return formatPlanning(session.planningProgress().orElse(null), saveToList,
+                    editExisting);
         }
         return format(session.state(), session.policy(), session.lastPlan().orElse(null),
                 session.effectiveConstructionTicks(), session.lastMessage().orElse(null),
-                buildWarning, saveToList);
+                buildWarning, saveToList, editExisting);
     }
 
     static String format(RoutePreviewSession.State state, RoutePolicy policy, RoutePlan plan,
             long effectiveTicks, String message) {
-        return format(state, policy, plan, effectiveTicks, message, null);
+        return format(state, policy, plan, effectiveTicks, message, null, false, false);
     }
 
     static String format(RoutePreviewSession.State state, RoutePolicy policy, RoutePlan plan,
             long effectiveTicks, String message, String buildWarning) {
-        return format(state, policy, plan, effectiveTicks, message, buildWarning, false);
+        return format(state, policy, plan, effectiveTicks, message, buildWarning, false, false);
     }
 
     static String format(RoutePreviewSession.State state, RoutePolicy policy, RoutePlan plan,
             long effectiveTicks, String message, String buildWarning, boolean saveToList) {
-        String prefix = saveToList ? "Add route" : "Connect";
+        return format(state, policy, plan, effectiveTicks, message, buildWarning, saveToList,
+                false);
+    }
+
+    static String format(RoutePreviewSession.State state, RoutePolicy policy, RoutePlan plan,
+            long effectiveTicks, String message, String buildWarning, boolean saveToList,
+            boolean editExisting) {
+        String prefix = routePrefix(saveToList, editExisting);
         switch (state) {
             case PICK_START:
                 return prefix + " · PICK_START · move + Enter · Esc cancel";
@@ -76,9 +93,10 @@ final class RoutePreviewStatus {
                 String reason = message == null || message.isBlank() ? "" : " · " + message;
                 return prefix + " · PICK_END · A set · move + Enter" + reason + " · Esc cancel";
             case PLANNING:
-                return formatPlanning(null, saveToList);
+                return formatPlanning(null, saveToList, editExisting);
             case PREVIEW:
-                return previewLine(policy, plan, effectiveTicks, message, buildWarning, saveToList);
+                return previewLine(policy, plan, effectiveTicks, message, buildWarning, saveToList,
+                        editExisting);
             case SELECTED:
                 return prefix + " · SELECTED · plan stored (no construction)";
             case CANCELLED:
@@ -87,20 +105,32 @@ final class RoutePreviewStatus {
         }
     }
 
+    private static String routePrefix(boolean saveToList, boolean editExisting) {
+        if (editExisting) {
+            return "Edit route";
+        }
+        return saveToList ? "Add route" : "Connect";
+    }
+
     /**
      * PLANNING status: phase, expanded nodes, elapsed time and an indeterminate/animated bar. The
      * bar is driven from the progress snapshot (nodes and elapsed time), never from a fake
      * percentage, and contains no cost or Enter hint because there is no plan yet.
      */
     static String formatPlanning(RoutePlanningProgress progress) {
-        return formatPlanning(progress, false);
+        return formatPlanning(progress, false, false);
     }
 
     static String formatPlanning(RoutePlanningProgress progress, boolean saveToList) {
+        return formatPlanning(progress, saveToList, false);
+    }
+
+    static String formatPlanning(RoutePlanningProgress progress, boolean saveToList,
+            boolean editExisting) {
         int nodes = progress == null ? 0 : progress.expandedNodes();
         long elapsedMillis = progress == null ? 0 : progress.elapsedMillis();
         String phase = progress == null ? "starting" : progress.phase().name();
-        String prefix = saveToList ? "Add route" : "Connect";
+        String prefix = routePrefix(saveToList, editExisting);
         return prefix + " · PLANNING · " + phase + " · " + formatNodes(nodes) + " · "
                 + formatSeconds(elapsedMillis) + " · " + progressBar(nodes, elapsedMillis) + " · "
                 + "Esc cancel";
@@ -143,21 +173,22 @@ final class RoutePreviewStatus {
     }
 
     private static String previewLine(RoutePolicy policy, RoutePlan plan, long effectiveTicks,
-            String message, String buildWarning, boolean saveToList) {
+            String message, String buildWarning, boolean saveToList, boolean editExisting) {
         String policyName = policyLabel(policy);
         String hints = " · Space A/B · [ ] policy · Esc discard";
+        String prefix = routePrefix(saveToList, editExisting);
         if (plan == null || !plan.feasible()) {
             String reason =
                     message == null || message.isBlank() ? "no route" : "no route: " + message;
-            return (saveToList ? "Add route" : "Connect") + " · " + policyName + " · " + reason
-                    + hints;
+            return prefix + " · " + policyName + " · " + reason + hints;
         }
         String warning = warningSuffix(buildWarning);
-        String action = saveToList ? " · Enter save"
-                : warning.isEmpty() ? " · Enter select" : " · Enter disabled";
-        return (saveToList ? "Add route" : "Connect") + " · " + policyName + " · "
-                + formatCost(plan.totalCost()) + " · " + formatTicks(effectiveTicks) + " · "
-                + plan.steps().size() + " cells" + action + warning + hints;
+        String action = editExisting ? " · Enter update"
+                : saveToList ? " · Enter save"
+                        : warning.isEmpty() ? " · Enter select" : " · Enter disabled";
+        return prefix + " · " + policyName + " · " + formatCost(plan.totalCost()) + " · "
+                + formatTicks(effectiveTicks) + " · " + plan.steps().size() + " cells" + action
+                + warning + hints;
     }
 
     /**

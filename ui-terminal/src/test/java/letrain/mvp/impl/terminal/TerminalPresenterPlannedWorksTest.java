@@ -317,6 +317,58 @@ class TerminalPresenterPlannedWorksTest {
     }
 
     @Test
+    @DisplayName("Edit opens the saved plan, allows changing only its policy and updates the row")
+    void edit_opensExistingPlan_andUpdatesPolicy() {
+        addStraightRouteThroughList();
+        when(view.showConstructionPlansDialog(anyList(), anyInt(), anyString())).thenReturn(
+                new ConstructionPlansDialog.Result(ConstructionPlansDialog.Action.EDIT, 0));
+
+        presenter.onChar(charKey('b'));
+
+        assertEquals(Model.GameMode.CONNECT, model.getMode());
+        RoutePreviewSession session = presenter.getRoutePreviewSession();
+        assertNotNull(session);
+        assertEquals(RoutePreviewSession.State.PREVIEW, session.state(),
+                "Edit must show the saved plan immediately, without picking A/B again");
+        assertEquals(new Point(0, 0), session.start().orElseThrow());
+        assertEquals(new Point(4, 0), session.end().orElseThrow());
+        assertEquals(RoutePolicy.CHEAPEST, session.policy());
+
+        presenter.onChar(charKey(']'));
+        awaitPreview();
+        assertEquals(RoutePolicy.DIRECT, session.policy());
+        presenter.onChar(enter());
+
+        assertEquals(Model.GameMode.RAILS, model.getMode());
+        assertFalse(presenter.isConstructionActive(), "Edit must never build the route");
+        assertEquals(1, presenter.getPlannedWorks().size());
+        assertEquals(RoutePolicy.DIRECT, presenter.getPlannedWorks().works().get(0).policy());
+        assertEquals(new Point(0, 0), presenter.getPlannedWorks().works().get(0).start());
+        assertEquals(new Point(4, 0), presenter.getPlannedWorks().works().get(0).end());
+        assertEquals(new Point(0, 0), model.getMark("Way-1-start"));
+        assertEquals(new Point(4, 0), model.getMark("Way-1-end"));
+        assertEquals(2, model.getMarks().size(),
+                "Edit must not create or duplicate endpoint marks");
+        verify(view, times(2)).showConstructionPlansDialog(anyList(), anyInt(), anyString());
+    }
+
+    @Test
+    @DisplayName("cancelling Edit leaves the saved policy and plan unchanged")
+    void cancellingEdit_leavesTheWorkUnchanged() {
+        addStraightRouteThroughList();
+        when(view.showConstructionPlansDialog(anyList(), anyInt(), anyString())).thenReturn(
+                new ConstructionPlansDialog.Result(ConstructionPlansDialog.Action.EDIT, 0));
+
+        presenter.onChar(charKey('b'));
+        presenter.onChar(escape());
+
+        assertEquals(Model.GameMode.RAILS, model.getMode());
+        assertEquals(RoutePolicy.CHEAPEST, presenter.getPlannedWorks().works().get(0).policy());
+        assertEquals(1, presenter.getPlannedWorks().size());
+        assertFalse(presenter.isConstructionActive());
+    }
+
+    @Test
     @DisplayName("the works key also opens the list from the main menu")
     void worksKey_opensFromMenu() {
         model.setMode(Model.GameMode.MENU);
