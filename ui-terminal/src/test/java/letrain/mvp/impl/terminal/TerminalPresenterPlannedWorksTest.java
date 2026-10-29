@@ -127,6 +127,9 @@ class TerminalPresenterPlannedWorksTest {
         assertEquals(RoutePolicy.CHEAPEST, presenter.getPlannedWorks().works().get(0).policy());
         assertEquals(new Point(0, 0), presenter.getPlannedWorks().works().get(0).start());
         assertEquals(new Point(4, 0), presenter.getPlannedWorks().works().get(0).end());
+        assertEquals(new Point(0, 0), model.getMark("Way-1-start"));
+        assertEquals(new Point(4, 0), model.getMark("Way-1-end"));
+        assertEquals("Way-24-end", TerminalPresenter.wayMarkName(24, "end"));
         assertFalse(presenter.isConstructionActive(), "Add must never start the queue");
         assertEquals(Model.GameMode.RAILS, model.getMode());
         assertFalse(presenter.isRoutePreviewSaveToList());
@@ -314,23 +317,6 @@ class TerminalPresenterPlannedWorksTest {
     }
 
     @Test
-    @DisplayName("Details shows the work without changing it")
-    void details_showsTheSelectedWork() {
-        addStraightRouteThroughList();
-        when(view.showConstructionPlansDialog(anyList(), anyInt(), anyString()))
-                .thenReturn(new ConstructionPlansDialog.Result(
-                        ConstructionPlansDialog.Action.DETAILS, 0))
-                .thenReturn(new ConstructionPlansDialog.Result(ConstructionPlansDialog.Action.CLOSE,
-                        -1));
-
-        presenter.onChar(charKey('b'));
-
-        verify(view).showMessage(org.mockito.ArgumentMatchers.contains("Work #"),
-                org.mockito.ArgumentMatchers.contains("Policy: CHEAPEST"));
-        assertEquals(1, presenter.getPlannedWorks().size());
-    }
-
-    @Test
     @DisplayName("the works key also opens the list from the main menu")
     void worksKey_opensFromMenu() {
         model.setMode(Model.GameMode.MENU);
@@ -375,6 +361,8 @@ class TerminalPresenterPlannedWorksTest {
 
         assertTrue(presenter.getPlannedWorks().isEmpty());
         assertTrue(presenter.isConstructionActive());
+        assertTrue(model.getMarks().keySet().stream().noneMatch(name -> name.startsWith("Way-")),
+                "the immediate Shift+C flow must not create planned-work marks");
         verify(view, never()).showConstructionPlansDialog(anyList(), anyInt(), anyString());
     }
 }

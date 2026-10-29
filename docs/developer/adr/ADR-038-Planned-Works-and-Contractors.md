@@ -65,7 +65,8 @@ priorizar antes de gastar.
 
 La fase 1 implementa un subconjunto: origen, destino, política, `RoutePlan`, coste y tiempo
 estimados, con estado `DRAFT`. Los campos de constructora, cotizaciones, calidad, velocidad y zona
-pertenecen a fases posteriores; no se muestran todavía en la tabla.
+pertenecen a fases posteriores; no se muestran todavía en la tabla. Al guardar una ruta se crean
+las marcas `Way-<id>-start` y `Way-<id>-end` en sus extremos.
 
 ### 3. Constructoras y cotizaciones
 

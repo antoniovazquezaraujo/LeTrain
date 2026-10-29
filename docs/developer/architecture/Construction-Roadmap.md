@@ -27,7 +27,7 @@ Objetivo: poder preparar varias rutas sin construir ninguna.
 Incluye:
 
 - guardar un plan en una lista;
-- volver a abrirlo y ver el detalle;
+- volver a abrirlo;
 - eliminar una entrada;
 - ver coste y tiempo estimados;
 - ver el total de la lista;
@@ -59,9 +59,8 @@ Obras
 ────────────────────────────────────────────────────────────────────────
 Total: 3 obras · $385.800 · 17 min
 
-[A] Add   [D] Delete   [Enter] Details
+[A] Add   [D] Delete   [Esc] Close
 [Run] disabled until construction companies and cash are available
-[Esc] Close
 ```
 
 La tabla usa **celdas**, no kilómetros, porque el juego no tiene todavía una escala de distancia
@@ -75,12 +74,12 @@ qué está guardando. La columna `Estado` también es necesaria desde el princip
 solo tenga el valor `Borrador`; los estados de ejecución llegarán con las constructoras.
 
 La acción `Run` debe aparecer deshabilitada en esta fase. Primero se preparan y comparan rutas;
-contratarlas y ejecutarlas pertenece a la fase 2. `D` elimina la entrada. `Enter` abre el detalle de
-la obra. `Esc` cierra la lista. La fila seleccionada se conserva al reabrir el diálogo.
+contratarlas y ejecutarlas pertenece a la fase 2. `D` elimina la entrada. `Esc` cierra la lista. La
+fila seleccionada se conserva al reabrir el diálogo.
 
-El recálculo y la edición de política quedan fuera de esta primera rebanada: requieren una decisión
-propia sobre cómo recalcular sin bloquear y cómo conservar el presupuesto anterior si la nueva
-política no tiene ruta. Se recuperarán cuando esa decisión esté cerrada.
+El detalle de una obra, el recálculo y la edición de política quedan fuera de esta primera rebanada.
+El detalle necesita una pantalla propia; el recálculo y la edición requieren decidir cómo recalcular
+sin bloquear y cómo conservar el presupuesto anterior si la nueva política no tiene ruta.
 
 La acción `Add` no devuelve al mapa normal ni crea una obra inmediatamente. Al pulsarla:
 
@@ -112,8 +111,12 @@ foco ni interrumpe lo que el usuario esté mirando. Los avisos de “añadida”
 
 La lista se abrirá como un diálogo modal parecido al editor de programas: filas seleccionables con
 las flechas, acciones por atajos y una línea de total. En una terminal de 80 columnas la tabla
-completa puede no caber; la solución es mantener las columnas esenciales y mostrar el resto en el
-panel de detalle de la fila seleccionada.
+completa puede no caber; la solución es mantener las columnas esenciales y mostrar los avisos en la
+propia fila.
+
+Al guardar una ruta se crean dos marcas con los extremos: `Way-<id>-start` y `Way-<id>-end`, donde
+`<id>` es el id de la obra en la lista (por ejemplo, `Way-1-start` y `Way-24-end`). Las marcas
+permanecen al eliminar la fila; su gestión tendrá su propia opción de menú más adelante.
 
 Implementación actual de la fase 1:
 
@@ -123,8 +126,8 @@ Implementación actual de la fase 1:
   totales.
 - `ui-terminal/.../ConstructionPlansDialog`: diálogo modal con tabla, total y acciones; `Run`
   deshabilitado.
-- `TerminalPresenter`: flujo `Add` en modo guardar, apertura con `b`, borrado y detalles. El diálogo
-  no se reabre solo.
+- `TerminalPresenter`: flujo `Add` en modo guardar, apertura con `b`, borrado y creación de las
+  marcas de extremos. El diálogo no se reabre solo.
 
 La lista es presenter-owned y se descarta al cambiar de modelo; todavía no se guarda en savegames.
 

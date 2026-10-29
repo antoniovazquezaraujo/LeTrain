@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
 /**
  * Modal list of planned works (construction roadmap, phase 1). It is the 2D counterpart of the
  * future planned-works window: a compact table over the frozen game frame with the planner data the
- * author needs to compare routes, a total line and the actions Add/Delete/Details.
+ * author needs to compare routes, a total line and the actions Add/Delete/Close.
  *
  * <p>
  * The dialog is deliberately presentation only. The presenter builds every {@link Row} with the
@@ -46,7 +46,7 @@ final class ConstructionPlansDialog {
 
     /** What the player chose when the dialog closed. */
     enum Action {
-        CLOSE, ADD, DELETE, DETAILS
+        CLOSE, ADD, DELETE
     }
 
     /**
@@ -102,7 +102,6 @@ final class ConstructionPlansDialog {
         heading.addComponent(new EmptySpace(new TerminalSize(1, 1)));
         body.addComponent(heading, BorderLayout.Location.TOP);
 
-        final Runnable[] openDetails = new Runnable[1];
         ActionListBox list = new ActionListBox() {
             @Override
             public boolean isFocusable() {
@@ -110,7 +109,9 @@ final class ConstructionPlansDialog {
             }
         };
         for (Row row : safeRows) {
-            list.addItem(formatRow(row), () -> openDetails[0].run());
+            list.addItem(formatRow(row), () -> {
+                // The phase-1 list only selects rows; details are deliberately out of scope.
+            });
         }
         if (!safeRows.isEmpty()) {
             list.setSelectedIndex(clampIndex(selectedIndex, safeRows.size()));
@@ -132,20 +133,15 @@ final class ConstructionPlansDialog {
         };
         Runnable add = () -> closeWith(window, result, Action.ADD, list);
         Runnable delete = () -> closeWith(window, result, Action.DELETE, list);
-        Runnable details = () -> closeWith(window, result, Action.DETAILS, list);
-        openDetails[0] = details;
 
         Panel actionRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
         Button addButton = NewGameDialog.mnemonicButton("Add", 'A', add);
         Button deleteButton = NewGameDialog.mnemonicButton("Delete", 'D', delete);
-        Button detailsButton = new Button("Details", details);
         actionRow.addComponent(addButton);
         actionRow.addComponent(deleteButton);
-        actionRow.addComponent(detailsButton);
 
         boolean hasSelection = !safeRows.isEmpty();
         deleteButton.setEnabled(hasSelection);
-        detailsButton.setEnabled(hasSelection);
 
         Panel runRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
         Button runButton = new Button("Run");
@@ -169,17 +165,6 @@ final class ConstructionPlansDialog {
                 if (keyStroke.getKeyType() == KeyType.Escape) {
                     close.run();
                     deliverEvent.set(false);
-                    return;
-                }
-                if (keyStroke.getKeyType() == KeyType.Enter) {
-                    // Let a focused button receive Enter (Tab navigation); everywhere else Enter
-                    // opens the selected work's details, as the roadmap specifies.
-                    if (!(w.getFocusedInteractable() instanceof Button)) {
-                        if (hasSelection) {
-                            details.run();
-                        }
-                        deliverEvent.set(false);
-                    }
                     return;
                 }
                 Character character = keyStroke.getCharacter();

@@ -1237,15 +1237,16 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
         PlannedWork work = plannedWorks().add(start, end, session.policy(), plan,
                 session.effectiveConstructionTicks());
+        model.setMark(wayMarkName(work.id(), "start"), start);
+        model.setMark(wayMarkName(work.id(), "end"), end);
         plannedWorksSelectedIndex = plannedWorks().size() - 1;
         showPlannedWorksNotice("Route #" + work.id() + " added to works · b opens the list");
     }
 
     /**
      * Opens the modal planned-works list and applies its actions. Add leaves the list and starts
-     * CONNECT in save mode. Delete keeps the list loop alive; Details returns to the map with the
-     * work detail message. The dialog never reopens itself after Add, by owner decision: the player
-     * opens it again when they want.
+     * CONNECT in save mode. Delete keeps the list loop alive. The dialog never reopens itself after
+     * Add, by owner decision: the player opens it again when they want.
      */
     void openPlannedWorks() {
         if (isConstructionActive()) {
@@ -1275,12 +1276,6 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                         plannedWorks().remove(selectedId);
                         plannedWorksSelectedIndex = plannedWorks().isEmpty() ? -1
                                 : Math.min(plannedWorksSelectedIndex, plannedWorks().size() - 1);
-                    }
-                }
-                case DETAILS -> {
-                    if (selectedId >= 0) {
-                        plannedWorks().find(selectedId).ifPresent(this::showPlannedWorkDetails);
-                        return;
                     }
                 }
                 case CLOSE -> {
@@ -1314,6 +1309,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         return point.getX() + "," + point.getY();
     }
 
+    /** Stable mark name for one endpoint of a planned work, e.g. {@code Way-24-end}. */
+    static String wayMarkName(int workId, String endpoint) {
+        return "Way-" + workId + "-" + endpoint;
+    }
+
     /** Short labels fitted to the phase-1 table; the underlying policy is never lost in the row. */
     private static String shortPolicy(RoutePolicy policy) {
         return switch (policy) {
@@ -1323,17 +1323,6 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             case AVOID_WATER -> "AVOID_WATER";
             case AVOID_ALL -> "AVOID_ALL";
         };
-    }
-
-    private void showPlannedWorkDetails(PlannedWork work) {
-        String warning = RailBuildability.check(model, work.plan())
-                .map(RailBuildability.Issue::description).orElse("");
-        view.showMessage("Work #" + work.id(),
-                "State: " + work.state() + "\nFrom: " + formatPoint(work.start()) + "\nTo: "
-                        + formatPoint(work.end()) + "\nPolicy: " + work.policy() + "\nCells: "
-                        + work.cells() + "\nCost: " + RoutePreviewStatus.formatCost(work.cost())
-                        + "\nTime: " + RoutePreviewStatus.formatTicks(work.estimatedTicks())
-                        + (warning.isBlank() ? "" : "\nWarning: " + warning));
     }
 
     private void showPlannedWorksNotice(String notice) {
