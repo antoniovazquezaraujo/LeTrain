@@ -1676,18 +1676,17 @@ public class TerminalView implements letrain.mvp.View {
             @Override
             public void drawComponent(com.googlecode.lanterna.gui2.TextGUIGraphics graphics,
                     Button component) {
-                if (component.isFocused()) {
+                if (!component.isEnabled()) {
+                    graphics.applyThemeStyle(component.getThemeDefinition().getInsensitive());
+                } else if (component.isFocused()) {
                     graphics.applyThemeStyle(component.getThemeDefinition().getActive());
                 } else {
                     graphics.applyThemeStyle(component.getThemeDefinition().getNormal());
                 }
                 String label = component.getLabel();
                 graphics.putString(0, 0, "< " + label + " >");
-                if (!component.isEnabled()) {
-                    graphics.setForegroundColor(com.googlecode.lanterna.TextColor.ANSI.BLACK);
-                } else {
-                    graphics.setForegroundColor(MNEMONIC_COLOR);
-                }
+                graphics.setForegroundColor(
+                        component.isEnabled() ? MNEMONIC_COLOR : MENU_DISABLED_FG_COLOR);
                 int at = indexOfIgnoreCase(label, mnemonic);
                 if (at >= 0) {
                     graphics.putString(2 + at, 0, label.substring(at, at + 1));
@@ -1710,7 +1709,7 @@ public class TerminalView implements letrain.mvp.View {
      * Wraps a theme so the window decoration centers its title (lanterna's {@code CENTER_TITLE}
      * property is false by default).
      */
-    private static com.googlecode.lanterna.graphics.Theme centeredTitleTheme(
+    static com.googlecode.lanterna.graphics.Theme centeredTitleTheme(
             com.googlecode.lanterna.graphics.Theme base) {
         return new com.googlecode.lanterna.graphics.DelegatingTheme(base) {
             @Override

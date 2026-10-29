@@ -82,7 +82,7 @@ final class ConstructionPlansDialog {
      */
     static Result show(Screen screen, List<Row> rows, int selectedIndex, String total) {
         List<Row> safeRows = rows == null ? List.of() : List.copyOf(rows);
-        MultiWindowTextGUI gui = DialogWindow.gui(screen);
+        MultiWindowTextGUI gui = DialogWindow.programGui(screen);
         TerminalSize box = DialogWindow.dialogSize(screen.getTerminalSize());
 
         BasicWindow window = new BasicWindow("Works");
@@ -97,7 +97,6 @@ final class ConstructionPlansDialog {
         Panel body = new Panel(new BorderLayout());
         Panel heading = new Panel(new LinearLayout(Direction.VERTICAL));
         Label header = new Label(HEADER);
-        header.setForegroundColor(TerminalView.NORMAL_MENU_FG_COLOR);
         heading.addComponent(header);
         heading.addComponent(new EmptySpace(new TerminalSize(1, 1)));
         body.addComponent(heading, BorderLayout.Location.TOP);
