@@ -124,6 +124,42 @@ public final class RoutePreviewSession {
     }
 
     /**
+     * Opens an existing plan for editing without changing its endpoints.
+     *
+     * <p>
+     * The session starts directly in {@link State#PREVIEW} with the saved plan and policy, so the
+     * author can inspect it and cycle policies. Endpoint picking is deliberately not available: if
+     * the author wants a different origin or destination, they create another route. Accepting with
+     * {@code Enter} selects the current plan like a normal preview.
+     *
+     * @param start saved first endpoint
+     * @param end saved last endpoint
+     * @param policy policy that produced {@code plan}
+     * @param plan feasible saved plan
+     * @return the new state, always {@link State#PREVIEW}
+     * @throws NullPointerException if any argument is null
+     * @throws IllegalArgumentException if {@code plan} is infeasible
+     */
+    public State beginEdit(Point start, Point end, RoutePolicy policy, RoutePlan plan) {
+        Point startCopy = copy(start, "start");
+        Point endCopy = copy(end, "end");
+        RoutePolicy savedPolicy = ValidationUtils.requireNonNull(policy, "policy");
+        RoutePlan savedPlan = ValidationUtils.requireNonNull(plan, "plan");
+        if (!savedPlan.feasible()) {
+            throw new IllegalArgumentException("edited plan must be feasible");
+        }
+        reset();
+        this.start = startCopy;
+        this.end = endCopy;
+        this.policy = savedPolicy;
+        this.lastPlan = savedPlan;
+        this.lastMessage = null;
+        this.planCache.put(savedPolicy, savedPlan);
+        this.state = State.PREVIEW;
+        return state;
+    }
+
+    /**
      * Handles the modal {@code Enter} action for the current state.
      *
      * <ul>

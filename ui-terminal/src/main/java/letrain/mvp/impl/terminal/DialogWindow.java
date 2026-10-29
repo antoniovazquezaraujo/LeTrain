@@ -84,6 +84,18 @@ final class DialogWindow {
         return gui;
     }
 
+    /**
+     * GUI with the same default palette as the program editor dialog ({@code showIDE}), plus the
+     * frozen game backdrop. The Works list uses it so section labels and disabled controls keep the
+     * editor's readable colours instead of the dark dialog theme.
+     */
+    static MultiWindowTextGUI programGui(Screen screen) {
+        MultiWindowTextGUI gui =
+                new MultiWindowTextGUI(screen, new DefaultWindowManager(), null, snapshot(screen));
+        gui.setTheme(TerminalView.centeredTitleTheme(gui.getTheme()));
+        return gui;
+    }
+
     /** Copy of the screen's front buffer (the last painted frame) for use as a GUI backdrop. */
     static FrozenBackground snapshot(Screen screen) {
         TerminalSize size = screen.getTerminalSize();

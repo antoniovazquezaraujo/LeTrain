@@ -74,6 +74,17 @@ LeTrain is deeply modal. Pressing the following keys will switch your current in
 - **`a`**: Enter **Add Mode** to place infrastructure: `n` **Station**, `e` **Sensor**, `s` **Semaphore**, `g` **Speed Signal**.
 - **Numbers (0-9)**: Set a step multiplier for cursor movement; press **Spacebar** to reset it to 1.
 
+### Planned Works (2D)
+- **`b`**: Open the **Works** list from the map. It stores draft routes and their estimated cost/time; it does not build them.
+- **`A`**: Add a route from the list. The map enters route planning with A/B; **Enter** saves the route as a draft, **Esc** cancels. The normal mode menu is hidden while planning and the Add status is a single bottom line; **Tab** hides or shows that line.
+- **`E`**: Edit the selected route. It opens with the saved A/B and plan already visible; only the policy can be changed with `[`/`]`. While editing, the old route is hidden so only the candidate plan is painted. If you want a different origin or destination, add another route.
+- **`D`**: Delete the selected draft.
+- **`Esc`**: Close the list. **Run** is disabled until construction companies and cash exist.
+- The same actions are available as **Alt+A**, **Alt+E**, **Alt+D** and **Alt+C**.
+- Stored drafts stay painted on the map until their row is deleted.
+- Saving a draft also creates the marks `Way-<id>-start` and `Way-<id>-end` at its endpoints (for example, `Way-1-start` and `Way-1-end`). These marks remain if the row is deleted; a dedicated marks menu will come later.
+- The list is kept while the current game is loaded, but it is not yet saved in savegames; a model swap (load/undo) clears it.
+
 ### Moving Track Elements
 In the **Stations** (`n`), **Sensors** (`e`), **Semaphores** (`s`) and **Speed Signals** (`g`) modes you can slide the selected element along the rail, in the direction the element itself is facing:
 - **Shift + Up / Shift + k**: move the element one slot forward along the track.
