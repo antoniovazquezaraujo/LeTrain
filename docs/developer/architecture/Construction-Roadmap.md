@@ -63,6 +63,7 @@ Total: 3 obras · $385.800 · 17 min
 [A] Add   [E] Edit   [D] Delete   [Esc] Close
 [Run] disabled until construction companies and cash are available
 ```
+Atajos: `Alt+A` Add, `Alt+E` Edit, `Alt+D` Delete, `Alt+C` Close.
 
 La tabla usa **celdas**, no kilómetros, porque el juego no tiene todavía una escala de distancia
 definida para la autoría. El coste es el coste real del `RoutePlan` y el tiempo es el tiempo de

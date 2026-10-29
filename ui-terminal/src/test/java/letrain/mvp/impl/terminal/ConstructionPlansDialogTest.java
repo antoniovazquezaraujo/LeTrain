@@ -2,8 +2,19 @@ package letrain.mvp.impl.terminal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.graphics.Theme;
+import com.googlecode.lanterna.graphics.ThemeDefinition;
+import com.googlecode.lanterna.graphics.ThemeStyle;
+import com.googlecode.lanterna.gui2.AbstractListBox;
+import com.googlecode.lanterna.gui2.ActionListBox;
+import com.googlecode.lanterna.gui2.TextGUIGraphics;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -86,6 +97,47 @@ class ConstructionPlansDialogTest {
         assertEquals(header.indexOf("State"), line.indexOf("Draft"), line);
         assertEquals(header.indexOf("From"), line.indexOf("1,1"), line);
         assertTrue(line.startsWith("10 "), line);
+    }
+
+    @Test
+    @DisplayName("the selected row keeps the selected style when the list loses focus")
+    void should_KeepSelectedStyle_whenListIsNotFocused() {
+        ActionListBox list = mock(ActionListBox.class);
+        Theme theme = mock(Theme.class);
+        ThemeDefinition definition = mock(ThemeDefinition.class);
+        ThemeStyle selected = mock(ThemeStyle.class);
+        TextGUIGraphics graphics = mock(TextGUIGraphics.class);
+        when(list.getTheme()).thenReturn(theme);
+        when(theme.getDefinition(AbstractListBox.class)).thenReturn(definition);
+        when(definition.getSelected()).thenReturn(selected);
+        when(graphics.getSize()).thenReturn(new TerminalSize(80, 1));
+
+        ConstructionPlansDialog.rowRenderer(List.of(CHEAPEST)).drawItem(graphics, list, 0, () -> {
+        }, true, false);
+
+        verify(graphics).applyThemeStyle(selected);
+        verify(graphics).putString(org.mockito.ArgumentMatchers.eq(0),
+                org.mockito.ArgumentMatchers.eq(0),
+                org.mockito.ArgumentMatchers.argThat(label -> label != null
+                        && label.startsWith(ConstructionPlansDialog.formatRow(CHEAPEST))));
+    }
+
+    @Test
+    @DisplayName("Alt mnemonics map Add, Edit, Delete and Close; Run stays disabled")
+    void should_MapAltMnemonics() {
+        assertEquals(ConstructionPlansDialog.Action.ADD,
+                ConstructionPlansDialog.shortcutAction('a', false));
+        assertEquals(ConstructionPlansDialog.Action.ADD,
+                ConstructionPlansDialog.shortcutAction('A', false));
+        assertEquals(ConstructionPlansDialog.Action.EDIT,
+                ConstructionPlansDialog.shortcutAction('e', true));
+        assertEquals(ConstructionPlansDialog.Action.DELETE,
+                ConstructionPlansDialog.shortcutAction('d', true));
+        assertEquals(ConstructionPlansDialog.Action.CLOSE,
+                ConstructionPlansDialog.shortcutAction('c', false));
+        assertNull(ConstructionPlansDialog.shortcutAction('e', false));
+        assertNull(ConstructionPlansDialog.shortcutAction('d', false));
+        assertNull(ConstructionPlansDialog.shortcutAction('r', true));
     }
 
     @Test

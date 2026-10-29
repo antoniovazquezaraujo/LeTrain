@@ -80,6 +80,7 @@ LeTrain is deeply modal. Pressing the following keys will switch your current in
 - **`E`**: Edit the selected route. It opens with the saved A/B and plan already visible; only the policy can be changed with `[`/`]`. While editing, the old route is hidden so only the candidate plan is painted. If you want a different origin or destination, add another route.
 - **`D`**: Delete the selected draft.
 - **`Esc`**: Close the list. **Run** is disabled until construction companies and cash exist.
+- The same actions are available as **Alt+A**, **Alt+E**, **Alt+D** and **Alt+C**.
 - Stored drafts stay painted on the map until their row is deleted.
 - Saving a draft also creates the marks `Way-<id>-start` and `Way-<id>-end` at its endpoints (for example, `Way-1-start` and `Way-1-end`). These marks remain if the row is deleted; a dedicated marks menu will come later.
 - The list is kept while the current game is loaded, but it is not yet saved in savegames; a model swap (load/undo) clears it.

@@ -1,6 +1,9 @@
 package letrain.mvp.impl.terminal;
 
 import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.TerminalTextUtils;
+import com.googlecode.lanterna.graphics.ThemeDefinition;
+import com.googlecode.lanterna.gui2.AbstractListBox;
 import com.googlecode.lanterna.gui2.ActionListBox;
 import com.googlecode.lanterna.gui2.BasicWindow;
 import com.googlecode.lanterna.gui2.BorderLayout;
@@ -11,6 +14,7 @@ import com.googlecode.lanterna.gui2.Label;
 import com.googlecode.lanterna.gui2.LinearLayout;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
 import com.googlecode.lanterna.gui2.Panel;
+import com.googlecode.lanterna.gui2.TextGUIGraphics;
 import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.gui2.WindowListenerAdapter;
 import com.googlecode.lanterna.input.KeyStroke;
@@ -115,6 +119,7 @@ final class ConstructionPlansDialog {
         if (!safeRows.isEmpty()) {
             list.setSelectedIndex(clampIndex(selectedIndex, safeRows.size()));
         }
+        list.setListItemRenderer(rowRenderer(safeRows));
 
         if (safeRows.isEmpty()) {
             body.addComponent(new Label(emptyMessage()), BorderLayout.Location.CENTER);
@@ -153,7 +158,7 @@ final class ConstructionPlansDialog {
         runRow.addComponent(new Label("  (available in a later phase)"));
 
         Panel closeRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
-        closeRow.addComponent(new Button("Close", close));
+        closeRow.addComponent(NewGameDialog.mnemonicButton("Close", 'C', close));
 
         footer.addComponent(actionRow);
         footer.addComponent(runRow);
@@ -162,7 +167,24 @@ final class ConstructionPlansDialog {
         window.addWindowListener(new WindowListenerAdapter() {
             @Override
             public void onInput(Window w, KeyStroke keyStroke, AtomicBoolean deliverEvent) {
-                if (keyStroke.isCtrlDown() || keyStroke.isAltDown()) {
+                if (keyStroke.isCtrlDown()) {
+                    return;
+                }
+                Character character = keyStroke.getCharacter();
+                if (keyStroke.isAltDown()) {
+                    if (character == null) {
+                        return;
+                    }
+                    Action action = shortcutAction(character, hasSelection);
+                    if (action != null) {
+                        switch (action) {
+                            case ADD -> add.run();
+                            case EDIT -> edit.run();
+                            case DELETE -> delete.run();
+                            case CLOSE -> close.run();
+                        }
+                        deliverEvent.set(false);
+                    }
                     return;
                 }
                 if (keyStroke.getKeyType() == KeyType.Escape) {
@@ -170,7 +192,6 @@ final class ConstructionPlansDialog {
                     deliverEvent.set(false);
                     return;
                 }
-                Character character = keyStroke.getCharacter();
                 if (character == null) {
                     return;
                 }
@@ -228,6 +249,20 @@ final class ConstructionPlansDialog {
         return Math.max(0, Math.min(index, rowCount - 1));
     }
 
+    /**
+     * Action for an Alt mnemonic. Add and Close are always available; Edit and Delete need a
+     * selected row. {@code Alt+R} deliberately maps to nothing because Run is disabled in phase 1.
+     */
+    static Action shortcutAction(char key, boolean hasSelection) {
+        return switch (Character.toLowerCase(key)) {
+            case 'a' -> Action.ADD;
+            case 'e' -> hasSelection ? Action.EDIT : null;
+            case 'd' -> hasSelection ? Action.DELETE : null;
+            case 'c' -> Action.CLOSE;
+            default -> null;
+        };
+    }
+
     /** Table header, kept in one place so the row formatter and the label cannot drift. */
     static String header() {
         return HEADER;
@@ -253,6 +288,35 @@ final class ConstructionPlansDialog {
             line.append(" !");
         }
         return line.toString();
+    }
+
+    /**
+     * Row renderer that keeps the selected row highlighted even when focus moves to a footer
+     * button. The default Lanterna list renderer only paints the selected background while the list
+     * itself has focus, which made Delete ambiguous.
+     */
+    static AbstractListBox.ListItemRenderer<Runnable, ActionListBox> rowRenderer(List<Row> rows) {
+        return new AbstractListBox.ListItemRenderer<>() {
+            @Override
+            public String getLabel(ActionListBox listBox, int index, Runnable item) {
+                return index >= 0 && index < rows.size() ? formatRow(rows.get(index)) : "";
+            }
+
+            @Override
+            public void drawItem(TextGUIGraphics graphics, ActionListBox listBox, int index,
+                    Runnable item, boolean selected, boolean focused) {
+                ThemeDefinition definition =
+                        listBox.getTheme().getDefinition(AbstractListBox.class);
+                graphics.applyThemeStyle(
+                        selected ? definition.getSelected() : definition.getNormal());
+                String label = getLabel(listBox, index, item);
+                label = TerminalTextUtils.fitString(label, graphics.getSize().getColumns());
+                while (TerminalTextUtils.getColumnWidth(label) < graphics.getSize().getColumns()) {
+                    label += " ";
+                }
+                graphics.putString(0, 0, label);
+            }
+        };
     }
 
     /** One-row state message shown instead of the table when the list is empty. */
