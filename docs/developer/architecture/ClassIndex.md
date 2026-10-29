@@ -156,6 +156,12 @@
 ## letrain.palette
 - [[letrain.palette.VisualPalette|VisualPalette]] (core)
 
+## letrain.planner
+- [[letrain.planner.RoutePlan|RoutePlan]] (core)
+- [[letrain.planner.RoutePlanner|RoutePlanner]] (core)
+- [[letrain.planner.RoutePolicy|RoutePolicy]] (core)
+- [[letrain.planner.RouteStep|RouteStep]] (core)
+
 ## letrain.segments
 - [[letrain.segments.BlockManager|BlockManager]] (core)
 - [[letrain.segments.Port|Port]] (core)
