@@ -271,6 +271,9 @@ class ModelTest {
         model.setMark("Depot", markPoint);
         assertEquals(markPoint, model.getMark("Depot"));
         assertTrue(model.getMarks().containsKey("Depot"));
+        assertTrue(model.removeMark("Depot"));
+        assertFalse(model.removeMark("Depot"));
+        assertFalse(model.getMarks().containsKey("Depot"));
 
         model.setMode(GameMode.DRIVE);
         assertEquals(GameMode.DRIVE, model.getMode());

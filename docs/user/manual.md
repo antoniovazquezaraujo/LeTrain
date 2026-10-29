@@ -82,8 +82,15 @@ LeTrain is deeply modal. Pressing the following keys will switch your current in
 - **`Esc`**: Close the list. **Run** is disabled until construction companies and cash exist.
 - The same actions are available as **Alt+A**, **Alt+E**, **Alt+D** and **Alt+C**.
 - Stored drafts stay painted on the map until their row is deleted.
-- Saving a draft also creates the marks `Way-<id>-start` and `Way-<id>-end` at its endpoints (for example, `Way-1-start` and `Way-1-end`). These marks remain if the row is deleted; a dedicated marks menu will come later.
+- Saving a draft also creates the marks `Way-<id>-start` and `Way-<id>-end` at its endpoints (for example, `Way-1-start` and `Way-1-end`). These marks remain if the row is deleted.
 - The list is kept while the current game is loaded, but it is not yet saved in savegames; a model swap (load/undo) clears it.
+
+### Marks (2D)
+- **`m`**: Open the **Marks** list. It shows every named bookmark, including the `Way-...` marks created by planned works.
+- **`Enter` / `G` / `Alt+G`**: Move the cursor to the selected mark and centre the map on it.
+- **`D` / `Alt+D`**: Delete the selected mark.
+- **`Esc` / `Alt+C`**: Close the list.
+- Marks can still be created with `mark <name>;` in the console.
 
 ### Moving Track Elements
 In the **Stations** (`n`), **Sensors** (`e`), **Semaphores** (`s`) and **Speed Signals** (`g`) modes you can slide the selected element along the rail, in the direction the element itself is facing:
