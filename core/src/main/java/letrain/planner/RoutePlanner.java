@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
+import java.util.concurrent.CancellationException;
+import java.util.function.BooleanSupplier;
 import letrain.economy.EconomyManager;
 import letrain.economy.EconomyManager.ExpenseType;
 import letrain.ground.GroundMap;
@@ -98,6 +100,18 @@ public final class RoutePlanner {
     static final int MAX_EXPANDED_NODES = 1_000_000;
 
     /**
+     * Progress reports are emitted at phase start, every this many expanded nodes and at the end.
+     * Reporting per expansion would flood the UI and defeat the purpose of an activity signal.
+     */
+    static final int PROGRESS_INTERVAL_EXPANSIONS = 2_048;
+
+    /**
+     * Cancellation is polled every this many expanded nodes so a long search stops promptly without
+     * paying the cost of a volatile read on every iteration.
+     */
+    static final int CANCELLATION_CHECK_INTERVAL_EXPANSIONS = 512;
+
+    /**
      * Fixed neighbour order (N, NE, E, SE, S, SW, W, NW). Together with the insertion-sequence
      * tie-break it makes equal-cost routes reproducible across runs and JVMs.
      */
@@ -116,7 +130,8 @@ public final class RoutePlanner {
     }
 
     /**
-     * Plans a route between two buildable points.
+     * Plans a route between two buildable points without progress or cancellation. Backwards
+     * compatible overload used by synchronous callers and tests.
      *
      * @param terrain terrain to read (never modified)
      * @param economy source of real prices and construction delays (never modified)
@@ -128,11 +143,44 @@ public final class RoutePlanner {
      */
     public static RoutePlan plan(GroundMap terrain, EconomyManager economy, Point start, Point end,
             RoutePolicy policy) {
+        return plan(terrain, economy, start, end, policy, RoutePlanningListener.NO_OP, () -> false);
+    }
+
+    /**
+     * Plans a route between two buildable points with throttled progress and cooperative
+     * cancellation.
+     *
+     * <p>
+     * The listener is called at phase start, every {@value #PROGRESS_INTERVAL_EXPANSIONS} expanded
+     * nodes and once at the end. Cancellation is checked at start and every
+     * {@value #CANCELLATION_CHECK_INTERVAL_EXPANSIONS} expansions. When cancellation is observed
+     * the planner throws {@link CancellationException} instead of returning a partial plan; callers
+     * such as {@link RoutePlanningJob} translate that into their own cancelled state.
+     *
+     * @param terrain terrain to read (never modified)
+     * @param economy source of real prices and construction delays (never modified)
+     * @param start first cell to build (included in the plan)
+     * @param end last cell to build (included in the plan)
+     * @param policy terrain constraints and optimisation metric
+     * @param listener progress consumer (may be {@link RoutePlanningListener#NO_OP})
+     * @param cancelled cancellation signal; returns {@code true} when the plan must stop
+     * @return an immutable plan; infeasible with a human-readable reason when no route exists
+     * @throws NullPointerException if any argument is null
+     * @throws CancellationException if {@code cancelled} becomes {@code true} or the worker thread
+     *         is interrupted
+     */
+    public static RoutePlan plan(GroundMap terrain, EconomyManager economy, Point start, Point end,
+            RoutePolicy policy, RoutePlanningListener listener, BooleanSupplier cancelled) {
         ValidationUtils.requireNonNull(terrain, "terrain");
         ValidationUtils.requireNonNull(economy, "economy");
         ValidationUtils.requireNonNull(start, "start");
         ValidationUtils.requireNonNull(end, "end");
         ValidationUtils.requireNonNull(policy, "policy");
+        ValidationUtils.requireNonNull(listener, "listener");
+        ValidationUtils.requireNonNull(cancelled, "cancelled");
+
+        Progress progress = new Progress(listener, cancelled);
+        progress.checkCancelled();
 
         String startProblem = endpointProblem(terrain, start, "Start");
         if (startProblem != null) {
@@ -145,6 +193,8 @@ public final class RoutePlanner {
 
         // A same-cell route has nothing to build: feasible no-op with zero cost/time.
         if (start.equals(end)) {
+            progress.enterPhase(RoutePlanningProgress.Phase.SEARCH, start);
+            progress.finish(RoutePlanningProgress.Phase.SEARCH, 0, end);
             return RoutePlan.feasible(List.of(), 0, 0);
         }
 
@@ -152,7 +202,9 @@ public final class RoutePlanner {
             return searchCheapest(terrain, economy, start, end);
         }
 
-        return search(terrain, economy, start, end, policy, searchCosts(policy));
+        SearchCosts costs = searchCosts(policy);
+        return search(terrain, economy, start, end, policy, costs,
+                RoutePlanningProgress.Phase.SEARCH, progress);
     }
 
     private static SearchCosts searchCosts(RoutePolicy policy) {
@@ -165,7 +217,9 @@ public final class RoutePlanner {
     }
 
     private static RoutePlan search(GroundMap terrain, EconomyManager economy, Point start,
-            Point end, RoutePolicy policy, SearchCosts costs) {
+            Point end, RoutePolicy policy, SearchCosts costs, RoutePlanningProgress.Phase phase,
+            Progress progress) {
+        progress.enterPhase(phase, start);
         double turnPenalty = costs.turnPenalty();
         double deviationPenalty = costs.deviationPenalty();
 
@@ -194,11 +248,20 @@ public final class RoutePlanner {
                 continue; // Stale queue entry.
             }
             if (currentKey.equals(endKey)) {
+                progress.finish(phase, expanded, end);
                 return buildFeasiblePlan(terrainByKey, cameFrom, currentState, economy);
             }
-            if (++expanded > MAX_EXPANDED_NODES) {
+            expanded++;
+            if (expanded > MAX_EXPANDED_NODES) {
+                progress.finish(phase, expanded - 1, new Point(currentKey.x(), currentKey.y()));
                 return RoutePlan.infeasible("Route search exceeded " + MAX_EXPANDED_NODES
                         + " expanded cells for policy " + policy + "; no route found");
+            }
+            if (expanded % PROGRESS_INTERVAL_EXPANSIONS == 0) {
+                progress.report(phase, expanded, currentKey);
+            }
+            if (expanded % CANCELLATION_CHECK_INTERVAL_EXPANSIONS == 0) {
+                progress.checkCancelled();
             }
 
             for (Move move : MOVES) {
@@ -247,6 +310,7 @@ public final class RoutePlanner {
             }
         }
 
+        progress.finish(phase, expanded, null);
         return RoutePlan.infeasible("No route from " + start + " to " + end + " under policy "
                 + policy + " (blocked by terrain, 45-degree curvature or map bounds)");
     }
@@ -497,6 +561,52 @@ public final class RoutePlanner {
         int min = Math.min(dx, dy);
         int max = Math.max(dx, dy);
         return (max - min) + SQRT_2 * min;
+    }
+
+    /**
+     * Tiny adapter that owns the start timestamp and the cancellation checks. Keeping it in one
+     * place makes progress and cancellation calls uniform across the route search.
+     */
+    private static final class Progress {
+
+        private final RoutePlanningListener listener;
+        private final BooleanSupplier cancelled;
+        private final long startedNanos;
+
+        private Progress(RoutePlanningListener listener, BooleanSupplier cancelled) {
+            this.listener = listener;
+            this.cancelled = cancelled;
+            this.startedNanos = System.nanoTime();
+        }
+
+        private void enterPhase(RoutePlanningProgress.Phase phase, Point current) {
+            checkCancelled();
+            emit(phase, 0, current);
+        }
+
+        private void report(RoutePlanningProgress.Phase phase, int expandedNodes, CellKey current) {
+            emit(phase, expandedNodes,
+                    current == null ? null : new Point(current.x(), current.y()));
+        }
+
+        private void finish(RoutePlanningProgress.Phase phase, int expandedNodes, Point current) {
+            emit(phase, expandedNodes, current);
+        }
+
+        private void checkCancelled() {
+            if (cancelled.getAsBoolean() || Thread.currentThread().isInterrupted()) {
+                throw new CancellationException("Route planning cancelled");
+            }
+        }
+
+        private void emit(RoutePlanningProgress.Phase phase, int expandedNodes, Point current) {
+            listener.onProgress(
+                    new RoutePlanningProgress(phase, expandedNodes, elapsedMillis(), current));
+        }
+
+        private long elapsedMillis() {
+            return (System.nanoTime() - startedNanos) / 1_000_000L;
+        }
     }
 
     /** Immutable secondary weights for the distance-first DIRECT/AVOID search. */

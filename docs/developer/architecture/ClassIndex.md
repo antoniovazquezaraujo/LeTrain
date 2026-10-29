@@ -147,6 +147,8 @@
 - [[letrain.mvp.impl.terminal.DialogWindow|DialogWindow]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.NewGameDialog|NewGameDialog]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.ProgramTextBox|ProgramTextBox]] (ui-terminal)
+- [[letrain.mvp.impl.terminal.RoutePreviewOverlay|RoutePreviewOverlay]] (ui-terminal)
+- [[letrain.mvp.impl.terminal.RoutePreviewStatus|RoutePreviewStatus]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.SettingsDialog|SettingsDialog]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.TerminalPresenter|TerminalPresenter]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.TerminalView|TerminalView]] (ui-terminal)
@@ -160,6 +162,7 @@
 - [[letrain.planner.RoutePlan|RoutePlan]] (core)
 - [[letrain.planner.RoutePlanner|RoutePlanner]] (core)
 - [[letrain.planner.RoutePolicy|RoutePolicy]] (core)
+- [[letrain.planner.RoutePreviewSession|RoutePreviewSession]] (core)
 - [[letrain.planner.RouteStep|RouteStep]] (core)
 
 ## letrain.segments

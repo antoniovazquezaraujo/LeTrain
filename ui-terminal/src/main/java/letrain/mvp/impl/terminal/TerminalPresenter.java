@@ -1,5 +1,6 @@
 package letrain.mvp.impl.terminal;
 
+import static letrain.mvp.Model.GameMode.CONNECT;
 import static letrain.mvp.Model.GameMode.DRIVE;
 import static letrain.mvp.Model.GameMode.FORKS;
 import static letrain.mvp.Model.GameMode.LINK;
@@ -13,6 +14,8 @@ import static letrain.mvp.Model.GameMode.UNLINK;
 
 import letrain.mvp.input.InputEvent;
 import letrain.mvp.input.KeyType;
+import letrain.planner.RoutePlan;
+import letrain.planner.RoutePreviewSession;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -134,6 +137,31 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
      * exit, so the user can try things in the live simulation without consequences.
      */
     private letrain.command.ExperimentSession experimentSession;
+
+    /**
+     * ADR-035 CONNECT session, created lazily from the current terrain/economy on first entry. It
+     * is presenter-owned state: it never lives in the model and is recreated on every model swap.
+     */
+    private RoutePreviewSession routePreviewSession;
+
+    /** Mode the player came from; CONNECT returns there on cancel or selection. */
+    private Model.GameMode routePreviewReturnMode = RAILS;
+
+    /**
+     * Plan accepted in CONNECT, kept for the future construction queue. This slice does not build
+     * anything; it only stores the plan and closes the preview.
+     */
+    private RoutePlan pendingRoutePlan;
+
+    private String routePreviewConfirmation;
+    private long routePreviewConfirmationUntilMillis;
+
+    /**
+     * A/B focus toggle in PREVIEW (ADR-036). {@code false} means the next Space jumps to A and
+     * {@code true} means B; every valid jump flips it. Manual navigation does not change it, so the
+     * next Space resumes from the endpoint the author focused last.
+     */
+    private boolean routePreviewFocusOnEnd;
 
     private static final int AMBIENT_BASE_CELLS = 80 * 25;
     private static final int AMBIENT_FULL_CELLS = 120 * 40;
@@ -299,6 +327,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         } else {
             this.model = new letrain.mvp.impl.Model();
         }
+        resetRoutePreviewState();
         wireUserMessageSink();
         // Re-create audio controller for the new model
         if (this.audioController != null) {
@@ -333,6 +362,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         // reload / mixer restart) and rebuild only the cheap simulation controller. The view reads
         // the model field every frame.
         this.model = newModel;
+        resetRoutePreviewState();
         wireUserMessageSink();
         if (this.audioController == null) {
             this.audioController = new letrain.audio.AudioController(this.model);
@@ -535,10 +565,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 if (endOfGame) {
                     break;
                 }
+                pollRoutePreview();
                 simulationController.tick();
                 updateAmbientAudio();
                 renderer.visitModel(model);
                 informer.visitModel(model);
+                drawRoutePreviewOverlay();
                 view.paint();
                 if (model.getEffectiveMode() == DRIVE) {
                     Locomotive selectedLocomotive = model.getSelectedLocomotive();
@@ -610,6 +642,15 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private void executeCommand(String cmd) {
         log.info("Execute command: " + cmd);
         boolean fromConsole = model.getMode() == letrain.mvp.Model.GameMode.COMMAND;
+        if (fromConsole && routePreviewSession != null
+                && !RoutePreviewConsolePolicy.isAllowed(cmd)) {
+            // ADR-036: while previewing, the console only navigates; the world, the route and A/B
+            // must survive until the author selects or cancels. Keep the console open so the
+            // notice stays readable.
+            model.setCommandError(RoutePreviewConsolePolicy.BLOCKED_MESSAGE);
+            model.setCommandNotice("");
+            return;
+        }
         letrain.mvp.Model.GameMode returnMode = model.getPreviousMode();
         // Capture the cursor BEFORE executing so the journaled copy is self-positioned and the
         // replay (undo) is deterministic regardless of any (unrecorded) keyboard navigation.
@@ -829,6 +870,273 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 model.getCursor().getPosition().getY());
     }
 
+    /**
+     * Resets all CONNECT state. Called whenever the model is swapped (load, new game, undo/redo),
+     * because a session is bound to one terrain/economy and must never survive into another world.
+     */
+    private void resetRoutePreviewState() {
+        routePreviewSession = null;
+        routePreviewReturnMode = RAILS;
+        pendingRoutePlan = null;
+        routePreviewConfirmation = null;
+        routePreviewConfirmationUntilMillis = 0;
+        routePreviewFocusOnEnd = false;
+    }
+
+    private RoutePreviewSession routePreviewSession() {
+        if (routePreviewSession == null) {
+            routePreviewSession =
+                    new RoutePreviewSession(model.getGroundMap(), model.getEconomyManager());
+        }
+        return routePreviewSession;
+    }
+
+    /** {@code Shift+C}: uppercase C, or a lower-case c delivered with the shift flag. */
+    private static boolean isConnectEntry(InputEvent event) {
+        if (event.getKeyType() != KeyType.Character || event.getCharacter() == null) {
+            return false;
+        }
+        char c = event.getCharacter();
+        return c == 'C' || (c == 'c' && event.isShiftDown());
+    }
+
+    /**
+     * CONNECT is a normal map/edit tool; it is not offered from the console, editor or TRAINS/ADD.
+     */
+    private static boolean canEnterConnectMode(Model.GameMode mode) {
+        switch (mode) {
+            case COMMAND:
+            case PROGRAM:
+            case TRAINS:
+            case ADD:
+            case CONNECT:
+                return false;
+            default:
+                return true;
+        }
+    }
+
+    private void enterConnectMode() {
+        routePreviewReturnMode = model.getMode();
+        routePreviewSession().begin(model.getCursor().getPosition());
+        model.setMode(CONNECT);
+        routePreviewConfirmation = null;
+        routePreviewConfirmationUntilMillis = 0;
+        routePreviewFocusOnEnd = false;
+    }
+
+    private void leaveConnectMode() {
+        Model.GameMode returnMode =
+                routePreviewReturnMode == CONNECT ? RAILS : routePreviewReturnMode;
+        model.setMode(returnMode);
+        routePreviewSession = null;
+        routePreviewFocusOnEnd = false;
+    }
+
+    /**
+     * Handles every key while CONNECT is active, before the global Enter/Esc/mode-hotkey routing
+     * (ADR-036).
+     *
+     * <p>
+     * Route keys are unique and come first in {@code PREVIEW}: {@code [}/{@code ]} switch policy,
+     * {@code Enter} selects and {@code Esc}/{@code Shift+C} cancel. In {@code PLANNING} only cancel
+     * keys are accepted. Everything else in {@code PREVIEW} is navigation and goes through the
+     * sanitized path, so movement never builds or deletes track even when Shift/Ctrl are held.
+     */
+    private void handleConnectKey(InputEvent keyEvent) {
+        RoutePreviewSession session = routePreviewSession();
+        RoutePreviewSession.State state = session.state();
+        if (keyEvent.getKeyType() == KeyType.Escape) {
+            session.escape();
+            leaveConnectMode();
+            return;
+        }
+        if (isConnectEntry(keyEvent)) {
+            session.escape();
+            leaveConnectMode();
+            return;
+        }
+        if (state == RoutePreviewSession.State.PLANNING) {
+            // The worker owns the plan; only Esc / Shift+C (handled above) can interrupt it.
+            return;
+        }
+        if (keyEvent.getKeyType() == KeyType.Enter) {
+            long ticksBefore = session.effectiveConstructionTicks();
+            RoutePreviewSession.State next = session.enter(model.getCursor().getPosition());
+            if (next == RoutePreviewSession.State.SELECTED) {
+                pendingRoutePlan = session.selectedPlan().orElse(null);
+                if (pendingRoutePlan != null) {
+                    routePreviewConfirmation = "Connect · selected · "
+                            + RoutePreviewStatus.formatCost(pendingRoutePlan.totalCost()) + " · "
+                            + RoutePreviewStatus.formatTicks(ticksBefore) + " · "
+                            + pendingRoutePlan.steps().size() + " cells · not built yet";
+                    routePreviewConfirmationUntilMillis = System.currentTimeMillis() + 2_500;
+                }
+                leaveConnectMode();
+            }
+            return;
+        }
+        if (state == RoutePreviewSession.State.PREVIEW) {
+            if (isPlainCharacter(keyEvent, ' ')) {
+                focusNextRouteEndpoint(session);
+                return;
+            }
+            if (isPlainCharacter(keyEvent, '[')) {
+                session.previousPolicy();
+                return;
+            }
+            if (isPlainCharacter(keyEvent, ']')) {
+                session.nextPolicy();
+                return;
+            }
+            if (isPlainCharacter(keyEvent, ':')) {
+                openCommandFromRoutePreview();
+                return;
+            }
+            if (isPlainCharacter(keyEvent, 'z')) {
+                cycleCameraDeadzone();
+                return;
+            }
+            if (isPlainCharacter(keyEvent, 'Z')) {
+                view.setCameraPagination(!view.isCameraPagination());
+                view.flashCameraDeadzone();
+                return;
+            }
+        }
+        InputEvent movement = movementOnly(keyEvent);
+        if (movement != null) {
+            railTrackMaker.onChar(movement);
+        }
+    }
+
+    /**
+     * Jumps to whichever endpoint the toggle points at (A first, then B, repeating) and centres the
+     * view on it. The route, endpoints and policy are untouched: this is only a camera/cursor
+     * shortcut for getting back after panning or zooming around. Outside PREVIEW (or when an
+     * endpoint is still unknown) it does nothing.
+     */
+    private void focusNextRouteEndpoint(RoutePreviewSession session) {
+        Point target =
+                routePreviewFocusOnEnd ? session.end().orElse(null) : session.start().orElse(null);
+        if (target == null) {
+            return;
+        }
+        model.getCursor().setPosition(target);
+        view.centerOn(target.getX(), target.getY());
+        routePreviewFocusOnEnd = !routePreviewFocusOnEnd;
+    }
+
+    /**
+     * Opens the console without dropping the route preview. {@code Model.setMode} remembers
+     * {@code CONNECT} as the previous mode, so leaving the console returns to {@code CHOOSING}
+     * (represented by {@code PREVIEW}).
+     */
+    private void openCommandFromRoutePreview() {
+        model.setMode(letrain.mvp.Model.GameMode.COMMAND);
+        model.setCommandText("");
+        model.setCommandError("");
+        model.setCommandNotice("");
+    }
+
+    /**
+     * True for an unmodified character key (Ctrl/Alt combinations are left alone). Used for the
+     * route-preview keys, which must not clash with navigation or console shortcuts.
+     */
+    private static boolean isPlainCharacter(InputEvent event, char expected) {
+        return event.getKeyType() == KeyType.Character && event.getCharacter() != null
+                && event.getCharacter() == expected && !event.isCtrlDown() && !event.isAltDown();
+    }
+
+    /**
+     * Converts arrows/hjkl/Page keys into a movement event. Arrows and letters are stripped of all
+     * modifiers so Shift/Ctrl cannot turn navigation into drawing, erasing or paging the wrong way.
+     * Page keys keep Ctrl because the existing map navigation uses it for horizontal paging.
+     *
+     * <p>
+     * Any other key returns {@code null} and is swallowed in CONNECT, so no construction or mode
+     * shortcut leaks through.
+     */
+    private static InputEvent movementOnly(InputEvent event) {
+        KeyType type = event.getKeyType();
+        if (type == KeyType.PageUp || type == KeyType.PageDown) {
+            return new InputEvent(type, null, event.isCtrlDown(), false, false);
+        }
+        if (type == KeyType.ArrowUp || type == KeyType.ArrowDown || type == KeyType.ArrowLeft
+                || type == KeyType.ArrowRight) {
+            return new InputEvent(type, null, false, false, false);
+        }
+        if (type == KeyType.Character && event.getCharacter() != null) {
+            char c = Character.toLowerCase(event.getCharacter());
+            KeyType direction = switch (c) {
+                case 'k' -> KeyType.ArrowUp;
+                case 'j' -> KeyType.ArrowDown;
+                case 'h' -> KeyType.ArrowLeft;
+                case 'l' -> KeyType.ArrowRight;
+                default -> null;
+            };
+            if (direction != null) {
+                return new InputEvent(direction, null, false, false, false);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Drives the asynchronous preview state machine from the UI thread once per frame (ADR-036).
+     * Outside CONNECT it does nothing: a session created for a preview never runs while another
+     * mode owns the screen.
+     */
+    void pollRoutePreview() {
+        if (routePreviewSession != null && model.getMode() == CONNECT) {
+            routePreviewSession.poll();
+        }
+    }
+
+    /**
+     * Paints the CONNECT overlay after the world renderer: the single current plan plus A/B, and
+     * the one-line status. It is deliberately a per-frame draw, so leaving CONNECT (or an
+     * infeasible policy) simply stops painting and nothing persists into the next frame.
+     */
+    private void drawRoutePreviewOverlay() {
+        if (model.getMode() == CONNECT) {
+            if (routePreviewSession == null) {
+                return;
+            }
+            Point start = routePreviewSession.start().orElse(null);
+            Point end = routePreviewSession.end().orElse(null);
+            RoutePlan plan = routePreviewSession.lastPlan().orElse(null);
+            if (plan != null && !plan.feasible()) {
+                // Infeasible: keep only the endpoints, never a stale route.
+                plan = null;
+            }
+            for (RoutePreviewOverlay.Cell cell : RoutePreviewOverlay.cells(plan, start, end)) {
+                view.drawRoutePreviewCell(cell.x(), cell.y(), cell.glyph(), cell.endpoint(),
+                        cell.style());
+            }
+            view.drawRoutePreviewStatus(RoutePreviewStatus.format(routePreviewSession));
+            return;
+        }
+        if (routePreviewConfirmation != null) {
+            if (System.currentTimeMillis() <= routePreviewConfirmationUntilMillis) {
+                view.drawRoutePreviewStatus(routePreviewConfirmation);
+            } else {
+                routePreviewConfirmation = null;
+            }
+        }
+    }
+
+    /** Plan accepted in CONNECT and waiting for the future construction queue (ADR-035). */
+    RoutePlan getPendingRoutePlan() {
+        return pendingRoutePlan;
+    }
+
+    /**
+     * Current CONNECT session, exposed for focused presenter tests; {@code null} outside CONNECT.
+     */
+    RoutePreviewSession getRoutePreviewSession() {
+        return routePreviewSession;
+    }
+
     @Override
     public void onChar(InputEvent keyEvent) {
         if (coverActive) {
@@ -949,6 +1257,18 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 return;
             }
             return; // Ignore other keys in COMMAND mode
+        }
+
+        // CONNECT (ADR-035) owns all keys while active. It is checked before the global
+        // Enter/Esc/mode-hotkey routing so preview actions never fall through to menu or editing
+        // shortcuts.
+        if (model.getMode() == CONNECT) {
+            handleConnectKey(keyEvent);
+            return;
+        }
+        if (isConnectEntry(keyEvent) && canEnterConnectMode(model.getMode())) {
+            enterConnectMode();
+            return;
         }
 
         if (keyEvent.getKeyType() == KeyType.Character && keyEvent.getCharacter() != null) {

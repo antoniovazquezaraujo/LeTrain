@@ -318,6 +318,81 @@ public class TerminalView implements letrain.mvp.View {
         // Implementation for status bar updates in terminal
     }
 
+    /** White foreground for the route circles, chosen to read over day and night terrain. */
+    static final TextColor ROUTE_PREVIEW_FG = TextColor.ANSI.WHITE_BRIGHT;
+    /** Endpoint markers are yellow, so A/B never get lost in the route. */
+    static final TextColor ROUTE_PREVIEW_ENDPOINT_FG = TextColor.ANSI.YELLOW_BRIGHT;
+    /** Bridges and tunnels are red circles: same glyph, different colour, terrain still visible. */
+    static final TextColor ROUTE_PREVIEW_SPECIAL_FG = TextColor.ANSI.RED_BRIGHT;
+    private static final TextColor ROUTE_PREVIEW_STATUS_FG = TextColor.ANSI.WHITE_BRIGHT;
+    private static final TextColor ROUTE_PREVIEW_STATUS_BG = TextColor.ANSI.BLACK;
+
+    /** Foreground/background pair used to paint one route-preview cell. */
+    record PreviewPaint(TextColor foreground, TextColor background) {
+    }
+
+    /**
+     * Resolves the colours for one overlay cell. Endpoints win over the route style; normal route
+     * cells are white and special cells (tunnels/bridges) red, but both keep the terrain
+     * background. Pure so it can be asserted without opening a terminal.
+     */
+    static PreviewPaint routePreviewPaint(boolean endpoint, RoutePreviewOverlay.Style style,
+            TextColor terrainBackground) {
+        if (endpoint) {
+            return new PreviewPaint(ROUTE_PREVIEW_ENDPOINT_FG, terrainBackground);
+        }
+        if (style == RoutePreviewOverlay.Style.SPECIAL) {
+            return new PreviewPaint(ROUTE_PREVIEW_SPECIAL_FG, terrainBackground);
+        }
+        return new PreviewPaint(ROUTE_PREVIEW_FG, terrainBackground);
+    }
+
+    /**
+     * Paints one route-preview cell over the 2D map (ADR-035). Every route cell is a circle; only
+     * the foreground changes (white normal, red bridges/tunnels), and the terrain background is
+     * always preserved. Endpoints win over any route style. Out-of-view cells are ignored.
+     */
+    public void drawRoutePreviewCell(int x, int y, String glyph, boolean endpoint,
+            RoutePreviewOverlay.Style style) {
+        if (glyph == null || glyph.isEmpty() || gameBox == null || gameBoxSize == null) {
+            return;
+        }
+        int screenX = x - scrollOffset.getX();
+        int screenY = y - scrollOffset.getY();
+        if (screenX < 0 || screenX >= getCols() || screenY < 0 || screenY >= getRows()) {
+            return;
+        }
+        TerminalPosition position = new TerminalPosition(screenX, screenY);
+        TextCharacter previous = gameBox.getCharacter(position);
+        TextColor terrainBackground = previous == null ? null : previous.getBackgroundColor();
+        PreviewPaint paint = routePreviewPaint(endpoint, style, terrainBackground);
+        gameBox.setCharacter(position, TextCharacter.fromCharacter(glyph.charAt(0),
+                paint.foreground(), paint.background())[0]);
+    }
+
+    /**
+     * Draws the one-line CONNECT status at the bottom of the map. Unlike
+     * {@link #setStatusBarText(String)} (a no-op kept for interface compatibility), this paints
+     * immediately in the game buffer, so the main loop can call it after the world renderer and
+     * before {@link #paint()}.
+     */
+    public void drawRoutePreviewStatus(String text) {
+        if (gameBox == null || gameBoxSize == null) {
+            return;
+        }
+        int row = gameBoxSize.getRows() - 1;
+        int cols = gameBoxSize.getColumns();
+        if (row < 0 || cols <= 0) {
+            return;
+        }
+        String message = text == null ? "" : text;
+        for (int col = 0; col < cols; col++) {
+            char character = col < message.length() ? message.charAt(col) : ' ';
+            gameBox.setCharacter(col, row, TextCharacter.fromCharacter(character,
+                    ROUTE_PREVIEW_STATUS_FG, ROUTE_PREVIEW_STATUS_BG)[0]);
+        }
+    }
+
     private void putStringWithColors(com.googlecode.lanterna.graphics.TextGraphics tg,
             com.googlecode.lanterna.TerminalPosition pos, String text) {
         int x = pos.getColumn();
