@@ -12,11 +12,14 @@ import static letrain.mvp.Model.GameMode.STATIONS;
 import static letrain.mvp.Model.GameMode.TRAINS;
 import static letrain.mvp.Model.GameMode.UNLINK;
 
+import letrain.construction.ConstructionPlanList;
 import letrain.construction.ConstructionProgress;
+import letrain.construction.PlannedWork;
 import letrain.construction.RouteConstructionQueue;
 import letrain.mvp.input.InputEvent;
 import letrain.mvp.input.KeyType;
 import letrain.planner.RoutePlan;
+import letrain.planner.RoutePolicy;
 import letrain.planner.RoutePreviewSession;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -148,6 +151,29 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     /** Mode the player came from; CONNECT returns there on cancel or selection. */
     private Model.GameMode routePreviewReturnMode = RAILS;
+
+    /**
+     * True when CONNECT is being used by the planned-works list's {@code Add} action: accepting
+     * stores the plan in the list instead of starting the construction queue. The normal mode menu
+     * is hidden during this modal flow.
+     */
+    private boolean routePreviewSaveToList;
+
+    /** Planned work being edited, or {@code -1} when CONNECT is a new route. */
+    private int routePreviewEditingWorkId = -1;
+
+    /** Whether the Add/Edit one-line status is visible; Tab toggles it during save mode. */
+    private boolean routePreviewStatusVisible = true;
+
+    /**
+     * Plans kept by the phase-1 works list. Presenter-owned because it is tied to the current
+     * terrain/economy and must be discarded on model swaps.
+     */
+    private ConstructionPlanList plannedWorks;
+    private int plannedWorksSelectedIndex;
+
+    private String plannedWorksNotice;
+    private long plannedWorksNoticeUntilMillis;
 
     /**
      * Plan accepted in CONNECT, kept for the construction queue. The queue builds it cell by cell
@@ -363,6 +389,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         this.commandJournal.clear();
         this.commandJournal.stopRecording();
         this.model.setCommandJournal(commandJournal);
+        if (this.view != null) {
+            this.view.setMenuVisible(true);
+        }
     }
 
     /**
@@ -411,6 +440,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             view.centerOn(focus.getX(), focus.getY());
         }
         this.model.updateGroundMap(view.getScrollOffset(), view.getCols(), view.getRows());
+        view.setMenuVisible(true);
     }
 
     /**
@@ -589,6 +619,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 updateAmbientAudio();
                 renderer.visitModel(model);
                 informer.visitModel(model);
+                drawPlannedWorksOverlay();
                 drawRoutePreviewOverlay();
                 drawConstructionOverlay();
                 view.paint();
@@ -904,6 +935,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private void resetRoutePreviewState() {
         routePreviewSession = null;
         routePreviewReturnMode = RAILS;
+        routePreviewSaveToList = false;
+        routePreviewEditingWorkId = -1;
+        routePreviewStatusVisible = true;
         pendingRoutePlan = null;
         routePreviewFocusOnEnd = false;
         clearBuildabilityCache();
@@ -911,6 +945,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         constructionCancelArmed = false;
         constructionNotice = null;
         constructionNoticeUntilMillis = 0;
+        plannedWorks = null;
+        plannedWorksSelectedIndex = -1;
+        plannedWorksNotice = null;
+        plannedWorksNoticeUntilMillis = 0;
     }
 
     private RoutePreviewSession routePreviewSession() {
@@ -947,11 +985,24 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     private void enterConnectMode() {
+        enterConnectMode(false);
+    }
+
+    /**
+     * Opens CONNECT. In save mode the resulting plan is added to the planned-works list instead of
+     * starting construction, and the normal mode menu is hidden while the modal planning task runs
+     * (phase 1 roadmap).
+     */
+    private void enterConnectMode(boolean saveToList) {
         routePreviewReturnMode = model.getMode();
+        routePreviewSaveToList = saveToList;
+        routePreviewEditingWorkId = -1;
+        routePreviewStatusVisible = true;
         clearBuildabilityCache();
         routePreviewSession().begin(model.getCursor().getPosition());
         model.setMode(CONNECT);
         routePreviewFocusOnEnd = false;
+        view.setMenuVisible(!saveToList);
     }
 
     private void leaveConnectMode() {
@@ -960,7 +1011,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         model.setMode(returnMode);
         routePreviewSession = null;
         routePreviewFocusOnEnd = false;
+        routePreviewSaveToList = false;
+        routePreviewEditingWorkId = -1;
+        routePreviewStatusVisible = true;
         clearBuildabilityCache();
+        view.setMenuVisible(true);
     }
 
     /**
@@ -999,13 +1054,25 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         RoutePreviewSession session = routePreviewSession();
         RoutePreviewSession.State state = session.state();
         if (keyEvent.getKeyType() == KeyType.Escape) {
+            boolean wasSave = routePreviewSaveToList;
             session.escape();
             leaveConnectMode();
+            if (wasSave) {
+                showPlannedWorksNotice("Route planning cancelled · nothing added");
+            }
             return;
         }
         if (isConnectEntry(keyEvent)) {
+            boolean wasSave = routePreviewSaveToList;
             session.escape();
             leaveConnectMode();
+            if (wasSave) {
+                showPlannedWorksNotice("Route planning cancelled · nothing added");
+            }
+            return;
+        }
+        if (keyEvent.getKeyType() == KeyType.Tab && routePreviewSaveToList) {
+            routePreviewStatusVisible = !routePreviewStatusVisible;
             return;
         }
         if (state == RoutePreviewSession.State.PLANNING) {
@@ -1013,14 +1080,24 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             return;
         }
         if (keyEvent.getKeyType() == KeyType.Enter) {
-            if (state == RoutePreviewSession.State.PREVIEW
+            if (!routePreviewSaveToList && state == RoutePreviewSession.State.PREVIEW
                     && buildabilityWarning(session.lastPlan().orElse(null)) != null) {
                 // Keep the author in PREVIEW: selecting would only queue a job the preflight
-                // rejects.
+                // rejects. In Add/save mode the plan is only a budget, so it can be stored with a
+                // warning and fixed later.
                 return;
             }
             RoutePreviewSession.State next = session.enter(model.getCursor().getPosition());
             if (next == RoutePreviewSession.State.SELECTED) {
+                if (routePreviewSaveToList) {
+                    if (routePreviewEditingWorkId >= 0) {
+                        updateSelectedPlanInWorks(session);
+                    } else {
+                        addSelectedPlanToWorks(session);
+                    }
+                    leaveConnectMode();
+                    return;
+                }
                 pendingRoutePlan = session.selectedPlan().orElse(null);
                 leaveConnectMode();
                 if (pendingRoutePlan != null) {
@@ -1143,6 +1220,179 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         if (routePreviewSession != null && model.getMode() == CONNECT) {
             routePreviewSession.poll();
         }
+    }
+
+    /**
+     * Presenter-owned list of phase-1 planned works. Created lazily so loading a game starts with
+     * an empty list and a model swap discards plans bound to the old terrain.
+     */
+    ConstructionPlanList plannedWorks() {
+        if (plannedWorks == null) {
+            plannedWorks = new ConstructionPlanList();
+        }
+        return plannedWorks;
+    }
+
+    /**
+     * Adds the plan accepted in CONNECT to the list. The caller must only invoke this while
+     * {@link #routePreviewSaveToList} is true; construction is deliberately not started.
+     */
+    private void addSelectedPlanToWorks(RoutePreviewSession session) {
+        RoutePlan plan = session.selectedPlan().orElse(null);
+        Point start = session.start().orElse(null);
+        Point end = session.end().orElse(null);
+        if (plan == null || !plan.feasible() || start == null || end == null) {
+            showPlannedWorksNotice("Route could not be added to works");
+            return;
+        }
+        PlannedWork work = plannedWorks().add(start, end, session.policy(), plan,
+                session.effectiveConstructionTicks());
+        model.setMark(wayMarkName(work.id(), "start"), start);
+        model.setMark(wayMarkName(work.id(), "end"), end);
+        plannedWorksSelectedIndex = plannedWorks().size() - 1;
+        showPlannedWorksNotice("Route #" + work.id() + " added to works · b opens the list");
+    }
+
+    /**
+     * Updates policy/plan/cost/time of the work being edited; endpoints and marks stay unchanged.
+     */
+    private void updateSelectedPlanInWorks(RoutePreviewSession session) {
+        RoutePlan plan = session.selectedPlan().orElse(null);
+        if (plan == null || !plan.feasible()) {
+            showPlannedWorksNotice("Route could not be updated");
+            return;
+        }
+        plannedWorks().find(routePreviewEditingWorkId)
+                .flatMap(work -> plannedWorks().replacePlan(work.id(), session.policy(), plan,
+                        session.effectiveConstructionTicks()))
+                .ifPresentOrElse(work -> showPlannedWorksNotice("Route #" + work.id() + " updated"),
+                        () -> showPlannedWorksNotice("Route could not be updated"));
+    }
+
+    /**
+     * Opens an existing planned work in CONNECT. The endpoints are fixed: only the policy can be
+     * changed, exactly like Add but starting from the saved plan. Accepting updates the row; the
+     * author must create a new work to change origin or destination.
+     */
+    private void startEditingPlannedWork(PlannedWork work) {
+        routePreviewReturnMode = model.getMode();
+        routePreviewSaveToList = true;
+        routePreviewEditingWorkId = work.id();
+        routePreviewStatusVisible = true;
+        clearBuildabilityCache();
+        routePreviewSession().beginEdit(work.start(), work.end(), work.policy(), work.plan());
+        model.setMode(CONNECT);
+        routePreviewFocusOnEnd = false;
+        view.setMenuVisible(false);
+    }
+
+    /**
+     * Opens the modal planned-works list and applies its actions. Add leaves the list and starts
+     * CONNECT in save mode. Delete keeps the list loop alive. The dialog never reopens itself after
+     * Add, by owner decision: the player opens it again when they want.
+     */
+    void openPlannedWorks() {
+        if (isConstructionActive()) {
+            view.showMessage("Works", "Finish or cancel the active construction first");
+            return;
+        }
+        while (true) {
+            List<PlannedWork> works = plannedWorks().works();
+            ConstructionPlansDialog.Result result = view.showConstructionPlansDialog(
+                    plannedWorkRows(works), plannedWorksSelectedIndex, plannedWorksTotalLine());
+            if (result == null) {
+                return;
+            }
+            plannedWorksSelectedIndex =
+                    ConstructionPlansDialog.clampIndex(result.selectedIndex(), works.size());
+            int selectedId =
+                    plannedWorksSelectedIndex >= 0 && plannedWorksSelectedIndex < works.size()
+                            ? works.get(plannedWorksSelectedIndex).id()
+                            : -1;
+            switch (result.action()) {
+                case ADD -> {
+                    enterConnectMode(true);
+                    return;
+                }
+                case EDIT -> {
+                    if (selectedId >= 0) {
+                        java.util.Optional<PlannedWork> work = plannedWorks().find(selectedId);
+                        if (work.isPresent()) {
+                            startEditingPlannedWork(work.get());
+                            return;
+                        }
+                    }
+                }
+                case DELETE -> {
+                    if (selectedId >= 0) {
+                        plannedWorks().remove(selectedId);
+                        plannedWorksSelectedIndex = plannedWorks().isEmpty() ? -1
+                                : Math.min(plannedWorksSelectedIndex, plannedWorks().size() - 1);
+                    }
+                }
+                case CLOSE -> {
+                    return;
+                }
+            }
+        }
+    }
+
+    /** Builds the display rows for the modal list; formatting stays in the UI layer. */
+    private List<ConstructionPlansDialog.Row> plannedWorkRows(List<PlannedWork> works) {
+        return works.stream().map(work -> {
+            String warning = RailBuildability.check(model, work.plan())
+                    .map(RailBuildability.Issue::description).orElse("");
+            return new ConstructionPlansDialog.Row(work.id(), "Draft", formatPoint(work.start()),
+                    formatPoint(work.end()), shortPolicy(work.policy()), work.cells(),
+                    RoutePreviewStatus.formatCost(work.cost()),
+                    RoutePreviewStatus.formatTicks(work.estimatedTicks()), warning);
+        }).toList();
+    }
+
+    /** Exact total line from the plans, not from the rounded display strings. */
+    private String plannedWorksTotalLine() {
+        ConstructionPlanList list = plannedWorks();
+        return ConstructionPlansDialog.totalLine(list.size(),
+                RoutePreviewStatus.formatCost(list.totalCost()),
+                RoutePreviewStatus.formatTicks(list.totalTicks()));
+    }
+
+    private static String formatPoint(Point point) {
+        return point.getX() + "," + point.getY();
+    }
+
+    /** Stable mark name for one endpoint of a planned work, e.g. {@code Way-24-end}. */
+    static String wayMarkName(int workId, String endpoint) {
+        return "Way-" + workId + "-" + endpoint;
+    }
+
+    /** Short labels fitted to the phase-1 table; the underlying policy is never lost in the row. */
+    private static String shortPolicy(RoutePolicy policy) {
+        return switch (policy) {
+            case CHEAPEST -> "CHEAPEST";
+            case DIRECT -> "DIRECT";
+            case AVOID_MOUNTAINS -> "AVOID_MTN";
+            case AVOID_WATER -> "AVOID_WATER";
+            case AVOID_ALL -> "AVOID_ALL";
+        };
+    }
+
+    private void showPlannedWorksNotice(String notice) {
+        plannedWorksNotice = notice;
+        plannedWorksNoticeUntilMillis = System.currentTimeMillis() + 2_500;
+        constructionNotice = null;
+    }
+
+    /** True for the phase-1 works-list key ({@code b}); no modifier is accepted. */
+    private static boolean isPlannedWorksEntry(InputEvent event) {
+        return event.getKeyType() == KeyType.Character && event.getCharacter() != null
+                && (event.getCharacter() == 'b' || event.getCharacter() == 'B')
+                && !event.isCtrlDown() && !event.isAltDown();
+    }
+
+    /** The list is a map tool; it is not offered in modal/console/editor modes. */
+    private static boolean canOpenPlannedWorks(Model.GameMode mode) {
+        return mode == RAILS || mode == MENU;
     }
 
     /**
@@ -1321,6 +1571,14 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             } else {
                 constructionNotice = null;
             }
+            return;
+        }
+        if (plannedWorksNotice != null) {
+            if (System.currentTimeMillis() <= plannedWorksNoticeUntilMillis) {
+                view.drawRoutePreviewStatus(plannedWorksNotice);
+            } else {
+                plannedWorksNotice = null;
+            }
         }
     }
 
@@ -1332,6 +1590,39 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     RouteConstructionQueue getConstructionQueue() {
         return constructionQueue;
+    }
+
+    /** Current planned works, exposed for focused presenter tests. */
+    ConstructionPlanList getPlannedWorks() {
+        return plannedWorks();
+    }
+
+    boolean isRoutePreviewSaveToList() {
+        return routePreviewSaveToList;
+    }
+
+    /**
+     * Paints every stored planned work on the map. These are budgets, not previews: they stay
+     * visible until their row is deleted (or, in a later phase, the work is built). Active CONNECT
+     * previews and construction ghosts are painted afterwards, so they take precedence on shared
+     * cells.
+     */
+    void drawPlannedWorksOverlay() {
+        if (plannedWorks == null || plannedWorks.isEmpty()) {
+            return;
+        }
+        for (PlannedWork work : plannedWorks.works()) {
+            if (work.id() == routePreviewEditingWorkId) {
+                // While editing, the CONNECT preview owns this route: keeping the old overlay
+                // underneath would show both the old and the candidate policy at once.
+                continue;
+            }
+            for (RoutePreviewOverlay.Cell cell : RoutePreviewOverlay.cells(work.plan(),
+                    work.start(), work.end())) {
+                view.drawRoutePreviewCell(cell.x(), cell.y(), cell.glyph(), cell.endpoint(),
+                        cell.style());
+            }
+        }
     }
 
     /**
@@ -1356,8 +1647,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 view.drawRoutePreviewCell(cell.x(), cell.y(), cell.glyph(), cell.endpoint(),
                         cell.style());
             }
-            view.drawRoutePreviewStatus(
-                    RoutePreviewStatus.format(routePreviewSession, buildWarning));
+            if (!routePreviewSaveToList || routePreviewStatusVisible) {
+                view.drawRoutePreviewStatus(RoutePreviewStatus.format(routePreviewSession,
+                        buildWarning, routePreviewSaveToList, routePreviewEditingWorkId >= 0));
+            }
             return;
         }
     }
@@ -1512,6 +1805,13 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             if (!isConstructionActive() && canEnterConnectMode(model.getMode())) {
                 enterConnectMode();
             }
+            return;
+        }
+        // Phase-1 planned works: a map-side list of routes that have not been built. Checked
+        // before the edit lock so an active construction gets the explicit "finish or cancel"
+        // notice instead of the key being silently swallowed.
+        if (isPlannedWorksEntry(keyEvent) && canOpenPlannedWorks(model.getMode())) {
+            openPlannedWorks();
             return;
         }
         // While the construction queue builds, manual edits are locked; navigation, camera, mode

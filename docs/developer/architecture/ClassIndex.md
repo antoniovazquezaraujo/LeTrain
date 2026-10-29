@@ -57,8 +57,10 @@
 
 ## letrain.construction
 - [[letrain.construction.ConstructionGuard|ConstructionGuard]] (core)
+- [[letrain.construction.ConstructionPlanList|ConstructionPlanList]] (core)
 - [[letrain.construction.ConstructionProgress|ConstructionProgress]] (core)
 - [[letrain.construction.ConstructionState|ConstructionState]] (core)
+- [[letrain.construction.PlannedWork|PlannedWork]] (core)
 - [[letrain.construction.RouteConstructionJob|RouteConstructionJob]] (core)
 - [[letrain.construction.RouteConstructionQueue|RouteConstructionQueue]] (core)
 - [[letrain.construction.TrackMaterializer|TrackMaterializer]] (core)
@@ -151,6 +153,7 @@
 - [[letrain.mvp.impl.services.SimulationService|SimulationService]] (core)
 - [[letrain.mvp.impl.services.TrackElementMovementService|TrackElementMovementService]] (core)
 - [[letrain.mvp.impl.terminal.ConstructionOverlay|ConstructionOverlay]] (ui-terminal)
+- [[letrain.mvp.impl.terminal.ConstructionPlansDialog|ConstructionPlansDialog]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.ConstructionStatus|ConstructionStatus]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.CoverArtPainter|CoverArtPainter]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.CoverStyle|CoverStyle]] (ui-terminal)

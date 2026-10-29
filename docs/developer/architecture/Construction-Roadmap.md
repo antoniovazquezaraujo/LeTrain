@@ -27,22 +27,23 @@ Objetivo: poder preparar varias rutas sin construir ninguna.
 Incluye:
 
 - guardar un plan en una lista;
-- volver a abrirlo, cambiar política y recalcular;
+- volver a abrirlo;
+- cambiar su política y actualizar el presupuesto;
 - eliminar una entrada;
 - ver coste y tiempo estimados;
 - ver el total de la lista;
 - decidir más tarde cuál se construye.
 
 La interfaz de esta lista necesita una decisión propia: dónde se abre, cómo se navega por las
-entradas y cómo se editan. Una opción natural es un diálogo modal similar al editor de programas,
-con una tabla de trayectos y acciones de editar, recalcular, eliminar y ejecutar. No se ha cerrado
-el diseño, pero conviene resolverlo en esta fase porque la lista será la puerta de entrada a todo
-lo demás.
+entradas y cómo se editan. Se abre como un diálogo modal parecido al editor de programas, con una
+tabla de trayectos, acciones por atajos y una línea de total. La lista será la puerta de entrada a
+todo lo demás.
 
 No incluye constructoras ni zonas de exclusión. Es la fase que convierte la planificación en una
 actividad separada de la ejecución.
 
-Depende de: ADR-037 y ADR-038 (parte de lista/presupuesto).
+Depende de: ADR-037 y ADR-038 (parte de lista/presupuesto). La lista se abre desde el mapa con
+`b` (Works).
 
 ### Lista de la fase 1
 
@@ -59,10 +60,10 @@ Obras
 ────────────────────────────────────────────────────────────────────────
 Total: 3 obras · $385.800 · 17 min
 
-[A] Add   [E] Edit   [D] Delete   [R] Recalculate   [Enter] Details
+[A] Add   [E] Edit   [D] Delete   [Esc] Close
 [Run] disabled until construction companies and cash are available
-[Esc] Close
 ```
+Atajos: `Alt+A` Add, `Alt+E` Edit, `Alt+D` Delete, `Alt+C` Close.
 
 La tabla usa **celdas**, no kilómetros, porque el juego no tiene todavía una escala de distancia
 definida para la autoría. El coste es el coste real del `RoutePlan` y el tiempo es el tiempo de
@@ -72,24 +73,39 @@ recargo de constructora en esta fase.
 La columna `Política` es imprescindible: dos planes con los mismos extremos pueden tener rutas y
 costes distintos según sean `CHEAPEST`, `DIRECT`, `AVOID_WATER`, etc. Sin ella, el usuario no sabe
 qué está guardando. La columna `Estado` también es necesaria desde el principio, aunque en fase 1
-solo tenga valores como `Borrador` y `Cancelada`.
+solo tenga el valor `Borrador`; los estados de ejecución llegarán con las constructoras.
 
 La acción `Run` debe aparecer deshabilitada en esta fase. Primero se preparan y comparan rutas;
-contratarlas y ejecutarlas pertenece a la fase 2. `E` permite cambiar la política y recalcular.
-`D` elimina la entrada. `R` recalcula la ruta seleccionada. `Enter` abre el detalle de la obra.
+contratarlas y ejecutarlas pertenece a la fase 2. `E` edita la ruta seleccionada y `D` elimina la
+entrada. `Esc` cierra la lista. La fila seleccionada se conserva al reabrir el diálogo.
+
+`Edit` abre la ruta guardada directamente en la preview, con A/B ya fijados y el plan actual
+visible. No vuelve a pedir los extremos y no permite cambiarlos: si el usuario quiere otro origen o
+destino, debe crear otra obra. Solo puede cambiar la política con `[`/`]`; al aceptar, se actualiza
+la fila con el nuevo plan, coste, celdas y tiempo, y las marcas de los extremos no cambian. Mientras
+se edita, la ruta antigua se oculta del mapa: solo se pinta el plan candidato, para que dos políticas
+no se superpongan.
+
+El detalle de una obra y el recálculo suelto quedan fuera de esta primera rebanada. El detalle
+necesita una pantalla propia; el recálculo suelto no aportaba nada porque editar la política ya
+recalcula cuando hace falta.
 
 La acción `Add` no devuelve al mapa normal ni crea una obra inmediatamente. Al pulsarla:
 
 1. El diálogo de la lista se cierra.
 2. El mapa entra en el flujo de planificación de ruta, con su propia barra de estado:
-   `Adding route · PICK_START · move + Enter · Esc cancel`.
+   `Add route · PICK_START · move + Enter · Esc cancel`.
 3. El usuario elige A y B, puede cambiar de política y ve la ruta como en la preview normal.
 4. Al aceptar, la ruta se guarda en la lista y se vuelve al mapa normal. No se construye nada.
 5. Si cancela, se vuelve al mapa normal sin añadir nada.
 
 Durante ese flujo de `Add`, el menú normal de modos queda oculto o deshabilitado: el usuario está
 en una tarea modal de planificación y debe ver las instrucciones de A/B, no la lista de modos.
-Al terminar o cancelar, vuelve el menú normal.
+La barra de estado de `Add` ocupa una sola línea inferior, como la consola, y `Tab` la oculta o la
+vuelve a mostrar. Al terminar o cancelar, vuelve el menú normal.
+
+Las rutas guardadas se pintan en el mapa en todo momento, no solo mientras la lista está abierta:
+permanecen visibles hasta que se elimina su entrada (o, en una fase posterior, se construyen).
 
 Esto es importante: el `Add` usa el modo de planificación en **modo guardar**, no el flujo actual
 que selecciona y arranca la cola. La ruta queda en la lista como `Borrador`; para construirla hay
@@ -104,8 +120,27 @@ foco ni interrumpe lo que el usuario esté mirando. Los avisos de “añadida”
 
 La lista se abrirá como un diálogo modal parecido al editor de programas: filas seleccionables con
 las flechas, acciones por atajos y una línea de total. En una terminal de 80 columnas la tabla
-completa puede no caber; la solución es mantener las columnas esenciales y mostrar el resto en el
-panel de detalle de la fila seleccionada.
+completa puede no caber; la solución es mantener las columnas esenciales y mostrar los avisos en la
+propia fila.
+
+Al guardar una ruta se crean dos marcas con los extremos: `Way-<id>-start` y `Way-<id>-end`, donde
+`<id>` es el id de la obra en la lista (por ejemplo, `Way-1-start` y `Way-24-end`). Las marcas
+permanecen al eliminar la fila; su gestión tendrá su propia opción de menú más adelante.
+
+Implementación actual de la fase 1:
+
+- `core/.../construction/PlannedWork`: entrada inmutable con id, extremos, política, `RoutePlan`,
+  coste, tiempo estimado y estado `DRAFT`.
+- `core/.../construction/ConstructionPlanList`: orden de inserción, ids estables, eliminación y
+  totales.
+- `core/.../planner/RoutePreviewSession.beginEdit`: abre un plan guardado en PREVIEW sin volver a
+  pedir A/B y permite cambiar la política.
+- `ui-terminal/.../ConstructionPlansDialog`: diálogo modal con tabla, total y acciones; `Run`
+  deshabilitado.
+- `TerminalPresenter`: flujo `Add` en modo guardar, flujo `Edit` sobre el plan guardado, apertura con
+  `b`, borrado y creación de las marcas de extremos. El diálogo no se reabre solo.
+
+La lista es presenter-owned y se descarta al cambiar de modelo; todavía no se guarda en savegames.
 
 ### Visión final de la lista
 

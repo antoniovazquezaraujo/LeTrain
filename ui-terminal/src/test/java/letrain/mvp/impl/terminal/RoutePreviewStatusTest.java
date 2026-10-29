@@ -61,6 +61,23 @@ class RoutePreviewStatusTest {
     }
 
     @Test
+    @DisplayName("EDIT mode uses its own prefix and Enter update hint")
+    void formatsEditPreview() {
+        RoutePlan plan =
+                RoutePlan.feasible(
+                        List.of(new RouteStep(new Point(0, 0), TrackType.NORMAL_TRACK),
+                                new RouteStep(new Point(1, 0), TrackType.NORMAL_TRACK)),
+                        123_400, 240);
+
+        String status = RoutePreviewStatus.format(RoutePreviewSession.State.PREVIEW,
+                RoutePolicy.CHEAPEST, plan, 280, null, null, true, true);
+
+        assertTrue(status.startsWith("Edit route · CHEAPEST (may cross)"), status);
+        assertTrue(status.contains("Enter update"), status);
+        assertFalse(status.contains("Enter save"), status);
+    }
+
+    @Test
     @DisplayName("a build warning is appended to the feasible line and disables Enter")
     void formatsBuildWarningWithCostAndPolicy() {
         RoutePlan plan =
