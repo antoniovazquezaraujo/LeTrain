@@ -148,4 +148,14 @@ class ConstructionPlansDialogTest {
         assertFalse(TerminalView.shouldPaintMenu(true, 1, 2));
         assertFalse(TerminalView.shouldPaintMenu(true, 0, 1));
     }
+
+    @Test
+    @DisplayName("hiding the menu gives the whole terminal to the game")
+    void should_ReserveNoMenuRowsWhenHidden() {
+        assertEquals(0, TerminalView.reservedMenuRows(false, 2));
+        assertEquals(0, TerminalView.reservedMenuRows(false, 1));
+        assertEquals(7, TerminalView.reservedMenuRows(true, 2));
+        assertEquals(4, TerminalView.reservedMenuRows(true, 1));
+        assertEquals(0, TerminalView.reservedMenuRows(true, 0));
+    }
 }

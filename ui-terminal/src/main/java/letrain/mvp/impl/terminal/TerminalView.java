@@ -623,11 +623,15 @@ public class TerminalView implements letrain.mvp.View {
      */
     public void setMenuVisible(boolean visible) {
         this.menuVisible = visible;
-        if (!visible && menuBox != null && menuBoxPosition != null && menuBoxSize != null) {
-            menuBox.setBackgroundColor(NORMAL_MENU_BG_COLOR);
-            menuBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
-            menuBox.fillRectangle(menuBoxPosition, menuBoxSize, ' ');
+        if (terminalSize == null || screen == null) {
+            return;
         }
+        recalculateSizes(terminalSize);
+        if (gameViewListener != null) {
+            gameViewListener.onScreenResized(gameBoxSize.getColumns(), gameBoxSize.getRows());
+        }
+        gameBox.fillRectangle(gameBoxPosition, gameBoxSize, ' ');
+        menuBox.fillRectangle(menuBoxPosition, menuBoxSize, ' ');
     }
 
     /**
@@ -636,6 +640,18 @@ public class TerminalView implements letrain.mvp.View {
      */
     static boolean shouldPaintMenu(boolean menuVisible, int helpLevel, int minimumLevel) {
         return menuVisible && helpLevel >= minimumLevel;
+    }
+
+    /**
+     * Rows the normal menu reserves for a given visibility and help level. The Add-route flow hides
+     * the menu and therefore gives the whole terminal to the game, leaving the single status line
+     * at the bottom instead of a blank seven-row menu area.
+     */
+    static int reservedMenuRows(boolean menuVisible, int helpLevel) {
+        if (!menuVisible) {
+            return 0;
+        }
+        return helpLevel == 2 ? 7 : (helpLevel == 1 ? 4 : 0);
     }
 
     @Override
@@ -884,7 +900,7 @@ public class TerminalView implements letrain.mvp.View {
 
     void recalculateSizes(TerminalSize terminalSize) {
         int cols = Math.max(1, terminalSize.getColumns());
-        int reservedRows = (helpLevel == 2) ? 7 : (helpLevel == 1 ? 4 : 0);
+        int reservedRows = reservedMenuRows(menuVisible, helpLevel);
         int rows = Math.max(1, terminalSize.getRows() - reservedRows);
         gameBoxSize = new TerminalSize(cols, rows);
         gameBoxPosition = TerminalPosition.TOP_LEFT_CORNER;

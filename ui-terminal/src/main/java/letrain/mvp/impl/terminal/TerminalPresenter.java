@@ -19,7 +19,6 @@ import letrain.construction.RouteConstructionQueue;
 import letrain.mvp.input.InputEvent;
 import letrain.mvp.input.KeyType;
 import letrain.planner.RoutePlan;
-import letrain.planner.RoutePlanner;
 import letrain.planner.RoutePolicy;
 import letrain.planner.RoutePreviewSession;
 import java.io.File;
@@ -160,6 +159,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
      */
     private boolean routePreviewSaveToList;
 
+    /** Whether the Add-route one-line status is visible; Tab toggles it during save mode. */
+    private boolean routePreviewStatusVisible = true;
+
     /**
      * Plans kept by the phase-1 works list. Presenter-owned because it is tied to the current
      * terrain/economy and must be discarded on model swaps.
@@ -169,11 +171,6 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     private String plannedWorksNotice;
     private long plannedWorksNoticeUntilMillis;
-
-    /** Policy order used by the list's Edit action; the same order as the CONNECT preview. */
-    private static final List<RoutePolicy> PLANNED_POLICY_CYCLE =
-            List.of(RoutePolicy.CHEAPEST, RoutePolicy.DIRECT, RoutePolicy.AVOID_MOUNTAINS,
-                    RoutePolicy.AVOID_WATER, RoutePolicy.AVOID_ALL);
 
     /**
      * Plan accepted in CONNECT, kept for the construction queue. The queue builds it cell by cell
@@ -619,6 +616,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 updateAmbientAudio();
                 renderer.visitModel(model);
                 informer.visitModel(model);
+                drawPlannedWorksOverlay();
                 drawRoutePreviewOverlay();
                 drawConstructionOverlay();
                 view.paint();
@@ -935,6 +933,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         routePreviewSession = null;
         routePreviewReturnMode = RAILS;
         routePreviewSaveToList = false;
+        routePreviewStatusVisible = true;
         pendingRoutePlan = null;
         routePreviewFocusOnEnd = false;
         clearBuildabilityCache();
@@ -993,6 +992,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private void enterConnectMode(boolean saveToList) {
         routePreviewReturnMode = model.getMode();
         routePreviewSaveToList = saveToList;
+        routePreviewStatusVisible = true;
         clearBuildabilityCache();
         routePreviewSession().begin(model.getCursor().getPosition());
         model.setMode(CONNECT);
@@ -1007,6 +1007,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         routePreviewSession = null;
         routePreviewFocusOnEnd = false;
         routePreviewSaveToList = false;
+        routePreviewStatusVisible = true;
         clearBuildabilityCache();
         view.setMenuVisible(true);
     }
@@ -1062,6 +1063,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             if (wasSave) {
                 showPlannedWorksNotice("Route planning cancelled · nothing added");
             }
+            return;
+        }
+        if (keyEvent.getKeyType() == KeyType.Tab && routePreviewSaveToList) {
+            routePreviewStatusVisible = !routePreviewStatusVisible;
             return;
         }
         if (state == RoutePreviewSession.State.PLANNING) {
@@ -1238,10 +1243,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     /**
      * Opens the modal planned-works list and applies its actions. Add leaves the list and starts
-     * CONNECT in save mode. Edit/Delete/Recalculate keep the list loop alive on success; Details
-     * returns to the map with the work detail message, and a failed recalculation returns with the
-     * error (the old row is kept). The dialog never reopens itself after Add, by owner decision:
-     * the player opens it again when they want.
+     * CONNECT in save mode. Delete keeps the list loop alive; Details returns to the map with the
+     * work detail message. The dialog never reopens itself after Add, by owner decision: the player
+     * opens it again when they want.
      */
     void openPlannedWorks() {
         if (isConstructionActive()) {
@@ -1265,16 +1269,6 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 case ADD -> {
                     enterConnectMode(true);
                     return;
-                }
-                case EDIT -> {
-                    if (!editPolicy(selectedId)) {
-                        return;
-                    }
-                }
-                case RECALCULATE -> {
-                    if (!recalculate(selectedId, null)) {
-                        return;
-                    }
                 }
                 case DELETE -> {
                     if (selectedId >= 0) {
@@ -1329,45 +1323,6 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             case AVOID_WATER -> "AVOID_WATER";
             case AVOID_ALL -> "AVOID_ALL";
         };
-    }
-
-    private boolean editPolicy(int id) {
-        if (id < 0) {
-            return true;
-        }
-        return plannedWorks().find(id).map(work -> {
-            int index = PLANNED_POLICY_CYCLE.indexOf(work.policy());
-            RoutePolicy next =
-                    PLANNED_POLICY_CYCLE.get(Math.floorMod(index + 1, PLANNED_POLICY_CYCLE.size()));
-            return recalculate(id, next);
-        }).orElse(true);
-    }
-
-    /**
-     * Recalculates one work synchronously. The list is a budget tool and the planner call is
-     * deliberately kept outside the map/preview worker for this first slice; a later phase can move
-     * it to a background job if large maps make the pause noticeable.
-     *
-     * @return {@code true} when the plan was updated; {@code false} when the work is gone or the
-     *         new policy has no feasible route (the old row is kept)
-     */
-    private boolean recalculate(int id, RoutePolicy forcedPolicy) {
-        if (id < 0) {
-            return true;
-        }
-        return plannedWorks().find(id).map(work -> {
-            RoutePolicy policy = forcedPolicy == null ? work.policy() : forcedPolicy;
-            RoutePlan plan = RoutePlanner.plan(model.getGroundMap(), model.getEconomyManager(),
-                    work.start(), work.end(), policy);
-            if (!plan.feasible()) {
-                view.showMessage("Recalculate failed",
-                        plan.reason().orElse("No feasible route with " + policy));
-                return false;
-            }
-            long ticks = Math.addExact(plan.totalConstructionTicks(), plan.steps().size());
-            plannedWorks().replacePlan(work.id(), policy, plan, ticks);
-            return true;
-        }).orElse(true);
     }
 
     private void showPlannedWorkDetails(PlannedWork work) {
@@ -1606,6 +1561,25 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     /**
+     * Paints every stored planned work on the map. These are budgets, not previews: they stay
+     * visible until their row is deleted (or, in a later phase, the work is built). Active CONNECT
+     * previews and construction ghosts are painted afterwards, so they take precedence on shared
+     * cells.
+     */
+    void drawPlannedWorksOverlay() {
+        if (plannedWorks == null || plannedWorks.isEmpty()) {
+            return;
+        }
+        for (PlannedWork work : plannedWorks.works()) {
+            for (RoutePreviewOverlay.Cell cell : RoutePreviewOverlay.cells(work.plan(),
+                    work.start(), work.end())) {
+                view.drawRoutePreviewCell(cell.x(), cell.y(), cell.glyph(), cell.endpoint(),
+                        cell.style());
+            }
+        }
+    }
+
+    /**
      * Paints the CONNECT overlay after the world renderer: the single current plan plus A/B, and
      * the one-line status. It is deliberately a per-frame draw, so leaving CONNECT (or an
      * infeasible policy) simply stops painting and nothing persists into the next frame.
@@ -1627,8 +1601,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 view.drawRoutePreviewCell(cell.x(), cell.y(), cell.glyph(), cell.endpoint(),
                         cell.style());
             }
-            view.drawRoutePreviewStatus(RoutePreviewStatus.format(routePreviewSession, buildWarning,
-                    routePreviewSaveToList));
+            if (!routePreviewSaveToList || routePreviewStatusVisible) {
+                view.drawRoutePreviewStatus(RoutePreviewStatus.format(routePreviewSession,
+                        buildWarning, routePreviewSaveToList));
+            }
             return;
         }
     }

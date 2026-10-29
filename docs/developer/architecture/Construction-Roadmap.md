@@ -27,7 +27,7 @@ Objetivo: poder preparar varias rutas sin construir ninguna.
 Incluye:
 
 - guardar un plan en una lista;
-- volver a abrirlo, cambiar política y recalcular;
+- volver a abrirlo y ver el detalle;
 - eliminar una entrada;
 - ver coste y tiempo estimados;
 - ver el total de la lista;
@@ -59,7 +59,7 @@ Obras
 ────────────────────────────────────────────────────────────────────────
 Total: 3 obras · $385.800 · 17 min
 
-[A] Add   [E] Edit   [D] Delete   [R] Recalculate   [Enter] Details
+[A] Add   [D] Delete   [Enter] Details
 [Run] disabled until construction companies and cash are available
 [Esc] Close
 ```
@@ -75,9 +75,12 @@ qué está guardando. La columna `Estado` también es necesaria desde el princip
 solo tenga el valor `Borrador`; los estados de ejecución llegarán con las constructoras.
 
 La acción `Run` debe aparecer deshabilitada en esta fase. Primero se preparan y comparan rutas;
-contratarlas y ejecutarlas pertenece a la fase 2. `E` cicla a la siguiente política y recalcula.
-`D` elimina la entrada. `R` recalcula la ruta seleccionada. `Enter` abre el detalle de la obra.
-`Esc` cierra la lista. La fila seleccionada se conserva al reabrir el diálogo.
+contratarlas y ejecutarlas pertenece a la fase 2. `D` elimina la entrada. `Enter` abre el detalle de
+la obra. `Esc` cierra la lista. La fila seleccionada se conserva al reabrir el diálogo.
+
+El recálculo y la edición de política quedan fuera de esta primera rebanada: requieren una decisión
+propia sobre cómo recalcular sin bloquear y cómo conservar el presupuesto anterior si la nueva
+política no tiene ruta. Se recuperarán cuando esa decisión esté cerrada.
 
 La acción `Add` no devuelve al mapa normal ni crea una obra inmediatamente. Al pulsarla:
 
@@ -90,7 +93,11 @@ La acción `Add` no devuelve al mapa normal ni crea una obra inmediatamente. Al 
 
 Durante ese flujo de `Add`, el menú normal de modos queda oculto o deshabilitado: el usuario está
 en una tarea modal de planificación y debe ver las instrucciones de A/B, no la lista de modos.
-Al terminar o cancelar, vuelve el menú normal.
+La barra de estado de `Add` ocupa una sola línea inferior, como la consola, y `Tab` la oculta o la
+vuelve a mostrar. Al terminar o cancelar, vuelve el menú normal.
+
+Las rutas guardadas se pintan en el mapa en todo momento, no solo mientras la lista está abierta:
+permanecen visibles hasta que se elimina su entrada (o, en una fase posterior, se construyen).
 
 Esto es importante: el `Add` usa el modo de planificación en **modo guardar**, no el flujo actual
 que selecciona y arranca la cola. La ruta queda en la lista como `Borrador`; para construirla hay
@@ -112,12 +119,12 @@ Implementación actual de la fase 1:
 
 - `core/.../construction/PlannedWork`: entrada inmutable con id, extremos, política, `RoutePlan`,
   coste, tiempo estimado y estado `DRAFT`.
-- `core/.../construction/ConstructionPlanList`: orden de inserción, ids estables, eliminación,
-  recálculo y totales.
+- `core/.../construction/ConstructionPlanList`: orden de inserción, ids estables, eliminación y
+  totales.
 - `ui-terminal/.../ConstructionPlansDialog`: diálogo modal con tabla, total y acciones; `Run`
   deshabilitado.
-- `TerminalPresenter`: flujo `Add` en modo guardar, apertura con `b`, edición de política, recálculo,
-  borrado y detalles. El diálogo no se reabre solo.
+- `TerminalPresenter`: flujo `Add` en modo guardar, apertura con `b`, borrado y detalles. El diálogo
+  no se reabre solo.
 
 La lista es presenter-owned y se descarta al cambiar de modelo; todavía no se guarda en savegames.
 

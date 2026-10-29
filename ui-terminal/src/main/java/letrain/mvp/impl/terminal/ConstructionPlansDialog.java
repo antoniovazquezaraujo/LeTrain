@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
 /**
  * Modal list of planned works (construction roadmap, phase 1). It is the 2D counterpart of the
  * future planned-works window: a compact table over the frozen game frame with the planner data the
- * author needs to compare routes, a total line and the actions Add/Edit/Delete/Recalculate/Details.
+ * author needs to compare routes, a total line and the actions Add/Delete/Details.
  *
  * <p>
  * The dialog is deliberately presentation only. The presenter builds every {@link Row} with the
@@ -46,7 +46,7 @@ final class ConstructionPlansDialog {
 
     /** What the player chose when the dialog closed. */
     enum Action {
-        CLOSE, ADD, EDIT, DELETE, RECALCULATE, DETAILS
+        CLOSE, ADD, DELETE, DETAILS
     }
 
     /**
@@ -131,28 +131,20 @@ final class ConstructionPlansDialog {
             window.close();
         };
         Runnable add = () -> closeWith(window, result, Action.ADD, list);
-        Runnable edit = () -> closeWith(window, result, Action.EDIT, list);
         Runnable delete = () -> closeWith(window, result, Action.DELETE, list);
-        Runnable recalculate = () -> closeWith(window, result, Action.RECALCULATE, list);
         Runnable details = () -> closeWith(window, result, Action.DETAILS, list);
         openDetails[0] = details;
 
         Panel actionRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
         Button addButton = NewGameDialog.mnemonicButton("Add", 'A', add);
-        Button editButton = NewGameDialog.mnemonicButton("Edit", 'E', edit);
         Button deleteButton = NewGameDialog.mnemonicButton("Delete", 'D', delete);
-        Button recalcButton = NewGameDialog.mnemonicButton("Recalculate", 'R', recalculate);
         Button detailsButton = new Button("Details", details);
         actionRow.addComponent(addButton);
-        actionRow.addComponent(editButton);
         actionRow.addComponent(deleteButton);
-        actionRow.addComponent(recalcButton);
         actionRow.addComponent(detailsButton);
 
         boolean hasSelection = !safeRows.isEmpty();
-        editButton.setEnabled(hasSelection);
         deleteButton.setEnabled(hasSelection);
-        recalcButton.setEnabled(hasSelection);
         detailsButton.setEnabled(hasSelection);
 
         Panel runRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
@@ -199,21 +191,9 @@ final class ConstructionPlansDialog {
                         add.run();
                         deliverEvent.set(false);
                     }
-                    case 'e' -> {
-                        if (hasSelection) {
-                            edit.run();
-                        }
-                        deliverEvent.set(false);
-                    }
                     case 'd' -> {
                         if (hasSelection) {
                             delete.run();
-                        }
-                        deliverEvent.set(false);
-                    }
-                    case 'r' -> {
-                        if (hasSelection) {
-                            recalculate.run();
                         }
                         deliverEvent.set(false);
                     }

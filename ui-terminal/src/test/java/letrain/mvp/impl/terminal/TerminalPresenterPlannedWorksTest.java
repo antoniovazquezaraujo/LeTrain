@@ -5,9 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -233,22 +236,6 @@ class TerminalPresenterPlannedWorksTest {
     }
 
     @Test
-    @DisplayName("Recalculate failure keeps the old row and reports the reason")
-    void recalculateFailure_keepsTheRow() {
-        addStraightRouteThroughList();
-        model.getGroundMap().setValueAt(0, 0, GroundMap.WATER);
-        when(view.showConstructionPlansDialog(anyList(), anyInt(), anyString())).thenReturn(
-                new ConstructionPlansDialog.Result(ConstructionPlansDialog.Action.RECALCULATE, 0));
-
-        presenter.onChar(charKey('b'));
-
-        assertEquals(1, presenter.getPlannedWorks().size());
-        verify(view).showMessage(org.mockito.ArgumentMatchers.eq("Recalculate failed"),
-                org.mockito.ArgumentMatchers.contains("Start"));
-        verify(view, times(2)).showConstructionPlansDialog(anyList(), anyInt(), anyString());
-    }
-
-    @Test
     @DisplayName("Shift+C also cancels the Add planning flow")
     void shiftC_cancelsAddPlanning() {
         when(view.showConstructionPlansDialog(anyList(), anyInt(), anyString())).thenReturn(
@@ -284,19 +271,46 @@ class TerminalPresenterPlannedWorksTest {
     }
 
     @Test
-    @DisplayName("Edit cycles the policy and recalculates the selected draft")
-    void edit_cyclesPolicy_andRecalculates() {
+    @DisplayName("stored drafts are painted on the map and disappear when deleted")
+    void storedDrafts_arePaintedUntilDeleted() {
         addStraightRouteThroughList();
-        when(view.showConstructionPlansDialog(anyList(), anyInt(), anyString()))
-                .thenReturn(
-                        new ConstructionPlansDialog.Result(ConstructionPlansDialog.Action.EDIT, 0))
-                .thenReturn(new ConstructionPlansDialog.Result(ConstructionPlansDialog.Action.CLOSE,
-                        -1));
+        org.mockito.Mockito.clearInvocations(view);
+        presenter.drawPlannedWorksOverlay();
 
+        verify(view, atLeastOnce()).drawRoutePreviewCell(eq(0), eq(0), eq("A"), eq(true), any());
+        verify(view, atLeastOnce()).drawRoutePreviewCell(eq(1), eq(0),
+                eq(RoutePreviewOverlay.ROUTE_GLYPH), eq(false), any());
+        verify(view, atLeastOnce()).drawRoutePreviewCell(eq(4), eq(0), eq("B"), eq(true), any());
+
+        presenter.getPlannedWorks().remove(presenter.getPlannedWorks().works().get(0).id());
+        org.mockito.Mockito.clearInvocations(view);
+        presenter.drawPlannedWorksOverlay();
+
+        verify(view, never()).drawRoutePreviewCell(anyInt(), anyInt(), anyString(), anyBoolean(),
+                any());
+    }
+
+    @Test
+    @DisplayName("Tab hides and restores the one-line Add status")
+    void tab_togglesAddStatusLine() {
+        when(view.showConstructionPlansDialog(anyList(), anyInt(), anyString())).thenReturn(
+                new ConstructionPlansDialog.Result(ConstructionPlansDialog.Action.ADD, -1));
+        model.setMode(Model.GameMode.RAILS);
+        model.getCursor().setPosition(new Point(0, 0));
         presenter.onChar(charKey('b'));
 
-        assertEquals(1, presenter.getPlannedWorks().size());
-        assertEquals(RoutePolicy.DIRECT, presenter.getPlannedWorks().works().get(0).policy());
+        org.mockito.Mockito.clearInvocations(view);
+        presenter.drawRoutePreviewOverlay();
+        verify(view, atLeastOnce()).drawRoutePreviewStatus(anyString());
+
+        org.mockito.Mockito.clearInvocations(view);
+        presenter.onChar(new InputEvent(KeyType.Tab));
+        presenter.drawRoutePreviewOverlay();
+        verify(view, never()).drawRoutePreviewStatus(anyString());
+
+        presenter.onChar(new InputEvent(KeyType.Tab));
+        presenter.drawRoutePreviewOverlay();
+        verify(view, atLeastOnce()).drawRoutePreviewStatus(anyString());
     }
 
     @Test
