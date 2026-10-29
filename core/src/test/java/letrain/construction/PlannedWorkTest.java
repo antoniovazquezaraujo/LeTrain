@@ -162,6 +162,61 @@ class PlannedWorkTest {
     }
 
     @Test
+    @DisplayName("withQuote stores the selected company quote and changes only displayed cost/time")
+    void withQuote_storesTheCompanyOffer() {
+        PlannedWork original = PlannedWork.draft(3, new Point(0, 0), new Point(4, 0),
+                RoutePolicy.DIRECT, plan(5, 100, 10), 15);
+        WorkQuote quote = WorkQuote.quote(ConstructionCompanyCatalog.ARTESANA, original.plan());
+
+        PlannedWork quoted = original.withQuote(quote);
+
+        assertTrue(quoted.quote().isPresent());
+        assertEquals("artesana", quoted.quote().orElseThrow().company().id());
+        assertEquals(160, quoted.displayCost());
+        assertEquals(24, quoted.displayTicks());
+        assertEquals(100, quoted.cost(), "the base plan cost stays available");
+        assertEquals(15, quoted.estimatedTicks(), "the base estimate stays available");
+        assertTrue(original.quote().isEmpty(), "the original value must not mutate");
+    }
+
+    @Test
+    @DisplayName("changing the plan drops the old quote; a quote from another plan is rejected")
+    void quote_isDroppedWhenThePlanChanges() {
+        PlannedWork original = PlannedWork.draft(3, new Point(0, 0), new Point(4, 0),
+                RoutePolicy.DIRECT, plan(5, 100, 10), 15);
+        WorkQuote quote = WorkQuote.quote(ConstructionCompanyCatalog.ARTESANA, original.plan());
+        PlannedWork quoted = original.withQuote(quote);
+
+        PlannedWork changed = quoted.withPlan(RoutePolicy.CHEAPEST, plan(6, 80, 6), 12);
+
+        assertTrue(changed.quote().isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> quoted
+                .withQuote(WorkQuote.quote(ConstructionCompanyCatalog.ARTESANA, plan(99, 1, 1))));
+        assertThrows(IllegalArgumentException.class,
+                () -> quoted.withQuote(WorkQuote.quote(ConstructionCompanyCatalog.CHAPUCERT,
+                        RoutePlan.feasible(
+                                List.of(new RouteStep(new Point(0, 0), TrackType.BRIDGE_TRACK)), 1,
+                                1))));
+    }
+
+    @Test
+    @DisplayName("the list replaces a quote and totals the displayed cost/time")
+    void list_replacesQuote_andTotalsDisplayedValues() {
+        ConstructionPlanList list = new ConstructionPlanList();
+        PlannedWork first = list.add(new Point(0, 0), new Point(4, 0), RoutePolicy.DIRECT,
+                plan(5, 100, 10), 15);
+        WorkQuote quote = WorkQuote.quote(ConstructionCompanyCatalog.CHAPUCERT, first.plan());
+
+        assertTrue(list.replaceQuote(first.id(), quote).isPresent());
+
+        assertEquals(70, list.totalDisplayCost());
+        assertEquals(27, list.totalDisplayTicks());
+        assertEquals(100, list.totalCost());
+        assertEquals(15, list.totalTicks());
+        assertTrue(list.replaceQuote(999, quote).isEmpty());
+    }
+
+    @Test
     @DisplayName("clear empties the list and resets the id sequence")
     void clear_resetsTheList() {
         ConstructionPlanList list = new ConstructionPlanList();

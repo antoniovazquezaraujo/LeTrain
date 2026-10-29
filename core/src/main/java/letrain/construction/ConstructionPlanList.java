@@ -11,10 +11,9 @@ import letrain.planner.RoutePolicy;
  * Ordered, UI-free list of {@link PlannedWork planned works} (ADR-038, phase 1).
  *
  * <p>
- * It only stores drafts and keeps the total budget. It has no notion of construction, time or
- * companies: the contractor list, quotes and execution belong to later phases. The order is the
- * insertion order and the ids are never reused, so the selected row stays stable when an entry is
- * deleted.
+ * It only stores drafts and keeps the total budget. A draft may carry one selected company quote;
+ * contractor selection and execution belong to later slices. The order is the insertion order and
+ * the ids are never reused, so the selected row stays stable when an entry is deleted.
  */
 public final class ConstructionPlanList {
 
@@ -58,6 +57,23 @@ public final class ConstructionPlanList {
         return Optional.empty();
     }
 
+    /**
+     * Replaces the quote of the work with {@code id}, keeping its route and identity.
+     *
+     * @return the updated work, or empty when the id is unknown
+     */
+    public Optional<PlannedWork> replaceQuote(int id, WorkQuote quote) {
+        for (int index = 0; index < works.size(); index++) {
+            PlannedWork current = works.get(index);
+            if (current.id() == id) {
+                PlannedWork updated = current.withQuote(quote);
+                works.set(index, updated);
+                return Optional.of(updated);
+            }
+        }
+        return Optional.empty();
+    }
+
     /** Removes the work with {@code id}; returns whether it existed. */
     public boolean remove(int id) {
         return works.removeIf(work -> work.id() == id);
@@ -90,6 +106,24 @@ public final class ConstructionPlanList {
         long total = 0;
         for (PlannedWork work : works) {
             total = Math.addExact(total, work.estimatedTicks());
+        }
+        return total;
+    }
+
+    /** Sum of the costs actually shown: selected quote totals plus unquoted base costs. */
+    public double totalDisplayCost() {
+        double total = 0;
+        for (PlannedWork work : works) {
+            total += work.displayCost();
+        }
+        return total;
+    }
+
+    /** Sum of the times actually shown: selected quote times plus unquoted base estimates. */
+    public long totalDisplayTicks() {
+        long total = 0;
+        for (PlannedWork work : works) {
+            total = Math.addExact(total, work.displayTicks());
         }
         return total;
     }

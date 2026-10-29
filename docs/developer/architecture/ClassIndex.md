@@ -56,6 +56,8 @@
 - [[letrain.command.UndoRedoHistory|UndoRedoHistory]] (core)
 
 ## letrain.construction
+- [[letrain.construction.ConstructionCompany|ConstructionCompany]] (core)
+- [[letrain.construction.ConstructionCompanyCatalog|ConstructionCompanyCatalog]] (core)
 - [[letrain.construction.ConstructionGuard|ConstructionGuard]] (core)
 - [[letrain.construction.ConstructionPlanList|ConstructionPlanList]] (core)
 - [[letrain.construction.ConstructionProgress|ConstructionProgress]] (core)
@@ -64,6 +66,7 @@
 - [[letrain.construction.RouteConstructionJob|RouteConstructionJob]] (core)
 - [[letrain.construction.RouteConstructionQueue|RouteConstructionQueue]] (core)
 - [[letrain.construction.TrackMaterializer|TrackMaterializer]] (core)
+- [[letrain.construction.WorkQuote|WorkQuote]] (core)
 
 ## letrain.economy
 - [[letrain.economy.EconomyManager|EconomyManager]] (core)
@@ -160,6 +163,7 @@
 - [[letrain.mvp.impl.terminal.DialogWindow|DialogWindow]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.NewGameDialog|NewGameDialog]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.ProgramTextBox|ProgramTextBox]] (ui-terminal)
+- [[letrain.mvp.impl.terminal.QuotesDialog|QuotesDialog]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.RailBuildability|RailBuildability]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.RailTrackMaterializer|RailTrackMaterializer]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.RoutePreviewConsolePolicy|RoutePreviewConsolePolicy]] (ui-terminal)

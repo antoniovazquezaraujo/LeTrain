@@ -981,6 +981,13 @@ public class TerminalView implements letrain.mvp.View {
         return ConstructionPlansDialog.show(screen, rows, selectedIndex, total);
     }
 
+    /** Modal company quotes comparison for one planned work. */
+    public QuotesDialog.Result showQuotesDialog(List<letrain.construction.WorkQuote> quotes,
+            int selectedIndex) {
+        paint();
+        return QuotesDialog.show(screen, quotes, selectedIndex);
+    }
+
     /** Simple yes/no confirmation (used before discarding a game in progress, #417 pending). */
     @Override
     public boolean confirm(String title, String message) {

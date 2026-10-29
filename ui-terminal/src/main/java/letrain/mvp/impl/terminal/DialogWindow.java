@@ -53,9 +53,14 @@ final class DialogWindow {
      * area either. The result is always positive.
      */
     static TerminalSize dialogSize(TerminalSize screen) {
+        return dialogSize(screen, MIN_COLUMNS, MAX_COLUMNS);
+    }
+
+    /** Same size calculation with an explicit width range for wider dialogs (Works). */
+    static TerminalSize dialogSize(TerminalSize screen, int minColumns, int maxColumns) {
         TerminalSize available = availableContent(screen, MARGIN_COLUMNS, MARGIN_ROWS);
-        int width = Math.max(MIN_COLUMNS, screen.getColumns() / 2);
-        width = Math.min(width, Math.min(MAX_COLUMNS, available.getColumns()));
+        int width = Math.max(minColumns, screen.getColumns() / 2);
+        width = Math.min(width, Math.min(maxColumns, available.getColumns()));
 
         int height = Math.min(Math.max(MIN_ROWS, available.getRows()), MAX_ROWS);
         height = Math.min(height, available.getRows());

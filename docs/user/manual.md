@@ -78,9 +78,11 @@ LeTrain is deeply modal. Pressing the following keys will switch your current in
 - **`b`**: Open the **Works** list from the map. It stores draft routes and their estimated cost/time; it does not build them.
 - **`A`**: Add a route from the list. The map enters route planning with A/B; **Enter** saves the route as a draft, **Esc** cancels. The normal mode menu is hidden while planning and the Add status is a single bottom line; **Tab** hides or shows that line.
 - **`E`**: Edit the selected route. It opens with the saved A/B and plan already visible; only the policy can be changed with `[`/`]`. While editing, the old route is hidden so only the candidate plan is painted. If you want a different origin or destination, add another route.
+- **`Q`**: Compare construction companies for the selected route and choose one. Companies that cannot build the route's bridges or tunnels are unavailable. The row then shows the company, quality, quoted cost and quoted time.
 - **`D`**: Delete the selected draft.
-- **`Esc`**: Close the list. **Run** is disabled until construction companies and cash exist.
-- The same actions are available as **Alt+A**, **Alt+E**, **Alt+D** and **Alt+C**.
+- **`Esc`**: Close the list. **Run** is disabled until cash, reservation and execution exist.
+- The same actions are available as **Alt+A**, **Alt+E**, **Alt+Q**, **Alt+D** and **Alt+C**.
+- The catalogue is provisional: `CHAPUCERT` and `RAPIDEX` are low quality and cannot build bridges/tunnels; `ARTESANA` and `IMPERIAL` are high quality and can. Quality is only a commercial promise until maintenance exists.
 - Stored drafts stay painted on the map until their row is deleted.
 - Saving a draft also creates the marks `Way-<id>-start` and `Way-<id>-end` at its endpoints (for example, `Way-1-start` and `Way-1-end`). These marks remain if the row is deleted; a dedicated marks menu will come later.
 - The list is kept while the current game is loaded, but it is not yet saved in savegames; a model swap (load/undo) clears it.

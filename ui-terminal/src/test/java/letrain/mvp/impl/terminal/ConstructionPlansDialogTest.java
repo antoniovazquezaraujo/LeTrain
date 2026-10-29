@@ -28,17 +28,20 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Planned works dialog (construction roadmap, phase 1)")
 class ConstructionPlansDialogTest {
 
-    private static final ConstructionPlansDialog.Row CHEAPEST = new ConstructionPlansDialog.Row(1,
-            "Borrador", "20,25", "34,254", "CHEAPEST", 234, "$342.000", "12 min", "");
-    private static final ConstructionPlansDialog.Row AVOID_ALL = new ConstructionPlansDialog.Row(2,
-            "Borrador", "53,85", "92,329", "AVOID_ALL", 134, "$34.000", "3 min", "");
+    private static final ConstructionPlansDialog.Row CHEAPEST =
+            new ConstructionPlansDialog.Row(1, "Borrador", "20,25", "34,254", "CHEAPEST",
+                    "CHAPUCERT", "Low", 234, "$342.000", "12 min", "");
+    private static final ConstructionPlansDialog.Row AVOID_ALL =
+            new ConstructionPlansDialog.Row(2, "Borrador", "53,85", "92,329", "AVOID_ALL",
+                    "ARTESANA", "High", 134, "$34.000", "3 min", "");
     private static final ConstructionPlansDialog.Row DIRECT = new ConstructionPlansDialog.Row(3,
-            "Cancelada", "12,10", "44,80", "DIRECT", 98, "$9.800", "2 min", "");
+            "Cancelada", "12,10", "44,80", "DIRECT", "-", "-", 98, "$9.800", "2 min", "");
 
     @Test
     @DisplayName("the header is the roadmap's compact table header")
     void should_ExposeTheExactHeader() {
-        assertEquals("#  State    From   To      Policy     Cells  Cost       Time",
+        assertEquals(
+                "#  State    From   To      Policy     Company  Quality Cells  Cost       Time",
                 ConstructionPlansDialog.header());
     }
 
@@ -52,6 +55,8 @@ class ConstructionPlansDialogTest {
         assertEquals(header.indexOf("From"), line.indexOf("20,25"));
         assertEquals(header.indexOf("To"), line.indexOf("34,254"));
         assertEquals(header.indexOf("Policy"), line.indexOf("CHEAPEST"));
+        assertEquals(header.indexOf("Company"), line.indexOf("CHAPUCERT"));
+        assertEquals(header.indexOf("Quality"), line.indexOf("Low"));
         // The cell count is the only numeric column: it is right-aligned under its header.
         assertEquals("234",
                 line.substring(header.indexOf("Cells"), header.indexOf("Cells") + 7).trim());
@@ -69,6 +74,8 @@ class ConstructionPlansDialogTest {
         assertTrue(line.contains("53,85"), line);
         assertTrue(line.contains("92,329"), line);
         assertTrue(line.contains("AVOID_ALL"), line);
+        assertTrue(line.contains("ARTESANA"), line);
+        assertTrue(line.contains("High"), line);
         assertTrue(line.contains("$34.000"), line);
         assertTrue(line.contains("3 min"), line);
     }
@@ -77,7 +84,7 @@ class ConstructionPlansDialogTest {
     @DisplayName("a warning is marked with a trailing bang; blank warnings are omitted")
     void should_MarkWarnings() {
         ConstructionPlansDialog.Row warned = new ConstructionPlansDialog.Row(4, "Borrador", "1,1",
-                "2,2", "DIRECT", 2, "$100", "1 min", "track occupied");
+                "2,2", "DIRECT", "-", "-", 2, "$100", "1 min", "track occupied");
 
         String line = ConstructionPlansDialog.formatRow(warned);
         assertTrue(line.endsWith("1 min !"), line);
@@ -89,7 +96,7 @@ class ConstructionPlansDialogTest {
     @DisplayName("the # column keeps the following columns aligned for two-digit ids")
     void should_AlignTwoDigitIds() {
         ConstructionPlansDialog.Row row = new ConstructionPlansDialog.Row(10, "Draft", "1,1", "2,2",
-                "DIRECT", 2, "$100", "1 min", "");
+                "DIRECT", "-", "-", 2, "$100", "1 min", "");
 
         String line = ConstructionPlansDialog.formatRow(row);
         String header = ConstructionPlansDialog.header();
@@ -131,11 +138,14 @@ class ConstructionPlansDialogTest {
                 ConstructionPlansDialog.shortcutAction('A', false));
         assertEquals(ConstructionPlansDialog.Action.EDIT,
                 ConstructionPlansDialog.shortcutAction('e', true));
+        assertEquals(ConstructionPlansDialog.Action.QUOTES,
+                ConstructionPlansDialog.shortcutAction('q', true));
         assertEquals(ConstructionPlansDialog.Action.DELETE,
                 ConstructionPlansDialog.shortcutAction('d', true));
         assertEquals(ConstructionPlansDialog.Action.CLOSE,
                 ConstructionPlansDialog.shortcutAction('c', false));
         assertNull(ConstructionPlansDialog.shortcutAction('e', false));
+        assertNull(ConstructionPlansDialog.shortcutAction('q', false));
         assertNull(ConstructionPlansDialog.shortcutAction('d', false));
         assertNull(ConstructionPlansDialog.shortcutAction('r', true));
     }

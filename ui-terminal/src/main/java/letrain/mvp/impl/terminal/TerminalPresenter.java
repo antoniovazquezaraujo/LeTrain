@@ -12,10 +12,12 @@ import static letrain.mvp.Model.GameMode.STATIONS;
 import static letrain.mvp.Model.GameMode.TRAINS;
 import static letrain.mvp.Model.GameMode.UNLINK;
 
+import letrain.construction.ConstructionCompanyCatalog;
 import letrain.construction.ConstructionPlanList;
 import letrain.construction.ConstructionProgress;
 import letrain.construction.PlannedWork;
 import letrain.construction.RouteConstructionQueue;
+import letrain.construction.WorkQuote;
 import letrain.mvp.input.InputEvent;
 import letrain.mvp.input.KeyType;
 import letrain.planner.RoutePlan;
@@ -1323,6 +1325,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                         }
                     }
                 }
+                case QUOTES -> {
+                    openQuotesFor(selectedId);
+                }
                 case DELETE -> {
                     if (selectedId >= 0) {
                         plannedWorks().remove(selectedId);
@@ -1337,24 +1342,59 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
     }
 
+    /** Shows companies for the selected work and stores the chosen feasible quote. */
+    private void openQuotesFor(int id) {
+        if (id < 0) {
+            return;
+        }
+        plannedWorks().find(id).ifPresent(work -> {
+            List<WorkQuote> quotes = ConstructionCompanyCatalog.all().stream()
+                    .map(company -> WorkQuote.quote(company, work.plan())).toList();
+            int current = work.quote().map(quote -> indexOfCompany(quote.company().id())).orElse(0);
+            QuotesDialog.Result result = view.showQuotesDialog(quotes, current);
+            if (result != null && result.action() == QuotesDialog.Action.SELECT
+                    && result.quote() != null && result.quote().feasible()) {
+                plannedWorks().replaceQuote(work.id(), result.quote());
+            }
+        });
+    }
+
+    private static int indexOfCompany(String companyId) {
+        for (int index = 0; index < ConstructionCompanyCatalog.all().size(); index++) {
+            if (ConstructionCompanyCatalog.all().get(index).id().equals(companyId)) {
+                return index;
+            }
+        }
+        return 0;
+    }
+
     /** Builds the display rows for the modal list; formatting stays in the UI layer. */
     private List<ConstructionPlansDialog.Row> plannedWorkRows(List<PlannedWork> works) {
         return works.stream().map(work -> {
             String warning = RailBuildability.check(model, work.plan())
                     .map(RailBuildability.Issue::description).orElse("");
+            String company = work.quote().map(quote -> quote.company().name()).orElse("-");
+            String quality = work.quote().map(quote -> qualityLabel(quote)).orElse("-");
             return new ConstructionPlansDialog.Row(work.id(), "Draft", formatPoint(work.start()),
-                    formatPoint(work.end()), shortPolicy(work.policy()), work.cells(),
-                    RoutePreviewStatus.formatCost(work.cost()),
-                    RoutePreviewStatus.formatTicks(work.estimatedTicks()), warning);
+                    formatPoint(work.end()), shortPolicy(work.policy()), company, quality,
+                    work.cells(), RoutePreviewStatus.formatCost(work.displayCost()),
+                    RoutePreviewStatus.formatTicks(work.displayTicks()), warning);
         }).toList();
+    }
+
+    private static String qualityLabel(WorkQuote quote) {
+        return switch (quote.quality()) {
+            case LOW -> "Low";
+            case HIGH -> "High";
+        };
     }
 
     /** Exact total line from the plans, not from the rounded display strings. */
     private String plannedWorksTotalLine() {
         ConstructionPlanList list = plannedWorks();
         return ConstructionPlansDialog.totalLine(list.size(),
-                RoutePreviewStatus.formatCost(list.totalCost()),
-                RoutePreviewStatus.formatTicks(list.totalTicks()));
+                RoutePreviewStatus.formatCost(list.totalDisplayCost()),
+                RoutePreviewStatus.formatTicks(list.totalDisplayTicks()));
     }
 
     private static String formatPoint(Point point) {
