@@ -125,7 +125,7 @@ propia fila.
 
 Al guardar una ruta se crean dos marcas con los extremos: `Way-<id>-start` y `Way-<id>-end`, donde
 `<id>` es el id de la obra en la lista (por ejemplo, `Way-1-start` y `Way-24-end`). Las marcas
-permanecen al eliminar la fila; su gestión tendrá su propia opción de menú más adelante.
+permanecen al eliminar la fila y se pueden ver, visitar y borrar desde el menú de marcas (`m`).
 
 Implementación actual de la fase 1:
 

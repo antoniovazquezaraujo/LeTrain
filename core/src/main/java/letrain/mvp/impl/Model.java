@@ -1438,6 +1438,11 @@ public class Model implements letrain.mvp.Model {
     }
 
     @Override
+    public boolean removeMark(String name) {
+        return marks.remove(name) != null;
+    }
+
+    @Override
     public RailTrack getCursorRailTrack() {
         return getRailMap().getTrackAt(getCursor().getPosition());
     }

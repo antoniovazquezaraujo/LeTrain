@@ -158,6 +158,7 @@
 - [[letrain.mvp.impl.terminal.CoverArtPainter|CoverArtPainter]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.CoverStyle|CoverStyle]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.DialogWindow|DialogWindow]] (ui-terminal)
+- [[letrain.mvp.impl.terminal.MarksDialog|MarksDialog]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.NewGameDialog|NewGameDialog]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.ProgramTextBox|ProgramTextBox]] (ui-terminal)
 - [[letrain.mvp.impl.terminal.RailBuildability|RailBuildability]] (ui-terminal)

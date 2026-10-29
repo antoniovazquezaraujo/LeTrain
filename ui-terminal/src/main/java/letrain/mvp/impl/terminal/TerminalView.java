@@ -981,6 +981,12 @@ public class TerminalView implements letrain.mvp.View {
         return ConstructionPlansDialog.show(screen, rows, selectedIndex, total);
     }
 
+    /** Modal marks list (bookmarks) over the frozen game frame. */
+    public MarksDialog.Result showMarksDialog(List<MarksDialog.Row> rows, int selectedIndex) {
+        paint();
+        return MarksDialog.show(screen, rows, selectedIndex);
+    }
+
     /** Simple yes/no confirmation (used before discarding a game in progress, #417 pending). */
     @Override
     public boolean confirm(String title, String message) {

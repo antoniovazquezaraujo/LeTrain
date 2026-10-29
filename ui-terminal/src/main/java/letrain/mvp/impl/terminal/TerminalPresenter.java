@@ -171,6 +171,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
      */
     private ConstructionPlanList plannedWorks;
     private int plannedWorksSelectedIndex;
+    private int marksSelectedIndex = -1;
 
     private String plannedWorksNotice;
     private long plannedWorksNoticeUntilMillis;
@@ -947,6 +948,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         constructionNoticeUntilMillis = 0;
         plannedWorks = null;
         plannedWorksSelectedIndex = -1;
+        marksSelectedIndex = -1;
         plannedWorksNotice = null;
         plannedWorksNoticeUntilMillis = 0;
     }
@@ -1395,6 +1397,61 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         return mode == RAILS || mode == MENU;
     }
 
+    /** Opens the modal marks list and applies its actions. */
+    void openMarks() {
+        while (true) {
+            List<MarksDialog.Row> rows = marksRows();
+            MarksDialog.Result result = view.showMarksDialog(rows, marksSelectedIndex);
+            if (result == null) {
+                return;
+            }
+            marksSelectedIndex = MarksDialog.clampIndex(result.selectedIndex(), rows.size());
+            String selectedName = marksSelectedIndex >= 0 && marksSelectedIndex < rows.size()
+                    ? rows.get(marksSelectedIndex).name()
+                    : null;
+            switch (result.action()) {
+                case GO -> {
+                    if (selectedName != null) {
+                        Point mark = model.getMark(selectedName);
+                        if (mark != null) {
+                            model.getCursor().setPosition(new Point(mark));
+                            view.centerOn(mark.getX(), mark.getY());
+                        }
+                    }
+                    return;
+                }
+                case DELETE -> {
+                    if (selectedName != null && model.removeMark(selectedName)) {
+                        marksSelectedIndex = Math.min(marksSelectedIndex, marksRows().size() - 1);
+                    }
+                }
+                case CLOSE -> {
+                    return;
+                }
+            }
+        }
+    }
+
+    private List<MarksDialog.Row> marksRows() {
+        return model.getMarks().entrySet().stream()
+                .sorted(java.util.Map.Entry.comparingByKey(String.CASE_INSENSITIVE_ORDER))
+                .map(entry -> new MarksDialog.Row(entry.getKey(),
+                        entry.getValue().getX() + "," + entry.getValue().getY()))
+                .toList();
+    }
+
+    /** True for the marks-list key ({@code m}); no modifier is accepted. */
+    private static boolean isMarksEntry(InputEvent event) {
+        return event.getKeyType() == KeyType.Character && event.getCharacter() != null
+                && (event.getCharacter() == 'm' || event.getCharacter() == 'M')
+                && !event.isCtrlDown() && !event.isAltDown();
+    }
+
+    /** Marks are a map tool; they are not offered in modal/console/editor modes. */
+    private static boolean canOpenMarks(Model.GameMode mode) {
+        return mode == RAILS || mode == MENU;
+    }
+
     /**
      * Starts the construction queue for an accepted plan (ADR-037). Preflight runs immediately; a
      * rejection is surfaced as a notice and leaves no job building. A terminal state also unlocks
@@ -1817,6 +1874,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         // While the construction queue builds, manual edits are locked; navigation, camera, mode
         // changes and the read-only console remain available.
         if (handleConstructionEditLock(keyEvent)) {
+            return;
+        }
+
+        if (isMarksEntry(keyEvent) && canOpenMarks(model.getMode())) {
+            openMarks();
             return;
         }
 

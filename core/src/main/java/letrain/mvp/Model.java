@@ -416,6 +416,9 @@ public interface Model {
 
     java.util.Map<String, letrain.map.Point> getMarks();
 
+    /** Removes a named mark; returns whether it existed. */
+    boolean removeMark(String name);
+
     public RailTrack getCursorRailTrack();
 
     public record GameModeMenuOption(String gameModeName, String gameModeDescription,
