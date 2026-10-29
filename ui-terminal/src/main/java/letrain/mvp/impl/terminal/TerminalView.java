@@ -99,6 +99,12 @@ public class TerminalView implements letrain.mvp.View {
     private int flashDeadzoneTicks = 0;
     boolean endOfGame = false;
     private int helpLevel = 0;
+    /**
+     * False while a modal planning task (the phase-1 "Add" flow) owns the screen: the normal mode
+     * menu, help bar and info lines must not paint. Layout is deliberately untouched, so the map
+     * keeps its game box size and the menu area is simply cleared.
+     */
+    private boolean menuVisible = true;
 
     /** True while the title cover is on screen; {@link #paint()} draws it instead of the game. */
     private boolean coverVisible = false;
@@ -432,7 +438,7 @@ public class TerminalView implements letrain.mvp.View {
 
     @Override
     public void setInfoBarText(String text) {
-        if (helpLevel == 0) {
+        if (!shouldPaintMenu(menuVisible, helpLevel, 1)) {
             return;
         }
         String[] lines = text.split("\n");
@@ -610,9 +616,31 @@ public class TerminalView implements letrain.mvp.View {
         return gameBoxSize.getRows();
     }
 
+    /**
+     * Hides or restores the normal mode menu, help bar and info lines without touching the layout.
+     * The presenter hides it during the modal "Add route" planning flow (roadmap phase 1); the next
+     * frame paints it again after {@link #setMenu(List)} once the flag is back to {@code true}.
+     */
+    public void setMenuVisible(boolean visible) {
+        this.menuVisible = visible;
+        if (!visible && menuBox != null && menuBoxPosition != null && menuBoxSize != null) {
+            menuBox.setBackgroundColor(NORMAL_MENU_BG_COLOR);
+            menuBox.setForegroundColor(NORMAL_MENU_FG_COLOR);
+            menuBox.fillRectangle(menuBoxPosition, menuBoxSize, ' ');
+        }
+    }
+
+    /**
+     * Pure gate for the menu painters: no menu while hidden, and each part keeps its own help level
+     * requirement (menu/info since level 1, help bar since level 2).
+     */
+    static boolean shouldPaintMenu(boolean menuVisible, int helpLevel, int minimumLevel) {
+        return menuVisible && helpLevel >= minimumLevel;
+    }
+
     @Override
     public void setMenu(List<GameModeMenuOption> options) {
-        if (helpLevel == 0) {
+        if (!shouldPaintMenu(menuVisible, helpLevel, 1)) {
             return;
         }
         int length = 1;
@@ -665,7 +693,7 @@ public class TerminalView implements letrain.mvp.View {
 
     @Override
     public void setHelpBarText(String text) {
-        if (helpLevel < 2) {
+        if (!shouldPaintMenu(menuVisible, helpLevel, 2)) {
             return;
         }
         menuBox.setForegroundColor(DISABLED_FG_COLOR);
@@ -916,6 +944,25 @@ public class TerminalView implements letrain.mvp.View {
         // (#742 polish).
         paint();
         return SettingsDialog.show(screen, currentSettings, scenarioKeys, port);
+    }
+
+    /**
+     * Modal list of planned works (construction roadmap, phase 1). Like the other centered dialogs,
+     * the last game frame is repainted first so it becomes the frozen backdrop.
+     */
+    public ConstructionPlansDialog.Result showConstructionPlansDialog(
+            List<ConstructionPlansDialog.Row> rows, int selectedIndex) {
+        return showConstructionPlansDialog(rows, selectedIndex, null);
+    }
+
+    /**
+     * Same modal list with the total line computed by the presenter. The presenter has the exact
+     * plan costs/ticks; the rows only carry display strings.
+     */
+    public ConstructionPlansDialog.Result showConstructionPlansDialog(
+            List<ConstructionPlansDialog.Row> rows, int selectedIndex, String total) {
+        paint();
+        return ConstructionPlansDialog.show(screen, rows, selectedIndex, total);
     }
 
     /** Simple yes/no confirmation (used before discarding a game in progress, #417 pending). */

@@ -34,15 +34,15 @@ Incluye:
 - decidir más tarde cuál se construye.
 
 La interfaz de esta lista necesita una decisión propia: dónde se abre, cómo se navega por las
-entradas y cómo se editan. Una opción natural es un diálogo modal similar al editor de programas,
-con una tabla de trayectos y acciones de editar, recalcular, eliminar y ejecutar. No se ha cerrado
-el diseño, pero conviene resolverlo en esta fase porque la lista será la puerta de entrada a todo
-lo demás.
+entradas y cómo se editan. Se abre como un diálogo modal parecido al editor de programas, con una
+tabla de trayectos, acciones por atajos y una línea de total. La lista será la puerta de entrada a
+todo lo demás.
 
 No incluye constructoras ni zonas de exclusión. Es la fase que convierte la planificación en una
 actividad separada de la ejecución.
 
-Depende de: ADR-037 y ADR-038 (parte de lista/presupuesto).
+Depende de: ADR-037 y ADR-038 (parte de lista/presupuesto). La lista se abre desde el mapa con
+`b` (Works).
 
 ### Lista de la fase 1
 
@@ -72,17 +72,18 @@ recargo de constructora en esta fase.
 La columna `Política` es imprescindible: dos planes con los mismos extremos pueden tener rutas y
 costes distintos según sean `CHEAPEST`, `DIRECT`, `AVOID_WATER`, etc. Sin ella, el usuario no sabe
 qué está guardando. La columna `Estado` también es necesaria desde el principio, aunque en fase 1
-solo tenga valores como `Borrador` y `Cancelada`.
+solo tenga el valor `Borrador`; los estados de ejecución llegarán con las constructoras.
 
 La acción `Run` debe aparecer deshabilitada en esta fase. Primero se preparan y comparan rutas;
-contratarlas y ejecutarlas pertenece a la fase 2. `E` permite cambiar la política y recalcular.
+contratarlas y ejecutarlas pertenece a la fase 2. `E` cicla a la siguiente política y recalcula.
 `D` elimina la entrada. `R` recalcula la ruta seleccionada. `Enter` abre el detalle de la obra.
+`Esc` cierra la lista. La fila seleccionada se conserva al reabrir el diálogo.
 
 La acción `Add` no devuelve al mapa normal ni crea una obra inmediatamente. Al pulsarla:
 
 1. El diálogo de la lista se cierra.
 2. El mapa entra en el flujo de planificación de ruta, con su propia barra de estado:
-   `Adding route · PICK_START · move + Enter · Esc cancel`.
+   `Add route · PICK_START · move + Enter · Esc cancel`.
 3. El usuario elige A y B, puede cambiar de política y ve la ruta como en la preview normal.
 4. Al aceptar, la ruta se guarda en la lista y se vuelve al mapa normal. No se construye nada.
 5. Si cancela, se vuelve al mapa normal sin añadir nada.
@@ -106,6 +107,19 @@ La lista se abrirá como un diálogo modal parecido al editor de programas: fila
 las flechas, acciones por atajos y una línea de total. En una terminal de 80 columnas la tabla
 completa puede no caber; la solución es mantener las columnas esenciales y mostrar el resto en el
 panel de detalle de la fila seleccionada.
+
+Implementación actual de la fase 1:
+
+- `core/.../construction/PlannedWork`: entrada inmutable con id, extremos, política, `RoutePlan`,
+  coste, tiempo estimado y estado `DRAFT`.
+- `core/.../construction/ConstructionPlanList`: orden de inserción, ids estables, eliminación,
+  recálculo y totales.
+- `ui-terminal/.../ConstructionPlansDialog`: diálogo modal con tabla, total y acciones; `Run`
+  deshabilitado.
+- `TerminalPresenter`: flujo `Add` en modo guardar, apertura con `b`, edición de política, recálculo,
+  borrado y detalles. El diálogo no se reabre solo.
+
+La lista es presenter-owned y se descarta al cambiar de modelo; todavía no se guarda en savegames.
 
 ### Visión final de la lista
 

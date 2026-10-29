@@ -1,10 +1,12 @@
 # ADR-038: Planes de obra, presupuestos y constructoras
 
-## Estado: PROPUESTO
+## Estado: PROPUESTO (fase 1 implementada)
 
-> Esta ADR recoge ideas acordadas para una fase posterior. **No está implementada.** La cola actual
-> construye inmediatamente después de seleccionar un plan y no tiene lista, constructoras ni
-> presupuestos (ver [[ADR-037-Construction-Queue|ADR-037]]).
+> La **lista de obras en fase 1** ya está implementada: guarda borradores con origen, destino,
+> política, `RoutePlan`, coste y tiempo estimados, y permite añadirlos, recalcularlos, eliminarlos y
+> ver sus totales. Sigue **sin** constructoras, cotizaciones, zonas, efectivo, calidad ni ejecución
+> desde la lista. La cola actual (ADR-037) sigue construyendo inmediatamente cuando se acepta un
+> plan desde `Shift+C`; `Run` está deshabilitado en la lista.
 >
 > Depende de ADR-034, ADR-035, ADR-036 y ADR-037. La calidad de construcción y el mantenimiento se
 > separan en [[ADR-039-Track-Quality-and-Maintenance|ADR-039]].
@@ -59,6 +61,10 @@ Cada entrada de la lista debe guardar, como mínimo:
 
 La lista debe mostrar el total de las obras seleccionadas. El dueño quiere poder comparar y
 priorizar antes de gastar.
+
+La fase 1 implementa un subconjunto: origen, destino, política, `RoutePlan`, coste y tiempo
+estimados, con estado `DRAFT`. Los campos de constructora, cotizaciones, calidad, velocidad y zona
+pertenecen a fases posteriores; no se muestran todavía en la tabla.
 
 ### 3. Constructoras y cotizaciones
 
@@ -214,7 +220,8 @@ funcione. No forma parte de esta ADR.
 
 ## Fuera de alcance
 
-- Implementar la lista, las constructoras, las zonas o el pago por adelantado.
+- Implementar constructoras, cotizaciones, zonas o el pago por adelantado (la lista de borradores
+  de fase 1 ya existe).
 - Cambiar la cola actual de una obra.
 - Calidad real y mantenimiento (ADR-039).
 - Comando `connect`.
