@@ -334,6 +334,12 @@ class TerminalPresenterPlannedWorksTest {
         assertEquals(new Point(4, 0), session.end().orElseThrow());
         assertEquals(RoutePolicy.CHEAPEST, session.policy());
 
+        verify(view, times(2)).showConstructionPlansDialog(anyList(), anyInt(), anyString());
+        org.mockito.Mockito.clearInvocations(view);
+        presenter.drawPlannedWorksOverlay();
+        verify(view, never()).drawRoutePreviewCell(anyInt(), anyInt(), anyString(), anyBoolean(),
+                any());
+
         presenter.onChar(charKey(']'));
         awaitPreview();
         assertEquals(RoutePolicy.DIRECT, session.policy());
@@ -349,7 +355,6 @@ class TerminalPresenterPlannedWorksTest {
         assertEquals(new Point(4, 0), model.getMark("Way-1-end"));
         assertEquals(2, model.getMarks().size(),
                 "Edit must not create or duplicate endpoint marks");
-        verify(view, times(2)).showConstructionPlansDialog(anyList(), anyInt(), anyString());
     }
 
     @Test

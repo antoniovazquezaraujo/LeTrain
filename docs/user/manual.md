@@ -77,7 +77,7 @@ LeTrain is deeply modal. Pressing the following keys will switch your current in
 ### Planned Works (2D)
 - **`b`**: Open the **Works** list from the map. It stores draft routes and their estimated cost/time; it does not build them.
 - **`A`**: Add a route from the list. The map enters route planning with A/B; **Enter** saves the route as a draft, **Esc** cancels. The normal mode menu is hidden while planning and the Add status is a single bottom line; **Tab** hides or shows that line.
-- **`E`**: Edit the selected route. It opens with the saved A/B and plan already visible; only the policy can be changed with `[`/`]`. If you want a different origin or destination, add another route.
+- **`E`**: Edit the selected route. It opens with the saved A/B and plan already visible; only the policy can be changed with `[`/`]`. While editing, the old route is hidden so only the candidate plan is painted. If you want a different origin or destination, add another route.
 - **`D`**: Delete the selected draft.
 - **`Esc`**: Close the list. **Run** is disabled until construction companies and cash exist.
 - Stored drafts stay painted on the map until their row is deleted.

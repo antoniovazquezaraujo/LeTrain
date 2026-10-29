@@ -1612,6 +1612,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             return;
         }
         for (PlannedWork work : plannedWorks.works()) {
+            if (work.id() == routePreviewEditingWorkId) {
+                // While editing, the CONNECT preview owns this route: keeping the old overlay
+                // underneath would show both the old and the candidate policy at once.
+                continue;
+            }
             for (RoutePreviewOverlay.Cell cell : RoutePreviewOverlay.cells(work.plan(),
                     work.start(), work.end())) {
                 view.drawRoutePreviewCell(cell.x(), cell.y(), cell.glyph(), cell.endpoint(),

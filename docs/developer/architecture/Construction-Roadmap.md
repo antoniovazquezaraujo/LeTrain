@@ -81,7 +81,9 @@ entrada. `Esc` cierra la lista. La fila seleccionada se conserva al reabrir el d
 `Edit` abre la ruta guardada directamente en la preview, con A/B ya fijados y el plan actual
 visible. No vuelve a pedir los extremos y no permite cambiarlos: si el usuario quiere otro origen o
 destino, debe crear otra obra. Solo puede cambiar la política con `[`/`]`; al aceptar, se actualiza
-la fila con el nuevo plan, coste, celdas y tiempo, y las marcas de los extremos no cambian.
+la fila con el nuevo plan, coste, celdas y tiempo, y las marcas de los extremos no cambian. Mientras
+se edita, la ruta antigua se oculta del mapa: solo se pinta el plan candidato, para que dos políticas
+no se superpongan.
 
 El detalle de una obra y el recálculo suelto quedan fuera de esta primera rebanada. El detalle
 necesita una pantalla propia; el recálculo suelto no aportaba nada porque editar la política ya
