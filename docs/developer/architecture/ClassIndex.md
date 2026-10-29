@@ -31,6 +31,7 @@
 - [[letrain.audio.synth.Oscillator|Oscillator]] (core)
 - [[letrain.audio.synth.SpeedNotch|SpeedNotch]] (core)
 - [[letrain.audio.synth.TrainSynthesizer|TrainSynthesizer]] (core)
+- [[letrain.audio.synth.TransitionPlanner|TransitionPlanner]] (core)
 - [[letrain.audio.synth.Voice|Voice]] (core)
 - [[letrain.audio.util.AudacityLabelParser|AudacityLabelParser]] (core)
 
