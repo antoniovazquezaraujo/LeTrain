@@ -44,6 +44,88 @@ actividad separada de la ejecución.
 
 Depende de: ADR-037 y ADR-038 (parte de lista/presupuesto).
 
+### Lista de la fase 1
+
+La primera versión no debe mostrar todavía constructoras ni calidades: esa información todavía no
+existe. La tabla debe enseñar lo que el planner ya sabe calcular y lo que el usuario necesita para
+decidir qué conservar.
+
+```text
+Obras
+ #  Estado    Desde   Hasta   Política    Celdas  Coste       Tiempo
+ 1  Borrador  20,25   34,254  CHEAPEST    234     $342.000    12 min
+ 2  Borrador  53,85   92,329  AVOID_ALL   134     $34.000     3 min
+ 3  Borrador  12,10   44,80   DIRECT      98      $9.800      2 min
+────────────────────────────────────────────────────────────────────────
+Total: 3 obras · $385.800 · 17 min
+
+[A] Add   [E] Edit   [D] Delete   [R] Recalculate   [Enter] Details
+[Run] disabled until construction companies and cash are available
+[Esc] Close
+```
+
+La tabla usa **celdas**, no kilómetros, porque el juego no tiene todavía una escala de distancia
+definida para la autoría. El coste es el coste real del `RoutePlan` y el tiempo es el tiempo de
+construcción estimado que ya muestra la preview (ticks del planner más la base por celda). No hay
+recargo de constructora en esta fase.
+
+La columna `Política` es imprescindible: dos planes con los mismos extremos pueden tener rutas y
+costes distintos según sean `CHEAPEST`, `DIRECT`, `AVOID_WATER`, etc. Sin ella, el usuario no sabe
+qué está guardando. La columna `Estado` también es necesaria desde el principio, aunque en fase 1
+solo tenga valores como `Borrador` y `Cancelada`.
+
+La acción `Run` debe aparecer deshabilitada en esta fase. Primero se preparan y comparan rutas;
+contratarlas y ejecutarlas pertenece a la fase 2. `E` permite cambiar la política y recalcular.
+`D` elimina la entrada. `R` recalcula la ruta seleccionada. `Enter` abre el detalle de la obra.
+
+La acción `Add` no devuelve al mapa normal ni crea una obra inmediatamente. Al pulsarla:
+
+1. El diálogo de la lista se cierra.
+2. El mapa entra en el flujo de planificación de ruta, con su propia barra de estado:
+   `Adding route · PICK_START · move + Enter · Esc cancel`.
+3. El usuario elige A y B, puede cambiar de política y ve la ruta como en la preview normal.
+4. Al aceptar, la ruta se guarda en la lista y se vuelve al mapa normal. No se construye nada.
+5. Si cancela, se vuelve al mapa normal sin añadir nada.
+
+Durante ese flujo de `Add`, el menú normal de modos queda oculto o deshabilitado: el usuario está
+en una tarea modal de planificación y debe ver las instrucciones de A/B, no la lista de modos.
+Al terminar o cancelar, vuelve el menú normal.
+
+Esto es importante: el `Add` usa el modo de planificación en **modo guardar**, no el flujo actual
+que selecciona y arranca la cola. La ruta queda en la lista como `Borrador`; para construirla hay
+que volver a la lista y usar `Run` cuando esté disponible en la fase 2.
+
+El diálogo de la lista no se reabre solo después de añadir, cancelar o terminar una obra. Cuando
+el usuario acepta o cancela una planificación, se queda en el mapa con su menú normal. Si quiere
+volver a la lista, la abre de nuevo él mismo. El estado de la lista —filas, orden, selección y
+total— se conserva en el presenter, así que al reabrirla aparece actualizada, pero nunca roba el
+foco ni interrumpe lo que el usuario esté mirando. Los avisos de “añadida”, “terminada” o
+“cancelada” se muestran en la barra de estado del mapa, no abriendo el diálogo por sorpresa.
+
+La lista se abrirá como un diálogo modal parecido al editor de programas: filas seleccionables con
+las flechas, acciones por atajos y una línea de total. En una terminal de 80 columnas la tabla
+completa puede no caber; la solución es mantener las columnas esenciales y mostrar el resto en el
+panel de detalle de la fila seleccionada.
+
+### Visión final de la lista
+
+Cuando existan constructoras, la tabla crecerá con la oferta seleccionada. La maqueta objetivo es:
+
+```text
+Obras
+ #  Estado    Desde   Hasta   Política    Celdas  Constructora  Calidad   Plazo  Coste
+ 1  Borrador  20,25   34,254  CHEAPEST    234     CONSTRASA     Standard  Slow   $342.000
+ 2  Borrador  53,85   92,329  AVOID_ALL   134     CHAPUCERT     Low       Fast   $34.000
+────────────────────────────────────────────────────────────────────────────────────
+Total: 2 obras · $376.000
+[A] Add  [E] Edit  [Q] Quotes  [D] Delete  [R] Recalculate  [Run] Run
+```
+
+La columna `Constructora` no debe ocultar que una ruta puede tener varias cotizaciones. La acción
+`Q` abrirá la comparación de ofertas de la fila seleccionada. `Run` seguirá comprobando efectivo y
+reserva antes de arrancar.
+
+
 ## Fase 2: constructoras, cotizaciones y economía automática
 
 Objetivo: que cada plan tenga ofertas distintas y que subcontratar cueste dinero y tiempo.
@@ -58,11 +140,7 @@ Incluye:
 - penalización de cancelación;
 - comparación de ofertas en la lista.
 
-La idea económica es que una obra tenga que repartir su precio entre **calidad** y **rapidez**. Una
-construcción de calidad tarda más; una construcción rápida tenderá a tener peor calidad. Conseguir
-las dos cosas a la vez debe ser muy caro. Como en esta fase todavía no existirá la calidad real, el
-primer modelo solo podrá manejar el tiempo: a menor plazo, mayor precio de constructora. La
-calidad se mostrará como promesa comercial, pero no tendrá efecto hasta la fase de mantenimiento.
+La idea económica es que una obra tenga que repartir su precio entre **calidad** y **rapidez**. Una construcción de calidad tarda más; una construcción rápida tenderá a tener peor calidad. Conseguir las dos cosas a la vez debe ser muy caro. Como en esta fase todavía no existirá la calidad real, el primer modelo solo podrá manejar el tiempo: a menor plazo, mayor precio de constructora. La calidad se mostrará como promesa comercial, pero no tendrá efecto hasta la fase de mantenimiento.
 
 No incluye calidad real ni mantenimiento.
 
