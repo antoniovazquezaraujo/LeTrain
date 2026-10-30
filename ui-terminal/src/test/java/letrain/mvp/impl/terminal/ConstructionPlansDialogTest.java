@@ -41,7 +41,7 @@ class ConstructionPlansDialogTest {
     @DisplayName("the header is the roadmap's compact table header")
     void should_ExposeTheExactHeader() {
         assertEquals(
-                "#  State    From   To      Policy     Company  Quality Cells  Cost       Time",
+                "#   State     From     To        Policy       Company     Quality  Cells  Cost         Time",
                 ConstructionPlansDialog.header());
     }
 
@@ -59,7 +59,7 @@ class ConstructionPlansDialogTest {
         assertEquals(header.indexOf("Quality"), line.indexOf("Low"));
         // The cell count is the only numeric column: it is right-aligned under its header.
         assertEquals("234",
-                line.substring(header.indexOf("Cells"), header.indexOf("Cells") + 7).trim());
+                line.substring(header.indexOf("Cells"), header.indexOf("Cells") + 5).trim());
         assertEquals(header.indexOf("Cost"), line.indexOf("$342.000"));
         assertEquals(header.indexOf("Time"), line.indexOf("12 min"));
         assertEquals(0, line.indexOf("1"));
@@ -70,7 +70,7 @@ class ConstructionPlansDialogTest {
     void should_FormatEveryColumn() {
         String line = ConstructionPlansDialog.formatRow(AVOID_ALL);
 
-        assertTrue(line.startsWith("2  Borrador "), line);
+        assertTrue(line.startsWith("2   Borrador "), line);
         assertTrue(line.contains("53,85"), line);
         assertTrue(line.contains("92,329"), line);
         assertTrue(line.contains("AVOID_ALL"), line);
@@ -117,7 +117,7 @@ class ConstructionPlansDialogTest {
         when(list.getTheme()).thenReturn(theme);
         when(theme.getDefinition(AbstractListBox.class)).thenReturn(definition);
         when(definition.getSelected()).thenReturn(selected);
-        when(graphics.getSize()).thenReturn(new TerminalSize(80, 1));
+        when(graphics.getSize()).thenReturn(new TerminalSize(100, 1));
 
         ConstructionPlansDialog.rowRenderer(List.of(CHEAPEST)).drawItem(graphics, list, 0, () -> {
         }, true, false);

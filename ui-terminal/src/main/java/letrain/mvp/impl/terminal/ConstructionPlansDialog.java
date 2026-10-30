@@ -65,9 +65,43 @@ final class ConstructionPlansDialog {
     record Result(Action action, int selectedIndex) {
     }
 
+    /** Table column widths; every field is separated by two spaces. */
+    private static final int ID_WIDTH = 2;
+    private static final int STATE_WIDTH = 8;
+    private static final int FROM_WIDTH = 7;
+    private static final int TO_WIDTH = 8;
+    private static final int POLICY_WIDTH = 11;
+    private static final int COMPANY_WIDTH = 10;
+    private static final int QUALITY_WIDTH = 7;
+    private static final int CELLS_WIDTH = 5;
+    private static final int COST_WIDTH = 11;
+
     /** Table header, with every column starting on the same cell as {@link #formatRow(Row)}. */
-    static final String HEADER =
-            "#  State    From   To      Policy     Company  Quality Cells  Cost       Time";
+    static final String HEADER = buildHeader();
+
+    private static String buildHeader() {
+        StringBuilder line = new StringBuilder();
+        appendField(line, "#", ID_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, "State", STATE_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, "From", FROM_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, "To", TO_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, "Policy", POLICY_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, "Company", COMPANY_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, "Quality", QUALITY_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, "Cells", CELLS_WIDTH, true);
+        appendSeparator(line);
+        appendField(line, "Cost", COST_WIDTH, false);
+        appendSeparator(line);
+        line.append("Time");
+        return line.toString();
+    }
 
     private static final Pattern HOURS_PATTERN = Pattern.compile("(\\d+)\\s*h");
     private static final Pattern MINUTES_PATTERN = Pattern.compile("(\\d+)\\s*min");
@@ -87,7 +121,7 @@ final class ConstructionPlansDialog {
     static Result show(Screen screen, List<Row> rows, int selectedIndex, String total) {
         List<Row> safeRows = rows == null ? List.of() : List.copyOf(rows);
         MultiWindowTextGUI gui = DialogWindow.programGui(screen);
-        TerminalSize box = DialogWindow.dialogSize(screen.getTerminalSize(), 86, 110);
+        TerminalSize box = DialogWindow.dialogSize(screen.getTerminalSize(), 96, 110);
 
         BasicWindow window = new BasicWindow("Works");
         window.setHints(List.of(Window.Hint.CENTERED));
@@ -298,21 +332,45 @@ final class ConstructionPlansDialog {
      */
     static String formatRow(Row row) {
         StringBuilder line = new StringBuilder();
-        line.append(fitLeft(Integer.toString(row.id()), 2));
-        line.append(" ");
-        line.append(fitLeft(row.state(), 9));
-        line.append(fitLeft(row.from(), 7));
-        line.append(fitLeft(row.to(), 8));
-        line.append(fitLeft(row.policy(), 11));
-        line.append(fitLeft(row.company(), 9));
-        line.append(fitLeft(row.quality(), 8));
-        line.append(fitRight(Integer.toString(row.cells()), 7));
-        line.append(fitLeft(row.cost(), 11));
+        appendField(line, Integer.toString(row.id()), ID_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, row.state(), STATE_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, row.from(), FROM_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, row.to(), TO_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, row.policy(), POLICY_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, row.company(), COMPANY_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, row.quality(), QUALITY_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, Integer.toString(row.cells()), CELLS_WIDTH, true);
+        appendSeparator(line);
+        appendField(line, row.cost(), COST_WIDTH, false);
+        appendSeparator(line);
         line.append(row.time() == null ? "" : row.time());
         if (row.warning() != null && !row.warning().isBlank()) {
             line.append(" !");
         }
         return line.toString();
+    }
+
+    private static void appendSeparator(StringBuilder line) {
+        line.append("  ");
+    }
+
+    private static void appendField(StringBuilder line, String text, int width, boolean right) {
+        String value = text == null ? "" : text;
+        if (value.length() > width) {
+            value = value.substring(0, width);
+        }
+        if (right) {
+            line.append(" ".repeat(width - value.length())).append(value);
+        } else {
+            line.append(value).append(" ".repeat(width - value.length()));
+        }
     }
 
     /**
@@ -407,21 +465,5 @@ final class ConstructionPlansDialog {
             minutes += Long.parseLong(mins.group(1));
         }
         return minutes;
-    }
-
-    private static String fitLeft(String text, int width) {
-        String value = text == null ? "" : text;
-        if (value.length() > width) {
-            value = value.substring(0, width);
-        }
-        return value + " ".repeat(width - value.length());
-    }
-
-    private static String fitRight(String text, int width) {
-        String value = text == null ? "" : text;
-        if (value.length() > width) {
-            value = value.substring(value.length() - width);
-        }
-        return " ".repeat(width - value.length()) + value;
     }
 }
