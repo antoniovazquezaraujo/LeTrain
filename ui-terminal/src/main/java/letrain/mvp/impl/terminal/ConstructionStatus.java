@@ -20,6 +20,12 @@ final class ConstructionStatus {
     static final String COMPLETE = "Construction complete";
     static final String CANCELLED = "Construction cancelled · partial track remains";
 
+    /** Cancellation notice with the cash actually spent (built cells + penalty). */
+    static String cancelled(double spent) {
+        return "Construction cancelled · spent " + RoutePreviewStatus.formatCost(spent)
+                + " · partial track remains";
+    }
+
     private ConstructionStatus() {}
 
     /** Normal {@code Building · built/total · $cost · time · Esc cancel} line. */

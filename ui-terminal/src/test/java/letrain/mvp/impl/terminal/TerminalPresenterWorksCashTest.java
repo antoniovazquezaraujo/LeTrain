@@ -155,10 +155,16 @@ class TerminalPresenterWorksCashTest {
         presenter.onChar(charKey('b'));
 
         assertFalse(presenter.isConstructionActive());
-        assertEquals(PlannedWork.State.CANCELLED,
-                presenter.getPlannedWorks().find(work.id()).orElseThrow().state());
+        PlannedWork cancelled = presenter.getPlannedWorks().find(work.id()).orElseThrow();
+        assertEquals(PlannedWork.State.CANCELLED, cancelled.state());
+        assertEquals(quoteCost - expectedRefund, cancelled.spentCost().orElseThrow(), 0.01);
         assertEquals(before - quoteCost + expectedRefund, model.getEconomyManager().getBalance(),
                 0.01f);
+        presenter.drawConstructionOverlay();
+        org.mockito.ArgumentCaptor<String> status =
+                org.mockito.ArgumentCaptor.forClass(String.class);
+        verify(view, org.mockito.Mockito.atLeastOnce()).drawRoutePreviewStatus(status.capture());
+        assertTrue(status.getAllValues().stream().anyMatch(text -> text.contains("spent $")));
         assertTrue(presenter.getConstructionProgress().builtSteps() > 0);
     }
 

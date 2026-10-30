@@ -197,6 +197,20 @@ class PlannedWorkTest {
     }
 
     @Test
+    @DisplayName("a cancelled work can record the actual cash spent")
+    void withSpentCost_recordsCancellationCost() {
+        PlannedWork work =
+                PlannedWork
+                        .draft(3, new Point(0, 0), new Point(4, 0), RoutePolicy.DIRECT,
+                                plan(5, 100, 10), 15)
+                        .withState(PlannedWork.State.CANCELLED).withSpentCost(42.5);
+
+        assertEquals(42.5, work.spentCost().orElseThrow());
+        assertEquals(PlannedWork.State.CANCELLED, work.state());
+        assertThrows(IllegalArgumentException.class, () -> work.withSpentCost(-1));
+    }
+
+    @Test
     @DisplayName("changing the plan drops the old quote; a quote from another plan is rejected")
     void quote_isDroppedWhenThePlanChanges() {
         PlannedWork original = PlannedWork.draft(3, new Point(0, 0), new Point(4, 0),
@@ -232,6 +246,10 @@ class PlannedWorkTest {
         assertEquals(100, list.totalCost());
         assertEquals(15, list.totalTicks());
         assertTrue(list.replaceQuote(999, quote).isEmpty());
+
+        list.markCancelled(first.id(), 42);
+        assertEquals(42, list.totalListedCost());
+        assertEquals(PlannedWork.State.CANCELLED, list.find(first.id()).orElseThrow().state());
     }
 
     @Test

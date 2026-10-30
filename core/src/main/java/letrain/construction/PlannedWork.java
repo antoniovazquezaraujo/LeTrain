@@ -2,6 +2,7 @@ package letrain.construction;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalDouble;
 import letrain.map.Point;
 import letrain.planner.RoutePlan;
 import letrain.planner.RoutePolicy;
@@ -41,6 +42,7 @@ public final class PlannedWork {
     private final long estimatedTicks;
     private final State state;
     private final WorkQuote quote;
+    private final Double spentCost;
 
     /**
      * @param id stable, positive identifier inside its list
@@ -58,6 +60,11 @@ public final class PlannedWork {
 
     private PlannedWork(int id, Point start, Point end, RoutePolicy policy, RoutePlan plan,
             long estimatedTicks, State state, WorkQuote quote) {
+        this(id, start, end, policy, plan, estimatedTicks, state, quote, null);
+    }
+
+    private PlannedWork(int id, Point start, Point end, RoutePolicy policy, RoutePlan plan,
+            long estimatedTicks, State state, WorkQuote quote, Double spentCost) {
         if (id < 1) {
             throw new IllegalArgumentException("id must be positive, but was: " + id);
         }
@@ -73,9 +80,14 @@ public final class PlannedWork {
             throw new IllegalArgumentException(
                     "estimatedTicks must be non-negative, but was: " + estimatedTicks);
         }
+        if (spentCost != null && (spentCost < 0 || !Double.isFinite(spentCost))) {
+            throw new IllegalArgumentException(
+                    "spentCost must be finite and non-negative, but was: " + spentCost);
+        }
         this.estimatedTicks = estimatedTicks;
         this.state = Objects.requireNonNull(state, "state must not be null");
         this.quote = quote;
+        this.spentCost = spentCost;
     }
 
     /** Creates a draft work. */
@@ -117,6 +129,11 @@ public final class PlannedWork {
         return state;
     }
 
+    /** Actual cash spent when the work was cancelled; empty for drafts and completed works. */
+    public OptionalDouble spentCost() {
+        return spentCost == null ? OptionalDouble.empty() : OptionalDouble.of(spentCost);
+    }
+
     /** Number of planned cells, endpoints included. */
     public int cells() {
         return plan.steps().size();
@@ -138,7 +155,13 @@ public final class PlannedWork {
     /** Returns a copy in another lifecycle state, keeping the route, quote and identity. */
     public PlannedWork withState(State newState) {
         return new PlannedWork(id, start, end, policy, plan, estimatedTicks,
-                Objects.requireNonNull(newState, "state must not be null"), quote);
+                Objects.requireNonNull(newState, "state must not be null"), quote, spentCost);
+    }
+
+    /** Returns a copy with the actual cash spent on a cancelled work. */
+    public PlannedWork withSpentCost(double newSpentCost) {
+        return new PlannedWork(id, start, end, policy, plan, estimatedTicks, state, quote,
+                newSpentCost);
     }
 
     /**
@@ -153,7 +176,8 @@ public final class PlannedWork {
         if (!newQuote.plan().equals(plan)) {
             throw new IllegalArgumentException("quote must belong to the work plan");
         }
-        return new PlannedWork(id, start, end, policy, plan, estimatedTicks, state, newQuote);
+        return new PlannedWork(id, start, end, policy, plan, estimatedTicks, state, newQuote,
+                spentCost);
     }
 
     @Override
