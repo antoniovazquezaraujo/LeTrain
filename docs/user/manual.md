@@ -78,9 +78,10 @@ LeTrain is deeply modal. Pressing the following keys will switch your current in
 - **`b`**: Open the **Works** list from the map. It stores draft routes and their estimated cost/time; it does not build them.
 - **`A`**: Add a route from the list. The map enters route planning with A/B; **Enter** saves the route as a draft, **Esc** cancels. The normal mode menu is hidden while planning and the Add status is a single bottom line; **Tab** hides or shows that line.
 - **`E`**: Edit the selected route. It opens with the saved A/B and plan already visible; only the policy can be changed with `[`/`]`. While editing, the old route is hidden so only the candidate plan is painted. If you want a different origin or destination, add another route.
-- **`Q`**: Compare construction companies for the selected route and choose one. Companies that cannot build the route's bridges or tunnels are unavailable. The row then shows the company, quality, quoted cost and quoted time.
+- **`Q`**: Compare construction companies for the selected route and choose one. Companies that cannot build the route's bridges or tunnels are unavailable. Before choosing a company the row shows no cost or construction time; after choosing one it shows the company, quality, quoted cost and quoted time.
 - **`D`**: Delete the selected draft.
 - **`Esc`**: Close the list. **Run** is disabled until cash, reservation and execution exist.
+- The total line only sums works that already have a company quote; unquoted works stay blank.
 - The same actions are available as **Alt+A**, **Alt+E**, **Alt+Q**, **Alt+D** and **Alt+C**.
 - The catalogue is provisional: `CHAPUCERT` and `RAPIDEX` are low quality and cannot build bridges/tunnels; `ARTESANA` and `IMPERIAL` are high quality and can. Quality is only a commercial promise until maintenance exists.
 - Stored drafts stay painted on the map until their row is deleted.

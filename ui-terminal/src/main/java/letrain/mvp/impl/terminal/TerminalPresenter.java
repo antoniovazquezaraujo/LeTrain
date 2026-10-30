@@ -1375,10 +1375,13 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     .map(RailBuildability.Issue::description).orElse("");
             String company = work.quote().map(quote -> quote.company().name()).orElse("-");
             String quality = work.quote().map(quote -> qualityLabel(quote)).orElse("-");
+            String cost = work.quote()
+                    .map(quote -> RoutePreviewStatus.formatCost(quote.totalCost())).orElse("-");
+            String time = work.quote()
+                    .map(quote -> RoutePreviewStatus.formatTicks(quote.totalTicks())).orElse("-");
             return new ConstructionPlansDialog.Row(work.id(), "Draft", formatPoint(work.start()),
                     formatPoint(work.end()), shortPolicy(work.policy()), company, quality,
-                    work.cells(), RoutePreviewStatus.formatCost(work.displayCost()),
-                    RoutePreviewStatus.formatTicks(work.displayTicks()), warning);
+                    work.cells(), cost, time, warning);
         }).toList();
     }
 
@@ -1392,9 +1395,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     /** Exact total line from the plans, not from the rounded display strings. */
     private String plannedWorksTotalLine() {
         ConstructionPlanList list = plannedWorks();
+        if (list.quotedCount() == 0) {
+            return ConstructionPlansDialog.totalLine(list.size(), "-", "-");
+        }
         return ConstructionPlansDialog.totalLine(list.size(),
-                RoutePreviewStatus.formatCost(list.totalDisplayCost()),
-                RoutePreviewStatus.formatTicks(list.totalDisplayTicks()));
+                RoutePreviewStatus.formatCost(list.totalQuotedCost()),
+                RoutePreviewStatus.formatTicks(list.totalQuotedTicks()));
     }
 
     private static String formatPoint(Point point) {

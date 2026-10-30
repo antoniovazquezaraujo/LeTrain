@@ -190,6 +190,8 @@ Ya existen el catálogo de constructoras y las cotizaciones por plan:
 - La ruta manda: las capacidades requeridas se derivan de sus puentes/túneles y las compañías
   incompatibles no se pueden seleccionar.
 - La lista muestra compañía y calidad cuando hay cotización; `Q` abre la comparación.
+- Antes de elegir compañía no se muestran coste ni tiempo: son datos de la cotización, no del
+  borrador. El total solo suma las obras que ya tienen cotización.
 - Cambiar la ruta descarta la cotización anterior.
 - `Run` sigue deshabilitado: faltan efectivo, reserva, cancelación y ejecución.
 

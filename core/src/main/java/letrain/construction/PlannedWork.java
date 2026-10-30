@@ -103,16 +103,6 @@ public final class PlannedWork {
         return Optional.ofNullable(quote);
     }
 
-    /** Cost to show in the list: the quote total when selected, otherwise the base plan cost. */
-    public double displayCost() {
-        return quote == null ? cost() : quote.totalCost();
-    }
-
-    /** Time to show in the list: the quote time when selected, otherwise the base estimate. */
-    public long displayTicks() {
-        return quote == null ? estimatedTicks : quote.totalTicks();
-    }
-
     public long estimatedTicks() {
         return estimatedTicks;
     }

@@ -172,8 +172,8 @@ class PlannedWorkTest {
 
         assertTrue(quoted.quote().isPresent());
         assertEquals("artesana", quoted.quote().orElseThrow().company().id());
-        assertEquals(160, quoted.displayCost());
-        assertEquals(24, quoted.displayTicks());
+        assertEquals(160, quoted.quote().orElseThrow().totalCost());
+        assertEquals(24, quoted.quote().orElseThrow().totalTicks());
         assertEquals(100, quoted.cost(), "the base plan cost stays available");
         assertEquals(15, quoted.estimatedTicks(), "the base estimate stays available");
         assertTrue(original.quote().isEmpty(), "the original value must not mutate");
@@ -209,8 +209,9 @@ class PlannedWorkTest {
 
         assertTrue(list.replaceQuote(first.id(), quote).isPresent());
 
-        assertEquals(70, list.totalDisplayCost());
-        assertEquals(27, list.totalDisplayTicks());
+        assertEquals(1, list.quotedCount());
+        assertEquals(70, list.totalQuotedCost());
+        assertEquals(27, list.totalQuotedTicks());
         assertEquals(100, list.totalCost());
         assertEquals(15, list.totalTicks());
         assertTrue(list.replaceQuote(999, quote).isEmpty());

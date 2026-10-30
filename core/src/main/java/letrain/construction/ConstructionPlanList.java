@@ -110,20 +110,30 @@ public final class ConstructionPlanList {
         return total;
     }
 
-    /** Sum of the costs actually shown: selected quote totals plus unquoted base costs. */
-    public double totalDisplayCost() {
-        double total = 0;
-        for (PlannedWork work : works) {
-            total += work.displayCost();
-        }
-        return total;
+    /** Number of works that already have a company quote. */
+    public long quotedCount() {
+        return works.stream().filter(work -> work.quote().isPresent()).count();
     }
 
-    /** Sum of the times actually shown: selected quote times plus unquoted base estimates. */
-    public long totalDisplayTicks() {
+    /**
+     * Sum of selected quote costs only; unquoted works contribute nothing until a company is
+     * chosen.
+     */
+    public double totalQuotedCost() {
+        return works.stream().flatMap(work -> work.quote().stream())
+                .mapToDouble(WorkQuote::totalCost).sum();
+    }
+
+    /**
+     * Sum of selected quote times only; unquoted works contribute nothing until a company is
+     * chosen.
+     */
+    public long totalQuotedTicks() {
         long total = 0;
         for (PlannedWork work : works) {
-            total = Math.addExact(total, work.displayTicks());
+            if (work.quote().isPresent()) {
+                total = Math.addExact(total, work.quote().orElseThrow().totalTicks());
+            }
         }
         return total;
     }

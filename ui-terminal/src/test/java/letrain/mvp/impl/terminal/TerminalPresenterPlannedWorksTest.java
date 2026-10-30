@@ -376,6 +376,27 @@ class TerminalPresenterPlannedWorksTest {
     }
 
     @Test
+    @DisplayName("an unquoted work shows no cost or time and the total is unknown")
+    void unquotedWork_hidesCostAndTime() {
+        addStraightRouteThroughList();
+        when(view.showConstructionPlansDialog(anyList(), anyInt(), anyString())).thenReturn(
+                new ConstructionPlansDialog.Result(ConstructionPlansDialog.Action.CLOSE, 0));
+
+        org.mockito.Mockito.clearInvocations(view);
+        presenter.onChar(charKey('b'));
+
+        org.mockito.ArgumentCaptor<List<ConstructionPlansDialog.Row>> rows =
+                org.mockito.ArgumentCaptor.forClass(List.class);
+        org.mockito.ArgumentCaptor<String> total =
+                org.mockito.ArgumentCaptor.forClass(String.class);
+        verify(view).showConstructionPlansDialog(rows.capture(), anyInt(), total.capture());
+        assertEquals("-", rows.getValue().get(0).company());
+        assertEquals("-", rows.getValue().get(0).cost());
+        assertEquals("-", rows.getValue().get(0).time());
+        assertEquals("Total: 1 work · - · -", total.getValue());
+    }
+
+    @Test
     @DisplayName("Q opens quotes and stores the selected company quote on the work")
     void quotes_selectCompany_andUpdateRow() {
         addStraightRouteThroughList();
@@ -394,7 +415,8 @@ class TerminalPresenterPlannedWorksTest {
         assertTrue(presenter.getPlannedWorks().works().get(0).quote().isPresent());
         assertEquals("imperial",
                 presenter.getPlannedWorks().works().get(0).quote().orElseThrow().company().id());
-        assertEquals(quote.totalCost(), presenter.getPlannedWorks().works().get(0).displayCost());
+        assertEquals(quote.totalCost(),
+                presenter.getPlannedWorks().works().get(0).quote().orElseThrow().totalCost());
         assertFalse(presenter.isConstructionActive());
         verify(view, times(1)).showQuotesDialog(anyList(), anyInt());
     }
