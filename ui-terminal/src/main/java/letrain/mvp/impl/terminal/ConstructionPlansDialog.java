@@ -38,9 +38,8 @@ import java.util.regex.Pattern;
  * "save route" planning flow and decides when to reopen the list.
  *
  * <p>
- * <b>Run stays disabled</b> in phase 1: there are no construction companies or reserved cash yet,
- * so the button is shown (so the action is discoverable) but cannot be activated and has no
- * shortcut.
+ * <b>Run is enabled only when at least one row has a company quote.</b> The presenter still checks
+ * the selected row and the available cash before starting the automatic work.
  *
  * <p>
  * The table formatting lives in pure static methods ({@link #header()}, {@link #formatRow(Row)},
@@ -50,7 +49,7 @@ final class ConstructionPlansDialog {
 
     /** What the player chose when the dialog closed. */
     enum Action {
-        CLOSE, ADD, EDIT, QUOTES, DELETE
+        CLOSE, ADD, EDIT, QUOTES, RUN, DELETE
     }
 
     /**
@@ -139,6 +138,7 @@ final class ConstructionPlansDialog {
         Runnable add = () -> closeWith(window, result, Action.ADD, list);
         Runnable edit = () -> closeWith(window, result, Action.EDIT, list);
         Runnable quotes = () -> closeWith(window, result, Action.QUOTES, list);
+        Runnable run = () -> closeWith(window, result, Action.RUN, list);
         Runnable delete = () -> closeWith(window, result, Action.DELETE, list);
 
         Panel actionRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
@@ -152,15 +152,16 @@ final class ConstructionPlansDialog {
         actionRow.addComponent(deleteButton);
 
         boolean hasSelection = !safeRows.isEmpty();
+        boolean hasQuote = safeRows.stream().anyMatch(row -> !"-".equals(row.company()));
         editButton.setEnabled(hasSelection);
         quotesButton.setEnabled(hasSelection);
         deleteButton.setEnabled(hasSelection);
 
         Panel runRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
-        Button runButton = new Button("Run");
-        runButton.setEnabled(false);
+        Button runButton = NewGameDialog.mnemonicButton("Run", 'R', run);
+        runButton.setEnabled(hasQuote);
         runRow.addComponent(runButton);
-        runRow.addComponent(new Label("  (available in a later phase)"));
+        runRow.addComponent(new Label("  (requires a company quote)"));
 
         Panel closeRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
         closeRow.addComponent(NewGameDialog.mnemonicButton("Close", 'C', close));
@@ -186,6 +187,7 @@ final class ConstructionPlansDialog {
                             case ADD -> add.run();
                             case EDIT -> edit.run();
                             case QUOTES -> quotes.run();
+                            case RUN -> run.run();
                             case DELETE -> delete.run();
                             case CLOSE -> close.run();
                         }
@@ -215,6 +217,12 @@ final class ConstructionPlansDialog {
                     case 'q' -> {
                         if (hasSelection) {
                             quotes.run();
+                        }
+                        deliverEvent.set(false);
+                    }
+                    case 'r' -> {
+                        if (hasQuote) {
+                            run.run();
                         }
                         deliverEvent.set(false);
                     }
@@ -271,6 +279,7 @@ final class ConstructionPlansDialog {
             case 'a' -> Action.ADD;
             case 'e' -> hasSelection ? Action.EDIT : null;
             case 'q' -> hasSelection ? Action.QUOTES : null;
+            case 'r' -> hasSelection ? Action.RUN : null;
             case 'd' -> hasSelection ? Action.DELETE : null;
             case 'c' -> Action.CLOSE;
             default -> null;

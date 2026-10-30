@@ -58,12 +58,20 @@ public final class RouteConstructionQueue implements ConstructionGuard {
      * @return {@code true} when a new job was created, {@code false} when one was already active
      */
     public boolean start(RoutePlan plan, TrackMaterializer materializer) {
+        return start(plan, materializer, 1.0);
+    }
+
+    /**
+     * Starts a queued plan with a company time multiplier (for example 0.55 for a fast contractor).
+     */
+    public boolean start(RoutePlan plan, TrackMaterializer materializer, double timeFactor) {
         Objects.requireNonNull(plan, "plan must not be null");
         Objects.requireNonNull(materializer, "materializer must not be null");
         if (isActive()) {
             return false;
         }
-        job = new RouteConstructionJob(plan, materializer, economy, baseDelayTicksPerCell);
+        job = new RouteConstructionJob(plan, materializer, economy, baseDelayTicksPerCell,
+                timeFactor);
         return true;
     }
 

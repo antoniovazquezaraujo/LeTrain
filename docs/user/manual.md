@@ -80,9 +80,10 @@ LeTrain is deeply modal. Pressing the following keys will switch your current in
 - **`E`**: Edit the selected route. It opens with the saved A/B and plan already visible; only the policy can be changed with `[`/`]`. While editing, the old route is hidden so only the candidate plan is painted. If you want a different origin or destination, add another route.
 - **`Q`**: Compare construction companies for the selected route and choose one. Companies that cannot build the route's bridges or tunnels are unavailable. Before choosing a company the row shows no cost or construction time; after choosing one it shows the company, quality, quoted cost and quoted time.
 - **`D`**: Delete the selected draft.
-- **`Esc`**: Close the list. **Run** is disabled until cash, reservation and execution exist.
+- **`Run` / `R`**: Start the selected work with its chosen company. It checks cash, prepays the quote, and builds with the company time factor. Without a quote or enough cash it does not start.
+- **`Esc`**: Close the list. During an automatic work, two Esc presses cancel it; the unbuilt part is refunded minus the provisional cancellation penalty.
 - The total line only sums works that already have a company quote; unquoted works stay blank.
-- The same actions are available as **Alt+A**, **Alt+E**, **Alt+Q**, **Alt+D** and **Alt+C**.
+- The same actions are available as **Alt+A**, **Alt+E**, **Alt+Q**, **Alt+R**, **Alt+D** and **Alt+C**.
 - The catalogue is provisional: `CHAPUCERT` and `RAPIDEX` are low quality and cannot build bridges/tunnels; `ARTESANA` and `IMPERIAL` are high quality and can. Quality is only a commercial promise until maintenance exists.
 - Stored drafts stay painted on the map until their row is deleted.
 - Saving a draft also creates the marks `Way-<id>-start` and `Way-<id>-end` at its endpoints (for example, `Way-1-start` and `Way-1-end`). These marks remain if the row is deleted; a dedicated marks menu will come later.

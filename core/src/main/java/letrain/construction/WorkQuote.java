@@ -1,11 +1,15 @@
 package letrain.construction;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import letrain.construction.ConstructionCompany.Capability;
 import letrain.construction.ConstructionCompany.Quality;
+import letrain.economy.EconomyManager;
+import letrain.economy.EconomyManager.ExpenseType;
 import letrain.mvp.Presenter.TrackType;
 import letrain.planner.RoutePlan;
 import letrain.planner.RouteStep;
@@ -19,8 +23,8 @@ import letrain.planner.RouteStep;
  * display; it has no mechanical effect until maintenance exists.
  *
  * <p>
- * Quote feasibility is about capabilities, not about cash. Cash reservation and cancellation belong
- * to the execution slice.
+ * Quote feasibility is about capabilities; cash reservation and cancellation are handled by the
+ * presenter/queue execution layer, not by the quote itself.
  */
 public final class WorkQuote {
 
@@ -30,17 +34,19 @@ public final class WorkQuote {
     private final ConstructionCompany company;
     private final RoutePlan plan;
     private final Set<Capability> requiredCapabilities;
+    private final List<Double> stepCosts;
     private final double totalCost;
     private final long totalTicks;
     private final boolean feasible;
     private final String reason;
 
     private WorkQuote(ConstructionCompany company, RoutePlan plan,
-            Set<Capability> requiredCapabilities, double totalCost, long totalTicks,
-            boolean feasible, String reason) {
+            Set<Capability> requiredCapabilities, List<Double> stepCosts, double totalCost,
+            long totalTicks, boolean feasible, String reason) {
         this.company = company;
         this.plan = plan;
         this.requiredCapabilities = Set.copyOf(requiredCapabilities);
+        this.stepCosts = List.copyOf(stepCosts);
         this.totalCost = totalCost;
         this.totalTicks = totalTicks;
         this.feasible = feasible;
@@ -49,7 +55,7 @@ public final class WorkQuote {
 
     /** Builds a quote with the default one tick per cell base delay. */
     public static WorkQuote quote(ConstructionCompany company, RoutePlan plan) {
-        return quote(company, plan, DEFAULT_BASE_DELAY_TICKS_PER_CELL);
+        return quote(company, plan, DEFAULT_BASE_DELAY_TICKS_PER_CELL, null);
     }
 
     /**
@@ -63,6 +69,15 @@ public final class WorkQuote {
      */
     public static WorkQuote quote(ConstructionCompany company, RoutePlan plan,
             long baseDelayTicksPerCell) {
+        return quote(company, plan, baseDelayTicksPerCell, null);
+    }
+
+    /**
+     * Builds a company quote with per-step construction prices. The per-step costs are used to
+     * refund exactly the unbuilt part when an automatic work is cancelled.
+     */
+    public static WorkQuote quote(ConstructionCompany company, RoutePlan plan,
+            long baseDelayTicksPerCell, EconomyManager economy) {
         Objects.requireNonNull(company, "company must not be null");
         Objects.requireNonNull(plan, "plan must not be null");
         if (baseDelayTicksPerCell < 0) {
@@ -72,18 +87,40 @@ public final class WorkQuote {
         }
         Set<Capability> required = requiredCapabilities(plan);
         if (!plan.feasible()) {
-            return new WorkQuote(company, plan, required, 0, 0, false,
+            return new WorkQuote(company, plan, required, List.of(), 0, 0, false,
                     "route plan is not feasible");
         }
         if (!company.supportsAll(required)) {
-            return new WorkQuote(company, plan, required, 0, 0, false,
+            return new WorkQuote(company, plan, required, List.of(), 0, 0, false,
                     "company cannot build " + describeCapabilities(required));
         }
+        List<Double> costs = stepCosts(company, plan, economy);
         long baseTicks = Math.addExact(plan.totalConstructionTicks(),
                 Math.multiplyExact(baseDelayTicksPerCell, plan.steps().size()));
         long ticks = Math.max(0, Math.round(baseTicks * company.timeFactor()));
-        double cost = plan.totalCost() * company.costFactor();
-        return new WorkQuote(company, plan, required, cost, ticks, true, null);
+        double cost = costs.isEmpty() ? plan.totalCost() * company.costFactor()
+                : costs.stream().mapToDouble(Double::doubleValue).sum();
+        return new WorkQuote(company, plan, required, costs, cost, ticks, true, null);
+    }
+
+    private static List<Double> stepCosts(ConstructionCompany company, RoutePlan plan,
+            EconomyManager economy) {
+        if (economy == null) {
+            return List.of();
+        }
+        List<Double> costs = new ArrayList<>();
+        for (RouteStep step : plan.steps()) {
+            costs.add(economy.getCost(expenseFor(step.trackType())) * company.costFactor());
+        }
+        return costs;
+    }
+
+    private static ExpenseType expenseFor(TrackType type) {
+        return switch (type) {
+            case BRIDGE_TRACK, BRIDGE_GATE_TRACK -> ExpenseType.CONSTRUCTED_BRIDGE_RAIL_TRACK;
+            case TUNNEL_TRACK, TUNNEL_GATE_TRACK -> ExpenseType.CONSTRUCTED_TUNNEL_RAIL_TRACK;
+            default -> ExpenseType.CONSTRUCTED_NORMAL_RAIL_TRACK;
+        };
     }
 
     /** Structures the route needs, derived from its planned track types. */
@@ -129,6 +166,20 @@ public final class WorkQuote {
 
     public double totalCost() {
         return totalCost;
+    }
+
+    /**
+     * Cost of one planned cell in this quote. Falls back to an even split when the quote was built
+     * without an economy source (tests or historical callers).
+     */
+    public double costForStep(int index) {
+        if (index < 0 || index >= plan.steps().size()) {
+            throw new IndexOutOfBoundsException("step index out of range: " + index);
+        }
+        if (!stepCosts.isEmpty()) {
+            return stepCosts.get(index);
+        }
+        return plan.steps().isEmpty() ? 0 : totalCost / plan.steps().size();
     }
 
     public long totalTicks() {

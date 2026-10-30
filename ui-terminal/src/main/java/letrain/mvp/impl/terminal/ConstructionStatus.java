@@ -24,17 +24,24 @@ final class ConstructionStatus {
 
     /** Normal {@code Building · built/total · $cost · time · Esc cancel} line. */
     static String format(ConstructionProgress progress, RoutePlan plan, boolean cancelArmed) {
+        double cost = plan == null ? 0 : plan.totalCost();
+        long ticks = plan == null ? 0
+                : Math.addExact(plan.totalConstructionTicks(), plan.steps().size());
+        return format(progress, plan, cancelArmed, cost, ticks);
+    }
+
+    /** Same line with the prepaid quote cost/time for an automatic company work. */
+    static String format(ConstructionProgress progress, RoutePlan plan, boolean cancelArmed,
+            double quotedCost, long quotedTicks) {
         if (cancelArmed) {
             return CONFIRM_CANCEL;
         }
         int total =
                 progress != null ? progress.totalSteps() : plan == null ? 0 : plan.steps().size();
         int built = progress != null ? progress.builtSteps() : 0;
-        double cost = plan == null ? 0 : plan.totalCost();
-        long ticks = plan == null ? 0
-                : Math.addExact(plan.totalConstructionTicks(), plan.steps().size());
-        return "Building · " + built + "/" + total + " · " + RoutePreviewStatus.formatCost(cost)
-                + " · " + RoutePreviewStatus.formatTicks(ticks) + " · Esc cancel";
+        return "Building · " + built + "/" + total + " · "
+                + RoutePreviewStatus.formatCost(quotedCost) + " · "
+                + RoutePreviewStatus.formatTicks(quotedTicks) + " · Esc cancel";
     }
 
     static String rejected(String reason) {

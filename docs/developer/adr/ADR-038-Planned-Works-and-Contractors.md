@@ -9,9 +9,11 @@
 >
 > De la **fase 2** ya existen el catálogo de constructoras y las cotizaciones por plan, con coste,
 > tiempo, calidad y capacidades. `Q` compara ofertas y la lista muestra la compañía/calidad
-> seleccionada. **No** hay todavía efectivo, reserva, penalización de cancelación ni `Run`; las
-> zonas, la calidad real y la ejecución siguen fuera. La cola actual (ADR-037) sigue construyendo
-> inmediatamente cuando se acepta un plan desde `Shift+C`; `Run` está deshabilitado en la lista.
+> seleccionada. `Run` ya está disponible: comprueba el saldo, cobra por adelantado la cotización y
+> arranca la cola con el tiempo de la compañía; el materializador automático no cobra dos veces.
+> Cancelar devuelve la parte no construida con una penalización provisional del 10 % restante,
+> mínimo 5 % del total cotizado. Sigue habiendo una sola obra activa y no hay zonas, varias obras
+> simultáneas ni calidad real.
 >
 > Depende de ADR-034, ADR-035, ADR-036 y ADR-037. La calidad de construcción y el mantenimiento se
 > separan en [[ADR-039-Track-Quality-and-Maintenance|ADR-039]].

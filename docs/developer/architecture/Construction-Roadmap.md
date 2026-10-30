@@ -109,7 +109,7 @@ permanecen visibles hasta que se elimina su entrada (o, en una fase posterior, s
 
 Esto es importante: el `Add` usa el modo de planificación en **modo guardar**, no el flujo actual
 que selecciona y arranca la cola. La ruta queda en la lista como `Borrador`; para construirla hay
-que volver a la lista y usar `Run` cuando esté disponible en la fase 2.
+que volver a la lista, elegir compañía y usar `Run`.
 
 El diálogo de la lista no se reabre solo después de añadir, cancelar o terminar una obra. Cuando
 el usuario acepta o cancela una planificación, se queda en el mapa con su menú normal. Si quiere
@@ -136,9 +136,10 @@ Implementación actual de la fase 1:
 - `core/.../planner/RoutePreviewSession.beginEdit`: abre un plan guardado en PREVIEW sin volver a
   pedir A/B y permite cambiar la política.
 - `ui-terminal/.../ConstructionPlansDialog`: diálogo modal con tabla, total y acciones; `Run`
-  deshabilitado.
-- `TerminalPresenter`: flujo `Add` en modo guardar, flujo `Edit` sobre el plan guardado, apertura con
-  `b`, borrado y creación de las marcas de extremos. El diálogo no se reabre solo.
+  habilitado solo cuando hay cotización y el saldo alcanza (comprobación final en el presenter).
+- `TerminalPresenter`: flujo `Add` en modo guardar, flujo `Edit` sobre el plan guardado, `Q` para
+  cotizaciones, `Run` con prepago y cancelación con devolución, apertura con `b`, borrado y creación
+  de las marcas de extremos. El diálogo no se reabre solo.
 
 La lista es presenter-owned y se descarta al cambiar de modelo; todavía no se guarda en savegames.
 
@@ -181,7 +182,7 @@ No incluye calidad real ni mantenimiento.
 
 Depende de: Fase 1 y ADR-038.
 
-### Primer corte implementado (sin efectivo)
+### Primer corte implementado (cotizaciones + efectivo)
 
 Ya existen el catálogo de constructoras y las cotizaciones por plan:
 
@@ -193,7 +194,11 @@ Ya existen el catálogo de constructoras y las cotizaciones por plan:
 - Antes de elegir compañía no se muestran coste ni tiempo: son datos de la cotización, no del
   borrador. El total solo suma las obras que ya tienen cotización.
 - Cambiar la ruta descarta la cotización anterior.
-- `Run` sigue deshabilitado: faltan efectivo, reserva, cancelación y ejecución.
+- `Run` cobra por adelantado el total cotizado, comprueba el saldo y arranca la cola con el factor
+  de tiempo de la compañía. El materializador automático no vuelve a cobrar celda a celda.
+- Cancelar devuelve la parte no construida menos una penalización provisional del 10 % del
+  presupuesto restante, con un mínimo del 5 % del total cotizado. La vía construida permanece.
+- Sigue habiendo una sola obra activa. La construcción manual y `Shift+C` no cambian.
 
 Perfiles iniciales, provisionales:
 

@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.mvp.Model;
@@ -193,6 +194,13 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
 
     /** Presenter-owned construction queue; recreated on every model swap. */
     private RouteConstructionQueue constructionQueue;
+
+    /** Budget of an automatic company work whose quote was prepaid; null for manual works. */
+    private AutoConstructionBudget autoConstructionBudget;
+
+    /** A prepaid quote used to refund the unbuilt part when the automatic work is cancelled. */
+    private record AutoConstructionBudget(WorkQuote quote) {
+    }
 
     /**
      * First Esc on an active construction only arms the confirmation; the queue pauses meanwhile.
@@ -944,6 +952,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         routePreviewFocusOnEnd = false;
         clearBuildabilityCache();
         constructionQueue = null;
+        autoConstructionBudget = null;
         constructionCancelArmed = false;
         constructionNotice = null;
         constructionNoticeUntilMillis = 0;
@@ -1328,6 +1337,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 case QUOTES -> {
                     openQuotesFor(selectedId);
                 }
+                case RUN -> {
+                    runPlannedWork(selectedId);
+                    return;
+                }
                 case DELETE -> {
                     if (selectedId >= 0) {
                         plannedWorks().remove(selectedId);
@@ -1349,7 +1362,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
         plannedWorks().find(id).ifPresent(work -> {
             List<WorkQuote> quotes = ConstructionCompanyCatalog.all().stream()
-                    .map(company -> WorkQuote.quote(company, work.plan())).toList();
+                    .map(company -> WorkQuote.quote(company, work.plan(),
+                            WorkQuote.DEFAULT_BASE_DELAY_TICKS_PER_CELL, model.getEconomyManager()))
+                    .toList();
             int current = work.quote().map(quote -> indexOfCompany(quote.company().id())).orElse(0);
             QuotesDialog.Result result = view.showQuotesDialog(quotes, current);
             if (result != null && result.action() == QuotesDialog.Action.SELECT
@@ -1357,6 +1372,25 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 plannedWorks().replaceQuote(work.id(), result.quote());
             }
         });
+    }
+
+    /**
+     * Starts the selected work with its chosen company quote. Returns true when the map is active.
+     */
+    private boolean runPlannedWork(int id) {
+        if (id < 0) {
+            return false;
+        }
+        PlannedWork work = plannedWorks().find(id).orElse(null);
+        if (work == null) {
+            return false;
+        }
+        WorkQuote quote = work.quote().orElse(null);
+        if (quote == null) {
+            view.showMessage("Works", "Select a company quote before running the work");
+            return false;
+        }
+        return startAutomaticConstruction(quote);
     }
 
     private static int indexOfCompany(String companyId) {
@@ -1450,6 +1484,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         if (plan == null) {
             return false;
         }
+        autoConstructionBudget = null;
         RouteConstructionQueue queue = constructionQueue();
         boolean started = queue.start(plan, new RailTrackMaterializer(this));
         constructionCancelArmed = false;
@@ -1474,6 +1509,87 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     /**
+     * Starts an automatic work prepaid by the selected company quote. The quote total is charged
+     * once; the materializer suppresses the per-cell economy charge so it is not paid twice.
+     *
+     * @return true when a building job was started; false when the work could not start
+     */
+    private boolean startAutomaticConstruction(WorkQuote quote) {
+        if (quote == null || !quote.feasible()) {
+            view.showMessage("Works", "Select a company quote before running the work");
+            return false;
+        }
+        if (isConstructionActive()) {
+            view.showMessage("Works", "Another construction is already active");
+            return false;
+        }
+        Optional<RailBuildability.Issue> buildIssue = RailBuildability.check(model, quote.plan());
+        if (buildIssue.isPresent()) {
+            view.showMessage("Works", "Work cannot start: " + buildIssue.get().description());
+            return false;
+        }
+        float amount = (float) quote.totalCost();
+        if (model.getEconomyManager().getBalance() < amount) {
+            view.showMessage("Works",
+                    "Not enough cash: need " + RoutePreviewStatus.formatCost(amount));
+            return false;
+        }
+
+        model.getEconomyManager().charge(amount);
+        RouteConstructionQueue queue = constructionQueue();
+        boolean started = queue.start(quote.plan(), new RailTrackMaterializer(this, false),
+                quote.company().timeFactor());
+        if (!started) {
+            model.getEconomyManager().refund(amount);
+            view.showMessage("Works", "Another construction is already active");
+            return false;
+        }
+        ConstructionProgress progress = queue.progress();
+        if (progress.state() == letrain.construction.ConstructionState.REJECTED) {
+            model.getEconomyManager().refund(amount);
+            view.showMessage("Works",
+                    "Work rejected: " + progress.reasonOptional().orElse("route cannot be built"));
+            return false;
+        }
+        if (progress.state() == letrain.construction.ConstructionState.DONE) {
+            model.getEconomyManager().refund(amount);
+            view.showMessage("Works", ConstructionStatus.COMPLETE);
+            return false;
+        }
+        autoConstructionBudget = new AutoConstructionBudget(quote);
+        constructionCancelArmed = false;
+        constructionNotice = null;
+        constructionNoticeUntilMillis = 0;
+        return true;
+    }
+
+    /**
+     * Cancels the active job and refunds the unbuilt part of an automatic quote, minus the
+     * cancellation penalty. Manual jobs have no held quote and are untouched.
+     */
+    private void cancelConstruction() {
+        ConstructionProgress progress = constructionQueue == null ? ConstructionProgress.idle()
+                : constructionQueue.cancel();
+        refundAutoConstruction(progress);
+        showConstructionNotice(ConstructionStatus.CANCELLED);
+    }
+
+    private void refundAutoConstruction(ConstructionProgress progress) {
+        if (autoConstructionBudget == null) {
+            return;
+        }
+        WorkQuote quote = autoConstructionBudget.quote();
+        double unbuilt = 0;
+        for (int index = progress.builtSteps(); index < quote.plan().steps().size(); index++) {
+            unbuilt += quote.costForStep(index);
+        }
+        double penalty = Math.min(unbuilt, Math.max(unbuilt * 0.10, quote.totalCost() * 0.05));
+        double refund = Math.max(0, unbuilt - penalty);
+        model.getEconomyManager().refund((float) refund);
+        autoConstructionBudget = null;
+    }
+
+    /**
      * Advances the active construction once per frame. While the cancel confirmation is armed the
      * queue is paused: only the second Esc cancels, any other key resumes on the next frame.
      */
@@ -1483,8 +1599,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
         ConstructionProgress progress = constructionQueue.tick();
         if (progress.state() == letrain.construction.ConstructionState.DONE) {
+            autoConstructionBudget = null;
             showConstructionNotice(ConstructionStatus.COMPLETE);
         } else if (progress.state() == letrain.construction.ConstructionState.CANCELLED) {
+            refundAutoConstruction(progress);
             showConstructionNotice(ConstructionStatus.CANCELLED);
         }
     }
@@ -1522,8 +1640,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
         if (constructionCancelArmed) {
             if (keyEvent.getKeyType() == KeyType.Escape) {
-                constructionQueue.cancel();
-                showConstructionNotice(ConstructionStatus.CANCELLED);
+                cancelConstruction();
             } else {
                 constructionCancelArmed = false;
             }
@@ -1607,8 +1724,16 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 view.drawRoutePreviewCell(cell.x(), cell.y(), cell.glyph(), cell.endpoint(),
                         cell.style());
             }
-            view.drawRoutePreviewStatus(
-                    ConstructionStatus.format(progress, plan, constructionCancelArmed));
+            double cost = autoConstructionBudget == null ? (plan == null ? 0 : plan.totalCost())
+                    : autoConstructionBudget.quote().totalCost();
+            long ticks =
+                    autoConstructionBudget == null
+                            ? (plan == null ? 0
+                                    : Math.addExact(plan.totalConstructionTicks(),
+                                            plan.steps().size()))
+                            : autoConstructionBudget.quote().totalTicks();
+            view.drawRoutePreviewStatus(ConstructionStatus.format(progress, plan,
+                    constructionCancelArmed, cost, ticks));
             return;
         }
         if (constructionNotice != null) {

@@ -147,7 +147,9 @@ class ConstructionPlansDialogTest {
         assertNull(ConstructionPlansDialog.shortcutAction('e', false));
         assertNull(ConstructionPlansDialog.shortcutAction('q', false));
         assertNull(ConstructionPlansDialog.shortcutAction('d', false));
-        assertNull(ConstructionPlansDialog.shortcutAction('r', true));
+        assertEquals(ConstructionPlansDialog.Action.RUN,
+                ConstructionPlansDialog.shortcutAction('r', true));
+        assertNull(ConstructionPlansDialog.shortcutAction('r', false));
     }
 
     @Test

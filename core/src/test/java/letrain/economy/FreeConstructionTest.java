@@ -29,4 +29,26 @@ class FreeConstructionTest {
         economy.spend(ExpenseType.CONSTRUCTED_NORMAL_RAIL_TRACK);
         assertTrue(economy.getBalance() < start, "after free mode, spending must charge again");
     }
+
+    @Test
+    @DisplayName("arbitrary charges and refunds update balance and expenses, and respect free mode")
+    void chargeAndRefund_areAccounted() {
+        Model model = new Model();
+        EconomyManager economy = model.getEconomyManager();
+        economy.refund(100f);
+        float start = economy.getBalance();
+
+        economy.charge(30f);
+        assertEquals(start - 30f, economy.getBalance(), 0.0001f);
+        assertEquals(30f, economy.getTotalExpenses(), 0.0001f);
+
+        economy.refund(10f);
+        assertEquals(start - 20f, economy.getBalance(), 0.0001f);
+        assertEquals(20f, economy.getTotalExpenses(), 0.0001f);
+
+        economy.setFreeConstruction(true);
+        economy.charge(50f);
+        economy.refund(50f);
+        assertEquals(start - 20f, economy.getBalance(), 0.0001f);
+    }
 }
