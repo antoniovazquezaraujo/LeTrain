@@ -31,8 +31,8 @@ class TerminalViewMenuTest {
     }
 
     @Test
-    @DisplayName("a middle & paints prefix, green shortcut and suffix in order")
-    void should_PaintPrefixShortcutSuffix() {
+    @DisplayName("a middle & paints the separated shortcut, colon and name in order")
+    void should_PaintSeparatedShortcutAndName() {
         TextGraphics graphics = mock(TextGraphics.class);
         GameModeMenuOption sensors = option("S&ensors", true, true);
 
@@ -40,18 +40,16 @@ class TerminalViewMenuTest {
 
         InOrder order = inOrder(graphics);
         order.verify(graphics).setBackgroundColor(TerminalView.SELECTED_BG_COLOR);
-        order.verify(graphics).setForegroundColor(TerminalView.NORMAL_MENU_FG_COLOR);
-        order.verify(graphics).putString(eq(new TerminalPosition(1, 1)), eq("S"));
         order.verify(graphics).setForegroundColor(TerminalView.SHORTCUT_COLOR);
-        order.verify(graphics).putString(eq(new TerminalPosition(2, 1)), eq("e"));
+        order.verify(graphics).putString(eq(new TerminalPosition(1, 1)), eq("E:"));
         order.verify(graphics).setForegroundColor(TerminalView.NORMAL_MENU_FG_COLOR);
-        order.verify(graphics).putString(eq(new TerminalPosition(3, 1)), eq("nsors"));
+        order.verify(graphics).putString(eq(new TerminalPosition(3, 1)), eq("Sensors"));
         order.verify(graphics).setBackgroundColor(TerminalView.NORMAL_MENU_BG_COLOR);
-        assertEquals(1 + "Sensors".length() + 1, next, "next option after the separating space");
+        assertEquals(1 + "E:Sensors".length() + 1, next, "next option after the separating space");
     }
 
     @Test
-    @DisplayName("a disabled option is grey #808080 on label and shortcut, never the green shortcut")
+    @DisplayName("a disabled option is grey #808080 on shortcut and name, never the green shortcut")
     void should_PaintDisabledOptionInExactGrey() {
         TextGraphics graphics = mock(TextGraphics.class);
         GameModeMenuOption sensors = option("S&ensors", false, false);
@@ -63,11 +61,9 @@ class TerminalViewMenuTest {
                 "exact grey #808080, independent of the terminal theme (owner feedback)");
         InOrder order = inOrder(graphics);
         order.verify(graphics).setForegroundColor(grey);
-        order.verify(graphics).putString(eq(new TerminalPosition(0, 0)), eq("S"));
+        order.verify(graphics).putString(eq(new TerminalPosition(0, 0)), eq("E:"));
         order.verify(graphics).setForegroundColor(grey);
-        order.verify(graphics).putString(eq(new TerminalPosition(1, 0)), eq("e"));
-        order.verify(graphics).setForegroundColor(grey);
-        order.verify(graphics).putString(eq(new TerminalPosition(2, 0)), eq("nsors"));
+        order.verify(graphics).putString(eq(new TerminalPosition(2, 0)), eq("Sensors"));
         verify(graphics, never()).setForegroundColor(TerminalView.SHORTCUT_COLOR);
         verify(graphics, atLeastOnce()).setBackgroundColor(TerminalView.NORMAL_MENU_BG_COLOR);
     }
@@ -97,7 +93,7 @@ class TerminalViewMenuTest {
             MenuText.Label label = MenuText.parse(menuOption.gameModeName());
             ArgumentCaptor<String> texts = ArgumentCaptor.forClass(String.class);
             verify(graphics, atLeastOnce()).putString(any(), texts.capture());
-            assertEquals(label.plainText(), String.join("", texts.getAllValues()),
+            assertEquals(label.displayText(), String.join("", texts.getAllValues()),
                     menuOption.gameModeName());
         }
     }

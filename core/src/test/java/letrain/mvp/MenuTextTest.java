@@ -12,7 +12,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * The {@code &} shortcut convention of the shared menu model: both clients parse it here, so the
- * format is verified once (issue #710).
+ * format is verified once (issue #710). The clients render the parsed shortcut separated from the
+ * name ({@code R:Rails}); {@code displayText()} keeps that wording in one place.
  */
 @DisplayName("Shared menu text (& shortcut, selected hint)")
 class MenuTextTest {
@@ -26,6 +27,7 @@ class MenuTextTest {
         assertEquals("R", label.hotkey());
         assertEquals("ails", label.suffix());
         assertEquals("Rails", label.plainText());
+        assertEquals("R:Rails", label.displayText());
         assertTrue(label.hasHotkey());
     }
 
@@ -38,6 +40,13 @@ class MenuTextTest {
         assertEquals("e", label.hotkey());
         assertEquals("nsors", label.suffix());
         assertEquals("Sensors", label.plainText());
+        assertEquals("E:Sensors", label.displayText());
+    }
+
+    @Test
+    @DisplayName("a label without a shortcut keeps its plain text")
+    void should_DisplayLabelWithoutShortcut() {
+        assertEquals("Program", MenuText.parse("Program").displayText());
     }
 
     @Test

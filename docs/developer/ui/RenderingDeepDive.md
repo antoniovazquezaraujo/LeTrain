@@ -90,11 +90,15 @@ pintarlos.
 - **Parser compartido**: `letrain.mvp.MenuText` (core). El primer `&` de `gameModeName` marca el
   siguiente carácter como atajo (`&Rails` → `("", "R", "ails")`, `S&ensors` → `("S", "e", "nsors")`).
   Ambos clientes usan `MenuText.parse` y ninguno implementa su propio parseo del `&`.
+- **Atajo separado**: `MenuText.Label.displayText()` compone la etiqueta como `R:Rails`, `E:Sensors`,
+  con el atajo en mayúsculas y separado por `:`. Los dos clientes pintan esa forma; el texto del
+  atajo y los dos puntos van en verde, el nombre del modo en blanco. El nombre técnico para
+  `menuButtonName` sigue siendo `plainText()`, sin atajo.
 - **Texto de ayuda**: `MenuText.selectedHint(description, recording)` compone la línea del modo
   seleccionado (`... | [R]:Record ON/OFF | [X]:Experiment`), idéntica en 2D y 3D. El flag de
   grabación sale del journal de comandos (`isRecording() && isSimulationPaused()`).
-- **Colores**: 2D `TerminalView` (blanco normal, `GREEN_BRIGHT` para el atajo, gris exacto
-  `#808080` —`MENU_DISABLED_FG_COLOR`, un `TextColor.RGB` independiente del tema— para
+- **Colores**: 2D `TerminalView` (blanco normal, `GREEN_BRIGHT` para el atajo y sus dos puntos,
+  gris exacto `#808080` —`MENU_DISABLED_FG_COLOR`, un `TextColor.RGB` independiente del tema— para
   deshabilitado sin atajo verde, fondo `BLUE` para seleccionado; las líneas de info/ayuda mantienen
   `DISABLED_FG_COLOR`) y 3D `Gdx3DHud` (marcas `[WHITE]` y `[GREEN]`; el deshabilitado se pinta
   `[GRAY]`, el `Color.GRAY` de libGDX = `#808080`, sin atajo verde; fondo `checked` azul ANSI). Los

@@ -720,11 +720,11 @@ public class Gdx3DHud {
     }
 
     /**
-     * Label for a menu button with libGDX markup: white text, the shortcut in green; a disabled
-     * mode is painted grey and loses the shortcut colour. The label is split with the shared
-     * {@link MenuText} parser, the same one the 2D terminal uses, so wording and shortcuts cannot
-     * drift between clients. Static and package-visible so a test can check it without a GL
-     * context.
+     * Label for a menu button with libGDX markup: the shortcut and its colon in green, the mode
+     * name in white; a disabled mode is painted grey and loses the shortcut colour. The label is
+     * split with the shared {@link MenuText} parser, the same one the 2D terminal uses, so wording
+     * and shortcuts cannot drift between clients. Static and package-visible so a test can check it
+     * without a GL context.
      */
     static String getMenuButtonText(String rawName, boolean isEnabled) {
         MenuText.Label label = MenuText.parse(rawName);
@@ -733,18 +733,14 @@ public class Gdx3DHud {
             return "";
         }
         if (!isEnabled) {
-            return DISABLED_MARKUP + plainText + MARKUP_RESET;
+            return DISABLED_MARKUP + label.displayText() + MARKUP_RESET;
         }
         StringBuilder text = new StringBuilder();
-        if (!label.prefix().isEmpty()) {
-            text.append(ENABLED_MARKUP).append(label.prefix()).append(MARKUP_RESET);
-        }
         if (label.hasHotkey()) {
-            text.append(HOTKEY_MARKUP).append(label.hotkey()).append(MARKUP_RESET);
+            text.append(HOTKEY_MARKUP).append(label.displayHotkey()).append(':')
+                    .append(MARKUP_RESET);
         }
-        if (!label.suffix().isEmpty()) {
-            text.append(ENABLED_MARKUP).append(label.suffix()).append(MARKUP_RESET);
-        }
+        text.append(ENABLED_MARKUP).append(plainText).append(MARKUP_RESET);
         return text.toString();
     }
 
