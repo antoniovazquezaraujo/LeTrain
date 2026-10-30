@@ -105,7 +105,9 @@ La barra de estado de `Add` ocupa una sola línea inferior, como la consola, y `
 vuelve a mostrar. Al terminar o cancelar, vuelve el menú normal.
 
 Las rutas guardadas se pintan en el mapa en todo momento, no solo mientras la lista está abierta:
-permanecen visibles hasta que se elimina su entrada (o, en una fase posterior, se construyen).
+permanecen visibles hasta que se construyen o se eliminan. Mientras una obra automática está en
+marcha, su plan pintado se oculta para que se vean las vías reales; al terminar la fila pasa a
+`Done` y al cancelar a `Cancelled`, y en ambos casos dejan de pintarse los puntos.
 
 Esto es importante: el `Add` usa el modo de planificación en **modo guardar**, no el flujo actual
 que selecciona y arranca la cola. La ruta queda en la lista como `Borrador`; para construirla hay
@@ -198,6 +200,8 @@ Ya existen el catálogo de constructoras y las cotizaciones por plan:
   de tiempo de la compañía. El materializador automático no vuelve a cobrar celda a celda.
 - Cancelar devuelve la parte no construida menos una penalización provisional del 10 % del
   presupuesto restante, con un mínimo del 5 % del total cotizado. La vía construida permanece.
+- Al terminar, la obra pasa a `Done`; al cancelar, a `Cancelled`. En ambos estados deja de pintarse
+  el plan y solo quedan las vías reales.
 - Sigue habiendo una sola obra activa. La construcción manual y `Shift+C` no cambian.
 
 Perfiles iniciales, provisionales:

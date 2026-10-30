@@ -199,7 +199,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private AutoConstructionBudget autoConstructionBudget;
 
     /** A prepaid quote used to refund the unbuilt part when the automatic work is cancelled. */
-    private record AutoConstructionBudget(WorkQuote quote) {
+    private record AutoConstructionBudget(int workId, WorkQuote quote) {
     }
 
     /**
@@ -1329,8 +1329,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     if (selectedId >= 0) {
                         java.util.Optional<PlannedWork> work = plannedWorks().find(selectedId);
                         if (work.isPresent()) {
-                            startEditingPlannedWork(work.get());
-                            return;
+                            if (work.get().state() != PlannedWork.State.DRAFT) {
+                                view.showMessage("Works", "Only draft works can be edited");
+                            } else {
+                                startEditingPlannedWork(work.get());
+                                return;
+                            }
                         }
                     }
                 }
@@ -1385,12 +1389,16 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         if (work == null) {
             return false;
         }
+        if (work.state() != PlannedWork.State.DRAFT) {
+            view.showMessage("Works", "This work is already " + stateLabel(work.state()));
+            return false;
+        }
         WorkQuote quote = work.quote().orElse(null);
         if (quote == null) {
             view.showMessage("Works", "Select a company quote before running the work");
             return false;
         }
-        return startAutomaticConstruction(quote);
+        return startAutomaticConstruction(work, quote);
     }
 
     private static int indexOfCompany(String companyId) {
@@ -1413,10 +1421,18 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     .map(quote -> RoutePreviewStatus.formatCost(quote.totalCost())).orElse("-");
             String time = work.quote()
                     .map(quote -> RoutePreviewStatus.formatTicks(quote.totalTicks())).orElse("-");
-            return new ConstructionPlansDialog.Row(work.id(), "Draft", formatPoint(work.start()),
-                    formatPoint(work.end()), shortPolicy(work.policy()), company, quality,
-                    work.cells(), cost, time, warning);
+            return new ConstructionPlansDialog.Row(work.id(), stateLabel(work.state()),
+                    formatPoint(work.start()), formatPoint(work.end()), shortPolicy(work.policy()),
+                    company, quality, work.cells(), cost, time, warning);
         }).toList();
+    }
+
+    private static String stateLabel(PlannedWork.State state) {
+        return switch (state) {
+            case DRAFT -> "Draft";
+            case DONE -> "Done";
+            case CANCELLED -> "Cancelled";
+        };
     }
 
     private static String qualityLabel(WorkQuote quote) {
@@ -1514,7 +1530,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
      *
      * @return true when a building job was started; false when the work could not start
      */
-    private boolean startAutomaticConstruction(WorkQuote quote) {
+    private boolean startAutomaticConstruction(PlannedWork work, WorkQuote quote) {
         if (quote == null || !quote.feasible()) {
             view.showMessage("Works", "Select a company quote before running the work");
             return false;
@@ -1556,7 +1572,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             view.showMessage("Works", ConstructionStatus.COMPLETE);
             return false;
         }
-        autoConstructionBudget = new AutoConstructionBudget(quote);
+        autoConstructionBudget = new AutoConstructionBudget(work.id(), quote);
         constructionCancelArmed = false;
         constructionNotice = null;
         constructionNoticeUntilMillis = 0;
@@ -1570,7 +1586,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private void cancelConstruction() {
         ConstructionProgress progress = constructionQueue == null ? ConstructionProgress.idle()
                 : constructionQueue.cancel();
-        refundAutoConstruction(progress);
+        if (autoConstructionBudget != null) {
+            int workId = autoConstructionBudget.workId();
+            refundAutoConstruction(progress);
+            plannedWorks().replaceState(workId, PlannedWork.State.CANCELLED);
+            autoConstructionBudget = null;
+        }
         showConstructionNotice(ConstructionStatus.CANCELLED);
     }
 
@@ -1586,7 +1607,6 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         double penalty = Math.min(unbuilt, Math.max(unbuilt * 0.10, quote.totalCost() * 0.05));
         double refund = Math.max(0, unbuilt - penalty);
         model.getEconomyManager().refund((float) refund);
-        autoConstructionBudget = null;
     }
 
     /**
@@ -1599,10 +1619,19 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         }
         ConstructionProgress progress = constructionQueue.tick();
         if (progress.state() == letrain.construction.ConstructionState.DONE) {
-            autoConstructionBudget = null;
+            if (autoConstructionBudget != null) {
+                plannedWorks().replaceState(autoConstructionBudget.workId(),
+                        PlannedWork.State.DONE);
+                autoConstructionBudget = null;
+            }
             showConstructionNotice(ConstructionStatus.COMPLETE);
         } else if (progress.state() == letrain.construction.ConstructionState.CANCELLED) {
-            refundAutoConstruction(progress);
+            if (autoConstructionBudget != null) {
+                int workId = autoConstructionBudget.workId();
+                refundAutoConstruction(progress);
+                plannedWorks().replaceState(workId, PlannedWork.State.CANCELLED);
+                autoConstructionBudget = null;
+            }
             showConstructionNotice(ConstructionStatus.CANCELLED);
         }
     }
@@ -1783,9 +1812,13 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             return;
         }
         for (PlannedWork work : plannedWorks.works()) {
-            if (work.id() == routePreviewEditingWorkId) {
-                // While editing, the CONNECT preview owns this route: keeping the old overlay
-                // underneath would show both the old and the candidate policy at once.
+            if (work.state() != PlannedWork.State.DRAFT) {
+                continue;
+            }
+            if (work.id() == routePreviewEditingWorkId || autoConstructionBudget != null
+                    && autoConstructionBudget.workId() == work.id()) {
+                // While editing or building, the map overlays own this route: the old plan must not
+                // hide the real rails or paint a duplicate policy.
                 continue;
             }
             for (RoutePreviewOverlay.Cell cell : RoutePreviewOverlay.cells(work.plan(),

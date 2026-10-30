@@ -85,7 +85,8 @@ LeTrain is deeply modal. Pressing the following keys will switch your current in
 - The total line only sums works that already have a company quote; unquoted works stay blank.
 - The same actions are available as **Alt+A**, **Alt+E**, **Alt+Q**, **Alt+R**, **Alt+D** and **Alt+C**.
 - The catalogue is provisional: `CHAPUCERT` and `RAPIDEX` are low quality and cannot build bridges/tunnels; `ARTESANA` and `IMPERIAL` are high quality and can. Quality is only a commercial promise until maintenance exists.
-- Stored drafts stay painted on the map until their row is deleted.
+- During an automatic work the old plan points are hidden so the real rails become visible; when it finishes the row becomes **Done** and the points disappear. If cancelled it becomes **Cancelled**.
+- Stored drafts stay painted on the map until they are built or deleted.
 - Saving a draft also creates the marks `Way-<id>-start` and `Way-<id>-end` at its endpoints (for example, `Way-1-start` and `Way-1-end`). These marks remain if the row is deleted; a dedicated marks menu will come later.
 - The list is kept while the current game is loaded, but it is not yet saved in savegames; a model swap (load/undo) clears it.
 

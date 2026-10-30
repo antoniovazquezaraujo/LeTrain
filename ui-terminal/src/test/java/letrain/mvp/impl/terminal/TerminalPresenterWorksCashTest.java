@@ -3,10 +3,12 @@ package letrain.mvp.impl.terminal;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -102,10 +104,20 @@ class TerminalPresenterWorksCashTest {
 
         assertTrue(presenter.isConstructionActive());
         assertEquals(before - quoteCost, model.getEconomyManager().getBalance(), 0.01f);
+        org.mockito.Mockito.clearInvocations(view);
+        presenter.drawPlannedWorksOverlay();
+        verify(view, org.mockito.Mockito.never()).drawRoutePreviewCell(anyInt(), anyInt(),
+                anyString(), anyBoolean(), org.mockito.ArgumentMatchers.any());
         for (int i = 0; i < 10 && presenter.isConstructionActive(); i++) {
             presenter.tickConstruction();
         }
         assertFalse(presenter.isConstructionActive());
+        assertEquals(PlannedWork.State.DONE,
+                presenter.getPlannedWorks().find(work.id()).orElseThrow().state());
+        org.mockito.Mockito.clearInvocations(view);
+        presenter.drawPlannedWorksOverlay();
+        verify(view, org.mockito.Mockito.never()).drawRoutePreviewCell(anyInt(), anyInt(),
+                anyString(), anyBoolean(), org.mockito.ArgumentMatchers.any());
         assertEquals(before - quoteCost, model.getEconomyManager().getBalance(), 0.01f,
                 "automatic construction must not charge the base cost per cell again");
     }
@@ -134,6 +146,8 @@ class TerminalPresenterWorksCashTest {
         presenter.onChar(escape());
 
         assertFalse(presenter.isConstructionActive());
+        assertEquals(PlannedWork.State.CANCELLED,
+                presenter.getPlannedWorks().find(work.id()).orElseThrow().state());
         assertEquals(before - quoteCost + expectedRefund, model.getEconomyManager().getBalance(),
                 0.01f);
         assertTrue(presenter.getConstructionProgress().builtSteps() > 0);

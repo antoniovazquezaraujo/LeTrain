@@ -11,9 +11,9 @@ import letrain.planner.RoutePolicy;
  *
  * <p>
  * A planned work is a <b>budget</b>, not a construction order: it stores the endpoints, the policy
- * and the last feasible plan, but it never touches the world. A selected {@link WorkQuote} adds the
- * company, quality and quoted cost/time without changing the route; changing the plan drops that
- * quote. Phase 1 only needs {@link State#DRAFT}.
+ * and the last feasible plan, but it never touches the world until Run. A selected
+ * {@link WorkQuote} adds the company, quality and quoted cost/time without changing the route;
+ * changing the plan drops that quote. A work can be a draft, done or cancelled.
  *
  * <p>
  * The value is immutable. Recalculating a work produces a new instance with the same id and
@@ -21,10 +21,14 @@ import letrain.planner.RoutePolicy;
  */
 public final class PlannedWork {
 
-    /** Lifecycle of a planned work. Phase 1 only creates drafts. */
+    /** Lifecycle of a planned work. */
     public enum State {
         /** A route plan with its budget; it has not been ordered or built. */
-        DRAFT
+        DRAFT,
+        /** The automatic work finished and its real track replaced the painted plan. */
+        DONE,
+        /** The automatic work was stopped; built cells remain, the rest was refunded. */
+        CANCELLED
     }
 
     private final int id;
@@ -127,6 +131,12 @@ public final class PlannedWork {
      */
     public PlannedWork withPlan(RoutePolicy newPolicy, RoutePlan newPlan, long newEstimatedTicks) {
         return new PlannedWork(id, start, end, newPolicy, newPlan, newEstimatedTicks, state);
+    }
+
+    /** Returns a copy in another lifecycle state, keeping the route, quote and identity. */
+    public PlannedWork withState(State newState) {
+        return new PlannedWork(id, start, end, policy, plan, estimatedTicks,
+                Objects.requireNonNull(newState, "state must not be null"), quote);
     }
 
     /**

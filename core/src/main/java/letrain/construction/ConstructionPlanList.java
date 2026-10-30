@@ -11,8 +11,8 @@ import letrain.planner.RoutePolicy;
  * Ordered, UI-free list of {@link PlannedWork planned works} (ADR-038, phase 1).
  *
  * <p>
- * It only stores drafts and keeps the total budget. A draft may carry one selected company quote;
- * contractor selection and execution belong to later slices. The order is the insertion order and
+ * It stores planned works and keeps the total budget. A work may carry one selected company quote;
+ * completed and cancelled works remain visible until deleted. The order is the insertion order and
  * the ids are never reused, so the selected row stays stable when an entry is deleted.
  */
 public final class ConstructionPlanList {
@@ -67,6 +67,19 @@ public final class ConstructionPlanList {
             PlannedWork current = works.get(index);
             if (current.id() == id) {
                 PlannedWork updated = current.withQuote(quote);
+                works.set(index, updated);
+                return Optional.of(updated);
+            }
+        }
+        return Optional.empty();
+    }
+
+    /** Changes the lifecycle state of the work with {@code id}. */
+    public Optional<PlannedWork> replaceState(int id, PlannedWork.State state) {
+        for (int index = 0; index < works.size(); index++) {
+            PlannedWork current = works.get(index);
+            if (current.id() == id) {
+                PlannedWork updated = current.withState(state);
                 works.set(index, updated);
                 return Optional.of(updated);
             }

@@ -180,6 +180,23 @@ class PlannedWorkTest {
     }
 
     @Test
+    @DisplayName("a built or cancelled work keeps its route and quote in the new state")
+    void withState_changesOnlyTheLifecycleState() {
+        PlannedWork original = PlannedWork.draft(3, new Point(0, 0), new Point(4, 0),
+                RoutePolicy.DIRECT, plan(5, 100, 10), 15);
+        WorkQuote quote = WorkQuote.quote(ConstructionCompanyCatalog.ARTESANA, original.plan());
+        PlannedWork quoted = original.withQuote(quote);
+
+        PlannedWork done = quoted.withState(PlannedWork.State.DONE);
+        PlannedWork cancelled = quoted.withState(PlannedWork.State.CANCELLED);
+
+        assertEquals(PlannedWork.State.DONE, done.state());
+        assertEquals(PlannedWork.State.CANCELLED, cancelled.state());
+        assertEquals(quoted.plan(), done.plan());
+        assertEquals(quoted.quote(), done.quote());
+    }
+
+    @Test
     @DisplayName("changing the plan drops the old quote; a quote from another plan is rejected")
     void quote_isDroppedWhenThePlanChanges() {
         PlannedWork original = PlannedWork.draft(3, new Point(0, 0), new Point(4, 0),

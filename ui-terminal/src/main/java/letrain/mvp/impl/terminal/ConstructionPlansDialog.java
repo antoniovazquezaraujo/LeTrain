@@ -67,7 +67,7 @@ final class ConstructionPlansDialog {
 
     /** Table column widths; every field is separated by two spaces. */
     private static final int ID_WIDTH = 2;
-    private static final int STATE_WIDTH = 8;
+    private static final int STATE_WIDTH = 9;
     private static final int FROM_WIDTH = 7;
     private static final int TO_WIDTH = 8;
     private static final int POLICY_WIDTH = 11;
@@ -186,7 +186,8 @@ final class ConstructionPlansDialog {
         actionRow.addComponent(deleteButton);
 
         boolean hasSelection = !safeRows.isEmpty();
-        boolean hasQuote = safeRows.stream().anyMatch(row -> !"-".equals(row.company()));
+        boolean hasQuote = safeRows.stream()
+                .anyMatch(row -> "Draft".equals(row.state()) && !"-".equals(row.company()));
         editButton.setEnabled(hasSelection);
         quotesButton.setEnabled(hasSelection);
         deleteButton.setEnabled(hasSelection);

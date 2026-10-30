@@ -41,7 +41,7 @@ class ConstructionPlansDialogTest {
     @DisplayName("the header is the roadmap's compact table header")
     void should_ExposeTheExactHeader() {
         assertEquals(
-                "#   State     From     To        Policy       Company     Quality  Cells  Cost         Time",
+                "#   State      From     To        Policy       Company     Quality  Cells  Cost         Time",
                 ConstructionPlansDialog.header());
     }
 
