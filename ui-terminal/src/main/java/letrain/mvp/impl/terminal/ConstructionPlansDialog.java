@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
 /**
  * Modal list of planned works (construction roadmap, phase 1). It is the 2D counterpart of the
  * future planned-works window: a compact table over the frozen game frame with the planner data the
- * author needs to compare routes, a total line and the actions Add/Edit/Delete.
+ * author needs to compare routes, a total line and the actions Add/Edit/Quotes/Delete.
  *
  * <p>
  * The dialog is deliberately presentation only. The presenter builds every {@link Row} with the
@@ -50,7 +50,7 @@ final class ConstructionPlansDialog {
 
     /** What the player chose when the dialog closed. */
     enum Action {
-        CLOSE, ADD, EDIT, DELETE
+        CLOSE, ADD, EDIT, QUOTES, DELETE
     }
 
     /**
@@ -58,8 +58,8 @@ final class ConstructionPlansDialog {
      * fields are display text, so the presenter keeps all pricing/time rules. {@code warning} is
      * empty when the plan is fine, otherwise it is shown as a trailing {@code !}.
      */
-    record Row(int id, String state, String from, String to, String policy, int cells, String cost,
-            String time, String warning) {
+    record Row(int id, String state, String from, String to, String policy, String company,
+            String quality, int cells, String cost, String time, String warning) {
     }
 
     /** Chosen action plus the selected row index ({@code -1} when the list is empty). */
@@ -67,7 +67,8 @@ final class ConstructionPlansDialog {
     }
 
     /** Table header, with every column starting on the same cell as {@link #formatRow(Row)}. */
-    static final String HEADER = "#  State    From   To      Policy     Cells  Cost       Time";
+    static final String HEADER =
+            "#  State    From   To      Policy     Company  Quality Cells  Cost       Time";
 
     private static final Pattern HOURS_PATTERN = Pattern.compile("(\\d+)\\s*h");
     private static final Pattern MINUTES_PATTERN = Pattern.compile("(\\d+)\\s*min");
@@ -87,7 +88,7 @@ final class ConstructionPlansDialog {
     static Result show(Screen screen, List<Row> rows, int selectedIndex, String total) {
         List<Row> safeRows = rows == null ? List.of() : List.copyOf(rows);
         MultiWindowTextGUI gui = DialogWindow.programGui(screen);
-        TerminalSize box = DialogWindow.dialogSize(screen.getTerminalSize());
+        TerminalSize box = DialogWindow.dialogSize(screen.getTerminalSize(), 86, 110);
 
         BasicWindow window = new BasicWindow("Works");
         window.setHints(List.of(Window.Hint.CENTERED));
@@ -137,18 +138,22 @@ final class ConstructionPlansDialog {
         };
         Runnable add = () -> closeWith(window, result, Action.ADD, list);
         Runnable edit = () -> closeWith(window, result, Action.EDIT, list);
+        Runnable quotes = () -> closeWith(window, result, Action.QUOTES, list);
         Runnable delete = () -> closeWith(window, result, Action.DELETE, list);
 
         Panel actionRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
         Button addButton = NewGameDialog.mnemonicButton("Add", 'A', add);
         Button editButton = NewGameDialog.mnemonicButton("Edit", 'E', edit);
+        Button quotesButton = NewGameDialog.mnemonicButton("Quotes", 'Q', quotes);
         Button deleteButton = NewGameDialog.mnemonicButton("Delete", 'D', delete);
         actionRow.addComponent(addButton);
         actionRow.addComponent(editButton);
+        actionRow.addComponent(quotesButton);
         actionRow.addComponent(deleteButton);
 
         boolean hasSelection = !safeRows.isEmpty();
         editButton.setEnabled(hasSelection);
+        quotesButton.setEnabled(hasSelection);
         deleteButton.setEnabled(hasSelection);
 
         Panel runRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
@@ -180,6 +185,7 @@ final class ConstructionPlansDialog {
                         switch (action) {
                             case ADD -> add.run();
                             case EDIT -> edit.run();
+                            case QUOTES -> quotes.run();
                             case DELETE -> delete.run();
                             case CLOSE -> close.run();
                         }
@@ -203,6 +209,12 @@ final class ConstructionPlansDialog {
                     case 'e' -> {
                         if (hasSelection) {
                             edit.run();
+                        }
+                        deliverEvent.set(false);
+                    }
+                    case 'q' -> {
+                        if (hasSelection) {
+                            quotes.run();
                         }
                         deliverEvent.set(false);
                     }
@@ -250,13 +262,15 @@ final class ConstructionPlansDialog {
     }
 
     /**
-     * Action for an Alt mnemonic. Add and Close are always available; Edit and Delete need a
-     * selected row. {@code Alt+R} deliberately maps to nothing because Run is disabled in phase 1.
+     * Action for an Alt mnemonic. Add and Close are always available; Edit, Quotes and Delete need
+     * a selected row. {@code Alt+R} deliberately maps to nothing because Run is disabled in phase
+     * 1.
      */
     static Action shortcutAction(char key, boolean hasSelection) {
         return switch (Character.toLowerCase(key)) {
             case 'a' -> Action.ADD;
             case 'e' -> hasSelection ? Action.EDIT : null;
+            case 'q' -> hasSelection ? Action.QUOTES : null;
             case 'd' -> hasSelection ? Action.DELETE : null;
             case 'c' -> Action.CLOSE;
             default -> null;
@@ -281,6 +295,8 @@ final class ConstructionPlansDialog {
         line.append(fitLeft(row.from(), 7));
         line.append(fitLeft(row.to(), 8));
         line.append(fitLeft(row.policy(), 11));
+        line.append(fitLeft(row.company(), 9));
+        line.append(fitLeft(row.quality(), 8));
         line.append(fitRight(Integer.toString(row.cells()), 7));
         line.append(fitLeft(row.cost(), 11));
         line.append(row.time() == null ? "" : row.time());

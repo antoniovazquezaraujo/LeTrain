@@ -1,12 +1,16 @@
 # ADR-038: Planes de obra, presupuestos y constructoras
 
-## Estado: PROPUESTO (fase 1 implementada)
+## Estado: PROPUESTO (fases 1 y primer corte de fase 2 implementados)
 
 > La **lista de obras en fase 1** ya está implementada: guarda borradores con origen, destino,
 > política, `RoutePlan`, coste y tiempo estimados, y permite añadirlos, editarlos, eliminarlos y ver
 > sus totales. La edición abre el plan guardado y solo permite cambiar su política; los extremos
-> quedan fijos. Sigue **sin** constructoras, cotizaciones, zonas, efectivo, calidad ni ejecución desde
-> la lista; el recálculo suelto se ha aplazado. La cola actual (ADR-037) sigue construyendo
+> quedan fijos.
+>
+> De la **fase 2** ya existen el catálogo de constructoras y las cotizaciones por plan, con coste,
+> tiempo, calidad y capacidades. `Q` compara ofertas y la lista muestra la compañía/calidad
+> seleccionada. **No** hay todavía efectivo, reserva, penalización de cancelación ni `Run`; las
+> zonas, la calidad real y la ejecución siguen fuera. La cola actual (ADR-037) sigue construyendo
 > inmediatamente cuando se acepta un plan desde `Shift+C`; `Run` está deshabilitado en la lista.
 >
 > Depende de ADR-034, ADR-035, ADR-036 y ADR-037. La calidad de construcción y el mantenimiento se

@@ -181,6 +181,31 @@ No incluye calidad real ni mantenimiento.
 
 Depende de: Fase 1 y ADR-038.
 
+### Primer corte implementado (sin efectivo)
+
+Ya existen el catálogo de constructoras y las cotizaciones por plan:
+
+- `ConstructionCompany` mezcla coste, tiempo, calidad y capacidades.
+- `WorkQuote` calcula coste y plazo a partir del `RoutePlan` y los factores de la compañía.
+- La ruta manda: las capacidades requeridas se derivan de sus puentes/túneles y las compañías
+  incompatibles no se pueden seleccionar.
+- La lista muestra compañía y calidad cuando hay cotización; `Q` abre la comparación.
+- Antes de elegir compañía no se muestran coste ni tiempo: son datos de la cotización, no del
+  borrador. El total solo suma las obras que ya tienen cotización.
+- Cambiar la ruta descarta la cotización anterior.
+- `Run` sigue deshabilitado: faltan efectivo, reserva, cancelación y ejecución.
+
+Perfiles iniciales, provisionales:
+
+| Compañía | Coste | Tiempo | Calidad | Puentes/túneles |
+|---|---|---|---|---|
+| `CHAPUCERT` | ×0,70 | ×1,80 | baja | no |
+| `RAPIDEX` | ×0,95 | ×0,70 | baja | no |
+| `ARTESANA` | ×1,60 | ×1,60 | alta | sí |
+| `IMPERIAL` | ×2,50 | ×0,55 | alta | sí |
+
+No incluye calidad real ni mantenimiento.
+
 ## Fase 3: varias obras, zonas de exclusión y edición manual fuera
 
 Objetivo: ejecutar varias obras sin que se pisen y dejar que el jugador siga trabajando en otras
