@@ -81,9 +81,10 @@ LeTrain is deeply modal. Pressing the following keys will switch your current in
 - **`Q`**: Compare construction companies for the selected route and choose one. Companies that cannot build the route's bridges or tunnels are unavailable. Before choosing a company the row shows no cost or construction time; after choosing one it shows the company, quality, quoted cost and quoted time.
 - **`D`**: Delete the selected draft.
 - **`Run` / `R`**: Start the selected work with its chosen company. It checks cash, prepays the quote, and builds with the company time factor. Without a quote or enough cash it does not start.
-- **`Esc`**: Close the list. During an automatic work, two Esc presses cancel it; the unbuilt part is refunded minus the provisional cancellation penalty.
+- **`Cancel work` / `X` / `Alt+X`**: While a work is in progress, select its **Working** row and use this action. It asks for confirmation before cancelling; built track remains and the unused budget is refunded minus the penalty.
+- **`Esc`**: Close the Works list. On the map, `Esc` opens the File menu; it does not cancel an automatic work.
 - The total line only sums works that already have a company quote; unquoted works stay blank.
-- The same actions are available as **Alt+A**, **Alt+E**, **Alt+Q**, **Alt+R**, **Alt+D** and **Alt+C**.
+- The same list actions are available as **Alt+A**, **Alt+E**, **Alt+Q**, **Alt+R**, **Alt+X**, **Alt+D** and **Alt+C**.
 - The catalogue is provisional: `CHAPUCERT` and `RAPIDEX` are low quality and cannot build bridges/tunnels; `ARTESANA` and `IMPERIAL` are high quality and can. Quality is only a commercial promise until maintenance exists.
 - During an automatic work the old plan points are hidden so the real rails become visible; when it finishes the row becomes **Done** and the points disappear. If cancelled it becomes **Cancelled**.
 - Stored drafts stay painted on the map until they are built or deleted.

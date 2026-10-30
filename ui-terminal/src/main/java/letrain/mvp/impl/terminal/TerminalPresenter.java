@@ -1303,10 +1303,6 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
      * Add, by owner decision: the player opens it again when they want.
      */
     void openPlannedWorks() {
-        if (isConstructionActive()) {
-            view.showMessage("Works", "Finish or cancel the active construction first");
-            return;
-        }
         while (true) {
             List<PlannedWork> works = plannedWorks().works();
             ConstructionPlansDialog.Result result = view.showConstructionPlansDialog(
@@ -1322,10 +1318,18 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                             : -1;
             switch (result.action()) {
                 case ADD -> {
+                    if (isConstructionActive()) {
+                        view.showMessage("Works", "Cancel the active work before planning another");
+                        return;
+                    }
                     enterConnectMode(true);
                     return;
                 }
                 case EDIT -> {
+                    if (isConstructionActive()) {
+                        view.showMessage("Works", "Cancel the active work before editing");
+                        return;
+                    }
                     if (selectedId >= 0) {
                         java.util.Optional<PlannedWork> work = plannedWorks().find(selectedId);
                         if (work.isPresent()) {
@@ -1339,7 +1343,20 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     }
                 }
                 case QUOTES -> {
+                    if (isConstructionActive()) {
+                        view.showMessage("Works", "Cancel the active work before changing quotes");
+                        return;
+                    }
                     openQuotesFor(selectedId);
+                }
+                case CANCEL -> {
+                    if (selectedId >= 0 && autoConstructionBudget != null
+                            && autoConstructionBudget.workId() == selectedId) {
+                        cancelConstruction();
+                    } else {
+                        view.showMessage("Works", "Select the active work to cancel it");
+                        return;
+                    }
                 }
                 case RUN -> {
                     runPlannedWork(selectedId);
@@ -1347,6 +1364,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 }
                 case DELETE -> {
                     if (selectedId >= 0) {
+                        PlannedWork work = plannedWorks().find(selectedId).orElse(null);
+                        if (work != null && work.state() == PlannedWork.State.WORKING) {
+                            view.showMessage("Works", "Cancel the active work before deleting it");
+                            return;
+                        }
                         plannedWorks().remove(selectedId);
                         plannedWorksSelectedIndex = plannedWorks().isEmpty() ? -1
                                 : Math.min(plannedWorksSelectedIndex, plannedWorks().size() - 1);
@@ -1430,6 +1452,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private static String stateLabel(PlannedWork.State state) {
         return switch (state) {
             case DRAFT -> "Draft";
+            case WORKING -> "Working";
             case DONE -> "Done";
             case CANCELLED -> "Cancelled";
         };
@@ -1572,6 +1595,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             view.showMessage("Works", ConstructionStatus.COMPLETE);
             return false;
         }
+        plannedWorks().replaceState(work.id(), PlannedWork.State.WORKING);
         autoConstructionBudget = new AutoConstructionBudget(work.id(), quote);
         constructionCancelArmed = false;
         constructionNotice = null;
@@ -1664,7 +1688,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
      * consumed by the confirmation.
      */
     private boolean handleConstructionConfirmation(InputEvent keyEvent) {
-        if (!isConstructionActive()) {
+        if (!isConstructionActive() || autoConstructionBudget != null) {
             return false;
         }
         if (constructionCancelArmed) {
@@ -1689,6 +1713,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
      */
     private boolean handleConstructionEditLock(InputEvent keyEvent) {
         if (!isConstructionActive()) {
+            return false;
+        }
+        if (keyEvent.getKeyType() == KeyType.Escape) {
             return false;
         }
         if (model.getMode() == DRIVE) {
@@ -1762,7 +1789,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                                             plan.steps().size()))
                             : autoConstructionBudget.quote().totalTicks();
             view.drawRoutePreviewStatus(ConstructionStatus.format(progress, plan,
-                    constructionCancelArmed, cost, ticks));
+                    constructionCancelArmed, cost, ticks, autoConstructionBudget == null));
             return;
         }
         if (constructionNotice != null) {
@@ -2084,9 +2111,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             view.setHelpLevel(next);
             return;
         } else if (keyEvent.getKeyType() == KeyType.Escape) {
-            // Esc opens the File menu (owner decision D11); Quit lives inside it now. During an
-            // active construction Esc is consumed by the two-step cancel confirmation above.
-            if (!isConstructionActive()) {
+            // Esc opens the File menu (owner decision D11); Quit lives inside it now. Automatic
+            // works cancel from Works, so Esc is not captured for them. Manual Shift+C keeps its
+            // legacy two-step confirmation until it is migrated to the works list.
+            if (!isConstructionActive() || autoConstructionBudget != null) {
                 view.showFileMenu();
             }
         } else if (handleModeHotkey(keyEvent)) {

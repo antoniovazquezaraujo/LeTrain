@@ -11,10 +11,12 @@
 > tiempo, calidad y capacidades. `Q` compara ofertas y la lista muestra la compañía/calidad
 > seleccionada. `Run` ya está disponible: comprueba el saldo, cobra por adelantado la cotización y
 > arranca la cola con el tiempo de la compañía; el materializador automático no cobra dos veces.
-> Cancelar devuelve la parte no construida con una penalización provisional del 10 % restante,
-> mínimo 5 % del total cotizado. Al terminar una obra pasa a `Done` y al cancelarla a `Cancelled`;
-> en ambos casos deja de pintarse el plan y solo quedan las vías reales. Sigue habiendo una sola
-> obra activa y no hay zonas, varias obras simultáneas ni calidad real.
+> La obra activa se muestra como `Working` en Works; `Cancel work` pide confirmación antes de
+> cancelar. `Esc` abre el File menu y no cancela. Se devuelve la parte no construida con una
+> penalización provisional del 10 % restante, mínimo 5 % del total cotizado. Al terminar una obra
+> pasa a `Done` y al cancelarla a `Cancelled`; en ambos casos deja de pintarse el plan y solo quedan
+> las vías reales. Sigue habiendo una sola obra activa y no hay zonas, varias obras simultáneas ni
+> calidad real.
 >
 > Depende de ADR-034, ADR-035, ADR-036 y ADR-037. La calidad de construcción y el mantenimiento se
 > separan en [[ADR-039-Track-Quality-and-Maintenance|ADR-039]].

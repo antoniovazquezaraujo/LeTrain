@@ -103,11 +103,16 @@ class TerminalPresenterWorksCashTest {
         presenter.onChar(charKey('b'));
 
         assertTrue(presenter.isConstructionActive());
+        assertEquals(PlannedWork.State.WORKING,
+                presenter.getPlannedWorks().find(work.id()).orElseThrow().state());
         assertEquals(before - quoteCost, model.getEconomyManager().getBalance(), 0.01f);
         org.mockito.Mockito.clearInvocations(view);
         presenter.drawPlannedWorksOverlay();
         verify(view, org.mockito.Mockito.never()).drawRoutePreviewCell(anyInt(), anyInt(),
                 anyString(), anyBoolean(), org.mockito.ArgumentMatchers.any());
+        presenter.onChar(escape());
+        verify(view).showFileMenu();
+        assertTrue(presenter.isConstructionActive(), "Esc must not cancel an automatic work");
         for (int i = 0; i < 10 && presenter.isConstructionActive(); i++) {
             presenter.tickConstruction();
         }
@@ -142,8 +147,12 @@ class TerminalPresenterWorksCashTest {
         double penalty = Math.max(unbuilt * 0.10, quoteCost * 0.05);
         double expectedRefund = unbuilt - penalty;
 
-        presenter.onChar(escape());
-        presenter.onChar(escape());
+        when(view.showConstructionPlansDialog(anyList(), anyInt(), anyString()))
+                .thenReturn(new ConstructionPlansDialog.Result(
+                        ConstructionPlansDialog.Action.CANCEL, 0))
+                .thenReturn(new ConstructionPlansDialog.Result(ConstructionPlansDialog.Action.CLOSE,
+                        0));
+        presenter.onChar(charKey('b'));
 
         assertFalse(presenter.isConstructionActive());
         assertEquals(PlannedWork.State.CANCELLED,

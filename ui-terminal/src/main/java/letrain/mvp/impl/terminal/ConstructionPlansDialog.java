@@ -17,6 +17,8 @@ import com.googlecode.lanterna.gui2.Panel;
 import com.googlecode.lanterna.gui2.TextGUIGraphics;
 import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.gui2.WindowListenerAdapter;
+import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
+import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
 import com.googlecode.lanterna.screen.Screen;
@@ -49,7 +51,7 @@ final class ConstructionPlansDialog {
 
     /** What the player chose when the dialog closed. */
     enum Action {
-        CLOSE, ADD, EDIT, QUOTES, RUN, DELETE
+        CLOSE, ADD, EDIT, QUOTES, RUN, CANCEL, DELETE
     }
 
     /**
@@ -174,27 +176,51 @@ final class ConstructionPlansDialog {
         Runnable quotes = () -> closeWith(window, result, Action.QUOTES, list);
         Runnable run = () -> closeWith(window, result, Action.RUN, list);
         Runnable delete = () -> closeWith(window, result, Action.DELETE, list);
+        Runnable cancelWork = () -> {
+            int index = selectedIndex(list);
+            if (index < 0 || index >= safeRows.size()
+                    || !"Working".equals(safeRows.get(index).state())) {
+                new MessageDialogBuilder().setTitle("Cancel work")
+                        .setText("Select the work in Working state first.")
+                        .addButton(MessageDialogButton.OK).build().showDialog(gui);
+                return;
+            }
+            MessageDialogButton choice = new MessageDialogBuilder().setTitle("Cancel work")
+                    .setText("Cancel work #" + safeRows.get(index).id()
+                            + "? The built track remains and the unused budget is refunded"
+                            + " minus the cancellation penalty.")
+                    .addButton(MessageDialogButton.Yes).addButton(MessageDialogButton.No).build()
+                    .showDialog(gui);
+            if (choice == MessageDialogButton.Yes) {
+                closeWith(window, result, Action.CANCEL, list);
+            }
+        };
 
         Panel actionRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
         Button addButton = NewGameDialog.mnemonicButton("Add", 'A', add);
         Button editButton = NewGameDialog.mnemonicButton("Edit", 'E', edit);
         Button quotesButton = NewGameDialog.mnemonicButton("Quotes", 'Q', quotes);
         Button deleteButton = NewGameDialog.mnemonicButton("Delete", 'D', delete);
+        Button cancelButton = NewGameDialog.mnemonicButton("Cancel work", 'X', cancelWork);
         actionRow.addComponent(addButton);
         actionRow.addComponent(editButton);
         actionRow.addComponent(quotesButton);
         actionRow.addComponent(deleteButton);
+        actionRow.addComponent(cancelButton);
 
         boolean hasSelection = !safeRows.isEmpty();
         boolean hasQuote = safeRows.stream()
                 .anyMatch(row -> "Draft".equals(row.state()) && !"-".equals(row.company()));
-        editButton.setEnabled(hasSelection);
-        quotesButton.setEnabled(hasSelection);
-        deleteButton.setEnabled(hasSelection);
+        boolean hasWorking = safeRows.stream().anyMatch(row -> "Working".equals(row.state()));
+        addButton.setEnabled(!hasWorking);
+        editButton.setEnabled(hasSelection && !hasWorking);
+        quotesButton.setEnabled(hasSelection && !hasWorking);
+        deleteButton.setEnabled(hasSelection && !hasWorking);
+        cancelButton.setEnabled(hasWorking);
 
         Panel runRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
         Button runButton = NewGameDialog.mnemonicButton("Run", 'R', run);
-        runButton.setEnabled(hasQuote);
+        runButton.setEnabled(hasQuote && !hasWorking);
         runRow.addComponent(runButton);
         runRow.addComponent(new Label("  (requires a company quote)"));
 
@@ -216,6 +242,11 @@ final class ConstructionPlansDialog {
                     if (character == null) {
                         return;
                     }
+                    if (Character.toLowerCase(character) == 'x' && hasWorking) {
+                        cancelWork.run();
+                        deliverEvent.set(false);
+                        return;
+                    }
                     Action action = shortcutAction(character, hasSelection);
                     if (action != null) {
                         switch (action) {
@@ -223,6 +254,7 @@ final class ConstructionPlansDialog {
                             case EDIT -> edit.run();
                             case QUOTES -> quotes.run();
                             case RUN -> run.run();
+                            case CANCEL -> cancelWork.run();
                             case DELETE -> delete.run();
                             case CLOSE -> close.run();
                         }
@@ -264,6 +296,12 @@ final class ConstructionPlansDialog {
                     case 'd' -> {
                         if (hasSelection) {
                             delete.run();
+                        }
+                        deliverEvent.set(false);
+                    }
+                    case 'x' -> {
+                        if (hasWorking) {
+                            cancelWork.run();
                         }
                         deliverEvent.set(false);
                     }

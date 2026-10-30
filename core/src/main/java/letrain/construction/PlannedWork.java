@@ -25,6 +25,8 @@ public final class PlannedWork {
     public enum State {
         /** A route plan with its budget; it has not been ordered or built. */
         DRAFT,
+        /** An automatic company work is currently being materialised. */
+        WORKING,
         /** The automatic work finished and its real track replaced the painted plan. */
         DONE,
         /** The automatic work was stopped; built cells remain, the rest was refunded. */

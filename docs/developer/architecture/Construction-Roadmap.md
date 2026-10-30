@@ -198,6 +198,8 @@ Ya existen el catálogo de constructoras y las cotizaciones por plan:
 - Cambiar la ruta descarta la cotización anterior.
 - `Run` cobra por adelantado el total cotizado, comprueba el saldo y arranca la cola con el factor
   de tiempo de la compañía. El materializador automático no vuelve a cobrar celda a celda.
+- La obra activa aparece como `Working` en Works. Para cancelarla se abre Works, se selecciona esa
+  fila y se usa `Cancel work` (con confirmación). `Esc` no cancela: abre el File menu.
 - Cancelar devuelve la parte no construida menos una penalización provisional del 10 % del
   presupuesto restante, con un mínimo del 5 % del total cotizado. La vía construida permanece.
 - Al terminar, la obra pasa a `Done`; al cancelar, a `Cancelled`. En ambos estados deja de pintarse
