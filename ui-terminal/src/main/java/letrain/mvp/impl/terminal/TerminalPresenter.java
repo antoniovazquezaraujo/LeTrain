@@ -1433,12 +1433,12 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             return false;
         }
         if (work.state() != PlannedWork.State.DRAFT) {
-            view.showMessage("Works", "This work is already " + stateLabel(work.state()));
+            view.showMessage("Planning", "This work is already " + stateLabel(work.state()));
             return false;
         }
         WorkQuote quote = work.quote().orElse(null);
         if (quote == null) {
-            view.showMessage("Works", "Select a company quote before running the work");
+            view.showMessage("Planning", "Select a company quote before running the work");
             return false;
         }
         return startAutomaticConstruction(work, quote);
@@ -1581,21 +1581,21 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
      */
     private boolean startAutomaticConstruction(PlannedWork work, WorkQuote quote) {
         if (quote == null || !quote.feasible()) {
-            view.showMessage("Works", "Select a company quote before running the work");
+            view.showMessage("Planning", "Select a company quote before running the work");
             return false;
         }
         if (isConstructionActive()) {
-            view.showMessage("Works", "Another construction is already active");
+            view.showMessage("Planning", "Another construction is already active");
             return false;
         }
         Optional<RailBuildability.Issue> buildIssue = RailBuildability.check(model, quote.plan());
         if (buildIssue.isPresent()) {
-            view.showMessage("Works", "Work cannot start: " + buildIssue.get().description());
+            view.showMessage("Planning", "Work cannot start: " + buildIssue.get().description());
             return false;
         }
         float amount = (float) quote.totalCost();
         if (model.getEconomyManager().getBalance() < amount) {
-            view.showMessage("Works",
+            view.showMessage("Planning",
                     "Not enough cash: need " + RoutePreviewStatus.formatCost(amount));
             return false;
         }
@@ -1606,19 +1606,19 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 quote.company().timeFactor());
         if (!started) {
             model.getEconomyManager().refund(amount);
-            view.showMessage("Works", "Another construction is already active");
+            view.showMessage("Planning", "Another construction is already active");
             return false;
         }
         ConstructionProgress progress = queue.progress();
         if (progress.state() == letrain.construction.ConstructionState.REJECTED) {
             model.getEconomyManager().refund(amount);
-            view.showMessage("Works",
+            view.showMessage("Planning",
                     "Work rejected: " + progress.reasonOptional().orElse("route cannot be built"));
             return false;
         }
         if (progress.state() == letrain.construction.ConstructionState.DONE) {
             model.getEconomyManager().refund(amount);
-            view.showMessage("Works", ConstructionStatus.COMPLETE);
+            view.showMessage("Planning", ConstructionStatus.COMPLETE);
             return false;
         }
         plannedWorks().replaceState(work.id(), PlannedWork.State.WORKING);
