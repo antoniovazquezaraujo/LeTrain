@@ -2,6 +2,7 @@ package letrain.mvp.impl.terminal;
 
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TerminalTextUtils;
+import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.graphics.ThemeDefinition;
 import com.googlecode.lanterna.gui2.AbstractListBox;
 import com.googlecode.lanterna.gui2.ActionListBox;
@@ -40,8 +41,9 @@ import java.util.regex.Pattern;
  * "save route" planning flow and decides when to reopen the list.
  *
  * <p>
- * <b>Run is enabled only when at least one row has a company quote.</b> The presenter still checks
- * the selected row and the available cash before starting the automatic work.
+ * <b>Run is enabled for a selected row.</b> The presenter validates the row state and the company
+ * quote when the button is pressed, so an unquoted draft explains what is missing instead of hiding
+ * the action behind a disabled button.
  *
  * <p>
  * The table formatting lives in pure static methods ({@link #header()}, {@link #formatRow(Row)},
@@ -136,9 +138,10 @@ final class ConstructionPlansDialog {
         Panel root = new Panel(new BorderLayout());
         Panel body = new Panel(new BorderLayout());
         Panel heading = new Panel(new LinearLayout(Direction.VERTICAL));
-        Label header = new Label(HEADER);
+        Label header = new Label(" " + HEADER + " ");
+        header.setForegroundColor(TextColor.ANSI.BLACK);
+        header.setBackgroundColor(TextColor.ANSI.CYAN);
         heading.addComponent(header);
-        heading.addComponent(new EmptySpace(new TerminalSize(1, 1)));
         body.addComponent(heading, BorderLayout.Location.TOP);
 
         ActionListBox list = new ActionListBox() {
@@ -209,8 +212,6 @@ final class ConstructionPlansDialog {
         actionRow.addComponent(cancelButton);
 
         boolean hasSelection = !safeRows.isEmpty();
-        boolean hasQuote = safeRows.stream()
-                .anyMatch(row -> "Draft".equals(row.state()) && !"-".equals(row.company()));
         boolean hasWorking = safeRows.stream().anyMatch(row -> "Working".equals(row.state()));
         addButton.setEnabled(!hasWorking);
         editButton.setEnabled(hasSelection && !hasWorking);
@@ -220,9 +221,8 @@ final class ConstructionPlansDialog {
 
         Panel runRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
         Button runButton = NewGameDialog.mnemonicButton("Run", 'R', run);
-        runButton.setEnabled(hasQuote && !hasWorking);
+        runButton.setEnabled(hasSelection && !hasWorking);
         runRow.addComponent(runButton);
-        runRow.addComponent(new Label("  (requires a company quote)"));
 
         Panel closeRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
         closeRow.addComponent(NewGameDialog.mnemonicButton("Close", 'C', close));
@@ -288,7 +288,7 @@ final class ConstructionPlansDialog {
                         deliverEvent.set(false);
                     }
                     case 'r' -> {
-                        if (hasQuote) {
+                        if (hasSelection && !hasWorking) {
                             run.run();
                         }
                         deliverEvent.set(false);
@@ -344,8 +344,8 @@ final class ConstructionPlansDialog {
 
     /**
      * Action for an Alt mnemonic. Add and Close are always available; Edit, Quotes and Delete need
-     * a selected row. {@code Alt+R} deliberately maps to nothing because Run is disabled in phase
-     * 1.
+     * a selected row. Run only needs a selection because the presenter validates the quote, cash
+     * and row state and explains the failure when the action is pressed.
      */
     static Action shortcutAction(char key, boolean hasSelection) {
         return switch (Character.toLowerCase(key)) {

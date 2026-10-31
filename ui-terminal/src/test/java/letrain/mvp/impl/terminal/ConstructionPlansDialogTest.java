@@ -130,7 +130,7 @@ class ConstructionPlansDialogTest {
     }
 
     @Test
-    @DisplayName("Alt mnemonics map Add, Edit, Delete and Close; Run stays disabled")
+    @DisplayName("Alt mnemonics map Add, Edit, Quotes, Delete and Close; Run needs a selected row")
     void should_MapAltMnemonics() {
         assertEquals(ConstructionPlansDialog.Action.ADD,
                 ConstructionPlansDialog.shortcutAction('a', false));
