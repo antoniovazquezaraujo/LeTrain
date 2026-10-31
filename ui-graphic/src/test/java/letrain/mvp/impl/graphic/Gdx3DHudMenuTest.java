@@ -29,16 +29,15 @@ class Gdx3DHudMenuTest {
     }
 
     @Test
-    @DisplayName("a middle & paints the shortcut green between white text")
+    @DisplayName("a middle & paints the separated shortcut green before the white name")
     void should_MarkMiddleShortcutGreen() {
-        assertEquals("[WHITE]S[][GREEN]e[][WHITE]nsors[]",
-                Gdx3DHud.getMenuButtonText("S&ensors", true));
+        assertEquals("[GREEN]E:[][WHITE]Sensors[]", Gdx3DHud.getMenuButtonText("S&ensors", true));
     }
 
     @Test
-    @DisplayName("a leading & marks the first letter")
+    @DisplayName("a leading & marks the first letter and separates it with a colon")
     void should_MarkLeadingShortcutGreen() {
-        assertEquals("[GREEN]R[][WHITE]ails[]", Gdx3DHud.getMenuButtonText("&Rails", true));
+        assertEquals("[GREEN]R:[][WHITE]Rails[]", Gdx3DHud.getMenuButtonText("&Rails", true));
     }
 
     @Test
@@ -46,7 +45,7 @@ class Gdx3DHudMenuTest {
     void should_PaintDisabledOptionInGrey() {
         String text = Gdx3DHud.getMenuButtonText("S&ensors", false);
 
-        assertEquals("[GRAY]Sensors[]", text);
+        assertEquals("[GRAY]E:Sensors[]", text);
         assertFalse(text.contains("[GREEN]"), text);
     }
 
@@ -65,9 +64,9 @@ class Gdx3DHudMenuTest {
             MenuText.Label label = MenuText.parse(option.gameModeName());
             String text = Gdx3DHud.getMenuButtonText(option.gameModeName(), true);
 
-            assertEquals(label.plainText(), withoutMarkup(text), option.gameModeName());
+            assertEquals(label.displayText(), withoutMarkup(text), option.gameModeName());
             if (label.hasHotkey()) {
-                assertTrue(text.contains("[GREEN]" + label.hotkey() + "[]"), text);
+                assertTrue(text.contains("[GREEN]" + label.displayHotkey() + ":" + "[]"), text);
             }
         }
     }

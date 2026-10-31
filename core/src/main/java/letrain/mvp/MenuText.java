@@ -1,5 +1,7 @@
 package letrain.mvp;
 
+import java.util.Locale;
+
 /**
  * Presentation-neutral parser for the menu labels defined by the model
  * ({@link Model.GameModeMenuOption#gameModeName()}). The convention shared by both clients is that
@@ -8,9 +10,10 @@ package letrain.mvp;
  *
  * <p>
  * The 2D terminal and the 3D HUD build their menu from the same {@link Model#getMenuModel()}
- * entries; parsing the labels here keeps wording, structure and shortcuts from drifting apart.
- * Mapping the parsed parts to colours or markup stays client-specific (Lanterna {@code TextColor}
- * in 2D, libGDX {@code [COLOR]} markup in 3D).
+ * entries; parsing the labels here keeps wording, structure and shortcuts from drifting apart. Both
+ * clients render {@link Label#displayText()} ({@code "R:Rails"}, {@code "E:Sensors"}), so the
+ * shortcut is shown separated from the mode name. Mapping the parsed parts to colours or markup
+ * stays client-specific (Lanterna {@code TextColor} in 2D, libGDX {@code [COLOR]} markup in 3D).
  */
 public final class MenuText {
 
@@ -28,6 +31,20 @@ public final class MenuText {
         /** The label text with the {@code &} marker removed, i.e. what the player reads. */
         public String plainText() {
             return prefix + hotkey + suffix;
+        }
+
+        /** Shortcut as the menu displays it: uppercase, independent of where the marker sits. */
+        public String displayHotkey() {
+            return hotkey.toUpperCase(Locale.ROOT);
+        }
+
+        /**
+         * The label as both clients render it, with the shortcut separated from the name:
+         * {@code "&Rails"} becomes {@code "R:Rails"} and {@code "S&ensors"} becomes
+         * {@code "E:Sensors"}. Labels without a shortcut keep their plain text.
+         */
+        public String displayText() {
+            return hasHotkey() ? displayHotkey() + ":" + plainText() : plainText();
         }
     }
 

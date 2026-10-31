@@ -670,8 +670,8 @@ public class TerminalView implements letrain.mvp.View {
     }
 
     /**
-     * Paints one menu option at {@code offset} columns from {@code origin}: label and suffix in
-     * white, the shortcut in green and the candidate mode's background in blue when selected. A
+     * Paints one menu option at {@code offset} columns from {@code origin}: shortcut and colon in
+     * green, the name in white, and the candidate mode's background in blue when selected. A
      * disabled option is painted in grey ({@link #MENU_DISABLED_FG_COLOR}) and loses the green
      * shortcut. The label is split with the shared {@link MenuText} parser, the same one the 3D HUD
      * uses, so wording and shortcuts cannot drift between clients. Package-visible and static so a
@@ -688,20 +688,15 @@ public class TerminalView implements letrain.mvp.View {
 
         menuBox.setBackgroundColor(
                 option.selectedIf().get() ? SELECTED_BG_COLOR : NORMAL_MENU_BG_COLOR);
-        if (!label.prefix().isEmpty()) {
-            menuBox.setForegroundColor(labelColor);
-            menuBox.putString(origin.withRelative(offset, 0), label.prefix());
-            offset += label.prefix().length();
-        }
         if (label.hasHotkey()) {
             menuBox.setForegroundColor(hotkeyColor);
-            menuBox.putString(origin.withRelative(offset, 0), label.hotkey());
-            offset += label.hotkey().length();
+            menuBox.putString(origin.withRelative(offset, 0), label.displayHotkey() + ":");
+            offset += label.displayHotkey().length() + 1;
         }
-        if (!label.suffix().isEmpty()) {
+        if (!label.plainText().isEmpty()) {
             menuBox.setForegroundColor(labelColor);
-            menuBox.putString(origin.withRelative(offset, 0), label.suffix());
-            offset += label.suffix().length();
+            menuBox.putString(origin.withRelative(offset, 0), label.plainText());
+            offset += label.plainText().length();
         }
         menuBox.setBackgroundColor(NORMAL_MENU_BG_COLOR);
         return offset + 1;
