@@ -319,8 +319,9 @@ public interface Model {
                                                 "Stations"), LOAD_TRAINS(
                                                         "Use load Stations"), CONNECT(
                                                                 "Preview a route connection"), PROGRAM(
-                                                                        "Program"), COMMAND(
-                                                                                "Command Line Interface");
+                                                                        "Program"), PLANNED_WORKS(
+                                                                                "Plan routes and manage planned works"), COMMAND(
+                                                                                        "Command Line Interface");
 
         private String name;
 
@@ -418,9 +419,22 @@ public interface Model {
 
     public RailTrack getCursorRailTrack();
 
-    public record GameModeMenuOption(String gameModeName, String gameModeDescription,
-            Supplier<Boolean> enabledIf, Supplier<Boolean> selectedIf,
+    /**
+     * One entry of the shared mode menu.
+     *
+     * @param shortcut explicit shortcut key; empty to derive it from the {@code &} marker in
+     *        {@code gameModeName}
+     */
+    public record GameModeMenuOption(String gameModeName, String shortcut,
+            String gameModeDescription, Supplier<Boolean> enabledIf, Supplier<Boolean> selectedIf,
             Supplier<GameMode> doWhenSelected) {
+
+        /** Menu option whose shortcut is declared by the {@code &} marker in its name. */
+        public GameModeMenuOption(String gameModeName, String gameModeDescription,
+                Supplier<Boolean> enabledIf, Supplier<Boolean> selectedIf,
+                Supplier<GameMode> doWhenSelected) {
+            this(gameModeName, "", gameModeDescription, enabledIf, selectedIf, doWhenSelected);
+        }
     }
 
     public List<GameModeMenuOption> getMenuModel();

@@ -90,7 +90,7 @@ final class ConstructionPlansDialog {
         MultiWindowTextGUI gui = DialogWindow.programGui(screen);
         TerminalSize box = DialogWindow.dialogSize(screen.getTerminalSize(), 86, 110);
 
-        BasicWindow window = new BasicWindow("Works");
+        BasicWindow window = new BasicWindow("Planning");
         window.setHints(List.of(Window.Hint.CENTERED));
         window.setFixedSize(box);
         window.setCloseWindowWithEscape(true);

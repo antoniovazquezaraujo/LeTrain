@@ -77,8 +77,8 @@ class InfoVisitorTest {
 
         // Verify translations on other lines
         assertTrue(lines[3].contains(
-                "[PgUp/Dn]:Scroll | [z/Z]:Camera | [a/r/d/f/s/t/c/u/p/n]:Modes | [b]:Works | [Tab]:Info | [Esc]:Menu"),
-                "Global help should be in English, include the works list and Esc now opens the File menu");
+                "[PgUp/Dn]:Scroll | [z/Z]:Camera | [a/r/d/f/s/t/c/u/p/n]:Modes | [Tab]:Info | [Esc]:Menu"),
+                "Global help should be in English, leave Planning to the mode menu and open the File menu with Esc");
     }
 
     @Test
