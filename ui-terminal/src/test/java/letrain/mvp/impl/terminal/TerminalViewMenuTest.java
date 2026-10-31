@@ -49,6 +49,24 @@ class TerminalViewMenuTest {
     }
 
     @Test
+    @DisplayName("an explicit shortcut paints before the label: Planning + b -> B:Planning")
+    void should_PaintExplicitShortcut() {
+        TextGraphics graphics = mock(TextGraphics.class);
+        GameModeMenuOption planning =
+                new GameModeMenuOption("Planning", "b", "Plan routes and manage planned works",
+                        () -> true, () -> false, () -> Model.GameMode.PLANNED_WORKS);
+
+        int next = TerminalView.drawMenuOption(graphics, new TerminalPosition(0, 0), planning, 0);
+
+        InOrder order = inOrder(graphics);
+        order.verify(graphics).setForegroundColor(TerminalView.SHORTCUT_COLOR);
+        order.verify(graphics).putString(eq(new TerminalPosition(0, 0)), eq("B:"));
+        order.verify(graphics).setForegroundColor(TerminalView.NORMAL_MENU_FG_COLOR);
+        order.verify(graphics).putString(eq(new TerminalPosition(2, 0)), eq("Planning"));
+        assertEquals("B:Planning".length() + 1, next);
+    }
+
+    @Test
     @DisplayName("a disabled option is grey #808080 on shortcut and name, never the green shortcut")
     void should_PaintDisabledOptionInExactGrey() {
         TextGraphics graphics = mock(TextGraphics.class);
@@ -90,11 +108,10 @@ class TerminalViewMenuTest {
             TextGraphics graphics = mock(TextGraphics.class);
             TerminalView.drawMenuOption(graphics, new TerminalPosition(0, 0), menuOption, 0);
 
-            MenuText.Label label = MenuText.parse(menuOption.gameModeName());
             ArgumentCaptor<String> texts = ArgumentCaptor.forClass(String.class);
             verify(graphics, atLeastOnce()).putString(any(), texts.capture());
-            assertEquals(label.displayText(), String.join("", texts.getAllValues()),
-                    menuOption.gameModeName());
+            assertEquals(MenuText.displayText(menuOption.gameModeName(), menuOption.shortcut()),
+                    String.join("", texts.getAllValues()), menuOption.gameModeName());
         }
     }
 }

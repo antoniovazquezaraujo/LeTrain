@@ -43,7 +43,7 @@ No incluye constructoras ni zonas de exclusión. Es la fase que convierte la pla
 actividad separada de la ejecución.
 
 Depende de: ADR-037 y ADR-038 (parte de lista/presupuesto). La lista se abre desde el mapa con
-`b` (Works).
+`b` (Planning) y aparece como **B:Planning** en el menú de modos.
 
 ### Lista de la fase 1
 

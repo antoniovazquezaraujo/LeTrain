@@ -94,6 +94,12 @@ pintarlos.
   con el atajo en mayúsculas y separado por `:`. Los dos clientes pintan esa forma; el texto del
   atajo y los dos puntos van en verde, el nombre del modo en blanco. El nombre técnico para
   `menuButtonName` sigue siendo `plainText()`, sin atajo.
+- **Atajo explícito**: una entrada puede declarar una tecla que no está en su etiqueta mediante
+  `GameModeMenuOption.shortcut` (`Planning` + `b` → `B:Planning`). Si está vacío, se usa el
+  `&` de la etiqueta. El menú 2D reparte las entradas en varias filas cuando no caben en el ancho
+  de la terminal.
+- **Planning en 3D**: `Gdx3DHud.menuOptions()` filtra `PLANNED_WORKS` hasta que exista una ventana
+  de planificación 3D; el modelo comparte la entrada, pero el HUD no muestra un botón muerto.
 - **Texto de ayuda**: `MenuText.selectedHint(description, recording)` compone la línea del modo
   seleccionado (`... | [R]:Record ON/OFF | [X]:Experiment`), idéntica en 2D y 3D. El flag de
   grabación sale del journal de comandos (`isRecording() && isSimulationPaused()`).

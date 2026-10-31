@@ -659,13 +659,38 @@ public class TerminalView implements letrain.mvp.View {
         if (!shouldPaintMenu(menuVisible, helpLevel, 1)) {
             return;
         }
-        int length = 1;
-        for (GameModeMenuOption option : options) {
-            length = drawMenuOption(menuBox, menuBoxPosition.withRelative(0, 1), option, length);
-            if (option.selectedIf().get()) {
-                setHelpBarText(MenuText.selectedHint(option.gameModeDescription(),
-                        gameViewListener.isRecordingCommands()));
+        List<String> texts = options.stream()
+                .map(option -> MenuText.displayText(option.gameModeName(), option.shortcut()))
+                .toList();
+        int columns = menuBoxSize == null ? Integer.MAX_VALUE : menuBoxSize.getColumns();
+        int totalWidth = 1;
+        for (String text : texts) {
+            totalWidth += text.length() + 1;
+        }
+        int rowCount = columns <= 0 ? 1 : Math.max(1, (totalWidth - 1) / columns + 1);
+        int index = 0;
+        for (int row = 1; row <= rowCount && index < options.size(); row++) {
+            int rowsLeft = rowCount - row + 1;
+            int take = Math.max(1, (options.size() - index + rowsLeft - 1) / rowsLeft);
+            int width = 1;
+            for (int i = index; i < index + take; i++) {
+                width += texts.get(i).length() + 1;
             }
+            while (take > 1 && width > columns) {
+                take--;
+                width -= texts.get(index + take).length() + 1;
+            }
+            int length = 1;
+            for (int i = 0; i < take; i++) {
+                GameModeMenuOption option = options.get(index + i);
+                length = drawMenuOption(menuBox, menuBoxPosition.withRelative(0, row), option,
+                        length);
+                if (option.selectedIf().get()) {
+                    setHelpBarText(MenuText.selectedHint(option.gameModeDescription(),
+                            gameViewListener.isRecordingCommands()));
+                }
+            }
+            index += take;
         }
     }
 
@@ -682,16 +707,17 @@ public class TerminalView implements letrain.mvp.View {
     static int drawMenuOption(TextGraphics menuBox, TerminalPosition origin,
             GameModeMenuOption option, int offset) {
         MenuText.Label label = MenuText.parse(option.gameModeName());
+        String hotkey = MenuText.displayHotkey(option.gameModeName(), option.shortcut());
         boolean enabled = option.enabledIf().get();
         TextColor labelColor = enabled ? NORMAL_MENU_FG_COLOR : MENU_DISABLED_FG_COLOR;
         TextColor hotkeyColor = enabled ? SHORTCUT_COLOR : MENU_DISABLED_FG_COLOR;
 
         menuBox.setBackgroundColor(
                 option.selectedIf().get() ? SELECTED_BG_COLOR : NORMAL_MENU_BG_COLOR);
-        if (label.hasHotkey()) {
+        if (!hotkey.isEmpty()) {
             menuBox.setForegroundColor(hotkeyColor);
-            menuBox.putString(origin.withRelative(offset, 0), label.displayHotkey() + ":");
-            offset += label.displayHotkey().length() + 1;
+            menuBox.putString(origin.withRelative(offset, 0), hotkey + ":");
+            offset += hotkey.length() + 1;
         }
         if (!label.plainText().isEmpty()) {
             menuBox.setForegroundColor(labelColor);

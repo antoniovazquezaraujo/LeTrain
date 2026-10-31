@@ -41,6 +41,24 @@ class Gdx3DHudMenuTest {
     }
 
     @Test
+    @DisplayName("an explicit shortcut paints before the label: Planning + b -> B:Planning")
+    void should_PaintExplicitShortcut() {
+        GameModeMenuOption planning =
+                new GameModeMenuOption("Planning", "b", "Plan routes and manage planned works",
+                        () -> true, () -> false, () -> Model.GameMode.PLANNED_WORKS);
+
+        assertEquals("[GREEN]B:[][WHITE]Planning[]", Gdx3DHud.getMenuButtonText(planning, true));
+        assertEquals("[GRAY]B:Planning[]", Gdx3DHud.getMenuButtonText(planning, false));
+    }
+
+    @Test
+    @DisplayName("Planning is hidden from the 3D menu until a 3D works window exists")
+    void should_HidePlanningFromGraphicMenu() {
+        assertFalse(Gdx3DHud.visibleInGraphic(Model.GameMode.PLANNED_WORKS));
+        assertTrue(Gdx3DHud.visibleInGraphic(Model.GameMode.RAILS));
+    }
+
+    @Test
     @DisplayName("a disabled option is grey #808080 and loses the green shortcut")
     void should_PaintDisabledOptionInGrey() {
         String text = Gdx3DHud.getMenuButtonText("S&ensors", false);
@@ -61,12 +79,13 @@ class Gdx3DHudMenuTest {
         List<GameModeMenuOption> menu = new letrain.mvp.impl.Model(1).getMenuModel();
 
         for (GameModeMenuOption option : menu) {
-            MenuText.Label label = MenuText.parse(option.gameModeName());
-            String text = Gdx3DHud.getMenuButtonText(option.gameModeName(), true);
+            String text = Gdx3DHud.getMenuButtonText(option, true);
+            String displayText = MenuText.displayText(option.gameModeName(), option.shortcut());
 
-            assertEquals(label.displayText(), withoutMarkup(text), option.gameModeName());
-            if (label.hasHotkey()) {
-                assertTrue(text.contains("[GREEN]" + label.displayHotkey() + ":" + "[]"), text);
+            assertEquals(displayText, withoutMarkup(text), option.gameModeName());
+            String hotkey = MenuText.displayHotkey(option.gameModeName(), option.shortcut());
+            if (!hotkey.isEmpty()) {
+                assertTrue(text.contains("[GREEN]" + hotkey + ":" + "[]"), text);
             }
         }
     }

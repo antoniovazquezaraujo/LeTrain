@@ -12,8 +12,10 @@ import java.util.Locale;
  * The 2D terminal and the 3D HUD build their menu from the same {@link Model#getMenuModel()}
  * entries; parsing the labels here keeps wording, structure and shortcuts from drifting apart. Both
  * clients render {@link Label#displayText()} ({@code "R:Rails"}, {@code "E:Sensors"}), so the
- * shortcut is shown separated from the mode name. Mapping the parsed parts to colours or markup
- * stays client-specific (Lanterna {@code TextColor} in 2D, libGDX {@code [COLOR]} markup in 3D).
+ * shortcut is shown separated from the mode name. Entries whose shortcut is not in the label pass
+ * the explicit key to {@link #displayText(String, String)} ({@code "Planning"} + {@code "b"}
+ * becomes {@code "B:Planning"}). Mapping the parsed parts to colours or markup stays
+ * client-specific (Lanterna {@code TextColor} in 2D, libGDX {@code [COLOR]} markup in 3D).
  */
 public final class MenuText {
 
@@ -51,6 +53,31 @@ public final class MenuText {
     private static final char HOTKEY_MARKER = '&';
 
     private MenuText() {}
+
+    /**
+     * Shortcut for a menu entry, using the explicit override when present and otherwise the
+     * {@code &} marker of the label. Always uppercase, as both clients render it.
+     */
+    public static String displayHotkey(String rawName, String explicitShortcut) {
+        if (explicitShortcut != null) {
+            String trimmed = explicitShortcut.trim();
+            if (!trimmed.isEmpty()) {
+                return trimmed.substring(0, 1).toUpperCase(Locale.ROOT);
+            }
+        }
+        return parse(rawName).displayHotkey();
+    }
+
+    /**
+     * Label with its shortcut separated, honouring an explicit shortcut that does not appear in the
+     * label: {@code ("Planning", "b")} becomes {@code "B:Planning"}. Without an override it behaves
+     * like {@link Label#displayText()}.
+     */
+    public static String displayText(String rawName, String explicitShortcut) {
+        String hotkey = displayHotkey(rawName, explicitShortcut);
+        String plainText = parse(rawName).plainText();
+        return hotkey.isEmpty() ? plainText : hotkey + ":" + plainText;
+    }
 
     /**
      * Splits {@code rawName} on its shortcut marker. A label without {@code &} keeps its whole text

@@ -103,6 +103,8 @@ class TerminalPresenterPlannedWorksTest {
         presenter.onChar(enter()); // B; planning
         awaitPreview();
         presenter.onChar(enter()); // save to list, not build
+        assertEquals(Model.GameMode.RAILS, model.getMode(),
+                "saving from the list returns to the mode the list was opened from");
     }
 
     private void awaitPreview() {
@@ -141,7 +143,7 @@ class TerminalPresenterPlannedWorksTest {
         verify(view, times(1)).showConstructionPlansDialog(anyList(), anyInt(), anyString());
         presenter.drawConstructionOverlay();
         verify(view, atLeastOnce())
-                .drawRoutePreviewStatus(org.mockito.ArgumentMatchers.contains("added to works"));
+                .drawRoutePreviewStatus(org.mockito.ArgumentMatchers.contains("added to planning"));
     }
 
     @Test
@@ -425,12 +427,19 @@ class TerminalPresenterPlannedWorksTest {
     @DisplayName("the works key also opens the list from the main menu")
     void worksKey_opensFromMenu() {
         model.setMode(Model.GameMode.MENU);
-        when(view.showConstructionPlansDialog(anyList(), anyInt(), anyString())).thenReturn(
-                new ConstructionPlansDialog.Result(ConstructionPlansDialog.Action.CLOSE, -1));
+        when(view.showConstructionPlansDialog(anyList(), anyInt(), anyString()))
+                .thenAnswer(invocation -> {
+                    assertEquals(Model.GameMode.PLANNED_WORKS, model.getMode(),
+                            "the list runs as a transient Planning mode");
+                    return new ConstructionPlansDialog.Result(ConstructionPlansDialog.Action.CLOSE,
+                            -1);
+                });
 
         presenter.onChar(charKey('b'));
 
         verify(view).showConstructionPlansDialog(anyList(), anyInt(), anyString());
+        assertEquals(Model.GameMode.MENU, model.getMode(),
+                "closing the list restores the mode the player came from");
     }
 
     @Test
@@ -448,7 +457,7 @@ class TerminalPresenterPlannedWorksTest {
 
         presenter.onChar(charKey('b'));
 
-        verify(view).showMessage("Works", "Finish or cancel the active construction first");
+        verify(view).showMessage("Planning", "Finish or cancel the active construction first");
         verify(view, never()).showConstructionPlansDialog(anyList(), anyInt(), anyString());
     }
 
