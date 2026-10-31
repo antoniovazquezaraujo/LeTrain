@@ -2,8 +2,9 @@ package letrain.mvp.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -47,7 +48,8 @@ public class GameSaveService {
             ObjectMapper mapper = new ObjectMapper();
             configureObjectMapper(mapper);
             mapper.disable(SerializationFeature.INDENT_OUTPUT);
-            mapper.writeValue(file, model);
+            JsonNode tree = encodeModel(model, mapper);
+            mapper.writeValue(file, tree);
             log.info("Game saved successfully to {} (JSON)", file.getAbsolutePath());
             return true;
         } catch (Exception e) {
@@ -80,8 +82,8 @@ public class GameSaveService {
         try {
             ObjectMapper mapper = new ObjectMapper();
             configureObjectMapper(mapper);
-            letrain.mvp.impl.Model loadedModel =
-                    mapper.readValue(file, letrain.mvp.impl.Model.class);
+            JsonNode tree = mapper.readTree(file);
+            letrain.mvp.impl.Model loadedModel = decodeModel(tree, mapper);
             loadedModel.postLoadInit();
             log.info("Game loaded successfully from {} (JSON)", file.getAbsolutePath());
             return Optional.of(loadedModel);
@@ -111,7 +113,8 @@ public class GameSaveService {
     public byte[] toBytes(letrain.mvp.Model model) {
         try {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            newMapper().writeValue(out, model);
+            ObjectMapper mapper = newMapper();
+            mapper.writeValue(out, encodeModel(model, mapper));
             return out.toByteArray();
         } catch (Exception e) {
             log.error("Error serializing model to bytes", e);
@@ -126,8 +129,9 @@ public class GameSaveService {
             return null;
         }
         try {
-            letrain.mvp.impl.Model loaded = newMapper().readValue(new ByteArrayInputStream(data),
-                    letrain.mvp.impl.Model.class);
+            ObjectMapper mapper = newMapper();
+            JsonNode tree = mapper.readTree(data);
+            letrain.mvp.impl.Model loaded = decodeModel(tree, mapper);
             loaded.postLoadInit();
             return loaded;
         } catch (Exception e) {
@@ -142,8 +146,9 @@ public class GameSaveService {
             return Optional.empty();
         }
         try {
-            letrain.mvp.impl.Model loadedModel =
-                    newMapper().readValue(is, letrain.mvp.impl.Model.class);
+            ObjectMapper mapper = newMapper();
+            JsonNode tree = mapper.readTree(is);
+            letrain.mvp.impl.Model loadedModel = decodeModel(tree, mapper);
             loadedModel.postLoadInit();
             return Optional.of(loadedModel);
         } catch (Exception e) {
@@ -151,5 +156,35 @@ public class GameSaveService {
             e.printStackTrace();
             return Optional.empty();
         }
+    }
+
+    /**
+     * Adds the planning list beside the model tree and removes it before Jackson builds the model,
+     * because the list is owned by the model but its immutable domain types are not Jackson beans.
+     */
+    private ObjectNode encodeModel(letrain.mvp.Model model, ObjectMapper mapper) {
+        JsonNode tree = mapper.valueToTree(model);
+        if (!(tree instanceof ObjectNode root)) {
+            throw new IllegalArgumentException("model did not serialize to an object");
+        }
+        if (model.getPlannedWorks() != null) {
+            root.set("plannedWorks", PlannedWorksCodec.encode(model.getPlannedWorks(), mapper));
+        }
+        return root;
+    }
+
+    /** Builds a model and restores the planning section written by {@link #encodeModel}. */
+    private letrain.mvp.impl.Model decodeModel(JsonNode tree, ObjectMapper mapper)
+            throws Exception {
+        JsonNode plannedWorks = null;
+        if (tree instanceof ObjectNode root) {
+            plannedWorks = root.remove("plannedWorks");
+        }
+        letrain.mvp.impl.Model loaded = mapper.treeToValue(tree, letrain.mvp.impl.Model.class);
+        if (plannedWorks != null && !plannedWorks.isNull()) {
+            PlannedWorksCodec.decode(plannedWorks, loaded.getPlannedWorks(),
+                    loaded.getEconomyManager());
+        }
+        return loaded;
     }
 }

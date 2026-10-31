@@ -90,7 +90,8 @@ LeTrain is deeply modal. Pressing the following keys will switch your current in
 - During an automatic work the old plan points are hidden so the real rails become visible; when it finishes the row becomes **Done** and the points disappear. If cancelled it becomes **Cancelled**.
 - Stored drafts stay painted on the map until they are built or deleted.
 - Saving a draft also creates the marks `Way-<id>-start` and `Way-<id>-end` at its endpoints (for example, `Way-1-start` and `Way-1-end`). These marks remain if the row is deleted; a dedicated marks menu will come later.
-- The list is kept while the current game is loaded, but it is not yet saved in savegames; a model swap (load/undo) clears it.
+- The list lives in the model and is saved with the game. One active automatic work blocks saving;
+  finish or cancel it first. The list itself is kept across load/undo model swaps.
 
 ### Moving Track Elements
 In the **Stations** (`n`), **Sensors** (`e`), **Semaphores** (`s`) and **Speed Signals** (`g`) modes you can slide the selected element along the rail, in the direction the element itself is facing:

@@ -1,6 +1,6 @@
 # ADR-038: Planes de obra, presupuestos y constructoras
 
-## Estado: PROPUESTO (fases 1 y primer corte de fase 2 implementados)
+## Estado: PROPUESTO (fases 1 y 2 implementadas; zonas y calidad pendientes)
 
 > La **lista de obras en fase 1** ya está implementada: guarda borradores con origen, destino,
 > política, `RoutePlan`, coste y tiempo estimados, y permite añadirlos, editarlos, eliminarlos y ver
@@ -11,12 +11,13 @@
 > tiempo, calidad y capacidades. `Q` compara ofertas y la lista muestra la compañía/calidad
 > seleccionada. `Run` ya está disponible: comprueba el saldo, cobra por adelantado la cotización y
 > arranca la cola con el tiempo de la compañía; el materializador automático no cobra dos veces.
-> La obra activa se muestra como `Working` en Works; `Cancel work` pide confirmación antes de
+> La obra activa se muestra como `Working` en Planning; `Cancel work` pide confirmación antes de
 > cancelar. `Esc` abre el File menu y no cancela. Se devuelve la parte no construida con una
 > penalización provisional del 10 % restante, mínimo 5 % del total cotizado. Al terminar una obra
 > pasa a `Done` y al cancelarla a `Cancelled`; en ambos casos deja de pintarse el plan y solo quedan
-> las vías reales. Sigue habiendo una sola obra activa y no hay zonas, varias obras simultáneas ni
-> calidad real.
+> las vías reales. La lista y sus cotizaciones se guardan en el savegame; una obra activa bloquea
+> el guardado porque su cola todavía no se serializa. Sigue habiendo una sola obra activa y no hay
+> zonas, varias obras simultáneas ni calidad real.
 >
 > Depende de ADR-034, ADR-035, ADR-036 y ADR-037. La calidad de construcción y el mantenimiento se
 > separan en [[ADR-039-Track-Quality-and-Maintenance|ADR-039]].
@@ -251,7 +252,6 @@ funcione. No forma parte de esta ADR.
 - Cifras de recargo automático, tiempo base y cancelación.
 - Cómo se reparte el sobrecoste entre las obras simultáneas (límite acordado: cuatro equipos).
 - Capacidades exactas de cada constructora.
-- Persistencia de la lista de obras en savegames.
 - Orden de implementación entre lista, constructoras y zonas.
 - Sintaxis final y valores por defecto de `connect`.
 - Posible comando `construct` futuro para ejecutar una lista de trayectos de forma simultánea,
