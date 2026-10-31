@@ -443,8 +443,8 @@ class TerminalPresenterPlannedWorksTest {
     }
 
     @Test
-    @DisplayName("b during an active construction shows a notice and does not open the list")
-    void worksKey_duringConstruction_isBlockedWithNotice() {
+    @DisplayName("b opens Planning while a manual construction is active")
+    void worksKey_duringConstruction_opensTheList() {
         model.setMode(Model.GameMode.RAILS);
         model.getCursor().setPosition(new Point(0, 0));
         presenter.onChar(shiftC());
@@ -454,11 +454,13 @@ class TerminalPresenterPlannedWorksTest {
         awaitPreview();
         presenter.onChar(enter());
         assertTrue(presenter.isConstructionActive());
+        when(view.showConstructionPlansDialog(anyList(), anyInt(), anyString())).thenReturn(
+                new ConstructionPlansDialog.Result(ConstructionPlansDialog.Action.CLOSE, -1));
 
         presenter.onChar(charKey('b'));
 
-        verify(view).showMessage("Planning", "Finish or cancel the active construction first");
-        verify(view, never()).showConstructionPlansDialog(anyList(), anyInt(), anyString());
+        verify(view).showConstructionPlansDialog(anyList(), anyInt(), anyString());
+        assertTrue(presenter.isConstructionActive());
     }
 
     @Test

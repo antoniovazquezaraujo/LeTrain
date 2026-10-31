@@ -33,9 +33,19 @@ final class RailTrackMaterializer implements TrackMaterializer {
 
     private final Presenter presenter;
     private final RailTrackMaker maker;
+    private final boolean chargeConstructionCosts;
 
     RailTrackMaterializer(Presenter presenter) {
+        this(presenter, true);
+    }
+
+    /**
+     * @param chargeConstructionCosts false for a company work whose quote was already prepaid; the
+     *        per-cell economy charge is suppressed for the duration of the build, then restored
+     */
+    RailTrackMaterializer(Presenter presenter, boolean chargeConstructionCosts) {
         this.presenter = presenter;
+        this.chargeConstructionCosts = chargeConstructionCosts;
         // A dedicated maker keeps the construction chaining state (oldTrack) isolated from the
         // interactive RAILS maker and guarantees the first built cell starts a fresh piece.
         this.maker = new RailTrackMaker(presenter);
@@ -61,7 +71,11 @@ final class RailTrackMaterializer implements TrackMaterializer {
         Point savedPosition = new Point(cursor.getPosition());
         Dir savedDir = cursor.getDir();
         CursorMode savedMode = cursor.getMode();
+        boolean wasFree = model.getEconomyManager().isFreeConstruction();
         try {
+            if (!chargeConstructionCosts) {
+                model.getEconomyManager().setFreeConstruction(true);
+            }
             maker.setJournalSuppressed(true);
             cursor.setPosition(new Point(cell));
             cursor.setDir(exit);
@@ -71,6 +85,9 @@ final class RailTrackMaterializer implements TrackMaterializer {
                         "Unable to materialise planned cell " + cell + " at step " + index);
             }
         } finally {
+            if (!chargeConstructionCosts) {
+                model.getEconomyManager().setFreeConstruction(wasFree);
+            }
             maker.setJournalSuppressed(false);
             cursor.setPosition(savedPosition);
             cursor.setDir(savedDir);

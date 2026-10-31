@@ -220,6 +220,21 @@ class RouteConstructionJobTest {
     }
 
     @Test
+    @DisplayName("a company time factor scales every per-cell delay")
+    void should_ScaleDelaysByTimeFactor() {
+        RecordingTrackMaterializer materializer = new RecordingTrackMaterializer();
+        RouteConstructionJob job =
+                new RouteConstructionJob(normalPlan(1), materializer, economy(0, 3, 2), 1, 1.5);
+
+        job.tick();
+        assertEquals(1, job.progress().remainingTicks());
+        assertTrue(materializer.builtIndexes.isEmpty());
+
+        job.tick();
+        assertEquals(List.of(0), materializer.builtIndexes);
+    }
+
+    @Test
     @DisplayName("cancel keeps the built count, stops further builds and calls finish once")
     void should_KeepBuiltCellsAndStop_When_Cancelled() {
         RecordingTrackMaterializer materializer = new RecordingTrackMaterializer();

@@ -180,6 +180,37 @@ class PlannedWorkTest {
     }
 
     @Test
+    @DisplayName("a built or cancelled work keeps its route and quote in the new state")
+    void withState_changesOnlyTheLifecycleState() {
+        PlannedWork original = PlannedWork.draft(3, new Point(0, 0), new Point(4, 0),
+                RoutePolicy.DIRECT, plan(5, 100, 10), 15);
+        WorkQuote quote = WorkQuote.quote(ConstructionCompanyCatalog.ARTESANA, original.plan());
+        PlannedWork quoted = original.withQuote(quote);
+
+        PlannedWork done = quoted.withState(PlannedWork.State.DONE);
+        PlannedWork cancelled = quoted.withState(PlannedWork.State.CANCELLED);
+
+        assertEquals(PlannedWork.State.DONE, done.state());
+        assertEquals(PlannedWork.State.CANCELLED, cancelled.state());
+        assertEquals(quoted.plan(), done.plan());
+        assertEquals(quoted.quote(), done.quote());
+    }
+
+    @Test
+    @DisplayName("a cancelled work can record the actual cash spent")
+    void withSpentCost_recordsCancellationCost() {
+        PlannedWork work =
+                PlannedWork
+                        .draft(3, new Point(0, 0), new Point(4, 0), RoutePolicy.DIRECT,
+                                plan(5, 100, 10), 15)
+                        .withState(PlannedWork.State.CANCELLED).withSpentCost(42.5);
+
+        assertEquals(42.5, work.spentCost().orElseThrow());
+        assertEquals(PlannedWork.State.CANCELLED, work.state());
+        assertThrows(IllegalArgumentException.class, () -> work.withSpentCost(-1));
+    }
+
+    @Test
     @DisplayName("changing the plan drops the old quote; a quote from another plan is rejected")
     void quote_isDroppedWhenThePlanChanges() {
         PlannedWork original = PlannedWork.draft(3, new Point(0, 0), new Point(4, 0),
@@ -215,6 +246,10 @@ class PlannedWorkTest {
         assertEquals(100, list.totalCost());
         assertEquals(15, list.totalTicks());
         assertTrue(list.replaceQuote(999, quote).isEmpty());
+
+        list.markCancelled(first.id(), 42);
+        assertEquals(42, list.totalListedCost());
+        assertEquals(PlannedWork.State.CANCELLED, list.find(first.id()).orElseThrow().state());
     }
 
     @Test

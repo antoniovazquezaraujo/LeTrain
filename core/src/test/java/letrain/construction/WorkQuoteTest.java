@@ -4,11 +4,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Set;
 import letrain.construction.ConstructionCompany.Capability;
 import letrain.construction.ConstructionCompany.Quality;
+import letrain.economy.EconomyManager;
+import letrain.economy.EconomyManager.ExpenseType;
 import letrain.map.Point;
 import letrain.mvp.Presenter.TrackType;
 import letrain.planner.RoutePlan;
@@ -56,6 +60,23 @@ class WorkQuoteTest {
         assertEquals(95, fast.totalCost());
         assertEquals(3, fast.totalTicks());
         assertTrue(cheap.requiredCapabilities().isEmpty());
+    }
+
+    @Test
+    @DisplayName("per-step quote costs support exact cancellation refunds")
+    void stepCosts_areAvailableWhenAnEconomyIsSupplied() {
+        EconomyManager economy = mock(EconomyManager.class);
+        when(economy.getCost(ExpenseType.CONSTRUCTED_NORMAL_RAIL_TRACK)).thenReturn(100f);
+        RoutePlan plan = plan(TrackType.NORMAL_TRACK, TrackType.NORMAL_TRACK);
+
+        WorkQuote quote = WorkQuote.quote(ConstructionCompanyCatalog.ARTESANA, plan, 1, economy);
+
+        assertEquals(160, quote.costForStep(0));
+        assertEquals(160, quote.costForStep(1));
+        assertEquals(320, quote.totalCost());
+        assertEquals(160,
+                WorkQuote.quote(ConstructionCompanyCatalog.ARTESANA, plan(TrackType.NORMAL_TRACK))
+                        .costForStep(0));
     }
 
     @Test

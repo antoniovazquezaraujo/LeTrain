@@ -54,6 +54,13 @@ class ConstructionOverlayStatusTest {
     }
 
     @Test
+    @DisplayName("a cancelled automatic work reports the cash actually spent")
+    void cancelled_reportsActualSpent() {
+        assertEquals("Construction cancelled · spent $42 · partial track remains",
+                ConstructionStatus.cancelled(42));
+    }
+
+    @Test
     @DisplayName("the armed confirmation has its own fixed text")
     void format_armedConfirmation() {
         RoutePlan plan = plan();

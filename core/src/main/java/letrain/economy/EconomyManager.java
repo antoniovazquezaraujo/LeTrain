@@ -54,6 +54,18 @@ public interface EconomyManager {
     void spend(ExpenseType type, int amount);
 
     /**
+     * Charges an arbitrary amount as an expense. Used by automatic works to prepay the selected
+     * company quote; free construction ignores it.
+     */
+    void charge(float amount);
+
+    /**
+     * Returns an amount previously charged (for example the unbuilt part of a cancelled automatic
+     * work), reducing total expenses. Free construction ignores it.
+     */
+    void refund(float amount);
+
+    /**
      * Free-construction mode (ADR-020 scenario "constructor libre"): while true, spending has no
      * effect on the balance or totals (statistics counters still update).
      */

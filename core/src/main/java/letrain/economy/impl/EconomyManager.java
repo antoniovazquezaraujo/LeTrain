@@ -269,6 +269,24 @@ public class EconomyManager implements letrain.economy.EconomyManager {
     }
 
     @Override
+    public void charge(float amount) {
+        if (freeConstruction || amount <= 0) {
+            return;
+        }
+        totalExpenses += amount;
+        balance -= amount;
+    }
+
+    @Override
+    public void refund(float amount) {
+        if (freeConstruction || amount <= 0) {
+            return;
+        }
+        totalExpenses = Math.max(0, totalExpenses - amount);
+        balance += amount;
+    }
+
+    @Override
     public void setFreeConstruction(boolean free) {
         this.freeConstruction = free;
     }

@@ -17,6 +17,8 @@ import com.googlecode.lanterna.gui2.Panel;
 import com.googlecode.lanterna.gui2.TextGUIGraphics;
 import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.gui2.WindowListenerAdapter;
+import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
+import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
 import com.googlecode.lanterna.screen.Screen;
@@ -38,9 +40,8 @@ import java.util.regex.Pattern;
  * "save route" planning flow and decides when to reopen the list.
  *
  * <p>
- * <b>Run stays disabled</b> in phase 1: there are no construction companies or reserved cash yet,
- * so the button is shown (so the action is discoverable) but cannot be activated and has no
- * shortcut.
+ * <b>Run is enabled only when at least one row has a company quote.</b> The presenter still checks
+ * the selected row and the available cash before starting the automatic work.
  *
  * <p>
  * The table formatting lives in pure static methods ({@link #header()}, {@link #formatRow(Row)},
@@ -50,7 +51,7 @@ final class ConstructionPlansDialog {
 
     /** What the player chose when the dialog closed. */
     enum Action {
-        CLOSE, ADD, EDIT, QUOTES, DELETE
+        CLOSE, ADD, EDIT, QUOTES, RUN, CANCEL, DELETE
     }
 
     /**
@@ -66,9 +67,43 @@ final class ConstructionPlansDialog {
     record Result(Action action, int selectedIndex) {
     }
 
+    /** Table column widths; every field is separated by two spaces. */
+    private static final int ID_WIDTH = 2;
+    private static final int STATE_WIDTH = 9;
+    private static final int FROM_WIDTH = 7;
+    private static final int TO_WIDTH = 8;
+    private static final int POLICY_WIDTH = 11;
+    private static final int COMPANY_WIDTH = 10;
+    private static final int QUALITY_WIDTH = 7;
+    private static final int CELLS_WIDTH = 5;
+    private static final int COST_WIDTH = 11;
+
     /** Table header, with every column starting on the same cell as {@link #formatRow(Row)}. */
-    static final String HEADER =
-            "#  State    From   To      Policy     Company  Quality Cells  Cost       Time";
+    static final String HEADER = buildHeader();
+
+    private static String buildHeader() {
+        StringBuilder line = new StringBuilder();
+        appendField(line, "#", ID_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, "State", STATE_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, "From", FROM_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, "To", TO_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, "Policy", POLICY_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, "Company", COMPANY_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, "Quality", QUALITY_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, "Cells", CELLS_WIDTH, true);
+        appendSeparator(line);
+        appendField(line, "Cost", COST_WIDTH, false);
+        appendSeparator(line);
+        line.append("Time");
+        return line.toString();
+    }
 
     private static final Pattern HOURS_PATTERN = Pattern.compile("(\\d+)\\s*h");
     private static final Pattern MINUTES_PATTERN = Pattern.compile("(\\d+)\\s*min");
@@ -88,7 +123,7 @@ final class ConstructionPlansDialog {
     static Result show(Screen screen, List<Row> rows, int selectedIndex, String total) {
         List<Row> safeRows = rows == null ? List.of() : List.copyOf(rows);
         MultiWindowTextGUI gui = DialogWindow.programGui(screen);
-        TerminalSize box = DialogWindow.dialogSize(screen.getTerminalSize(), 86, 110);
+        TerminalSize box = DialogWindow.dialogSize(screen.getTerminalSize(), 96, 110);
 
         BasicWindow window = new BasicWindow("Planning");
         window.setHints(List.of(Window.Hint.CENTERED));
@@ -139,28 +174,55 @@ final class ConstructionPlansDialog {
         Runnable add = () -> closeWith(window, result, Action.ADD, list);
         Runnable edit = () -> closeWith(window, result, Action.EDIT, list);
         Runnable quotes = () -> closeWith(window, result, Action.QUOTES, list);
+        Runnable run = () -> closeWith(window, result, Action.RUN, list);
         Runnable delete = () -> closeWith(window, result, Action.DELETE, list);
+        Runnable cancelWork = () -> {
+            int index = selectedIndex(list);
+            if (index < 0 || index >= safeRows.size()
+                    || !"Working".equals(safeRows.get(index).state())) {
+                new MessageDialogBuilder().setTitle("Cancel work")
+                        .setText("Select the work in Working state first.")
+                        .addButton(MessageDialogButton.OK).build().showDialog(gui);
+                return;
+            }
+            MessageDialogButton choice = new MessageDialogBuilder().setTitle("Cancel work")
+                    .setText("Cancel work #" + safeRows.get(index).id()
+                            + "? The built track remains and the unused budget is refunded"
+                            + " minus the cancellation penalty.")
+                    .addButton(MessageDialogButton.Yes).addButton(MessageDialogButton.No).build()
+                    .showDialog(gui);
+            if (choice == MessageDialogButton.Yes) {
+                closeWith(window, result, Action.CANCEL, list);
+            }
+        };
 
         Panel actionRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
         Button addButton = NewGameDialog.mnemonicButton("Add", 'A', add);
         Button editButton = NewGameDialog.mnemonicButton("Edit", 'E', edit);
         Button quotesButton = NewGameDialog.mnemonicButton("Quotes", 'Q', quotes);
         Button deleteButton = NewGameDialog.mnemonicButton("Delete", 'D', delete);
+        Button cancelButton = NewGameDialog.mnemonicButton("Cancel work", 'X', cancelWork);
         actionRow.addComponent(addButton);
         actionRow.addComponent(editButton);
         actionRow.addComponent(quotesButton);
         actionRow.addComponent(deleteButton);
+        actionRow.addComponent(cancelButton);
 
         boolean hasSelection = !safeRows.isEmpty();
-        editButton.setEnabled(hasSelection);
-        quotesButton.setEnabled(hasSelection);
-        deleteButton.setEnabled(hasSelection);
+        boolean hasQuote = safeRows.stream()
+                .anyMatch(row -> "Draft".equals(row.state()) && !"-".equals(row.company()));
+        boolean hasWorking = safeRows.stream().anyMatch(row -> "Working".equals(row.state()));
+        addButton.setEnabled(!hasWorking);
+        editButton.setEnabled(hasSelection && !hasWorking);
+        quotesButton.setEnabled(hasSelection && !hasWorking);
+        deleteButton.setEnabled(hasSelection && !hasWorking);
+        cancelButton.setEnabled(hasWorking);
 
         Panel runRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
-        Button runButton = new Button("Run");
-        runButton.setEnabled(false);
+        Button runButton = NewGameDialog.mnemonicButton("Run", 'R', run);
+        runButton.setEnabled(hasQuote && !hasWorking);
         runRow.addComponent(runButton);
-        runRow.addComponent(new Label("  (available in a later phase)"));
+        runRow.addComponent(new Label("  (requires a company quote)"));
 
         Panel closeRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
         closeRow.addComponent(NewGameDialog.mnemonicButton("Close", 'C', close));
@@ -180,12 +242,19 @@ final class ConstructionPlansDialog {
                     if (character == null) {
                         return;
                     }
+                    if (Character.toLowerCase(character) == 'x' && hasWorking) {
+                        cancelWork.run();
+                        deliverEvent.set(false);
+                        return;
+                    }
                     Action action = shortcutAction(character, hasSelection);
                     if (action != null) {
                         switch (action) {
                             case ADD -> add.run();
                             case EDIT -> edit.run();
                             case QUOTES -> quotes.run();
+                            case RUN -> run.run();
+                            case CANCEL -> cancelWork.run();
                             case DELETE -> delete.run();
                             case CLOSE -> close.run();
                         }
@@ -218,9 +287,21 @@ final class ConstructionPlansDialog {
                         }
                         deliverEvent.set(false);
                     }
+                    case 'r' -> {
+                        if (hasQuote) {
+                            run.run();
+                        }
+                        deliverEvent.set(false);
+                    }
                     case 'd' -> {
                         if (hasSelection) {
                             delete.run();
+                        }
+                        deliverEvent.set(false);
+                    }
+                    case 'x' -> {
+                        if (hasWorking) {
+                            cancelWork.run();
                         }
                         deliverEvent.set(false);
                     }
@@ -271,6 +352,7 @@ final class ConstructionPlansDialog {
             case 'a' -> Action.ADD;
             case 'e' -> hasSelection ? Action.EDIT : null;
             case 'q' -> hasSelection ? Action.QUOTES : null;
+            case 'r' -> hasSelection ? Action.RUN : null;
             case 'd' -> hasSelection ? Action.DELETE : null;
             case 'c' -> Action.CLOSE;
             default -> null;
@@ -289,21 +371,45 @@ final class ConstructionPlansDialog {
      */
     static String formatRow(Row row) {
         StringBuilder line = new StringBuilder();
-        line.append(fitLeft(Integer.toString(row.id()), 2));
-        line.append(" ");
-        line.append(fitLeft(row.state(), 9));
-        line.append(fitLeft(row.from(), 7));
-        line.append(fitLeft(row.to(), 8));
-        line.append(fitLeft(row.policy(), 11));
-        line.append(fitLeft(row.company(), 9));
-        line.append(fitLeft(row.quality(), 8));
-        line.append(fitRight(Integer.toString(row.cells()), 7));
-        line.append(fitLeft(row.cost(), 11));
+        appendField(line, Integer.toString(row.id()), ID_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, row.state(), STATE_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, row.from(), FROM_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, row.to(), TO_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, row.policy(), POLICY_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, row.company(), COMPANY_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, row.quality(), QUALITY_WIDTH, false);
+        appendSeparator(line);
+        appendField(line, Integer.toString(row.cells()), CELLS_WIDTH, true);
+        appendSeparator(line);
+        appendField(line, row.cost(), COST_WIDTH, false);
+        appendSeparator(line);
         line.append(row.time() == null ? "" : row.time());
         if (row.warning() != null && !row.warning().isBlank()) {
             line.append(" !");
         }
         return line.toString();
+    }
+
+    private static void appendSeparator(StringBuilder line) {
+        line.append("  ");
+    }
+
+    private static void appendField(StringBuilder line, String text, int width, boolean right) {
+        String value = text == null ? "" : text;
+        if (value.length() > width) {
+            value = value.substring(0, width);
+        }
+        if (right) {
+            line.append(" ".repeat(width - value.length())).append(value);
+        } else {
+            line.append(value).append(" ".repeat(width - value.length()));
+        }
     }
 
     /**
@@ -398,21 +504,5 @@ final class ConstructionPlansDialog {
             minutes += Long.parseLong(mins.group(1));
         }
         return minutes;
-    }
-
-    private static String fitLeft(String text, int width) {
-        String value = text == null ? "" : text;
-        if (value.length() > width) {
-            value = value.substring(0, width);
-        }
-        return value + " ".repeat(width - value.length());
-    }
-
-    private static String fitRight(String text, int width) {
-        String value = text == null ? "" : text;
-        if (value.length() > width) {
-            value = value.substring(value.length() - width);
-        }
-        return " ".repeat(width - value.length()) + value;
     }
 }

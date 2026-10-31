@@ -35,6 +35,7 @@ public final class RouteConstructionJob {
     private final TrackMaterializer materializer;
     private final EconomyManager economy;
     private final long baseDelayTicksPerCell;
+    private final double timeFactor;
 
     private ConstructionState state;
     private int nextStepIndex;
@@ -58,6 +59,14 @@ public final class RouteConstructionJob {
      */
     public RouteConstructionJob(RoutePlan plan, TrackMaterializer materializer,
             EconomyManager economy, long baseDelayTicksPerCell) {
+        this(plan, materializer, economy, baseDelayTicksPerCell, 1.0);
+    }
+
+    /**
+     * @param timeFactor multiplier applied to each per-cell construction delay; must be positive
+     */
+    public RouteConstructionJob(RoutePlan plan, TrackMaterializer materializer,
+            EconomyManager economy, long baseDelayTicksPerCell, double timeFactor) {
         this.plan = Objects.requireNonNull(plan, "plan must not be null");
         this.materializer = Objects.requireNonNull(materializer, "materializer must not be null");
         this.economy = Objects.requireNonNull(economy, "economy must not be null");
@@ -66,7 +75,12 @@ public final class RouteConstructionJob {
                     "baseDelayTicksPerCell must be non-negative, but was: "
                             + baseDelayTicksPerCell);
         }
+        if (!Double.isFinite(timeFactor) || timeFactor <= 0) {
+            throw new IllegalArgumentException(
+                    "timeFactor must be positive, but was: " + timeFactor);
+        }
         this.baseDelayTicksPerCell = baseDelayTicksPerCell;
+        this.timeFactor = timeFactor;
         preflight();
     }
 
@@ -165,7 +179,8 @@ public final class RouteConstructionJob {
 
     private long ticksFor(RouteStep step) {
         int delay = Math.max(0, economy.getConstructionDelay(step.trackType()));
-        return Math.addExact(baseDelayTicksPerCell, delay);
+        long base = Math.addExact(baseDelayTicksPerCell, delay);
+        return Math.max(0, Math.round(base * timeFactor));
     }
 
     private void reject(String message) {

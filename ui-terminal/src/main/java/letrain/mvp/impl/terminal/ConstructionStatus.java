@@ -20,21 +20,41 @@ final class ConstructionStatus {
     static final String COMPLETE = "Construction complete";
     static final String CANCELLED = "Construction cancelled · partial track remains";
 
+    /** Cancellation notice with the cash actually spent (built cells + penalty). */
+    static String cancelled(double spent) {
+        return "Construction cancelled · spent " + RoutePreviewStatus.formatCost(spent)
+                + " · partial track remains";
+    }
+
     private ConstructionStatus() {}
 
     /** Normal {@code Building · built/total · $cost · time · Esc cancel} line. */
     static String format(ConstructionProgress progress, RoutePlan plan, boolean cancelArmed) {
+        double cost = plan == null ? 0 : plan.totalCost();
+        long ticks = plan == null ? 0
+                : Math.addExact(plan.totalConstructionTicks(), plan.steps().size());
+        return format(progress, plan, cancelArmed, cost, ticks);
+    }
+
+    /** Same line with the prepaid quote cost/time for an automatic company work. */
+    static String format(ConstructionProgress progress, RoutePlan plan, boolean cancelArmed,
+            double quotedCost, long quotedTicks) {
+        return format(progress, plan, cancelArmed, quotedCost, quotedTicks, true);
+    }
+
+    /** Same line with optional Esc-cancel hint; automatic works cancel from Works instead. */
+    static String format(ConstructionProgress progress, RoutePlan plan, boolean cancelArmed,
+            double quotedCost, long quotedTicks, boolean showEscCancel) {
         if (cancelArmed) {
             return CONFIRM_CANCEL;
         }
         int total =
                 progress != null ? progress.totalSteps() : plan == null ? 0 : plan.steps().size();
         int built = progress != null ? progress.builtSteps() : 0;
-        double cost = plan == null ? 0 : plan.totalCost();
-        long ticks = plan == null ? 0
-                : Math.addExact(plan.totalConstructionTicks(), plan.steps().size());
-        return "Building · " + built + "/" + total + " · " + RoutePreviewStatus.formatCost(cost)
-                + " · " + RoutePreviewStatus.formatTicks(ticks) + " · Esc cancel";
+        String hint = showEscCancel ? " · Esc cancel" : "";
+        return "Building · " + built + "/" + total + " · "
+                + RoutePreviewStatus.formatCost(quotedCost) + " · "
+                + RoutePreviewStatus.formatTicks(quotedTicks) + hint;
     }
 
     static String rejected(String reason) {
