@@ -87,7 +87,8 @@ class ConstructionPlansDialogTest {
                 "2,2", "DIRECT", "-", "-", 2, "$100", "1 min", "track occupied");
 
         String line = ConstructionPlansDialog.formatRow(warned);
-        assertTrue(line.endsWith("1 min !"), line);
+        assertTrue(line.contains("1 min"), line);
+        assertTrue(line.endsWith("!"), line);
         assertFalse(ConstructionPlansDialog.formatRow(CHEAPEST).endsWith("!"),
                 "an empty warning must not add a mark");
     }

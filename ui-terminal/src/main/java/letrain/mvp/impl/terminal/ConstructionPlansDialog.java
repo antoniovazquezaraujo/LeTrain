@@ -79,6 +79,7 @@ final class ConstructionPlansDialog {
     private static final int QUALITY_WIDTH = 7;
     private static final int CELLS_WIDTH = 5;
     private static final int COST_WIDTH = 11;
+    private static final int TIME_WIDTH = 9;
 
     /** Table header, with every column starting on the same cell as {@link #formatRow(Row)}. */
     static final String HEADER = buildHeader();
@@ -103,8 +104,8 @@ final class ConstructionPlansDialog {
         appendSeparator(line);
         appendField(line, "Cost", COST_WIDTH, false);
         appendSeparator(line);
-        line.append("Time");
-        return line.toString();
+        appendField(line, "Time", TIME_WIDTH, false);
+        return line.toString().stripTrailing();
     }
 
     private static final Pattern HOURS_PATTERN = Pattern.compile("(\\d+)\\s*h");
@@ -125,7 +126,7 @@ final class ConstructionPlansDialog {
     static Result show(Screen screen, List<Row> rows, int selectedIndex, String total) {
         List<Row> safeRows = rows == null ? List.of() : List.copyOf(rows);
         MultiWindowTextGUI gui = DialogWindow.programGui(screen);
-        TerminalSize box = DialogWindow.dialogSize(screen.getTerminalSize(), 96, 110);
+        TerminalSize box = DialogWindow.dialogSize(screen.getTerminalSize(), 100, 110);
 
         BasicWindow window = new BasicWindow("Planning");
         window.setHints(List.of(Window.Hint.CENTERED));
@@ -389,7 +390,7 @@ final class ConstructionPlansDialog {
         appendSeparator(line);
         appendField(line, row.cost(), COST_WIDTH, false);
         appendSeparator(line);
-        line.append(row.time() == null ? "" : row.time());
+        appendField(line, row.time(), TIME_WIDTH, false);
         if (row.warning() != null && !row.warning().isBlank()) {
             line.append(" !");
         }
