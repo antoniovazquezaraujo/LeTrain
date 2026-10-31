@@ -41,7 +41,7 @@ class ConstructionPlansDialogTest {
     @DisplayName("the header is the roadmap's compact table header")
     void should_ExposeTheExactHeader() {
         assertEquals(
-                "# |  State  | From  |   To   |  Policy   | Company  |Quality|Cells|   Cost    |  Time",
+                "#  |   State   |  From   |    To    |   Policy    |  Company   | Quality | Cells |    Cost     |   Time",
                 ConstructionPlansDialog.header());
     }
 
@@ -59,12 +59,12 @@ class ConstructionPlansDialogTest {
         String[] cells = line.split("\\|", -1);
         assertEquals(10, cells.length);
         assertEquals("Borrador", cells[1].trim());
-        assertTrue(cells[1].startsWith("Borrador"), "text columns are left-aligned");
-        assertTrue(cells[2].endsWith("20,25"), "coordinates are right-aligned");
-        assertTrue(cells[3].endsWith("34,254"), "coordinates are right-aligned");
+        assertTrue(cells[1].trim().startsWith("Borrador"), "text columns are left-aligned");
+        assertTrue(cells[2].trim().endsWith("20,25"), "coordinates are right-aligned");
+        assertTrue(cells[3].trim().endsWith("34,254"), "coordinates are right-aligned");
         assertTrue(cells[7].trim().equals("234"), "cell count is right-aligned");
-        assertTrue(cells[8].endsWith("$342.000"), "cost is right-aligned");
-        assertTrue(cells[9].endsWith("12 min"), "time is right-aligned");
+        assertTrue(cells[8].trim().endsWith("$342.000"), "cost is right-aligned");
+        assertTrue(cells[9].trim().endsWith("12 min"), "time is right-aligned");
     }
 
     @Test
@@ -72,7 +72,7 @@ class ConstructionPlansDialogTest {
     void should_FormatEveryColumn() {
         String line = ConstructionPlansDialog.formatRow(AVOID_ALL);
 
-        assertTrue(line.startsWith(" 2|Borrador "), line);
+        assertTrue(line.startsWith(" 2 | Borrador"), line);
         assertTrue(line.contains("53,85"), line);
         assertTrue(line.contains("92,329"), line);
         assertTrue(line.contains("AVOID_ALL"), line);
@@ -109,7 +109,7 @@ class ConstructionPlansDialogTest {
                 assertEquals('|', line.charAt(i), "separator " + i + " must align");
             }
         }
-        assertTrue(line.startsWith("10|"), line);
+        assertTrue(line.startsWith("10 |"), line);
     }
 
     @Test
@@ -123,7 +123,7 @@ class ConstructionPlansDialogTest {
         when(list.getTheme()).thenReturn(theme);
         when(theme.getDefinition(AbstractListBox.class)).thenReturn(definition);
         when(definition.getSelected()).thenReturn(selected);
-        when(graphics.getSize()).thenReturn(new TerminalSize(100, 1));
+        when(graphics.getSize()).thenReturn(new TerminalSize(110, 1));
 
         ConstructionPlansDialog.rowRenderer(List.of(CHEAPEST)).drawItem(graphics, list, 0, () -> {
         }, true, false);

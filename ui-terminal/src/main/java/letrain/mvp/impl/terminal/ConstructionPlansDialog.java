@@ -127,7 +127,7 @@ final class ConstructionPlansDialog {
     static Result show(Screen screen, List<Row> rows, int selectedIndex, String total) {
         List<Row> safeRows = rows == null ? List.of() : List.copyOf(rows);
         MultiWindowTextGUI gui = DialogWindow.programGui(screen);
-        TerminalSize box = DialogWindow.dialogSize(screen.getTerminalSize(), 100, 110);
+        TerminalSize box = DialogWindow.dialogSize(screen.getTerminalSize(), 110, 110);
 
         BasicWindow window = new BasicWindow("Planning");
         window.setHints(List.of(Window.Hint.CENTERED));
@@ -399,7 +399,7 @@ final class ConstructionPlansDialog {
     }
 
     private static void appendSeparator(StringBuilder line) {
-        line.append(COLUMN_SEPARATOR);
+        line.append(' ').append(COLUMN_SEPARATOR).append(' ');
     }
 
     private static void appendCentered(StringBuilder line, String text, int width) {
