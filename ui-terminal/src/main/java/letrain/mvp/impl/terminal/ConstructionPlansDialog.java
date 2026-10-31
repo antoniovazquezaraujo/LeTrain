@@ -80,31 +80,32 @@ final class ConstructionPlansDialog {
     private static final int CELLS_WIDTH = 5;
     private static final int COST_WIDTH = 11;
     private static final int TIME_WIDTH = 9;
+    private static final char COLUMN_SEPARATOR = '|';
 
     /** Table header, with every column starting on the same cell as {@link #formatRow(Row)}. */
     static final String HEADER = buildHeader();
 
     private static String buildHeader() {
         StringBuilder line = new StringBuilder();
-        appendField(line, "#", ID_WIDTH, false);
+        appendCentered(line, "#", ID_WIDTH);
         appendSeparator(line);
-        appendField(line, "State", STATE_WIDTH, false);
+        appendCentered(line, "State", STATE_WIDTH);
         appendSeparator(line);
-        appendField(line, "From", FROM_WIDTH, false);
+        appendCentered(line, "From", FROM_WIDTH);
         appendSeparator(line);
-        appendField(line, "To", TO_WIDTH, false);
+        appendCentered(line, "To", TO_WIDTH);
         appendSeparator(line);
-        appendField(line, "Policy", POLICY_WIDTH, false);
+        appendCentered(line, "Policy", POLICY_WIDTH);
         appendSeparator(line);
-        appendField(line, "Company", COMPANY_WIDTH, false);
+        appendCentered(line, "Company", COMPANY_WIDTH);
         appendSeparator(line);
-        appendField(line, "Quality", QUALITY_WIDTH, false);
+        appendCentered(line, "Quality", QUALITY_WIDTH);
         appendSeparator(line);
-        appendField(line, "Cells", CELLS_WIDTH, true);
+        appendCentered(line, "Cells", CELLS_WIDTH);
         appendSeparator(line);
-        appendField(line, "Cost", COST_WIDTH, false);
+        appendCentered(line, "Cost", COST_WIDTH);
         appendSeparator(line);
-        appendField(line, "Time", TIME_WIDTH, false);
+        appendCentered(line, "Time", TIME_WIDTH);
         return line.toString().stripTrailing();
     }
 
@@ -372,13 +373,13 @@ final class ConstructionPlansDialog {
      */
     static String formatRow(Row row) {
         StringBuilder line = new StringBuilder();
-        appendField(line, Integer.toString(row.id()), ID_WIDTH, false);
+        appendField(line, Integer.toString(row.id()), ID_WIDTH, true);
         appendSeparator(line);
         appendField(line, row.state(), STATE_WIDTH, false);
         appendSeparator(line);
-        appendField(line, row.from(), FROM_WIDTH, false);
+        appendField(line, row.from(), FROM_WIDTH, true);
         appendSeparator(line);
-        appendField(line, row.to(), TO_WIDTH, false);
+        appendField(line, row.to(), TO_WIDTH, true);
         appendSeparator(line);
         appendField(line, row.policy(), POLICY_WIDTH, false);
         appendSeparator(line);
@@ -388,9 +389,9 @@ final class ConstructionPlansDialog {
         appendSeparator(line);
         appendField(line, Integer.toString(row.cells()), CELLS_WIDTH, true);
         appendSeparator(line);
-        appendField(line, row.cost(), COST_WIDTH, false);
+        appendField(line, row.cost(), COST_WIDTH, true);
         appendSeparator(line);
-        appendField(line, row.time(), TIME_WIDTH, false);
+        appendField(line, row.time(), TIME_WIDTH, true);
         if (row.warning() != null && !row.warning().isBlank()) {
             line.append(" !");
         }
@@ -398,7 +399,17 @@ final class ConstructionPlansDialog {
     }
 
     private static void appendSeparator(StringBuilder line) {
-        line.append("  ");
+        line.append(COLUMN_SEPARATOR);
+    }
+
+    private static void appendCentered(StringBuilder line, String text, int width) {
+        String value = text == null ? "" : text;
+        if (value.length() > width) {
+            value = value.substring(0, width);
+        }
+        int left = (width - value.length()) / 2;
+        int right = width - value.length() - left;
+        line.append(" ".repeat(left)).append(value).append(" ".repeat(right));
     }
 
     private static void appendField(StringBuilder line, String text, int width, boolean right) {

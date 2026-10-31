@@ -41,28 +41,30 @@ class ConstructionPlansDialogTest {
     @DisplayName("the header is the roadmap's compact table header")
     void should_ExposeTheExactHeader() {
         assertEquals(
-                "#   State      From     To        Policy       Company     Quality  Cells  Cost         Time",
+                "# |  State  | From  |   To   |  Policy   | Company  |Quality|Cells|   Cost    |  Time",
                 ConstructionPlansDialog.header());
     }
 
     @Test
-    @DisplayName("each row starts every value on the same column as the header")
+    @DisplayName("each row keeps the same column boundaries and separator positions")
     void should_AlignRowsWithTheHeader() {
         String line = ConstructionPlansDialog.formatRow(CHEAPEST);
         String header = ConstructionPlansDialog.header();
 
-        assertEquals(header.indexOf("State"), line.indexOf("Borrador"));
-        assertEquals(header.indexOf("From"), line.indexOf("20,25"));
-        assertEquals(header.indexOf("To"), line.indexOf("34,254"));
-        assertEquals(header.indexOf("Policy"), line.indexOf("CHEAPEST"));
-        assertEquals(header.indexOf("Company"), line.indexOf("CHAPUCERT"));
-        assertEquals(header.indexOf("Quality"), line.indexOf("Low"));
-        // The cell count is the only numeric column: it is right-aligned under its header.
-        assertEquals("234",
-                line.substring(header.indexOf("Cells"), header.indexOf("Cells") + 5).trim());
-        assertEquals(header.indexOf("Cost"), line.indexOf("$342.000"));
-        assertEquals(header.indexOf("Time"), line.indexOf("12 min"));
-        assertEquals(0, line.indexOf("1"));
+        for (int i = 0; i < header.length(); i++) {
+            if (header.charAt(i) == '|') {
+                assertEquals('|', line.charAt(i), "separator " + i + " must align");
+            }
+        }
+        String[] cells = line.split("\\|", -1);
+        assertEquals(10, cells.length);
+        assertEquals("Borrador", cells[1].trim());
+        assertTrue(cells[1].startsWith("Borrador"), "text columns are left-aligned");
+        assertTrue(cells[2].endsWith("20,25"), "coordinates are right-aligned");
+        assertTrue(cells[3].endsWith("34,254"), "coordinates are right-aligned");
+        assertTrue(cells[7].trim().equals("234"), "cell count is right-aligned");
+        assertTrue(cells[8].endsWith("$342.000"), "cost is right-aligned");
+        assertTrue(cells[9].endsWith("12 min"), "time is right-aligned");
     }
 
     @Test
@@ -70,7 +72,7 @@ class ConstructionPlansDialogTest {
     void should_FormatEveryColumn() {
         String line = ConstructionPlansDialog.formatRow(AVOID_ALL);
 
-        assertTrue(line.startsWith("2   Borrador "), line);
+        assertTrue(line.startsWith(" 2|Borrador "), line);
         assertTrue(line.contains("53,85"), line);
         assertTrue(line.contains("92,329"), line);
         assertTrue(line.contains("AVOID_ALL"), line);
@@ -102,9 +104,12 @@ class ConstructionPlansDialogTest {
         String line = ConstructionPlansDialog.formatRow(row);
         String header = ConstructionPlansDialog.header();
 
-        assertEquals(header.indexOf("State"), line.indexOf("Draft"), line);
-        assertEquals(header.indexOf("From"), line.indexOf("1,1"), line);
-        assertTrue(line.startsWith("10 "), line);
+        for (int i = 0; i < header.length(); i++) {
+            if (header.charAt(i) == '|') {
+                assertEquals('|', line.charAt(i), "separator " + i + " must align");
+            }
+        }
+        assertTrue(line.startsWith("10|"), line);
     }
 
     @Test
