@@ -2,6 +2,7 @@ package letrain.mvp.impl.terminal;
 
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TerminalTextUtils;
+import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.graphics.ThemeDefinition;
 import com.googlecode.lanterna.gui2.AbstractListBox;
 import com.googlecode.lanterna.gui2.ActionListBox;
@@ -40,7 +41,28 @@ final class QuotesDialog {
     record Result(Action action, int selectedIndex, WorkQuote quote) {
     }
 
-    static final String HEADER = "Company   Cost       Time    Quality Capabilities";
+    static final int COMPANY_WIDTH = 10;
+    static final int COST_WIDTH = 11;
+    static final int TIME_WIDTH = 8;
+    static final int QUALITY_WIDTH = 8;
+    static final int CAPABILITIES_WIDTH = 13;
+    private static final char COLUMN_SEPARATOR = '|';
+
+    static final String HEADER = buildHeader();
+
+    private static String buildHeader() {
+        StringBuilder line = new StringBuilder();
+        appendCentered(line, "Company", COMPANY_WIDTH);
+        appendSeparator(line);
+        appendCentered(line, "Cost", COST_WIDTH);
+        appendSeparator(line);
+        appendCentered(line, "Time", TIME_WIDTH);
+        appendSeparator(line);
+        appendCentered(line, "Quality", QUALITY_WIDTH);
+        appendSeparator(line);
+        appendCentered(line, "Capabilities", CAPABILITIES_WIDTH);
+        return line.toString();
+    }
 
     private QuotesDialog() {}
 
@@ -60,8 +82,11 @@ final class QuotesDialog {
         Panel root = new Panel(new BorderLayout());
         Panel body = new Panel(new BorderLayout());
         Panel heading = new Panel(new LinearLayout(Direction.VERTICAL));
-        heading.addComponent(new Label(HEADER));
-        heading.addComponent(new EmptySpace(new TerminalSize(1, 1)));
+        String headerText = HEADER + " ".repeat(Math.max(0, box.getColumns() - HEADER.length()));
+        Label header = new Label(headerText);
+        header.setForegroundColor(TextColor.ANSI.BLACK);
+        header.setBackgroundColor(TextColor.ANSI.CYAN);
+        heading.addComponent(header);
         body.addComponent(heading, BorderLayout.Location.TOP);
 
         ActionListBox list = new ActionListBox() {
@@ -179,18 +204,48 @@ final class QuotesDialog {
     }
 
     static String formatRow(WorkQuote quote) {
-        String company = fitLeft(quote.company().name(), 10);
-        String cost =
-                quote.feasible() ? fitLeft(RoutePreviewStatus.formatCost(quote.totalCost()), 11)
-                        : fitLeft("-", 11);
-        String time =
-                quote.feasible() ? fitLeft(RoutePreviewStatus.formatTicks(quote.totalTicks()), 8)
-                        : fitLeft("-", 8);
-        String quality =
-                fitLeft(quote.quality() == ConstructionCompany.Quality.LOW ? "Low" : "High", 8);
-        String capabilities = capabilityLabel(quote);
-        String line = company + cost + time + quality + capabilities;
-        return quote.feasible() ? line : line + " !";
+        String company = fitLeft(quote.company().name(), COMPANY_WIDTH);
+        String cost = quote.feasible()
+                ? fitRight(RoutePreviewStatus.formatCost(quote.totalCost()), COST_WIDTH)
+                : fitRight("-", COST_WIDTH);
+        String time = quote.feasible()
+                ? fitRight(RoutePreviewStatus.formatTicks(quote.totalTicks()), TIME_WIDTH)
+                : fitRight("-", TIME_WIDTH);
+        String quality = fitLeft(
+                quote.quality() == ConstructionCompany.Quality.LOW ? "Low" : "High", QUALITY_WIDTH);
+        String capabilities = fitLeft(capabilityLabel(quote), CAPABILITIES_WIDTH);
+        StringBuilder line = new StringBuilder(company);
+        appendSeparator(line);
+        line.append(cost);
+        appendSeparator(line);
+        line.append(time);
+        appendSeparator(line);
+        line.append(quality);
+        appendSeparator(line);
+        line.append(capabilities);
+        return quote.feasible() ? line.toString() : line + " !";
+    }
+
+    private static void appendSeparator(StringBuilder line) {
+        line.append(' ').append(COLUMN_SEPARATOR).append(' ');
+    }
+
+    private static void appendCentered(StringBuilder line, String text, int width) {
+        String value = text == null ? "" : text;
+        if (value.length() > width) {
+            value = value.substring(0, width);
+        }
+        int left = (width - value.length()) / 2;
+        int right = width - value.length() - left;
+        line.append(" ".repeat(left)).append(value).append(" ".repeat(right));
+    }
+
+    private static String fitRight(String text, int width) {
+        String value = text == null ? "" : text;
+        if (value.length() > width) {
+            value = value.substring(0, width);
+        }
+        return " ".repeat(width - value.length()) + value;
     }
 
     private static String capabilityLabel(WorkQuote quote) {

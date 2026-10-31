@@ -106,7 +106,7 @@ final class ConstructionPlansDialog {
         appendCentered(line, "Cost", COST_WIDTH);
         appendSeparator(line);
         appendCentered(line, "Time", TIME_WIDTH);
-        return line.toString().stripTrailing();
+        return line.toString();
     }
 
     private static final Pattern HOURS_PATTERN = Pattern.compile("(\\d+)\\s*h");
@@ -140,7 +140,8 @@ final class ConstructionPlansDialog {
         Panel root = new Panel(new BorderLayout());
         Panel body = new Panel(new BorderLayout());
         Panel heading = new Panel(new LinearLayout(Direction.VERTICAL));
-        Label header = new Label(HEADER);
+        String headerText = HEADER + " ".repeat(Math.max(0, box.getColumns() - HEADER.length()));
+        Label header = new Label(headerText);
         header.setForegroundColor(TextColor.ANSI.BLACK);
         header.setBackgroundColor(TextColor.ANSI.CYAN);
         heading.addComponent(header);
@@ -363,7 +364,7 @@ final class ConstructionPlansDialog {
 
     /** Table header, kept in one place so the row formatter and the label cannot drift. */
     static String header() {
-        return HEADER;
+        return HEADER.stripTrailing();
     }
 
     /**
