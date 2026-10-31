@@ -29,16 +29,33 @@ class Gdx3DHudMenuTest {
     }
 
     @Test
-    @DisplayName("a middle & paints the shortcut green between white text")
+    @DisplayName("a middle & paints the separated shortcut green before the white name")
     void should_MarkMiddleShortcutGreen() {
-        assertEquals("[WHITE]S[][GREEN]e[][WHITE]nsors[]",
-                Gdx3DHud.getMenuButtonText("S&ensors", true));
+        assertEquals("[GREEN]E:[][WHITE]Sensors[]", Gdx3DHud.getMenuButtonText("S&ensors", true));
     }
 
     @Test
-    @DisplayName("a leading & marks the first letter")
+    @DisplayName("a leading & marks the first letter and separates it with a colon")
     void should_MarkLeadingShortcutGreen() {
-        assertEquals("[GREEN]R[][WHITE]ails[]", Gdx3DHud.getMenuButtonText("&Rails", true));
+        assertEquals("[GREEN]R:[][WHITE]Rails[]", Gdx3DHud.getMenuButtonText("&Rails", true));
+    }
+
+    @Test
+    @DisplayName("an explicit shortcut paints before the label: Planning + b -> B:Planning")
+    void should_PaintExplicitShortcut() {
+        GameModeMenuOption planning =
+                new GameModeMenuOption("Planning", "b", "Plan routes and manage planned works",
+                        () -> true, () -> false, () -> Model.GameMode.PLANNED_WORKS);
+
+        assertEquals("[GREEN]B:[][WHITE]Planning[]", Gdx3DHud.getMenuButtonText(planning, true));
+        assertEquals("[GRAY]B:Planning[]", Gdx3DHud.getMenuButtonText(planning, false));
+    }
+
+    @Test
+    @DisplayName("Planning is hidden from the 3D menu until a 3D works window exists")
+    void should_HidePlanningFromGraphicMenu() {
+        assertFalse(Gdx3DHud.visibleInGraphic(Model.GameMode.PLANNED_WORKS));
+        assertTrue(Gdx3DHud.visibleInGraphic(Model.GameMode.RAILS));
     }
 
     @Test
@@ -46,7 +63,7 @@ class Gdx3DHudMenuTest {
     void should_PaintDisabledOptionInGrey() {
         String text = Gdx3DHud.getMenuButtonText("S&ensors", false);
 
-        assertEquals("[GRAY]Sensors[]", text);
+        assertEquals("[GRAY]E:Sensors[]", text);
         assertFalse(text.contains("[GREEN]"), text);
     }
 
@@ -62,12 +79,13 @@ class Gdx3DHudMenuTest {
         List<GameModeMenuOption> menu = new letrain.mvp.impl.Model(1).getMenuModel();
 
         for (GameModeMenuOption option : menu) {
-            MenuText.Label label = MenuText.parse(option.gameModeName());
-            String text = Gdx3DHud.getMenuButtonText(option.gameModeName(), true);
+            String text = Gdx3DHud.getMenuButtonText(option, true);
+            String displayText = MenuText.displayText(option.gameModeName(), option.shortcut());
 
-            assertEquals(label.plainText(), withoutMarkup(text), option.gameModeName());
-            if (label.hasHotkey()) {
-                assertTrue(text.contains("[GREEN]" + label.hotkey() + "[]"), text);
+            assertEquals(displayText, withoutMarkup(text), option.gameModeName());
+            String hotkey = MenuText.displayHotkey(option.gameModeName(), option.shortcut());
+            if (!hotkey.isEmpty()) {
+                assertTrue(text.contains("[GREEN]" + hotkey + ":" + "[]"), text);
             }
         }
     }

@@ -720,32 +720,36 @@ public class Gdx3DHud {
     }
 
     /**
-     * Label for a menu button with libGDX markup: white text, the shortcut in green; a disabled
-     * mode is painted grey and loses the shortcut colour. The label is split with the shared
-     * {@link MenuText} parser, the same one the 2D terminal uses, so wording and shortcuts cannot
-     * drift between clients. Static and package-visible so a test can check it without a GL
-     * context.
+     * Label for a menu button with libGDX markup: the shortcut and its colon in green, the mode
+     * name in white; a disabled mode is painted grey and loses the shortcut colour. The label is
+     * split with the shared {@link MenuText} parser, the same one the 2D terminal uses, so wording
+     * and shortcuts cannot drift between clients. Static and package-visible so a test can check it
+     * without a GL context.
      */
     static String getMenuButtonText(String rawName, boolean isEnabled) {
+        return getMenuButtonText(rawName, "", isEnabled);
+    }
+
+    /** Overload used by the shared menu model, including explicit B for Planning. */
+    static String getMenuButtonText(GameModeMenuOption option, boolean isEnabled) {
+        return getMenuButtonText(option.gameModeName(), option.shortcut(), isEnabled);
+    }
+
+    private static String getMenuButtonText(String rawName, String shortcut, boolean isEnabled) {
         MenuText.Label label = MenuText.parse(rawName);
         String plainText = label.plainText();
         if (plainText.isEmpty()) {
             return "";
         }
         if (!isEnabled) {
-            return DISABLED_MARKUP + plainText + MARKUP_RESET;
+            return DISABLED_MARKUP + MenuText.displayText(rawName, shortcut) + MARKUP_RESET;
         }
-        StringBuilder text = new StringBuilder();
-        if (!label.prefix().isEmpty()) {
-            text.append(ENABLED_MARKUP).append(label.prefix()).append(MARKUP_RESET);
+        String hotkey = MenuText.displayHotkey(rawName, shortcut);
+        if (hotkey.isEmpty()) {
+            return ENABLED_MARKUP + plainText + MARKUP_RESET;
         }
-        if (label.hasHotkey()) {
-            text.append(HOTKEY_MARKUP).append(label.hotkey()).append(MARKUP_RESET);
-        }
-        if (!label.suffix().isEmpty()) {
-            text.append(ENABLED_MARKUP).append(label.suffix()).append(MARKUP_RESET);
-        }
-        return text.toString();
+        return HOTKEY_MARKUP + hotkey + ':' + MARKUP_RESET + ENABLED_MARKUP + plainText
+                + MARKUP_RESET;
     }
 
     /**
@@ -811,7 +815,7 @@ public class Gdx3DHud {
             GameModeMenuOption option = options.get(i);
             boolean isEnabled = option.enabledIf().get();
             lastMenuEnabled[i] = isEnabled;
-            String formattedName = getMenuButtonText(option.gameModeName(), isEnabled);
+            String formattedName = getMenuButtonText(option, isEnabled);
 
             TextButton button = new TextButton(formattedName, skin, "menu-button");
             button.setName(menuButtonName(option.gameModeName()));
@@ -850,14 +854,22 @@ public class Gdx3DHud {
 
     /**
      * Shared menu definition: the wording and the {@code enabledIf}/{@code selectedIf} suppliers
-     * are constant for a model, so the HUD builds the list once instead of allocating twelve
-     * options per frame (#818). A new HUD is created when the model is swapped.
+     * are constant for a model, so the HUD builds the list once instead of allocating the menu
+     * options per frame (#818). A new HUD is created when the model is swapped. Planning is
+     * filtered out until the 3D client has a planned-works window: the shared model entry is
+     * 2D-only for now.
      */
     private List<GameModeMenuOption> menuOptions() {
         if (menuOptionsCache == null) {
-            menuOptionsCache = model.getMenuModel();
+            menuOptionsCache = model.getMenuModel().stream()
+                    .filter(option -> visibleInGraphic(option.doWhenSelected().get())).toList();
         }
         return menuOptionsCache;
+    }
+
+    /** True for menu modes the 3D HUD can actually open. */
+    static boolean visibleInGraphic(Model.GameMode mode) {
+        return mode != Model.GameMode.PLANNED_WORKS;
     }
 
     public void updateHUD() {
@@ -996,7 +1008,7 @@ public class Gdx3DHud {
                 lastMenuEnabled[i] = enabled;
                 button.setDisabled(!enabled);
                 // Only rebuild the label markup when the grey/white state actually changed.
-                button.setText(getMenuButtonText(option.gameModeName(), enabled));
+                button.setText(getMenuButtonText(option, enabled));
             }
             boolean selected = option.selectedIf().get();
             if (i < lastMenuSelected.length && lastMenuSelected[i] != selected) {

@@ -84,6 +84,9 @@ public class InfoVisitor implements Visitor {
             case PROGRAM:
                 visitProgram(model);
                 break;
+            case PLANNED_WORKS:
+                infoBarText += "Planning";
+                break;
             case COMMAND:
                 infoBarText += "Command Mode";
                 break;
@@ -169,7 +172,7 @@ public class InfoVisitor implements Visitor {
 
         // Row 6: Global Help
         richInfo.append(
-                "[PgUp/Dn]:Scroll | [z/Z]:Camera | [a/r/d/f/s/t/c/u/p/n]:Modes | [b]:Works | [Tab]:Info | [Esc]:Menu");
+                "[PgUp/Dn]:Scroll | [z/Z]:Camera | [a/r/d/f/s/t/c/u/p/n]:Modes | [Tab]:Info | [Esc]:Menu");
 
         view.setInfoBarText(richInfo.toString());
 

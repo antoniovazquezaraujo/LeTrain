@@ -66,6 +66,7 @@ LeTrain is deeply modal. Pressing the following keys will switch your current in
 - **`n`**: **Stations Mode** - Select and inspect stations.
 - **`e`**: **Sensors Mode** - Select and inspect sensors.
 - **`p`**: **Programming Mode** - Open the editor to write automation scripts.
+- **`b`**: **Planning Mode** - Open the planned-works list and manage routes before building.
 - **`:`**: **CLI Mode** - Open the command line interface.
 - **`R`**: **Toggle Record/edit mode** (off by default). When enabled, the world (trains, economy, derailments) freezes while you are in any editing mode (Rails, Add, Stations, Sensors, Semaphores, Speed Signals, Forks, Trains, console or program editor), track construction becomes instantaneous, and every edit is journaled for deterministic undo and scenario export. Simulation only runs in play/view modes (Drive, Menu, Link/Unlink) or when the toggle is off.
 
@@ -74,8 +75,8 @@ LeTrain is deeply modal. Pressing the following keys will switch your current in
 - **`a`**: Enter **Add Mode** to place infrastructure: `n` **Station**, `e` **Sensor**, `s` **Semaphore**, `g` **Speed Signal**.
 - **Numbers (0-9)**: Set a step multiplier for cursor movement; press **Spacebar** to reset it to 1.
 
-### Planned Works (2D)
-- **`b`**: Open the **Works** list from the map. It stores draft routes and their estimated cost/time; it does not build them.
+### Planning (2D)
+- **`b`**: Open the **Planning** list from the map, or select **B:Planning** in the mode menu. It stores draft routes and their estimated cost/time; it does not build them.
 - **`A`**: Add a route from the list. The map enters route planning with A/B; **Enter** saves the route as a draft, **Esc** cancels. The normal mode menu is hidden while planning and the Add status is a single bottom line; **Tab** hides or shows that line.
 - **`E`**: Edit the selected route. It opens with the saved A/B and plan already visible; only the policy can be changed with `[`/`]`. While editing, the old route is hidden so only the candidate plan is painted. If you want a different origin or destination, add another route.
 - **`Q`**: Compare construction companies for the selected route and choose one. Companies that cannot build the route's bridges or tunnels are unavailable. Before choosing a company the row shows no cost or construction time; after choosing one it shows the company, quality, quoted cost and quoted time.

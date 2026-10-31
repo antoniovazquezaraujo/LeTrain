@@ -1253,7 +1253,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         Point start = session.start().orElse(null);
         Point end = session.end().orElse(null);
         if (plan == null || !plan.feasible() || start == null || end == null) {
-            showPlannedWorksNotice("Route could not be added to works");
+            showPlannedWorksNotice("Route could not be added to planning");
             return;
         }
         PlannedWork work = plannedWorks().add(start, end, session.policy(), plan,
@@ -1261,7 +1261,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         model.setMark(wayMarkName(work.id(), "start"), start);
         model.setMark(wayMarkName(work.id(), "end"), end);
         plannedWorksSelectedIndex = plannedWorks().size() - 1;
-        showPlannedWorksNotice("Route #" + work.id() + " added to works · b opens the list");
+        showPlannedWorksNotice("Route #" + work.id() + " added to planning · b opens the list");
     }
 
     /**
@@ -1298,86 +1298,107 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     /**
-     * Opens the modal planned-works list and applies its actions. Add leaves the list and starts
-     * CONNECT in save mode. Delete keeps the list loop alive. The dialog never reopens itself after
-     * Add, by owner decision: the player opens it again when they want.
+     * Opens the modal planned-works list and applies its actions. The list is a transient
+     * {@link Model.GameMode#PLANNED_WORKS} mode: the previous mode is restored on close, and before
+     * Add/Edit hand control to CONNECT so the preview returns to the original map mode. Delete
+     * keeps the list loop alive. The dialog never reopens itself after Add, by owner decision: the
+     * player opens it again when they want.
      */
     void openPlannedWorks() {
-        while (true) {
-            List<PlannedWork> works = plannedWorks().works();
-            ConstructionPlansDialog.Result result = view.showConstructionPlansDialog(
-                    plannedWorkRows(works), plannedWorksSelectedIndex, plannedWorksTotalLine());
-            if (result == null) {
-                return;
-            }
-            plannedWorksSelectedIndex =
-                    ConstructionPlansDialog.clampIndex(result.selectedIndex(), works.size());
-            int selectedId =
-                    plannedWorksSelectedIndex >= 0 && plannedWorksSelectedIndex < works.size()
-                            ? works.get(plannedWorksSelectedIndex).id()
-                            : -1;
-            switch (result.action()) {
-                case ADD -> {
-                    if (isConstructionActive()) {
-                        view.showMessage("Works", "Cancel the active work before planning another");
-                        return;
-                    }
-                    enterConnectMode(true);
+        Model.GameMode returnMode = model.getMode();
+        model.setMode(Model.GameMode.PLANNED_WORKS);
+        try {
+            while (true) {
+                List<PlannedWork> works = plannedWorks().works();
+                ConstructionPlansDialog.Result result = view.showConstructionPlansDialog(
+                        plannedWorkRows(works), plannedWorksSelectedIndex, plannedWorksTotalLine());
+                if (result == null) {
                     return;
                 }
-                case EDIT -> {
-                    if (isConstructionActive()) {
-                        view.showMessage("Works", "Cancel the active work before editing");
+                plannedWorksSelectedIndex =
+                        ConstructionPlansDialog.clampIndex(result.selectedIndex(), works.size());
+                int selectedId =
+                        plannedWorksSelectedIndex >= 0 && plannedWorksSelectedIndex < works.size()
+                                ? works.get(plannedWorksSelectedIndex).id()
+                                : -1;
+                switch (result.action()) {
+                    case ADD -> {
+                        if (isConstructionActive()) {
+                            view.showMessage("Planning",
+                                    "Cancel the active work before planning another");
+                            return;
+                        }
+                        restorePlannedWorksMode(returnMode);
+                        enterConnectMode(true);
                         return;
                     }
-                    if (selectedId >= 0) {
-                        java.util.Optional<PlannedWork> work = plannedWorks().find(selectedId);
-                        if (work.isPresent()) {
-                            if (work.get().state() != PlannedWork.State.DRAFT) {
-                                view.showMessage("Works", "Only draft works can be edited");
-                            } else {
-                                startEditingPlannedWork(work.get());
-                                return;
+                    case EDIT -> {
+                        if (isConstructionActive()) {
+                            view.showMessage("Planning", "Cancel the active work before editing");
+                            return;
+                        }
+                        if (selectedId >= 0) {
+                            java.util.Optional<PlannedWork> work = plannedWorks().find(selectedId);
+                            if (work.isPresent()) {
+                                if (work.get().state() != PlannedWork.State.DRAFT) {
+                                    view.showMessage("Planning", "Only draft works can be edited");
+                                } else {
+                                    restorePlannedWorksMode(returnMode);
+                                    startEditingPlannedWork(work.get());
+                                    return;
+                                }
                             }
                         }
                     }
-                }
-                case QUOTES -> {
-                    if (isConstructionActive()) {
-                        view.showMessage("Works", "Cancel the active work before changing quotes");
-                        return;
-                    }
-                    openQuotesFor(selectedId);
-                }
-                case CANCEL -> {
-                    if (selectedId >= 0 && autoConstructionBudget != null
-                            && autoConstructionBudget.workId() == selectedId) {
-                        cancelConstruction();
-                    } else {
-                        view.showMessage("Works", "Select the active work to cancel it");
-                        return;
-                    }
-                }
-                case RUN -> {
-                    runPlannedWork(selectedId);
-                    return;
-                }
-                case DELETE -> {
-                    if (selectedId >= 0) {
-                        PlannedWork work = plannedWorks().find(selectedId).orElse(null);
-                        if (work != null && work.state() == PlannedWork.State.WORKING) {
-                            view.showMessage("Works", "Cancel the active work before deleting it");
+                    case QUOTES -> {
+                        if (isConstructionActive()) {
+                            view.showMessage("Planning",
+                                    "Cancel the active work before changing quotes");
                             return;
                         }
-                        plannedWorks().remove(selectedId);
-                        plannedWorksSelectedIndex = plannedWorks().isEmpty() ? -1
-                                : Math.min(plannedWorksSelectedIndex, plannedWorks().size() - 1);
+                        openQuotesFor(selectedId);
+                    }
+                    case CANCEL -> {
+                        if (selectedId >= 0 && autoConstructionBudget != null
+                                && autoConstructionBudget.workId() == selectedId) {
+                            cancelConstruction();
+                        } else {
+                            view.showMessage("Planning", "Select the active work to cancel it");
+                            return;
+                        }
+                    }
+                    case RUN -> {
+                        runPlannedWork(selectedId);
+                        return;
+                    }
+                    case DELETE -> {
+                        if (selectedId >= 0) {
+                            PlannedWork work = plannedWorks().find(selectedId).orElse(null);
+                            if (work != null && work.state() == PlannedWork.State.WORKING) {
+                                view.showMessage("Planning",
+                                        "Cancel the active work before deleting it");
+                                return;
+                            }
+                            plannedWorks().remove(selectedId);
+                            plannedWorksSelectedIndex = plannedWorks().isEmpty() ? -1
+                                    : Math.min(plannedWorksSelectedIndex,
+                                            plannedWorks().size() - 1);
+                        }
+                    }
+                    case CLOSE -> {
+                        return;
                     }
                 }
-                case CLOSE -> {
-                    return;
-                }
             }
+        } finally {
+            restorePlannedWorksMode(returnMode);
+        }
+    }
+
+    /** Leaves the transient Planning mode without disturbing a mode chosen by Add/Edit. */
+    private void restorePlannedWorksMode(Model.GameMode returnMode) {
+        if (model.getMode() == Model.GameMode.PLANNED_WORKS) {
+            model.setMode(returnMode);
         }
     }
 

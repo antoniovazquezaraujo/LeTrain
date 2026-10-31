@@ -12,7 +12,10 @@ import org.junit.jupiter.api.Test;
 
 /**
  * The {@code &} shortcut convention of the shared menu model: both clients parse it here, so the
- * format is verified once (issue #710).
+ * format is verified once (issue #710). The clients render the parsed shortcut separated from the
+ * name ({@code R:Rails}); {@code displayText()} keeps that wording in one place. Entries may
+ * instead declare an explicit shortcut ({@code Planning} + {@code b}) when the letter is not in the
+ * name.
  */
 @DisplayName("Shared menu text (& shortcut, selected hint)")
 class MenuTextTest {
@@ -26,6 +29,7 @@ class MenuTextTest {
         assertEquals("R", label.hotkey());
         assertEquals("ails", label.suffix());
         assertEquals("Rails", label.plainText());
+        assertEquals("R:Rails", label.displayText());
         assertTrue(label.hasHotkey());
     }
 
@@ -38,6 +42,21 @@ class MenuTextTest {
         assertEquals("e", label.hotkey());
         assertEquals("nsors", label.suffix());
         assertEquals("Sensors", label.plainText());
+        assertEquals("E:Sensors", label.displayText());
+    }
+
+    @Test
+    @DisplayName("an explicit shortcut overrides the label and is separated from the name")
+    void should_DisplayExplicitShortcut() {
+        assertEquals("B:Planning", MenuText.displayText("Planning", "b"));
+        assertEquals("B", MenuText.displayHotkey("Planning", "b"));
+        assertEquals("R:Rails", MenuText.displayText("&Rails", ""));
+    }
+
+    @Test
+    @DisplayName("a label without a shortcut keeps its plain text")
+    void should_DisplayLabelWithoutShortcut() {
+        assertEquals("Program", MenuText.parse("Program").displayText());
     }
 
     @Test
@@ -74,14 +93,31 @@ class MenuTextTest {
     void should_ShareTheShortcutFormatAcrossTheMenuModel() {
         List<GameModeMenuOption> menu = new Model(1).getMenuModel();
 
-        assertEquals(12, menu.size(), "the menu model is the shared entry list");
+        assertEquals(13, menu.size(), "the menu model is the shared entry list");
         for (GameModeMenuOption option : menu) {
-            MenuText.Label label = MenuText.parse(option.gameModeName());
-            assertTrue(label.hasHotkey(), option.gameModeName());
-            assertEquals(1, label.hotkey().length(), option.gameModeName());
-            assertFalse(label.plainText().isEmpty(), option.gameModeName());
-            assertFalse(label.plainText().contains("&"), option.gameModeName());
+            String hotkey = MenuText.displayHotkey(option.gameModeName(), option.shortcut());
+            assertFalse(hotkey.isEmpty(), option.gameModeName());
+            assertEquals(1, hotkey.length(), option.gameModeName());
+            String plainText = MenuText.parse(option.gameModeName()).plainText();
+            assertFalse(plainText.isEmpty(), option.gameModeName());
+            assertFalse(plainText.contains("&"), option.gameModeName());
+            assertTrue(MenuText.displayText(option.gameModeName(), option.shortcut())
+                    .startsWith(hotkey + ":"), option.gameModeName());
         }
+    }
+
+    @Test
+    @DisplayName("Planning is a real menu entry with the explicit B shortcut")
+    void should_AddPlanningWithItsOwnShortcut() {
+        GameModeMenuOption planning = new Model(1).getMenuModel().stream()
+                .filter(option -> option.doWhenSelected().get() == Model.GameMode.PLANNED_WORKS)
+                .findFirst().orElseThrow();
+
+        assertEquals("Planning", MenuText.parse(planning.gameModeName()).plainText());
+        assertEquals("b", planning.shortcut());
+        assertEquals("B:Planning",
+                MenuText.displayText(planning.gameModeName(), planning.shortcut()));
+        assertEquals("Plan routes and manage planned works", planning.gameModeDescription());
     }
 
     @Test

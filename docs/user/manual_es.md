@@ -68,6 +68,7 @@ LeTrain está fuertemente basado en modos. Al pulsar las siguientes teclas cambi
 - **`n`**: **Modo Stations (Estaciones)** - Seleccionar e inspeccionar estaciones.
 - **`e`**: **Modo Sensors (Sensores)** - Seleccionar e inspeccionar sensores.
 - **`p`**: **Modo Programming (Programación)** - Abrir el editor para programar automatizaciones.
+- **`b`**: **Modo Planning (Planificación)** - Abrir la lista de rutas planificadas y gestionarlas antes de construir.
 - **`:`**: **Modo CLI (Consola)** - Abrir la consola de comandos integrados.
 - **`R`**: **Conmutar el modo Record/edición** (apagado por defecto). Al activarlo, el mundo (trenes, economía, descarrilamientos) se congela mientras estés en cualquier modo de edición (Rails, Add, Estaciones, Sensores, Semáforos, Señales, Desvíos, Trenes, consola o editor de programa), la construcción de vía se vuelve instantánea y cada edición se graba en el diario para el undo determinista y la exportación de escenarios. La simulación solo corre en modos de juego/vista (Drive, Menú, Link/Unlink) o cuando el toggle está apagado.
 
