@@ -46,6 +46,11 @@ public class Model implements letrain.mvp.Model {
     Station selectedStation;
     EventLogManager eventLogManager;
 
+    /** Player planning list, persisted with the model by {@link GameSaveService}. */
+    @JsonIgnore
+    private final letrain.construction.ConstructionPlanList plannedWorks =
+            new letrain.construction.ConstructionPlanList();
+
     @JsonIgnore
     private letrain.segments.BlockManager blockManager;
 
@@ -1440,6 +1445,12 @@ public class Model implements letrain.mvp.Model {
     @Override
     public RailTrack getCursorRailTrack() {
         return getRailMap().getTrackAt(getCursor().getPosition());
+    }
+
+    @JsonIgnore
+    @Override
+    public letrain.construction.ConstructionPlanList getPlannedWorks() {
+        return plannedWorks;
     }
 
     @JsonIgnore

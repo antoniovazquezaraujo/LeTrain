@@ -143,7 +143,10 @@ Implementación actual de la fase 1:
   cotizaciones, `Run` con prepago y cancelación con devolución, apertura con `b`, borrado y creación
   de las marcas de extremos. El diálogo no se reabre solo.
 
-La lista es presenter-owned y se descarta al cambiar de modelo; todavía no se guarda en savegames.
+La lista vive en el modelo y se guarda en el savegame (`plannedWorks`). El presenter conserva
+solo la fila seleccionada y los avisos transitorios. Una obra automática activa no se puede
+guardar: hay que terminarla o cancelarla antes, porque su cola de construcción sigue siendo estado
+de UI y no se serializa.
 
 ### Visión final de la lista
 
@@ -315,7 +318,6 @@ Siguen pendientes:
 - cifras de recargo automático, ticks base y cancelación;
 - cómo se reparte el sobrecoste entre las obras simultáneas;
 - capacidades concretas de cada constructora;
-- persistencia de la lista de obras en savegames;
 - fórmula de calidad y ritmo de mantenimiento;
 - sintaxis final y valores por defecto de `connect`;
 - posible comando `construct` futuro para ejecutar una lista de trayectos de forma simultánea,

@@ -2,6 +2,7 @@ package letrain.mvp.impl.terminal;
 
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TerminalTextUtils;
+import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.graphics.ThemeDefinition;
 import com.googlecode.lanterna.gui2.AbstractListBox;
 import com.googlecode.lanterna.gui2.ActionListBox;
@@ -40,8 +41,9 @@ import java.util.regex.Pattern;
  * "save route" planning flow and decides when to reopen the list.
  *
  * <p>
- * <b>Run is enabled only when at least one row has a company quote.</b> The presenter still checks
- * the selected row and the available cash before starting the automatic work.
+ * <b>Run is enabled for a selected row.</b> The presenter validates the row state and the company
+ * quote when the button is pressed, so an unquoted draft explains what is missing instead of hiding
+ * the action behind a disabled button.
  *
  * <p>
  * The table formatting lives in pure static methods ({@link #header()}, {@link #formatRow(Row)},
@@ -77,32 +79,34 @@ final class ConstructionPlansDialog {
     private static final int QUALITY_WIDTH = 7;
     private static final int CELLS_WIDTH = 5;
     private static final int COST_WIDTH = 11;
+    private static final int TIME_WIDTH = 9;
+    private static final char COLUMN_SEPARATOR = '|';
 
     /** Table header, with every column starting on the same cell as {@link #formatRow(Row)}. */
     static final String HEADER = buildHeader();
 
     private static String buildHeader() {
         StringBuilder line = new StringBuilder();
-        appendField(line, "#", ID_WIDTH, false);
+        appendCentered(line, "#", ID_WIDTH);
         appendSeparator(line);
-        appendField(line, "State", STATE_WIDTH, false);
+        appendCentered(line, "State", STATE_WIDTH);
         appendSeparator(line);
-        appendField(line, "From", FROM_WIDTH, false);
+        appendCentered(line, "From", FROM_WIDTH);
         appendSeparator(line);
-        appendField(line, "To", TO_WIDTH, false);
+        appendCentered(line, "To", TO_WIDTH);
         appendSeparator(line);
-        appendField(line, "Policy", POLICY_WIDTH, false);
+        appendCentered(line, "Policy", POLICY_WIDTH);
         appendSeparator(line);
-        appendField(line, "Company", COMPANY_WIDTH, false);
+        appendCentered(line, "Company", COMPANY_WIDTH);
         appendSeparator(line);
-        appendField(line, "Quality", QUALITY_WIDTH, false);
+        appendCentered(line, "Quality", QUALITY_WIDTH);
         appendSeparator(line);
-        appendField(line, "Cells", CELLS_WIDTH, true);
+        appendCentered(line, "Cells", CELLS_WIDTH);
         appendSeparator(line);
-        appendField(line, "Cost", COST_WIDTH, false);
+        appendCentered(line, "Cost", COST_WIDTH);
         appendSeparator(line);
-        line.append("Time");
-        return line.toString();
+        appendCentered(line, "Time", TIME_WIDTH);
+        return line.toString().stripTrailing();
     }
 
     private static final Pattern HOURS_PATTERN = Pattern.compile("(\\d+)\\s*h");
@@ -123,7 +127,7 @@ final class ConstructionPlansDialog {
     static Result show(Screen screen, List<Row> rows, int selectedIndex, String total) {
         List<Row> safeRows = rows == null ? List.of() : List.copyOf(rows);
         MultiWindowTextGUI gui = DialogWindow.programGui(screen);
-        TerminalSize box = DialogWindow.dialogSize(screen.getTerminalSize(), 96, 110);
+        TerminalSize box = DialogWindow.dialogSize(screen.getTerminalSize(), 110, 110);
 
         BasicWindow window = new BasicWindow("Planning");
         window.setHints(List.of(Window.Hint.CENTERED));
@@ -137,8 +141,9 @@ final class ConstructionPlansDialog {
         Panel body = new Panel(new BorderLayout());
         Panel heading = new Panel(new LinearLayout(Direction.VERTICAL));
         Label header = new Label(HEADER);
+        header.setForegroundColor(TextColor.ANSI.BLACK);
+        header.setBackgroundColor(TextColor.ANSI.CYAN);
         heading.addComponent(header);
-        heading.addComponent(new EmptySpace(new TerminalSize(1, 1)));
         body.addComponent(heading, BorderLayout.Location.TOP);
 
         ActionListBox list = new ActionListBox() {
@@ -209,8 +214,6 @@ final class ConstructionPlansDialog {
         actionRow.addComponent(cancelButton);
 
         boolean hasSelection = !safeRows.isEmpty();
-        boolean hasQuote = safeRows.stream()
-                .anyMatch(row -> "Draft".equals(row.state()) && !"-".equals(row.company()));
         boolean hasWorking = safeRows.stream().anyMatch(row -> "Working".equals(row.state()));
         addButton.setEnabled(!hasWorking);
         editButton.setEnabled(hasSelection && !hasWorking);
@@ -220,9 +223,8 @@ final class ConstructionPlansDialog {
 
         Panel runRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
         Button runButton = NewGameDialog.mnemonicButton("Run", 'R', run);
-        runButton.setEnabled(hasQuote && !hasWorking);
+        runButton.setEnabled(hasSelection && !hasWorking);
         runRow.addComponent(runButton);
-        runRow.addComponent(new Label("  (requires a company quote)"));
 
         Panel closeRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
         closeRow.addComponent(NewGameDialog.mnemonicButton("Close", 'C', close));
@@ -288,7 +290,7 @@ final class ConstructionPlansDialog {
                         deliverEvent.set(false);
                     }
                     case 'r' -> {
-                        if (hasQuote) {
+                        if (hasSelection && !hasWorking) {
                             run.run();
                         }
                         deliverEvent.set(false);
@@ -344,8 +346,8 @@ final class ConstructionPlansDialog {
 
     /**
      * Action for an Alt mnemonic. Add and Close are always available; Edit, Quotes and Delete need
-     * a selected row. {@code Alt+R} deliberately maps to nothing because Run is disabled in phase
-     * 1.
+     * a selected row. Run only needs a selection because the presenter validates the quote, cash
+     * and row state and explains the failure when the action is pressed.
      */
     static Action shortcutAction(char key, boolean hasSelection) {
         return switch (Character.toLowerCase(key)) {
@@ -371,13 +373,13 @@ final class ConstructionPlansDialog {
      */
     static String formatRow(Row row) {
         StringBuilder line = new StringBuilder();
-        appendField(line, Integer.toString(row.id()), ID_WIDTH, false);
+        appendField(line, Integer.toString(row.id()), ID_WIDTH, true);
         appendSeparator(line);
         appendField(line, row.state(), STATE_WIDTH, false);
         appendSeparator(line);
-        appendField(line, row.from(), FROM_WIDTH, false);
+        appendField(line, row.from(), FROM_WIDTH, true);
         appendSeparator(line);
-        appendField(line, row.to(), TO_WIDTH, false);
+        appendField(line, row.to(), TO_WIDTH, true);
         appendSeparator(line);
         appendField(line, row.policy(), POLICY_WIDTH, false);
         appendSeparator(line);
@@ -387,9 +389,9 @@ final class ConstructionPlansDialog {
         appendSeparator(line);
         appendField(line, Integer.toString(row.cells()), CELLS_WIDTH, true);
         appendSeparator(line);
-        appendField(line, row.cost(), COST_WIDTH, false);
+        appendField(line, row.cost(), COST_WIDTH, true);
         appendSeparator(line);
-        line.append(row.time() == null ? "" : row.time());
+        appendField(line, row.time(), TIME_WIDTH, true);
         if (row.warning() != null && !row.warning().isBlank()) {
             line.append(" !");
         }
@@ -397,7 +399,17 @@ final class ConstructionPlansDialog {
     }
 
     private static void appendSeparator(StringBuilder line) {
-        line.append("  ");
+        line.append(' ').append(COLUMN_SEPARATOR).append(' ');
+    }
+
+    private static void appendCentered(StringBuilder line, String text, int width) {
+        String value = text == null ? "" : text;
+        if (value.length() > width) {
+            value = value.substring(0, width);
+        }
+        int left = (width - value.length()) / 2;
+        int right = width - value.length() - left;
+        line.append(" ".repeat(left)).append(value).append(" ".repeat(right));
     }
 
     private static void appendField(StringBuilder line, String text, int width, boolean right) {

@@ -191,8 +191,24 @@ public final class ConstructionPlanList {
         nextId = 1;
     }
 
-    /** Next id that {@link #add} will use; package visible for focused tests. */
-    int nextId() {
+    /**
+     * Replaces the whole list with a restored snapshot. The next id is kept above every existing
+     * id, even if the saved value was inconsistent, so later adds can never reuse an identity.
+     */
+    public void restore(List<PlannedWork> restoredWorks, int restoredNextId) {
+        works.clear();
+        int highest = 0;
+        for (PlannedWork work : java.util.Objects.requireNonNull(restoredWorks,
+                "restoredWorks must not be null")) {
+            java.util.Objects.requireNonNull(work, "restored work must not be null");
+            works.add(work);
+            highest = Math.max(highest, work.id());
+        }
+        nextId = Math.max(1, Math.max(restoredNextId, highest + 1));
+    }
+
+    /** Next id that {@link #add} will use. */
+    public int nextId() {
         return nextId;
     }
 

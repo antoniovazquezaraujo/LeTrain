@@ -11,6 +11,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.File;
 import java.util.List;
 import letrain.audio.AudioController;
 import letrain.construction.ConstructionCompanyCatalog;
@@ -166,6 +167,23 @@ class TerminalPresenterWorksCashTest {
         verify(view, org.mockito.Mockito.atLeastOnce()).drawRoutePreviewStatus(status.capture());
         assertTrue(status.getAllValues().stream().anyMatch(text -> text.contains("spent $")));
         assertTrue(presenter.getConstructionProgress().builtSteps() > 0);
+    }
+
+    @Test
+    @DisplayName("a savegame is blocked while an automatic work is active")
+    void save_whileAutomaticWorkIsActive_isBlocked() throws Exception {
+        quotedWork();
+        when(view.showConstructionPlansDialog(anyList(), anyInt(), anyString())).thenReturn(
+                new ConstructionPlansDialog.Result(ConstructionPlansDialog.Action.RUN, 0));
+        presenter.onChar(charKey('b'));
+        assertTrue(presenter.isConstructionActive());
+        File file = File.createTempFile("letrain-active-work", ".json");
+        file.delete();
+
+        presenter.onSaveGame(file);
+
+        verify(view).showMessage("Save", "Finish or cancel the active work before saving.");
+        assertFalse(file.exists());
     }
 
     @Test

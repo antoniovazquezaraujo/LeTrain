@@ -34,4 +34,12 @@ public final class ConstructionCompanyCatalog {
     public static List<ConstructionCompany> all() {
         return ALL;
     }
+
+    /** Looks up a company by its stable id, used when restoring savegames. */
+    public static java.util.Optional<ConstructionCompany> byId(String id) {
+        if (id == null) {
+            return java.util.Optional.empty();
+        }
+        return ALL.stream().filter(company -> company.id().equals(id)).findFirst();
+    }
 }
