@@ -140,7 +140,7 @@ final class ConstructionPlansDialog {
         Panel root = new Panel(new BorderLayout());
         Panel body = new Panel(new BorderLayout());
         Panel heading = new Panel(new LinearLayout(Direction.VERTICAL));
-        Label header = new Label(" " + HEADER + " ");
+        Label header = new Label(HEADER);
         header.setForegroundColor(TextColor.ANSI.BLACK);
         header.setBackgroundColor(TextColor.ANSI.CYAN);
         heading.addComponent(header);
