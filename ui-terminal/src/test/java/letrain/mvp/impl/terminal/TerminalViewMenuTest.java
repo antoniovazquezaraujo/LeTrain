@@ -49,6 +49,14 @@ class TerminalViewMenuTest {
     }
 
     @Test
+    @DisplayName("a wrapped menu starts at row 0 so the info bar cannot overwrite its second row")
+    void should_StartWrappedMenuAtTop() {
+        assertEquals(1, TerminalView.menuStartRow(1), "single row keeps the blank top margin");
+        assertEquals(0, TerminalView.menuStartRow(2), "two rows use the top margin");
+        assertEquals(0, TerminalView.menuStartRow(3));
+    }
+
+    @Test
     @DisplayName("an explicit shortcut paints before the label: Planning + b -> B:Planning")
     void should_PaintExplicitShortcut() {
         TextGraphics graphics = mock(TextGraphics.class);

@@ -654,6 +654,14 @@ public class TerminalView implements letrain.mvp.View {
         return helpLevel == 2 ? 7 : (helpLevel == 1 ? 4 : 0);
     }
 
+    /**
+     * First row used by the mode menu inside the menu box. The info bar starts at row 2, so a
+     * wrapped menu moves up to row 0; a one-row menu keeps the traditional blank top row.
+     */
+    static int menuStartRow(int rowCount) {
+        return rowCount > 1 ? 0 : 1;
+    }
+
     @Override
     public void setMenu(List<GameModeMenuOption> options) {
         if (!shouldPaintMenu(menuVisible, helpLevel, 1)) {
@@ -663,34 +671,54 @@ public class TerminalView implements letrain.mvp.View {
                 .map(option -> MenuText.displayText(option.gameModeName(), option.shortcut()))
                 .toList();
         int columns = menuBoxSize == null ? Integer.MAX_VALUE : menuBoxSize.getColumns();
-        int totalWidth = 1;
-        for (String text : texts) {
-            totalWidth += text.length() + 1;
+        List<List<GameModeMenuOption>> rows = new ArrayList<>();
+        List<GameModeMenuOption> currentRow = new ArrayList<>();
+        int rowWidth = 1;
+        for (int i = 0; i < options.size(); i++) {
+            int itemWidth = texts.get(i).length() + 1;
+            if (!currentRow.isEmpty() && rowWidth + itemWidth > columns) {
+                rows.add(currentRow);
+                currentRow = new ArrayList<>();
+                rowWidth = 1;
+            }
+            currentRow.add(options.get(i));
+            rowWidth += itemWidth;
         }
-        int rowCount = columns <= 0 ? 1 : Math.max(1, (totalWidth - 1) / columns + 1);
-        int index = 0;
-        for (int row = 1; row <= rowCount && index < options.size(); row++) {
-            int rowsLeft = rowCount - row + 1;
-            int take = Math.max(1, (options.size() - index + rowsLeft - 1) / rowsLeft);
-            int width = 1;
-            for (int i = index; i < index + take; i++) {
-                width += texts.get(i).length() + 1;
+        if (!currentRow.isEmpty()) {
+            rows.add(currentRow);
+        }
+        // Greedy wrapping can leave one lonely option on the last row. Move options back from
+        // the previous row while the last row still fits; the menu stays balanced and complete.
+        for (int row = rows.size() - 1; row > 0; row--) {
+            List<GameModeMenuOption> previous = rows.get(row - 1);
+            List<GameModeMenuOption> last = rows.get(row);
+            while (previous.size() > last.size() + 1) {
+                GameModeMenuOption candidate = previous.get(previous.size() - 1);
+                int lastWidth = 1;
+                for (GameModeMenuOption option : last) {
+                    lastWidth +=
+                            MenuText.displayText(option.gameModeName(), option.shortcut()).length()
+                                    + 1;
+                }
+                if (lastWidth + MenuText.displayText(candidate.gameModeName(), candidate.shortcut())
+                        .length() + 1 > columns) {
+                    break;
+                }
+                previous.remove(previous.size() - 1);
+                last.add(0, candidate);
             }
-            while (take > 1 && width > columns) {
-                take--;
-                width -= texts.get(index + take).length() + 1;
-            }
+        }
+        int startRow = menuStartRow(rows.size());
+        for (int row = 0; row < rows.size(); row++) {
             int length = 1;
-            for (int i = 0; i < take; i++) {
-                GameModeMenuOption option = options.get(index + i);
-                length = drawMenuOption(menuBox, menuBoxPosition.withRelative(0, row), option,
-                        length);
+            for (GameModeMenuOption option : rows.get(row)) {
+                length = drawMenuOption(menuBox, menuBoxPosition.withRelative(0, startRow + row),
+                        option, length);
                 if (option.selectedIf().get()) {
                     setHelpBarText(MenuText.selectedHint(option.gameModeDescription(),
                             gameViewListener.isRecordingCommands()));
                 }
             }
-            index += take;
         }
     }
 
