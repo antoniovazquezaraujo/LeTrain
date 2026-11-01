@@ -40,26 +40,44 @@ class QuotesDialogTest {
     @DisplayName("a quote row shows company, cost, time, quality and required capability")
     void should_FormatAQuoteRow() {
         String row = QuotesDialog.formatRow(normalQuote());
-        String header = QuotesDialog.HEADER;
+        String[] cells = row.split("\\|", -1);
 
-        assertTrue(row.startsWith("IMPERIAL"), row);
-        assertEquals(header.indexOf("Cost"), row.indexOf("$250"), row);
-        assertEquals(header.indexOf("Time"), row.indexOf("1 min"), row);
-        assertEquals(header.indexOf("Quality"), row.indexOf("High"), row);
-        assertTrue(row.contains("High"), row);
-        assertTrue(row.trim().endsWith("-"), row);
+        assertEquals(5, cells.length, row);
+        assertEquals("IMPERIAL", cells[0].trim(), row);
+        assertEquals("$250", cells[1].trim(), row);
+        assertEquals("1 min", cells[2].trim(), row);
+        assertEquals("High", cells[3].trim(), row);
+        assertEquals("-", cells[4].trim(), row);
     }
 
     @Test
     @DisplayName("an unavailable company is marked and has no cost/time")
     void should_MarkUnavailableQuotes() {
         String row = QuotesDialog.formatRow(bridgeQuote());
+        String[] cells = row.split("\\|", -1);
 
-        assertTrue(row.startsWith("CHAPUCERT"), row);
-        assertTrue(row.contains(" - "), row);
+        assertEquals("CHAPUCERT", cells[0].trim(), row);
+        assertEquals("-", cells[1].trim(), row);
+        assertEquals("-", cells[2].trim(), row);
         assertTrue(row.endsWith("!"), row);
         assertTrue(QuotesDialog.unavailableLine(List.of(bridgeQuote()))
                 .contains("cannot build bridges"));
+    }
+
+    @Test
+    @DisplayName("j/k move the company table selection and wrap around the ends")
+    void should_MoveSelectionWithJAndK() {
+        ActionListBox list = mock(ActionListBox.class);
+        when(list.getSelectedIndex()).thenReturn(0, 2, -1);
+
+        QuotesDialog.moveSelection(list, 3, 1);
+        QuotesDialog.moveSelection(list, 3, 1);
+        QuotesDialog.moveSelection(list, 3, -1);
+
+        verify(list).setSelectedIndex(1);
+        verify(list).setSelectedIndex(0);
+        verify(list).setSelectedIndex(2);
+        verify(list, org.mockito.Mockito.times(3)).takeFocus();
     }
 
     @Test

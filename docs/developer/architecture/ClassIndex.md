@@ -135,6 +135,7 @@
 - [[letrain.mvp.impl.ItineraryMixin|ItineraryMixin]] (core)
 - [[letrain.mvp.impl.Model|Model]] (core)
 - [[letrain.mvp.impl.ModelMixin|ModelMixin]] (core)
+- [[letrain.mvp.impl.PlannedWorksCodec|PlannedWorksCodec]] (core)
 - [[letrain.mvp.impl.RailTrackMaker|RailTrackMaker]] (core)
 - [[letrain.mvp.impl.SimulationController|SimulationController]] (core)
 - [[letrain.mvp.impl.TrainMixin|TrainMixin]] (core)

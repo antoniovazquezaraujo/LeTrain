@@ -103,6 +103,37 @@ public final class WorkQuote {
         return new WorkQuote(company, plan, required, costs, cost, ticks, true, null);
     }
 
+    /**
+     * Restores a quote previously written to a savegame. The catalogue ids and per-step costs are
+     * kept so the list keeps the exact price/time the player saw, even if the local settings
+     * change.
+     */
+    public static WorkQuote restore(ConstructionCompany company, RoutePlan plan,
+            List<Double> stepCosts, double totalCost, long totalTicks) {
+        Objects.requireNonNull(company, "company must not be null");
+        Objects.requireNonNull(plan, "plan must not be null");
+        if (!plan.feasible()) {
+            throw new IllegalArgumentException("quote plan must be feasible");
+        }
+        if (!Double.isFinite(totalCost) || totalCost < 0) {
+            throw new IllegalArgumentException("totalCost must be finite and non-negative");
+        }
+        if (totalTicks < 0) {
+            throw new IllegalArgumentException("totalTicks must be non-negative");
+        }
+        List<Double> costs = stepCosts == null ? List.of() : List.copyOf(stepCosts);
+        if (!costs.isEmpty() && costs.size() != plan.steps().size()) {
+            throw new IllegalArgumentException("stepCosts must match the plan size");
+        }
+        for (Double cost : costs) {
+            if (cost == null || !Double.isFinite(cost) || cost < 0) {
+                throw new IllegalArgumentException("step costs must be finite and non-negative");
+            }
+        }
+        return new WorkQuote(company, plan, requiredCapabilities(plan), costs, totalCost,
+                totalTicks, true, null);
+    }
+
     private static List<Double> stepCosts(ConstructionCompany company, RoutePlan plan,
             EconomyManager economy) {
         if (economy == null) {

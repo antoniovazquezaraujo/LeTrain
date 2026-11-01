@@ -77,6 +77,7 @@ LeTrain is deeply modal. Pressing the following keys will switch your current in
 
 ### Planning (2D)
 - **`b`**: Open the **Planning** list from the map, or select **B:Planning** in the mode menu. It stores draft routes and their estimated cost/time; it does not build them.
+- Use the arrow keys or **`j`/`k`** to move through the planning and company tables.
 - **`A`**: Add a route from the list. The map enters route planning with A/B; **Enter** saves the route as a draft, **Esc** cancels. The normal mode menu is hidden while planning and the Add status is a single bottom line; **Tab** hides or shows that line.
 - **`E`**: Edit the selected route. It opens with the saved A/B and plan already visible; only the policy can be changed with `[`/`]`. While editing, the old route is hidden so only the candidate plan is painted. If you want a different origin or destination, add another route.
 - **`Q`**: Compare construction companies for the selected route and choose one. Companies that cannot build the route's bridges or tunnels are unavailable. Before choosing a company the row shows no cost or construction time; after choosing one it shows the company, quality, quoted cost and quoted time.
@@ -90,7 +91,8 @@ LeTrain is deeply modal. Pressing the following keys will switch your current in
 - During an automatic work the old plan points are hidden so the real rails become visible; when it finishes the row becomes **Done** and the points disappear. If cancelled it becomes **Cancelled**.
 - Stored drafts stay painted on the map until they are built or deleted.
 - Saving a draft also creates the marks `Way-<id>-start` and `Way-<id>-end` at its endpoints (for example, `Way-1-start` and `Way-1-end`). These marks remain if the row is deleted; a dedicated marks menu will come later.
-- The list is kept while the current game is loaded, but it is not yet saved in savegames; a model swap (load/undo) clears it.
+- The list lives in the model and is saved with the game. One active automatic work blocks saving;
+  finish or cancel it first. The list itself is kept across load/undo model swaps.
 
 ### Moving Track Elements
 In the **Stations** (`n`), **Sensors** (`e`), **Semaphores** (`s`) and **Speed Signals** (`g`) modes you can slide the selected element along the rail, in the direction the element itself is facing:

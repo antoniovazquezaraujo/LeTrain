@@ -169,10 +169,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     private boolean routePreviewStatusVisible = true;
 
     /**
-     * Plans kept by the phase-1 works list. Presenter-owned because it is tied to the current
-     * terrain/economy and must be discarded on model swaps.
+     * Plans kept by the planning list. The list itself lives in the model so savegames carry it;
+     * the presenter only tracks the selected row and transient notices.
      */
-    private ConstructionPlanList plannedWorks;
     private int plannedWorksSelectedIndex;
 
     private String plannedWorksNotice;
@@ -956,7 +955,6 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         constructionCancelArmed = false;
         constructionNotice = null;
         constructionNoticeUntilMillis = 0;
-        plannedWorks = null;
         plannedWorksSelectedIndex = -1;
         plannedWorksNotice = null;
         plannedWorksNoticeUntilMillis = 0;
@@ -1234,14 +1232,11 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     }
 
     /**
-     * Presenter-owned list of phase-1 planned works. Created lazily so loading a game starts with
-     * an empty list and a model swap discards plans bound to the old terrain.
+     * Model-owned planning list. The presenter keeps only the selected row; the list survives a
+     * savegame load and model swaps because it is part of the model.
      */
     ConstructionPlanList plannedWorks() {
-        if (plannedWorks == null) {
-            plannedWorks = new ConstructionPlanList();
-        }
-        return plannedWorks;
+        return model.getPlannedWorks();
     }
 
     /**
@@ -1866,10 +1861,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
      * cells.
      */
     void drawPlannedWorksOverlay() {
-        if (plannedWorks == null || plannedWorks.isEmpty()) {
+        if (plannedWorks() == null || plannedWorks().isEmpty()) {
             return;
         }
-        for (PlannedWork work : plannedWorks.works()) {
+        for (PlannedWork work : plannedWorks().works()) {
             if (work.state() != PlannedWork.State.DRAFT) {
                 continue;
             }
@@ -3525,6 +3520,10 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
     @Override
     public void onSaveGame(File file) {
         if (file == null) {
+            return;
+        }
+        if (isConstructionActive()) {
+            view.showMessage("Save", "Finish or cancel the active work before saving.");
             return;
         }
         file = letrain.command.FileNames.withSavegameExtension(file);

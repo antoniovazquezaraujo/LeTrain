@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.function.Supplier;
 import letrain.economy.EconomyManager;
+import letrain.construction.ConstructionPlanList;
 import letrain.ground.GroundMap;
 import letrain.map.Dir;
 import letrain.map.Point;
@@ -418,6 +419,12 @@ public interface Model {
     java.util.Map<String, letrain.map.Point> getMarks();
 
     public RailTrack getCursorRailTrack();
+
+    /**
+     * Routes prepared by the player, with their quotes and lifecycle state. Owned by the model so a
+     * savegame carries the planning list; the presenter only supplies the UI selection.
+     */
+    ConstructionPlanList getPlannedWorks();
 
     /**
      * One entry of the shared mode menu.
