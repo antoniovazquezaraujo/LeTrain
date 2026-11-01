@@ -168,9 +168,24 @@ final class QuotesDialog {
                     }
                     return;
                 }
-                if (character != null && Character.toLowerCase(character) == 's') {
-                    select.run();
-                    deliverEvent.set(false);
+                if (character != null) {
+                    switch (Character.toLowerCase(character)) {
+                        case 'j' -> {
+                            moveSelection(list, safeQuotes.size(), 1);
+                            deliverEvent.set(false);
+                        }
+                        case 'k' -> {
+                            moveSelection(list, safeQuotes.size(), -1);
+                            deliverEvent.set(false);
+                        }
+                        case 's' -> {
+                            select.run();
+                            deliverEvent.set(false);
+                        }
+                        default -> {
+                            // No other shortcut.
+                        }
+                    }
                 }
             }
         });
@@ -185,6 +200,18 @@ final class QuotesDialog {
 
     private static int selectedIndex(ActionListBox list) {
         return Math.max(-1, list.getSelectedIndex());
+    }
+
+    /** Moves the table selection with j/k, wrapping around the ends. */
+    static void moveSelection(ActionListBox list, int rowCount, int delta) {
+        if (rowCount <= 0) {
+            return;
+        }
+        int current = list.getSelectedIndex();
+        int next = current < 0 ? (delta > 0 ? 0 : rowCount - 1)
+                : Math.floorMod(current + delta, rowCount);
+        list.setSelectedIndex(next);
+        list.takeFocus();
     }
 
     static int clampIndex(int index, int rowCount) {

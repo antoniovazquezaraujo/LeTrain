@@ -77,6 +77,7 @@ LeTrain is deeply modal. Pressing the following keys will switch your current in
 
 ### Planning (2D)
 - **`b`**: Open the **Planning** list from the map, or select **B:Planning** in the mode menu. It stores draft routes and their estimated cost/time; it does not build them.
+- Use the arrow keys or **`j`/`k`** to move through the planning and company tables.
 - **`A`**: Add a route from the list. The map enters route planning with A/B; **Enter** saves the route as a draft, **Esc** cancels. The normal mode menu is hidden while planning and the Add status is a single bottom line; **Tab** hides or shows that line.
 - **`E`**: Edit the selected route. It opens with the saved A/B and plan already visible; only the policy can be changed with `[`/`]`. While editing, the old route is hidden so only the candidate plan is painted. If you want a different origin or destination, add another route.
 - **`Q`**: Compare construction companies for the selected route and choose one. Companies that cannot build the route's bridges or tunnels are unavailable. Before choosing a company the row shows no cost or construction time; after choosing one it shows the company, quality, quoted cost and quoted time.

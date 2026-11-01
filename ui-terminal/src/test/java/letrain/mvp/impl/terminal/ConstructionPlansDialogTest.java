@@ -159,6 +159,21 @@ class ConstructionPlansDialogTest {
     }
 
     @Test
+    @DisplayName("j/k move the table selection and wrap around the ends")
+    void should_MoveSelectionWithJAndK() {
+        ActionListBox list = mock(ActionListBox.class);
+        when(list.getSelectedIndex()).thenReturn(0, 2, -1);
+
+        ConstructionPlansDialog.moveSelection(list, 3, 1);
+        ConstructionPlansDialog.moveSelection(list, 3, 1);
+        ConstructionPlansDialog.moveSelection(list, 3, 1);
+
+        verify(list).setSelectedIndex(1);
+        verify(list, org.mockito.Mockito.times(2)).setSelectedIndex(0);
+        verify(list, org.mockito.Mockito.times(3)).takeFocus();
+    }
+
+    @Test
     @DisplayName("the total line uses the roadmap wording and singular/plural")
     void should_FormatTheTotalLine() {
         assertEquals("Total: 3 works · $385.800 · 17 min",

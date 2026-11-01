@@ -65,6 +65,22 @@ class QuotesDialogTest {
     }
 
     @Test
+    @DisplayName("j/k move the company table selection and wrap around the ends")
+    void should_MoveSelectionWithJAndK() {
+        ActionListBox list = mock(ActionListBox.class);
+        when(list.getSelectedIndex()).thenReturn(0, 2, -1);
+
+        QuotesDialog.moveSelection(list, 3, 1);
+        QuotesDialog.moveSelection(list, 3, 1);
+        QuotesDialog.moveSelection(list, 3, -1);
+
+        verify(list).setSelectedIndex(1);
+        verify(list).setSelectedIndex(0);
+        verify(list).setSelectedIndex(2);
+        verify(list, org.mockito.Mockito.times(3)).takeFocus();
+    }
+
+    @Test
     @DisplayName("the selection is clamped and the selected row keeps its colour without focus")
     void should_ClampAndKeepSelection() {
         assertEquals(-1, QuotesDialog.clampIndex(0, 0));

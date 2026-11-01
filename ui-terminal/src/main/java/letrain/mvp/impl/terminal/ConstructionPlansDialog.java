@@ -274,6 +274,14 @@ final class ConstructionPlansDialog {
                     return;
                 }
                 switch (Character.toLowerCase(character)) {
+                    case 'j' -> {
+                        moveSelection(list, safeRows.size(), 1);
+                        deliverEvent.set(false);
+                    }
+                    case 'k' -> {
+                        moveSelection(list, safeRows.size(), -1);
+                        deliverEvent.set(false);
+                    }
                     case 'a' -> {
                         add.run();
                         deliverEvent.set(false);
@@ -335,6 +343,18 @@ final class ConstructionPlansDialog {
 
     private static int selectedIndex(ActionListBox list) {
         return Math.max(-1, list.getSelectedIndex());
+    }
+
+    /** Moves the table selection with j/k, wrapping around the ends. */
+    static void moveSelection(ActionListBox list, int rowCount, int delta) {
+        if (rowCount <= 0) {
+            return;
+        }
+        int current = list.getSelectedIndex();
+        int next = current < 0 ? (delta > 0 ? 0 : rowCount - 1)
+                : Math.floorMod(current + delta, rowCount);
+        list.setSelectedIndex(next);
+        list.takeFocus();
     }
 
     /** Clamps the remembered selection to an existing row; {@code -1} when there are no rows. */
