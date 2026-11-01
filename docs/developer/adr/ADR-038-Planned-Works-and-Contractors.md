@@ -20,7 +20,9 @@
 > zonas, varias obras simultáneas ni calidad real.
 >
 > Depende de ADR-034, ADR-035, ADR-036 y ADR-037. La calidad de construcción y el mantenimiento se
-> separan en [[ADR-039-Track-Quality-and-Maintenance|ADR-039]].
+> separan en [[ADR-039-Track-Quality-and-Maintenance|ADR-039]]. La ejecución de varias obras y las
+> zonas de exclusión se detallan en
+> [[ADR-040-Multiple-Works-and-Exclusion-Zones|ADR-040]].
 
 ## Contexto
 

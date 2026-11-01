@@ -225,6 +225,10 @@ No incluye calidad real ni mantenimiento.
 Objetivo: ejecutar varias obras sin que se pisen y dejar que el jugador siga trabajando en otras
 zonas.
 
+El diseño de esta fase se detalla en
+[[ADR-040-Multiple-Works-and-Exclusion-Zones|ADR-040: Varias obras, zonas de exclusión y edición
+manual fuera]].
+
 Incluye:
 
 - varias obras activas;
