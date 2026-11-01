@@ -62,9 +62,19 @@ public final class RoutePreviewOverlay {
      * @param end second endpoint, if already picked
      */
     public static List<Cell> cells(RoutePlan plan, Point start, Point end) {
+        return cells(plan, start, end, 0);
+    }
+
+    /**
+     * Returns the overlay cells from {@code fromStep} onwards plus the picked endpoints. Used by a
+     * paused work to show only the part that is still to be built.
+     */
+    public static List<Cell> cells(RoutePlan plan, Point start, Point end, int fromStep) {
         Map<Long, Cell> byPosition = new LinkedHashMap<>();
         if (plan != null && plan.feasible()) {
-            for (RouteStep step : plan.steps()) {
+            int first = Math.max(0, Math.min(fromStep, plan.steps().size()));
+            for (int index = first; index < plan.steps().size(); index++) {
+                RouteStep step = plan.steps().get(index);
                 Point point = step.point();
                 byPosition.put(key(point), new Cell(point.getX(), point.getY(),
                         glyphFor(step.trackType()), false, styleFor(step.trackType())));

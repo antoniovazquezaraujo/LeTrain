@@ -211,6 +211,10 @@ class TerminalPresenterWorksCashTest {
         assertEquals(builtBeforePause, paused.builtSteps());
         assertFalse(presenter.isConstructionActive());
         assertEquals(afterStart, model.getEconomyManager().getBalance(), 0.01f);
+        org.mockito.Mockito.clearInvocations(view);
+        presenter.drawPlannedWorksOverlay();
+        verify(view, org.mockito.Mockito.atLeastOnce()).drawRoutePreviewCell(anyInt(), anyInt(),
+                anyString(), anyBoolean(), org.mockito.ArgumentMatchers.any());
 
         File file = File.createTempFile("letrain-paused-work", ".json");
         try {
@@ -240,6 +244,23 @@ class TerminalPresenterWorksCashTest {
         assertEquals(PlannedWork.State.DONE,
                 presenter.getPlannedWorks().find(work.id()).orElseThrow().state());
         assertEquals(afterStart, model.getEconomyManager().getBalance(), 0.01f);
+        for (RouteStep step : work.plan().steps()) {
+            assertTrue(model.getRailMap().getTrackAt(step.point()) != null,
+                    "resumed route must not leave a gap at " + step.point());
+        }
+        for (int i = 1; i < work.plan().steps().size(); i++) {
+            Point previous = work.plan().steps().get(i - 1).point();
+            Point current = work.plan().steps().get(i).point();
+            letrain.map.Dir direction = previous.locate(current);
+            assertTrue(
+                    model.getRailMap().getTrackAt(previous.getX(), previous.getY())
+                            .getConnected(direction) != null,
+                    "previous cell must connect forward at " + previous);
+            assertTrue(
+                    model.getRailMap().getTrackAt(current.getX(), current.getY())
+                            .getConnected(direction.inverse()) != null,
+                    "resumed cell must connect backward at " + current);
+        }
     }
 
     @Test

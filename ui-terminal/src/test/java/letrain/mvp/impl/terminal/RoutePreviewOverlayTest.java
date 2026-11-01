@@ -78,6 +78,23 @@ class RoutePreviewOverlayTest {
     }
 
     @Test
+    @DisplayName("a paused route shows only the remaining cells plus the endpoints")
+    void pausedRouteStartsAtTheSavedStep() {
+        RoutePlan plan = RoutePlan.feasible(List.of(step(0, 0, TrackType.NORMAL_TRACK),
+                step(1, 0, TrackType.NORMAL_TRACK), step(2, 0, TrackType.NORMAL_TRACK)), 0, 0);
+
+        List<RoutePreviewOverlay.Cell> cells =
+                RoutePreviewOverlay.cells(plan, new Point(0, 0), new Point(2, 0), 2);
+
+        assertEquals(2, cells.size(), cells.toString());
+        assertTrue(cells.stream().anyMatch(cell -> cell.x() == 0), cells.toString());
+        assertTrue(cells.stream().anyMatch(cell -> cell.x() == 2), cells.toString());
+        assertFalse(cells.stream().anyMatch(cell -> cell.x() == 1),
+                "the already-built prefix is skipped: " + cells);
+        assertTrue(cells.stream().anyMatch(cell -> "B".equals(cell.glyph())), cells.toString());
+    }
+
+    @Test
     @DisplayName("gate variants keep the circle and the special style")
     void mapsGateVariants() {
         assertEquals("⬤", RoutePreviewOverlay.glyphFor(TrackType.BRIDGE_GATE_TRACK));

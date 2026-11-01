@@ -84,6 +84,15 @@ final class RailTrackMaterializer implements TrackMaterializer {
             maker.setJournalSuppressed(true);
             cursor.setPosition(new Point(cell));
             cursor.setDir(exit);
+            if (previous != null) {
+                letrain.track.Track predecessor = model.getRailMap()
+                        .getTrackAt(previous.point().getX(), previous.point().getY());
+                if (predecessor != null) {
+                    // After a resume the maker is new and has no chaining state. Seed it with the
+                    // last built cell so the next piece connects instead of starting a gap.
+                    maker.resumeChainFrom(predecessor);
+                }
+            }
             maker.reset();
             if (!maker.makeTrack(null)) {
                 throw new IllegalStateException(

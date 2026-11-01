@@ -1975,7 +1975,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             return;
         }
         for (PlannedWork work : plannedWorks().works()) {
-            if (work.state() != PlannedWork.State.DRAFT) {
+            if (work.state() != PlannedWork.State.DRAFT
+                    && work.state() != PlannedWork.State.PAUSED) {
                 continue;
             }
             if (work.id() == routePreviewEditingWorkId || autoConstructionBudget != null
@@ -1984,8 +1985,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 // hide the real rails or paint a duplicate policy.
                 continue;
             }
+            int fromStep = work.state() == PlannedWork.State.PAUSED ? work.builtSteps() : 0;
             for (RoutePreviewOverlay.Cell cell : RoutePreviewOverlay.cells(work.plan(),
-                    work.start(), work.end())) {
+                    work.start(), work.end(), fromStep)) {
                 view.drawRoutePreviewCell(cell.x(), cell.y(), cell.glyph(), cell.endpoint(),
                         cell.style());
             }
