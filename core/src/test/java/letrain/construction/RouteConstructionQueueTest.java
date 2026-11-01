@@ -105,6 +105,42 @@ class RouteConstructionQueueTest {
     }
 
     @Test
+    @DisplayName("pause releases the editing lock but keeps the job progress")
+    void should_PauseAndResume_When_Paused() {
+        RouteConstructionQueue queue = new RouteConstructionQueue(economy());
+        RecordingTrackMaterializer materializer = new RecordingTrackMaterializer();
+        queue.start(normalPlan(4), materializer);
+        queue.tick();
+        queue.tick();
+
+        ConstructionProgress paused = queue.pause();
+
+        assertEquals(ConstructionState.PAUSED, paused.state());
+        assertEquals(2, paused.builtSteps());
+        assertFalse(queue.isActive());
+        assertFalse(queue.isEditingLocked());
+        assertEquals(2, queue.tick().builtSteps(), "a paused queue must not advance");
+
+        assertTrue(queue.resume());
+        assertTrue(queue.isActive());
+        queue.tick();
+        assertEquals(3, queue.progress().builtSteps());
+    }
+
+    @Test
+    @DisplayName("a queue can resume a paused plan from saved progress")
+    void should_ResumeFromSavedProgress() {
+        RouteConstructionQueue queue = new RouteConstructionQueue(economy());
+        RecordingTrackMaterializer materializer = new RecordingTrackMaterializer();
+
+        assertTrue(queue.resume(normalPlan(3), materializer, 1.0, 1, 1));
+        assertTrue(queue.isActive());
+        assertEquals(1, queue.progress().builtSteps());
+        queue.tick();
+        assertEquals(2, queue.progress().builtSteps());
+    }
+
+    @Test
     @DisplayName("a rejected job is kept for progress but does not lock or block a new start")
     void should_ExposeRejectionAndAllowRestart_When_PreflightRejects() {
         RouteConstructionQueue queue = new RouteConstructionQueue(economy());

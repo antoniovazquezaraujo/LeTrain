@@ -18,6 +18,7 @@ final class ConstructionStatus {
     static final String CONFIRM_CANCEL =
             "Cancel construction? Esc again to confirm · any key to continue";
     static final String COMPLETE = "Construction complete";
+    static final String PAUSED = "Construction paused · save is now available";
     static final String CANCELLED = "Construction cancelled · partial track remains";
 
     /** Cancellation notice with the cash actually spent (built cells + penalty). */

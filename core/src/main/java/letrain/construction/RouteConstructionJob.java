@@ -67,6 +67,30 @@ public final class RouteConstructionJob {
      */
     public RouteConstructionJob(RoutePlan plan, TrackMaterializer materializer,
             EconomyManager economy, long baseDelayTicksPerCell, double timeFactor) {
+        this(plan, materializer, economy, baseDelayTicksPerCell, timeFactor, 0, 0, false);
+    }
+
+    /**
+     * Rebuilds a paused job at the exact progress saved by the presenter. Only the cells from
+     * {@code builtSteps} onwards are preflighted; the already-built prefix is expected to exist in
+     * the world.
+     */
+    public static RouteConstructionJob resume(RoutePlan plan, TrackMaterializer materializer,
+            EconomyManager economy, long baseDelayTicksPerCell, double timeFactor, int builtSteps,
+            long remainingTicks) {
+        if (builtSteps < 0) {
+            throw new IllegalArgumentException("builtSteps must be non-negative");
+        }
+        if (remainingTicks < 0) {
+            throw new IllegalArgumentException("remainingTicks must be non-negative");
+        }
+        return new RouteConstructionJob(plan, materializer, economy, baseDelayTicksPerCell,
+                timeFactor, builtSteps, remainingTicks, true);
+    }
+
+    private RouteConstructionJob(RoutePlan plan, TrackMaterializer materializer,
+            EconomyManager economy, long baseDelayTicksPerCell, double timeFactor, int builtSteps,
+            long remainingTicks, boolean resuming) {
         this.plan = Objects.requireNonNull(plan, "plan must not be null");
         this.materializer = Objects.requireNonNull(materializer, "materializer must not be null");
         this.economy = Objects.requireNonNull(economy, "economy must not be null");
@@ -79,12 +103,29 @@ public final class RouteConstructionJob {
             throw new IllegalArgumentException(
                     "timeFactor must be positive, but was: " + timeFactor);
         }
+        if (builtSteps < 0 || builtSteps > plan.steps().size()) {
+            throw new IllegalArgumentException("builtSteps is outside the plan");
+        }
+        if (remainingTicks < 0) {
+            throw new IllegalArgumentException("remainingTicks must be non-negative");
+        }
         this.baseDelayTicksPerCell = baseDelayTicksPerCell;
         this.timeFactor = timeFactor;
-        preflight();
+        this.builtSteps = builtSteps;
+        this.nextStepIndex = builtSteps;
+        this.remainingTicks = remainingTicks;
+        if (resuming) {
+            resumePreflight();
+        } else {
+            preflight();
+        }
     }
 
     private void preflight() {
+        preflightFrom(0);
+    }
+
+    private void resumePreflight() {
         state = ConstructionState.IDLE;
         if (!plan.feasible()) {
             reject(plan.reason().orElse("Route plan is not feasible"));
@@ -92,7 +133,39 @@ public final class RouteConstructionJob {
         }
         Optional<String> rejection;
         try {
-            rejection = materializer.prepare(plan);
+            rejection = materializer.prepare(plan, nextStepIndex);
+        } catch (RuntimeException exception) {
+            reject("Preflight failed: " + describe(exception));
+            return;
+        }
+        if (rejection == null) {
+            reject("Preflight returned no result");
+            return;
+        }
+        if (rejection.isPresent()) {
+            String message = rejection.get();
+            reject(message == null || message.isBlank() ? "Route was rejected by preflight"
+                    : message);
+            return;
+        }
+        if (builtSteps >= plan.steps().size()) {
+            state = ConstructionState.DONE;
+            remainingTicks = 0;
+            materializer.finish();
+            return;
+        }
+        state = ConstructionState.BUILDING;
+    }
+
+    private void preflightFrom(int fromStep) {
+        state = ConstructionState.IDLE;
+        if (!plan.feasible()) {
+            reject(plan.reason().orElse("Route plan is not feasible"));
+            return;
+        }
+        Optional<String> rejection;
+        try {
+            rejection = materializer.prepare(plan, fromStep);
         } catch (RuntimeException exception) {
             reject("Preflight failed: " + describe(exception));
             return;
@@ -116,9 +189,9 @@ public final class RouteConstructionJob {
             return;
         }
         state = ConstructionState.BUILDING;
-        nextStepIndex = 0;
-        builtSteps = 0;
-        remainingTicks = ticksFor(plan.steps().get(0));
+        nextStepIndex = fromStep;
+        builtSteps = fromStep;
+        remainingTicks = ticksFor(plan.steps().get(fromStep));
     }
 
     /**
@@ -163,6 +236,20 @@ public final class RouteConstructionJob {
         }
     }
 
+    /** Pauses the job, keeping every progress field for a later resume. */
+    public void pause() {
+        if (state == ConstructionState.BUILDING) {
+            state = ConstructionState.PAUSED;
+        }
+    }
+
+    /** Resumes a paused job without touching the progress fields. */
+    public void resume() {
+        if (state == ConstructionState.PAUSED) {
+            state = ConstructionState.BUILDING;
+        }
+    }
+
     /**
      * Stops the job immediately. Cells already built remain in the world; the adapter owns them.
      * Idempotent and harmless after completion or rejection.
@@ -192,9 +279,9 @@ public final class RouteConstructionJob {
     /** Immutable snapshot of the job. */
     public ConstructionProgress progress() {
         RouteStep current =
-                state == ConstructionState.BUILDING && nextStepIndex < plan.steps().size()
-                        ? plan.steps().get(nextStepIndex)
-                        : null;
+                (state == ConstructionState.BUILDING || state == ConstructionState.PAUSED)
+                        && nextStepIndex < plan.steps().size() ? plan.steps().get(nextStepIndex)
+                                : null;
         return new ConstructionProgress(state, builtSteps, plan.steps().size(), current,
                 remainingTicks, reason);
     }

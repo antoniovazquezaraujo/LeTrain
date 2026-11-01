@@ -46,6 +46,9 @@ public final class PlannedWorksCodec {
             json.put("policy", work.policy().name());
             json.put("estimatedTicks", work.estimatedTicks());
             json.put("state", work.state().name());
+            json.put("builtSteps", work.builtSteps());
+            json.put("remainingTicks", work.remainingTicks());
+            json.put("prepaidCost", work.prepaidCost());
             ArrayNode steps = json.putArray("steps");
             for (RouteStep step : work.plan().steps()) {
                 ObjectNode stepJson = steps.addObject();
@@ -118,8 +121,16 @@ public final class PlannedWorksCodec {
         long estimatedTicks = json.path("estimatedTicks").asLong(plan.totalConstructionTicks());
         PlannedWork.State state = PlannedWork.State
                 .valueOf(json.path("state").asText(PlannedWork.State.DRAFT.name()));
+        int builtSteps = json.path("builtSteps").asInt(0);
+        long remainingTicks = json.path("remainingTicks").asLong(0);
+        double prepaidCost = json.path("prepaidCost").asDouble(0);
         PlannedWork work = new PlannedWork(id, start, end, policy, plan, estimatedTicks, state);
         work = restoreQuote(json, work, economy);
+        if (state == PlannedWork.State.PAUSED) {
+            work = work.withPausedProgress(builtSteps, remainingTicks, prepaidCost);
+        } else {
+            work = work.withPrepaidCost(prepaidCost);
+        }
         if (json.hasNonNull("spentCost")) {
             work = work.withSpentCost(json.get("spentCost").asDouble());
         }

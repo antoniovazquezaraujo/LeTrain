@@ -53,7 +53,7 @@ final class ConstructionPlansDialog {
 
     /** What the player chose when the dialog closed. */
     enum Action {
-        CLOSE, ADD, EDIT, QUOTES, RUN, CANCEL, DELETE
+        CLOSE, ADD, EDIT, QUOTES, RUN, PAUSE, RESUME, CANCEL, DELETE
     }
 
     /**
@@ -181,13 +181,16 @@ final class ConstructionPlansDialog {
         Runnable edit = () -> closeWith(window, result, Action.EDIT, list);
         Runnable quotes = () -> closeWith(window, result, Action.QUOTES, list);
         Runnable run = () -> closeWith(window, result, Action.RUN, list);
+        Runnable pause = () -> closeWith(window, result, Action.PAUSE, list);
+        Runnable resume = () -> closeWith(window, result, Action.RESUME, list);
         Runnable delete = () -> closeWith(window, result, Action.DELETE, list);
         Runnable cancelWork = () -> {
             int index = selectedIndex(list);
             if (index < 0 || index >= safeRows.size()
-                    || !"Working".equals(safeRows.get(index).state())) {
+                    || !("Working".equals(safeRows.get(index).state())
+                            || "Paused".equals(safeRows.get(index).state()))) {
                 new MessageDialogBuilder().setTitle("Cancel work")
-                        .setText("Select the work in Working state first.")
+                        .setText("Select a Working or Paused work first.")
                         .addButton(MessageDialogButton.OK).build().showDialog(gui);
                 return;
             }
@@ -216,16 +219,24 @@ final class ConstructionPlansDialog {
 
         boolean hasSelection = !safeRows.isEmpty();
         boolean hasWorking = safeRows.stream().anyMatch(row -> "Working".equals(row.state()));
-        addButton.setEnabled(!hasWorking);
-        editButton.setEnabled(hasSelection && !hasWorking);
-        quotesButton.setEnabled(hasSelection && !hasWorking);
-        deleteButton.setEnabled(hasSelection && !hasWorking);
-        cancelButton.setEnabled(hasWorking);
+        boolean hasPaused = safeRows.stream().anyMatch(row -> "Paused".equals(row.state()));
+        boolean hasDraft = safeRows.stream().anyMatch(row -> "Draft".equals(row.state()));
+        addButton.setEnabled(!hasWorking && !hasPaused);
+        editButton.setEnabled(hasSelection && !hasWorking && !hasPaused);
+        quotesButton.setEnabled(hasSelection && !hasWorking && !hasPaused);
+        deleteButton.setEnabled(hasSelection && !hasWorking && !hasPaused);
+        cancelButton.setEnabled(hasWorking || hasPaused);
 
         Panel runRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
         Button runButton = NewGameDialog.mnemonicButton("Run", 'R', run);
-        runButton.setEnabled(hasSelection && !hasWorking);
+        Button pauseButton = NewGameDialog.mnemonicButton("Pause", 'P', pause);
+        Button resumeButton = NewGameDialog.mnemonicButton("Resume", 'S', resume);
+        runButton.setEnabled(hasDraft && hasSelection && !hasWorking && !hasPaused);
+        pauseButton.setEnabled(hasWorking);
+        resumeButton.setEnabled(hasPaused);
         runRow.addComponent(runButton);
+        runRow.addComponent(pauseButton);
+        runRow.addComponent(resumeButton);
 
         Panel closeRow = new Panel(new LinearLayout(Direction.HORIZONTAL));
         closeRow.addComponent(NewGameDialog.mnemonicButton("Close", 'C', close));
@@ -245,8 +256,18 @@ final class ConstructionPlansDialog {
                     if (character == null) {
                         return;
                     }
-                    if (Character.toLowerCase(character) == 'x' && hasWorking) {
+                    if (Character.toLowerCase(character) == 'x' && (hasWorking || hasPaused)) {
                         cancelWork.run();
+                        deliverEvent.set(false);
+                        return;
+                    }
+                    if (Character.toLowerCase(character) == 'p' && hasWorking) {
+                        pause.run();
+                        deliverEvent.set(false);
+                        return;
+                    }
+                    if (Character.toLowerCase(character) == 's' && hasPaused) {
+                        resume.run();
                         deliverEvent.set(false);
                         return;
                     }
@@ -257,6 +278,8 @@ final class ConstructionPlansDialog {
                             case EDIT -> edit.run();
                             case QUOTES -> quotes.run();
                             case RUN -> run.run();
+                            case PAUSE -> pause.run();
+                            case RESUME -> resume.run();
                             case CANCEL -> cancelWork.run();
                             case DELETE -> delete.run();
                             case CLOSE -> close.run();
@@ -299,8 +322,20 @@ final class ConstructionPlansDialog {
                         deliverEvent.set(false);
                     }
                     case 'r' -> {
-                        if (hasSelection && !hasWorking) {
+                        if (hasDraft && !hasWorking && !hasPaused) {
                             run.run();
+                        }
+                        deliverEvent.set(false);
+                    }
+                    case 'p' -> {
+                        if (hasWorking) {
+                            pause.run();
+                        }
+                        deliverEvent.set(false);
+                    }
+                    case 's' -> {
+                        if (hasPaused) {
+                            resume.run();
                         }
                         deliverEvent.set(false);
                     }
@@ -311,7 +346,7 @@ final class ConstructionPlansDialog {
                         deliverEvent.set(false);
                     }
                     case 'x' -> {
-                        if (hasWorking) {
+                        if (hasWorking || hasPaused) {
                             cancelWork.run();
                         }
                         deliverEvent.set(false);

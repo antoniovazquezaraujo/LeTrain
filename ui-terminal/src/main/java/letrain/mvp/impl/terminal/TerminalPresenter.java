@@ -1354,13 +1354,26 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                         openQuotesFor(selectedId);
                     }
                     case CANCEL -> {
-                        if (selectedId >= 0 && autoConstructionBudget != null
+                        PlannedWork selected =
+                                selectedId >= 0 ? plannedWorks().find(selectedId).orElse(null)
+                                        : null;
+                        if (selected != null && selected.state() == PlannedWork.State.PAUSED) {
+                            cancelPausedWork(selected);
+                        } else if (selected != null && autoConstructionBudget != null
                                 && autoConstructionBudget.workId() == selectedId) {
                             cancelConstruction();
                         } else {
-                            view.showMessage("Planning", "Select the active work to cancel it");
+                            view.showMessage("Planning",
+                                    "Select a Working or Paused work to cancel it");
                             return;
                         }
+                    }
+                    case PAUSE -> {
+                        pauseConstruction(selectedId);
+                    }
+                    case RESUME -> {
+                        resumePlannedWork(selectedId);
+                        return;
                     }
                     case RUN -> {
                         runPlannedWork(selectedId);
@@ -1369,9 +1382,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                     case DELETE -> {
                         if (selectedId >= 0) {
                             PlannedWork work = plannedWorks().find(selectedId).orElse(null);
-                            if (work != null && work.state() == PlannedWork.State.WORKING) {
-                                view.showMessage("Planning",
-                                        "Cancel the active work before deleting it");
+                            if (work != null && (work.state() == PlannedWork.State.WORKING
+                                    || work.state() == PlannedWork.State.PAUSED)) {
+                                view.showMessage("Planning", "Cancel the work before deleting it");
                                 return;
                             }
                             plannedWorks().remove(selectedId);
@@ -1448,6 +1461,102 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         return 0;
     }
 
+    /**
+     * Pauses the active automatic work without cancelling it. The exact progress and the prepaid
+     * cash are stored in the work so it can be saved and resumed later.
+     */
+    private void pauseConstruction(int id) {
+        if (id < 0 || autoConstructionBudget == null || autoConstructionBudget.workId() != id) {
+            view.showMessage("Planning", "Select the active work to pause it");
+            return;
+        }
+        ConstructionProgress progress = constructionQueue().pause();
+        plannedWorks().markPaused(id, progress.builtSteps(), progress.remainingTicks(),
+                autoConstructionBudget.prepaid());
+        autoConstructionBudget = null;
+        constructionQueue = null;
+        constructionCancelArmed = false;
+        showConstructionNotice(ConstructionStatus.PAUSED);
+    }
+
+    /**
+     * Resumes a paused work from its saved step. The quote was already prepaid, so this path never
+     * charges the balance again.
+     */
+    private boolean resumePlannedWork(int id) {
+        if (id < 0) {
+            return false;
+        }
+        PlannedWork work = plannedWorks().find(id).orElse(null);
+        if (work == null) {
+            return false;
+        }
+        if (work.state() != PlannedWork.State.PAUSED) {
+            view.showMessage("Planning", "This work is not paused");
+            return false;
+        }
+        if (isConstructionActive()) {
+            view.showMessage("Planning", "Another construction is already active");
+            return false;
+        }
+        WorkQuote quote = work.quote().orElse(null);
+        if (quote == null || !quote.feasible()) {
+            view.showMessage("Planning", "Select a company quote before resuming the work");
+            return false;
+        }
+        Optional<RailBuildability.Issue> buildIssue =
+                RailBuildability.check(model, quote.plan(), work.builtSteps());
+        if (buildIssue.isPresent()) {
+            view.showMessage("Planning", "Work cannot resume: " + buildIssue.get().description());
+            return false;
+        }
+        RouteConstructionQueue queue = constructionQueue();
+        boolean started = queue.resume(quote.plan(), new RailTrackMaterializer(this, false),
+                quote.company().timeFactor(), work.builtSteps(), work.remainingTicks());
+        if (!started) {
+            view.showMessage("Planning", "Another construction is already active");
+            return false;
+        }
+        ConstructionProgress progress = queue.progress();
+        if (progress.state() == letrain.construction.ConstructionState.REJECTED) {
+            constructionQueue = null;
+            view.showMessage("Planning",
+                    "Work rejected: " + progress.reasonOptional().orElse("route cannot be built"));
+            return false;
+        }
+        if (progress.state() == letrain.construction.ConstructionState.DONE) {
+            plannedWorks().replaceState(id, PlannedWork.State.DONE);
+            constructionQueue = null;
+            showConstructionNotice(ConstructionStatus.COMPLETE);
+            return false;
+        }
+        plannedWorks().replaceState(id, PlannedWork.State.WORKING);
+        autoConstructionBudget = new AutoConstructionBudget(id, quote, (float) work.prepaidCost());
+        constructionCancelArmed = false;
+        constructionNotice = null;
+        constructionNoticeUntilMillis = 0;
+        return true;
+    }
+
+    /** Cancels a paused work, refunding the unbuilt quote minus the cancellation penalty. */
+    private void cancelPausedWork(PlannedWork work) {
+        WorkQuote quote = work.quote().orElse(null);
+        if (quote == null) {
+            view.showMessage("Planning", "This paused work has no company quote");
+            return;
+        }
+        double unbuilt = 0;
+        for (int index = work.builtSteps(); index < quote.plan().steps().size(); index++) {
+            unbuilt += quote.costForStep(index);
+        }
+        double penalty = Math.min(unbuilt, Math.max(unbuilt * 0.10, quote.totalCost() * 0.05));
+        double refund = Math.max(0, unbuilt - penalty);
+        model.getEconomyManager().refund((float) refund);
+        double spent = Math.max(0, work.prepaidCost() - refund);
+        plannedWorks().markCancelled(work.id(), spent);
+        showConstructionNotice(ConstructionStatus.cancelled(spent));
+    }
+
     /** Builds the display rows for the modal list; formatting stays in the UI layer. */
     private List<ConstructionPlansDialog.Row> plannedWorkRows(List<PlannedWork> works) {
         return works.stream().map(work -> {
@@ -1474,6 +1583,7 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
         return switch (state) {
             case DRAFT -> "Draft";
             case WORKING -> "Working";
+            case PAUSED -> "Paused";
             case DONE -> "Done";
             case CANCELLED -> "Cancelled";
         };
@@ -1865,7 +1975,8 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
             return;
         }
         for (PlannedWork work : plannedWorks().works()) {
-            if (work.state() != PlannedWork.State.DRAFT) {
+            if (work.state() != PlannedWork.State.DRAFT
+                    && work.state() != PlannedWork.State.PAUSED) {
                 continue;
             }
             if (work.id() == routePreviewEditingWorkId || autoConstructionBudget != null
@@ -1874,8 +1985,9 @@ public class TerminalPresenter implements letrain.mvp.Presenter, CoreTrainEventL
                 // hide the real rails or paint a duplicate policy.
                 continue;
             }
+            int fromStep = work.state() == PlannedWork.State.PAUSED ? work.builtSteps() : 0;
             for (RoutePreviewOverlay.Cell cell : RoutePreviewOverlay.cells(work.plan(),
-                    work.start(), work.end())) {
+                    work.start(), work.end(), fromStep)) {
                 view.drawRoutePreviewCell(cell.x(), cell.y(), cell.glyph(), cell.endpoint(),
                         cell.style());
             }

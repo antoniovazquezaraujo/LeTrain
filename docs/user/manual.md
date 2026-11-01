@@ -83,16 +83,17 @@ LeTrain is deeply modal. Pressing the following keys will switch your current in
 - **`Q`**: Compare construction companies for the selected route and choose one. Companies that cannot build the route's bridges or tunnels are unavailable. Before choosing a company the row shows no cost or construction time; after choosing one it shows the company, quality, quoted cost and quoted time.
 - **`D`**: Delete the selected draft.
 - **`Run` / `R`**: Start the selected work with its chosen company. It checks cash, prepays the quote, and builds with the company time factor. Without a quote or enough cash it does not start.
-- **`Cancel work` / `X` / `Alt+X`**: While a work is in progress, select its **Working** row and use this action. It asks for confirmation before cancelling; built track remains and the unused budget is refunded minus the penalty.
+- **`Pause` / `P`**: Stop the active work without cancelling it. Progress and prepaid cash are kept, the row becomes **Paused**, and the game can be saved.
+- **`Resume` / `S`**: Continue a **Paused** work from the exact cell and tick where it stopped, without charging the quote again.
+- **`Cancel work` / `X` / `Alt+X`**: While a work is **Working** or **Paused**, select its row and use this action. It asks for confirmation before cancelling; built track remains and the unused budget is refunded minus the penalty.
 - **`Esc`**: Close the Works list. On the map, `Esc` opens the File menu; it does not cancel an automatic work.
 - The total line only sums works that already have a company quote; unquoted works stay blank.
 - The same list actions are available as **Alt+A**, **Alt+E**, **Alt+Q**, **Alt+R**, **Alt+X**, **Alt+D** and **Alt+C**.
 - The catalogue is provisional: `CHAPUCERT` and `RAPIDEX` are low quality and cannot build bridges/tunnels; `ARTESANA` and `IMPERIAL` are high quality and can. Quality is only a commercial promise until maintenance exists.
-- During an automatic work the old plan points are hidden so the real rails become visible; when it finishes the row becomes **Done** and the points disappear. If cancelled it becomes **Cancelled**.
+- During an automatic work the old plan points are hidden so the real rails become visible; when it finishes the row becomes **Done**, when paused **Paused**, and when cancelled **Cancelled**.
 - Stored drafts stay painted on the map until they are built or deleted.
 - Saving a draft also creates the marks `Way-<id>-start` and `Way-<id>-end` at its endpoints (for example, `Way-1-start` and `Way-1-end`). These marks remain if the row is deleted; a dedicated marks menu will come later.
-- The list lives in the model and is saved with the game. One active automatic work blocks saving;
-  finish or cancel it first. The list itself is kept across load/undo model swaps.
+- The list lives in the model and is saved with the game. An active **Working** work still blocks saving; use **Pause** first. A paused work is saved with its progress and can be resumed after loading.
 
 ### Moving Track Elements
 In the **Stations** (`n`), **Sensors** (`e`), **Semaphores** (`s`) and **Speed Signals** (`g`) modes you can slide the selected element along the rail, in the direction the element itself is facing:
