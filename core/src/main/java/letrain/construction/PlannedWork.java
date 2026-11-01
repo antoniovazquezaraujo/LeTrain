@@ -14,7 +14,7 @@ import letrain.planner.RoutePolicy;
  * A planned work is a <b>budget</b>, not a construction order: it stores the endpoints, the policy
  * and the last feasible plan, but it never touches the world until Run. A selected
  * {@link WorkQuote} adds the company, quality and quoted cost/time without changing the route;
- * changing the plan drops that quote. A work can be a draft, done or cancelled.
+ * changing the plan drops that quote. A work can be a draft, working, paused, done or cancelled.
  *
  * <p>
  * The value is immutable. Recalculating a work produces a new instance with the same id and
@@ -28,6 +28,8 @@ public final class PlannedWork {
         DRAFT,
         /** An automatic company work is currently being materialised. */
         WORKING,
+        /** An automatic work was stopped without cancelling it; it can be resumed. */
+        PAUSED,
         /** The automatic work finished and its real track replaced the painted plan. */
         DONE,
         /** The automatic work was stopped; built cells remain, the rest was refunded. */
@@ -43,6 +45,9 @@ public final class PlannedWork {
     private final State state;
     private final WorkQuote quote;
     private final Double spentCost;
+    private final int builtSteps;
+    private final long remainingTicks;
+    private final double prepaidCost;
 
     /**
      * @param id stable, positive identifier inside its list
@@ -60,11 +65,17 @@ public final class PlannedWork {
 
     private PlannedWork(int id, Point start, Point end, RoutePolicy policy, RoutePlan plan,
             long estimatedTicks, State state, WorkQuote quote) {
-        this(id, start, end, policy, plan, estimatedTicks, state, quote, null);
+        this(id, start, end, policy, plan, estimatedTicks, state, quote, null, 0, 0, 0);
     }
 
     private PlannedWork(int id, Point start, Point end, RoutePolicy policy, RoutePlan plan,
             long estimatedTicks, State state, WorkQuote quote, Double spentCost) {
+        this(id, start, end, policy, plan, estimatedTicks, state, quote, spentCost, 0, 0, 0);
+    }
+
+    private PlannedWork(int id, Point start, Point end, RoutePolicy policy, RoutePlan plan,
+            long estimatedTicks, State state, WorkQuote quote, Double spentCost, int builtSteps,
+            long remainingTicks, double prepaidCost) {
         if (id < 1) {
             throw new IllegalArgumentException("id must be positive, but was: " + id);
         }
@@ -84,10 +95,25 @@ public final class PlannedWork {
             throw new IllegalArgumentException(
                     "spentCost must be finite and non-negative, but was: " + spentCost);
         }
+        if (builtSteps < 0 || builtSteps > plan.steps().size()) {
+            throw new IllegalArgumentException(
+                    "builtSteps must be between 0 and the plan size, but was: " + builtSteps);
+        }
+        if (remainingTicks < 0) {
+            throw new IllegalArgumentException(
+                    "remainingTicks must be non-negative, but was: " + remainingTicks);
+        }
+        if (!Double.isFinite(prepaidCost) || prepaidCost < 0) {
+            throw new IllegalArgumentException(
+                    "prepaidCost must be finite and non-negative, but was: " + prepaidCost);
+        }
         this.estimatedTicks = estimatedTicks;
         this.state = Objects.requireNonNull(state, "state must not be null");
         this.quote = quote;
         this.spentCost = spentCost;
+        this.builtSteps = builtSteps;
+        this.remainingTicks = remainingTicks;
+        this.prepaidCost = prepaidCost;
     }
 
     /** Creates a draft work. */
@@ -129,6 +155,21 @@ public final class PlannedWork {
         return state;
     }
 
+    /** Number of cells already built when the work was paused. */
+    public int builtSteps() {
+        return builtSteps;
+    }
+
+    /** Ticks still needed for the current cell when the work was paused. */
+    public long remainingTicks() {
+        return remainingTicks;
+    }
+
+    /** Cash charged when the automatic work started; zero for free construction. */
+    public double prepaidCost() {
+        return prepaidCost;
+    }
+
     /** Actual cash spent when the work was cancelled; empty for drafts and completed works. */
     public OptionalDouble spentCost() {
         return spentCost == null ? OptionalDouble.empty() : OptionalDouble.of(spentCost);
@@ -155,13 +196,29 @@ public final class PlannedWork {
     /** Returns a copy in another lifecycle state, keeping the route, quote and identity. */
     public PlannedWork withState(State newState) {
         return new PlannedWork(id, start, end, policy, plan, estimatedTicks,
-                Objects.requireNonNull(newState, "state must not be null"), quote, spentCost);
+                Objects.requireNonNull(newState, "state must not be null"), quote, spentCost,
+                builtSteps, remainingTicks, prepaidCost);
+    }
+
+    /**
+     * Returns a paused copy with the exact queue progress and the cash already paid for it.
+     */
+    public PlannedWork withPausedProgress(int newBuiltSteps, long newRemainingTicks,
+            double newPrepaidCost) {
+        return new PlannedWork(id, start, end, policy, plan, estimatedTicks, State.PAUSED, quote,
+                spentCost, newBuiltSteps, newRemainingTicks, newPrepaidCost);
+    }
+
+    /** Returns a copy with the cash charged when the automatic work started. */
+    public PlannedWork withPrepaidCost(double newPrepaidCost) {
+        return new PlannedWork(id, start, end, policy, plan, estimatedTicks, state, quote,
+                spentCost, builtSteps, remainingTicks, newPrepaidCost);
     }
 
     /** Returns a copy with the actual cash spent on a cancelled work. */
     public PlannedWork withSpentCost(double newSpentCost) {
         return new PlannedWork(id, start, end, policy, plan, estimatedTicks, state, quote,
-                newSpentCost);
+                newSpentCost, builtSteps, remainingTicks, prepaidCost);
     }
 
     /**
@@ -177,7 +234,7 @@ public final class PlannedWork {
             throw new IllegalArgumentException("quote must belong to the work plan");
         }
         return new PlannedWork(id, start, end, policy, plan, estimatedTicks, state, newQuote,
-                spentCost);
+                spentCost, builtSteps, remainingTicks, prepaidCost);
     }
 
     @Override
@@ -185,6 +242,6 @@ public final class PlannedWork {
         return "PlannedWork[id=" + id + ", start=" + start + ", end=" + end + ", policy=" + policy
                 + ", cells=" + cells() + ", cost=" + cost() + ", ticks=" + estimatedTicks
                 + ", quote=" + (quote == null ? "-" : quote.company().id()) + ", state=" + state
-                + "]";
+                + ", built=" + builtSteps + "/" + cells() + ", remaining=" + remainingTicks + "]";
     }
 }

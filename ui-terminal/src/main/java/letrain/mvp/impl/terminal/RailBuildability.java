@@ -5,7 +5,6 @@ import java.util.Optional;
 import letrain.map.Point;
 import letrain.mvp.Model;
 import letrain.planner.RoutePlan;
-import letrain.planner.RouteStep;
 import letrain.track.RailSemaphore;
 import letrain.track.Sensor;
 import letrain.track.SpeedSignal;
@@ -53,12 +52,21 @@ final class RailBuildability {
      * buildability problem: its planner reason takes precedence.
      */
     static Optional<Issue> check(Model model, RoutePlan plan) {
+        return check(model, plan, 0);
+    }
+
+    /**
+     * Checks the plan from {@code fromStep} onwards. The prefix is skipped because it belongs to a
+     * work that is already built and is being resumed.
+     */
+    static Optional<Issue> check(Model model, RoutePlan plan, int fromStep) {
         Objects.requireNonNull(model, "model must not be null");
         if (plan == null || !plan.feasible()) {
             return Optional.empty();
         }
-        for (RouteStep step : plan.steps()) {
-            Optional<Issue> issue = checkCell(model, step.point());
+        int first = Math.max(0, Math.min(fromStep, plan.steps().size()));
+        for (int index = first; index < plan.steps().size(); index++) {
+            Optional<Issue> issue = checkCell(model, plan.steps().get(index).point());
             if (issue.isPresent()) {
                 return issue;
             }

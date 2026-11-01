@@ -17,7 +17,8 @@ import letrain.planner.RoutePlan;
  * <p>
  * A terminal job ({@code DONE}, {@code REJECTED} or {@code CANCELLED}) no longer blocks the queue,
  * so the next {@link #start(RoutePlan, TrackMaterializer)} replaces it. While a job is
- * {@code BUILDING}, {@code start} is refused and the current job is left untouched.
+ * {@code BUILDING}, {@code start} is refused and the current job is left untouched. A
+ * {@code PAUSED} job also releases the editing lock and can be resumed from its saved progress.
  */
 public final class RouteConstructionQueue implements ConstructionGuard {
 
@@ -89,6 +90,39 @@ public final class RouteConstructionQueue implements ConstructionGuard {
             job.cancel();
         }
         return progress();
+    }
+
+    /** Pauses the current job, keeping its progress for a later resume. */
+    public ConstructionProgress pause() {
+        if (job != null) {
+            job.pause();
+        }
+        return progress();
+    }
+
+    /** Resumes a paused job already owned by this queue. */
+    public boolean resume() {
+        if (job == null || job.state() != ConstructionState.PAUSED) {
+            return false;
+        }
+        job.resume();
+        return true;
+    }
+
+    /**
+     * Rebuilds a paused job at the saved step. Used after loading a savegame or after the presenter
+     * dropped the queue.
+     */
+    public boolean resume(RoutePlan plan, TrackMaterializer materializer, double timeFactor,
+            int builtSteps, long remainingTicks) {
+        Objects.requireNonNull(plan, "plan must not be null");
+        Objects.requireNonNull(materializer, "materializer must not be null");
+        if (isActive()) {
+            return false;
+        }
+        job = RouteConstructionJob.resume(plan, materializer, economy, baseDelayTicksPerCell,
+                timeFactor, builtSteps, remainingTicks);
+        return true;
     }
 
     /** True while a job is actively materialising cells. */

@@ -87,6 +87,21 @@ public final class ConstructionPlanList {
         return Optional.empty();
     }
 
+    /** Marks a work as paused and stores the exact queue progress and prepaid cash. */
+    public Optional<PlannedWork> markPaused(int id, int builtSteps, long remainingTicks,
+            double prepaidCost) {
+        for (int index = 0; index < works.size(); index++) {
+            PlannedWork current = works.get(index);
+            if (current.id() == id) {
+                PlannedWork updated =
+                        current.withPausedProgress(builtSteps, remainingTicks, prepaidCost);
+                works.set(index, updated);
+                return Optional.of(updated);
+            }
+        }
+        return Optional.empty();
+    }
+
     /** Marks a work as cancelled and records the cash actually spent. */
     public Optional<PlannedWork> markCancelled(int id, double spentCost) {
         return replaceState(id, PlannedWork.State.CANCELLED)

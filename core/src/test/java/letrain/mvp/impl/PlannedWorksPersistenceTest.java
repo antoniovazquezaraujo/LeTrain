@@ -62,6 +62,28 @@ class PlannedWorksPersistenceTest {
     }
 
     @Test
+    @DisplayName("a paused work keeps its progress and prepaid cash across save/load")
+    void pausedWork_roundTrip() {
+        Model model = new Model(8);
+        ConstructionPlanList list = model.getPlannedWorks();
+        RoutePlan route = plan(0, 0, 100, 12);
+        PlannedWork work =
+                list.add(new Point(0, 0), new Point(1, 0), RoutePolicy.DIRECT, route, 12);
+        list.replaceQuote(work.id(), WorkQuote.quote(ConstructionCompanyCatalog.ARTESANA, route));
+        list.markPaused(work.id(), 1, 3, 160);
+
+        GameSaveService saves = new GameSaveService();
+        Model loaded = saves.fromBytes(saves.toBytes(model));
+        PlannedWork restored = loaded.getPlannedWorks().find(work.id()).orElseThrow();
+
+        assertEquals(PlannedWork.State.PAUSED, restored.state());
+        assertEquals(1, restored.builtSteps());
+        assertEquals(3, restored.remainingTicks());
+        assertEquals(160, restored.prepaidCost());
+        assertTrue(restored.quote().isPresent());
+    }
+
+    @Test
     @DisplayName("a savegame file carries the planning list through GameSaveService.save/load")
     void plannedWorks_surviveFileRoundTrip() throws Exception {
         Model model = new Model(9);

@@ -15,9 +15,10 @@
 > cancelar. `Esc` abre el File menu y no cancela. Se devuelve la parte no construida con una
 > penalización provisional del 10 % restante, mínimo 5 % del total cotizado. Al terminar una obra
 > pasa a `Done` y al cancelarla a `Cancelled`; en ambos casos deja de pintarse el plan y solo quedan
-> las vías reales. La lista y sus cotizaciones se guardan en el savegame; una obra activa bloquea
-> el guardado porque su cola todavía no se serializa. Sigue habiendo una sola obra activa y no hay
-> zonas, varias obras simultáneas ni calidad real.
+> las vías reales. La lista y sus cotizaciones se guardan en el savegame; una obra activa todavía
+> bloquea el guardado, pero puede pausarse. La pausa conserva el progreso, el tick restante y el
+> prepago, y se reanuda sin volver a cobrar. Sigue habiendo una sola obra activa y no hay zonas,
+> varias obras simultáneas ni calidad real.
 >
 > Depende de ADR-034, ADR-035, ADR-036 y ADR-037. La calidad de construcción y el mantenimiento se
 > separan en [[ADR-039-Track-Quality-and-Maintenance|ADR-039]].

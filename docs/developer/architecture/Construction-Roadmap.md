@@ -144,9 +144,9 @@ Implementación actual de la fase 1:
   de las marcas de extremos. El diálogo no se reabre solo.
 
 La lista vive en el modelo y se guarda en el savegame (`plannedWorks`). El presenter conserva
-solo la fila seleccionada y los avisos transitorios. Una obra automática activa no se puede
-guardar: hay que terminarla o cancelarla antes, porque su cola de construcción sigue siendo estado
-de UI y no se serializa.
+solo la fila seleccionada y los avisos transitorios. Una obra automática activa todavía no se puede
+guardar: hay que pausarla, terminarla o cancelarla antes. Una obra pausada guarda su progreso, tick
+restante y prepago, y se reanuda desde el mismo punto sin volver a cobrar la cotización.
 
 ### Visión final de la lista
 

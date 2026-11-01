@@ -33,6 +33,18 @@ public interface TrackMaterializer {
     Optional<String> prepare(RoutePlan plan);
 
     /**
+     * Preflight from {@code fromStep} onwards. Used when a paused job resumes: the already-built
+     * prefix is expected to exist in the world and must not be rejected as occupied.
+     *
+     * <p>
+     * The default keeps the old whole-plan contract for simple adapters; adapters that can resume
+     * should override it.
+     */
+    default Optional<String> prepare(RoutePlan plan, int fromStep) {
+        return prepare(plan);
+    }
+
+    /**
      * Materialises exactly the planned cell at {@code index}.
      *
      * @param plan complete plan being built

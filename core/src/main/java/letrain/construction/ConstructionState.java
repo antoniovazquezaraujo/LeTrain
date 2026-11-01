@@ -6,7 +6,7 @@ package letrain.construction;
  * <p>
  * {@link #IDLE} is the "no construction" state used by {@link ConstructionProgress#idle()} when a
  * queue has no job. Once a job exists it moves to {@link #BUILDING}, {@link #REJECTED} or
- * {@link #DONE}; a running job can also become {@link #CANCELLED}.
+ * {@link #DONE}; a running job can also become {@link #PAUSED} or {@link #CANCELLED}.
  */
 public enum ConstructionState {
     /** No job has been started, or the queue is empty. */
@@ -15,6 +15,8 @@ public enum ConstructionState {
     REJECTED,
     /** The job is materialising planned cells, one at a time. */
     BUILDING,
+    /** The job was paused without cancelling it; its progress can be saved and resumed. */
+    PAUSED,
     /** Every planned cell was materialised. */
     DONE,
     /** The author stopped the job; cells built so far remain in the world. */

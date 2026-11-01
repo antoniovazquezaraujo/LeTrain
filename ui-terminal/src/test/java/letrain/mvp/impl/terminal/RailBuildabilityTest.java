@@ -87,6 +87,15 @@ class RailBuildabilityTest {
     }
 
     @Test
+    @DisplayName("a paused resume ignores the built prefix and checks only the remaining cells")
+    void checkFromStep_skipsBuiltCells() {
+        model.addTrack(new Point(0, 0), new RailTrack());
+
+        assertTrue(RailBuildability.check(model, plan(3)).isPresent());
+        assertTrue(RailBuildability.check(model, plan(3), 1).isEmpty());
+    }
+
+    @Test
     @DisplayName("an infeasible plan has no cells to build, so it is not a buildability problem")
     void infeasiblePlan_hasNoBuildIssue() {
         assertFalse(RailBuildability.check(model, RoutePlan.infeasible("no route")).isPresent());

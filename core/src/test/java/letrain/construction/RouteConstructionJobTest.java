@@ -235,6 +235,45 @@ class RouteConstructionJobTest {
     }
 
     @Test
+    @DisplayName("pause keeps the exact progress and resume continues from it")
+    void should_PauseAndResumeFromSavedProgress() {
+        RecordingTrackMaterializer materializer = new RecordingTrackMaterializer();
+        RouteConstructionJob job =
+                new RouteConstructionJob(normalPlan(4), materializer, economy(0, 3, 2));
+        job.tick();
+
+        job.pause();
+        ConstructionProgress paused = job.progress();
+        assertEquals(ConstructionState.PAUSED, paused.state());
+        assertEquals(1, paused.builtSteps());
+        assertEquals(step(1, 0, TrackType.NORMAL_TRACK), paused.currentStep());
+        assertEquals(1, paused.remainingTicks());
+        job.tick();
+        assertEquals(1, job.builtSteps(), "a paused job must not advance");
+
+        job.resume();
+        job.tick();
+        assertEquals(2, job.builtSteps());
+        assertEquals(List.of(0, 1), materializer.builtIndexes);
+    }
+
+    @Test
+    @DisplayName("a resumed job skips its built prefix and continues at the saved cell")
+    void should_ResumeFromSavedProgress() {
+        RecordingTrackMaterializer materializer = new RecordingTrackMaterializer();
+        RoutePlan plan = normalPlan(3);
+        RouteConstructionJob resumed =
+                RouteConstructionJob.resume(plan, materializer, economy(0, 3, 2), 1, 1.0, 1, 1);
+
+        assertEquals(ConstructionState.BUILDING, resumed.state());
+        assertEquals(1, resumed.builtSteps());
+        assertEquals(step(1, 0, TrackType.NORMAL_TRACK), resumed.progress().currentStep());
+        resumed.tick();
+        assertEquals(2, resumed.builtSteps());
+        assertEquals(List.of(1), materializer.builtIndexes);
+    }
+
+    @Test
     @DisplayName("cancel keeps the built count, stops further builds and calls finish once")
     void should_KeepBuiltCellsAndStop_When_Cancelled() {
         RecordingTrackMaterializer materializer = new RecordingTrackMaterializer();

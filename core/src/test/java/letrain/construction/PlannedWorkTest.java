@@ -180,6 +180,26 @@ class PlannedWorkTest {
     }
 
     @Test
+    @DisplayName("a paused work keeps its exact progress, prepaid cash and quote")
+    void paused_keepsProgressAndPrepaidCash() {
+        PlannedWork original = PlannedWork.draft(3, new Point(0, 0), new Point(4, 0),
+                RoutePolicy.DIRECT, plan(5, 100, 10), 15);
+        WorkQuote quote = WorkQuote.quote(ConstructionCompanyCatalog.ARTESANA, original.plan());
+
+        PlannedWork paused = original.withQuote(quote).withPausedProgress(2, 1, 160);
+
+        assertEquals(PlannedWork.State.PAUSED, paused.state());
+        assertEquals(2, paused.builtSteps());
+        assertEquals(1, paused.remainingTicks());
+        assertEquals(160, paused.prepaidCost());
+        assertEquals(quote, paused.quote().orElseThrow());
+        assertEquals(PlannedWork.State.DRAFT, original.state());
+        assertThrows(IllegalArgumentException.class, () -> original.withPausedProgress(6, 0, 0));
+        assertThrows(IllegalArgumentException.class, () -> original.withPausedProgress(1, -1, 0));
+        assertThrows(IllegalArgumentException.class, () -> original.withPausedProgress(1, 0, -1));
+    }
+
+    @Test
     @DisplayName("a built or cancelled work keeps its route and quote in the new state")
     void withState_changesOnlyTheLifecycleState() {
         PlannedWork original = PlannedWork.draft(3, new Point(0, 0), new Point(4, 0),

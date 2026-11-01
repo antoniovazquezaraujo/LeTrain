@@ -53,7 +53,12 @@ final class RailTrackMaterializer implements TrackMaterializer {
 
     @Override
     public Optional<String> prepare(RoutePlan plan) {
-        return RailBuildability.check(presenter.getModel(), plan)
+        return prepare(plan, 0);
+    }
+
+    @Override
+    public Optional<String> prepare(RoutePlan plan, int fromStep) {
+        return RailBuildability.check(presenter.getModel(), plan, fromStep)
                 .map(RailBuildability.Issue::description);
     }
 
