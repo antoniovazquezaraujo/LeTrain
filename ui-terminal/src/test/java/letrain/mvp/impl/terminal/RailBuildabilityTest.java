@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import letrain.map.Point;
 import letrain.mvp.Presenter.TrackType;
+import letrain.construction.RailBuildability;
 import letrain.mvp.impl.Model;
 import letrain.planner.RoutePlan;
 import letrain.planner.RouteStep;

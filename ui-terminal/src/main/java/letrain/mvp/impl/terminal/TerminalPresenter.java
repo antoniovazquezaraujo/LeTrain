@@ -17,6 +17,8 @@ import letrain.construction.ConstructionPlanList;
 import letrain.construction.ConstructionProgress;
 import letrain.construction.ConstructionService;
 import letrain.construction.PlannedWork;
+import letrain.construction.RailBuildability;
+import letrain.construction.RailTrackMaterializer;
 import letrain.construction.RouteConstructionQueue;
 import letrain.construction.WorkQuote;
 import letrain.mvp.input.InputEvent;

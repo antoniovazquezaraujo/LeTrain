@@ -122,7 +122,7 @@ public class Gdx3DHud {
     static final int MENU_BLOCK_ALIGN = com.badlogic.gdx.utils.Align.left;
 
     private static final String KEYS_TEXT = "[Alt+▲▼ / Mouse Wheel]:Zoom | [Alt+◀▶]:Rotate"
-            + " | [z/Z]:Camera | [a/r/d/f/s/t/c/u/p/n]:Modes | [Tab]:Toggle Panel"
+            + " | [z/Z]:Camera | [a/r/d/f/s/t/c/u/p/n/b]:Modes | [Tab]:Toggle Panel"
             + " | [Esc]:Menu";
 
 
@@ -170,6 +170,7 @@ public class Gdx3DHud {
     private int helpLevel = HudHelp.FULL;
 
     private Window ideWindow;
+    private Gdx3DPlanningWindow planningWindow;
     private boolean fileMenuOpen;
     private boolean confirmDialogOpen;
     private boolean newGameDialogOpen;
@@ -855,9 +856,8 @@ public class Gdx3DHud {
     /**
      * Shared menu definition: the wording and the {@code enabledIf}/{@code selectedIf} suppliers
      * are constant for a model, so the HUD builds the list once instead of allocating the menu
-     * options per frame (#818). A new HUD is created when the model is swapped. Planning is
-     * filtered out until the 3D client has a planned-works window: the shared model entry is
-     * 2D-only for now.
+     * options per frame (#818). A new HUD is created when the model is swapped. Every shared mode
+     * is visible now that the 3D client has a Planning window.
      */
     private List<GameModeMenuOption> menuOptions() {
         if (menuOptionsCache == null) {
@@ -869,7 +869,21 @@ public class Gdx3DHud {
 
     /** True for menu modes the 3D HUD can actually open. */
     static boolean visibleInGraphic(Model.GameMode mode) {
-        return mode != Model.GameMode.PLANNED_WORKS;
+        return true;
+    }
+
+    /**
+     * Opens (or brings to front) the Planning window: the 3D counterpart of the 2D planned-works
+     * list. It manages existing works only; Add/Edit remain a 2D feature because the 3D client has
+     * no route preview yet.
+     */
+    public void showPlanningWindow() {
+        if (planningWindow == null || !planningWindow.isOpen()) {
+            planningWindow = new Gdx3DPlanningWindow(stage, skin, model, view);
+            planningWindow.open();
+        } else {
+            planningWindow.toFront();
+        }
     }
 
     public void updateHUD() {
@@ -4098,6 +4112,9 @@ public class Gdx3DHud {
     }
 
     public void render(float delta) {
+        if (planningWindow != null) {
+            planningWindow.update();
+        }
         updateUIData();
         stage.act(delta);
         stage.draw();
@@ -4110,6 +4127,10 @@ public class Gdx3DHud {
     }
 
     public void dispose() {
+        if (planningWindow != null) {
+            planningWindow.dispose();
+            planningWindow = null;
+        }
         if (coverTexture != null) {
             coverTexture.dispose();
             coverTexture = null;

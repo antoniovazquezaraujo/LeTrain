@@ -1,7 +1,6 @@
-package letrain.mvp.impl.terminal;
+package letrain.construction;
 
 import java.util.Optional;
-import letrain.construction.TrackMaterializer;
 import letrain.map.Dir;
 import letrain.map.Point;
 import letrain.mvp.Model;
@@ -29,13 +28,13 @@ import letrain.vehicle.Cursor.CursorMode;
  * background. Journal recording is suppressed around the build: construction is not a keyboard edit
  * and must not pollute undo/redo.
  */
-final class RailTrackMaterializer implements TrackMaterializer {
+public final class RailTrackMaterializer implements TrackMaterializer {
 
     private final Presenter presenter;
     private final RailTrackMaker maker;
     private final boolean chargeConstructionCosts;
 
-    RailTrackMaterializer(Presenter presenter) {
+    public RailTrackMaterializer(Presenter presenter) {
         this(presenter, true);
     }
 
@@ -43,7 +42,7 @@ final class RailTrackMaterializer implements TrackMaterializer {
      * @param chargeConstructionCosts false for a company work whose quote was already prepaid; the
      *        per-cell economy charge is suppressed for the duration of the build, then restored
      */
-    RailTrackMaterializer(Presenter presenter, boolean chargeConstructionCosts) {
+    public RailTrackMaterializer(Presenter presenter, boolean chargeConstructionCosts) {
         this.presenter = presenter;
         this.chargeConstructionCosts = chargeConstructionCosts;
         // A dedicated maker keeps the construction chaining state (oldTrack) isolated from the
