@@ -61,6 +61,7 @@
 - [[letrain.construction.ConstructionGuard|ConstructionGuard]] (core)
 - [[letrain.construction.ConstructionPlanList|ConstructionPlanList]] (core)
 - [[letrain.construction.ConstructionProgress|ConstructionProgress]] (core)
+- [[letrain.construction.ConstructionService|ConstructionService]] (core)
 - [[letrain.construction.ConstructionState|ConstructionState]] (core)
 - [[letrain.construction.PlannedWork|PlannedWork]] (core)
 - [[letrain.construction.RouteConstructionJob|RouteConstructionJob]] (core)
