@@ -17,6 +17,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Window;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +62,10 @@ final class Gdx3DPlanningWindow {
     private TextButton cancelButton;
     private TextButton deleteButton;
     private TextButton quotesButton;
+    private TextButton closeButton;
+    private final List<TextButton> actionButtons = new ArrayList<>();
+    private final Map<TextButton, Runnable> actionRunnables = new LinkedHashMap<>();
+    private final Map<Character, TextButton> hotkeyButtons = new LinkedHashMap<>();
 
     private List<PlannedWork> works = List.of();
     private final Map<Integer, Table> rowButtons = new LinkedHashMap<>();
@@ -148,13 +153,13 @@ final class Gdx3DPlanningWindow {
 
         Table actions = new Table();
         actions.defaults().space(8f);
-        runButton = actionButton("Run", this::runSelected);
-        pauseButton = actionButton("Pause", this::pauseSelected);
-        resumeButton = actionButton("Resume", this::resumeSelected);
-        cancelButton = actionButton("Cancel", this::cancelSelected);
-        deleteButton = actionButton("Delete", this::deleteSelected);
-        quotesButton = actionButton("Quotes", this::chooseQuote);
-        TextButton closeButton = actionButton("Close", this::close);
+        runButton = actionButton('R', "Run", this::runSelected);
+        pauseButton = actionButton('P', "Pause", this::pauseSelected);
+        resumeButton = actionButton('S', "Resume", this::resumeSelected);
+        cancelButton = actionButton('X', "Cancel", this::cancelSelected);
+        deleteButton = actionButton('D', "Delete", this::deleteSelected);
+        quotesButton = actionButton('Q', "Quotes", this::chooseQuote);
+        closeButton = actionButton('C', "Close", this::close);
         actions.add(runButton);
         actions.add(pauseButton);
         actions.add(resumeButton);
@@ -163,6 +168,11 @@ final class Gdx3DPlanningWindow {
         actions.add(quotesButton);
         actions.add(closeButton);
         root.add(actions).left().row();
+
+        Label hint = new Label("[j/k] Select  [Tab] Focus  [Enter] Activate  [Esc] Close", skin,
+                "monospace");
+        hint.setColor(Color.LIGHT_GRAY);
+        root.add(hint).left().row();
 
         window.add(root).grow();
         installKeyboard();
@@ -187,12 +197,18 @@ final class Gdx3DPlanningWindow {
         refresh();
     }
 
-    private TextButton actionButton(String label, Runnable action) {
-        TextButton button = new TextButton(label, skin);
+    private TextButton actionButton(char hotkey, String label, Runnable action) {
+        TextButton button =
+                new TextButton("[" + Character.toUpperCase(hotkey) + "] " + label, skin);
+        actionButtons.add(button);
+        actionRunnables.put(button, action);
+        hotkeyButtons.put(Character.toLowerCase(hotkey), button);
         button.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
                 if (!button.isDisabled()) {
+                    stage.setKeyboardFocus(button);
+                    paintActionFocus();
                     action.run();
                 }
             }
@@ -213,6 +229,10 @@ final class Gdx3DPlanningWindow {
                     close();
                     return true;
                 }
+                if (keycode == Input.Keys.TAB) {
+                    moveActionFocus(isShiftPressed() ? -1 : 1);
+                    return true;
+                }
                 if (keycode == Input.Keys.UP || keycode == Input.Keys.K) {
                     moveSelection(-1);
                     return true;
@@ -221,10 +241,15 @@ final class Gdx3DPlanningWindow {
                     moveSelection(1);
                     return true;
                 }
-                if (keycode == Input.Keys.ENTER || keycode == Input.Keys.NUMPAD_ENTER) {
-                    if (!runButton.isDisabled()) {
-                        runSelected();
+                if (isAltPressed() && keycode >= Input.Keys.A && keycode <= Input.Keys.Z) {
+                    char letter = (char) ('a' + keycode - Input.Keys.A);
+                    if (triggerHotkey(letter)) {
+                        return true;
                     }
+                }
+                if (keycode == Input.Keys.ENTER || keycode == Input.Keys.NUMPAD_ENTER
+                        || keycode == Input.Keys.SPACE) {
+                    activateFocusedAction();
                     return true;
                 }
                 return true;
@@ -232,46 +257,87 @@ final class Gdx3DPlanningWindow {
 
             @Override
             public boolean keyTyped(InputEvent event, char character) {
-                char lower = Character.toLowerCase(character);
-                switch (lower) {
-                    case 'r' -> {
-                        if (!runButton.isDisabled()) {
-                            runSelected();
-                        }
-                    }
-                    case 'p' -> {
-                        if (!pauseButton.isDisabled()) {
-                            pauseSelected();
-                        }
-                    }
-                    case 's' -> {
-                        if (!resumeButton.isDisabled()) {
-                            resumeSelected();
-                        }
-                    }
-                    case 'x' -> {
-                        if (!cancelButton.isDisabled()) {
-                            cancelSelected();
-                        }
-                    }
-                    case 'd' -> {
-                        if (!deleteButton.isDisabled()) {
-                            deleteSelected();
-                        }
-                    }
-                    case 'q' -> {
-                        if (!quotesButton.isDisabled()) {
-                            chooseQuote();
-                        }
-                    }
-                    case 'c' -> close();
-                    default -> {
-                        // No shortcut; the key is still consumed by the modal window.
-                    }
+                if (!isAltPressed()) {
+                    triggerHotkey(Character.toLowerCase(character));
                 }
+                // The window is modal: it consumes every typed key, even when no shortcut matches.
                 return true;
             }
         });
+    }
+
+    /** Runs the action attached to a visible hotkey; disabled actions are ignored. */
+    private boolean triggerHotkey(char hotkey) {
+        TextButton button = hotkeyButtons.get(Character.toLowerCase(hotkey));
+        if (button == null || button.isDisabled()) {
+            return false;
+        }
+        Runnable action = actionRunnables.get(button);
+        if (action == null) {
+            return false;
+        }
+        stage.setKeyboardFocus(button);
+        paintActionFocus();
+        action.run();
+        return true;
+    }
+
+    /** Tab/Shift+Tab progress through the enabled action buttons; the row is the fallback. */
+    private void moveActionFocus(int delta) {
+        List<TextButton> enabled =
+                actionButtons.stream().filter(button -> !button.isDisabled()).toList();
+        if (enabled.isEmpty()) {
+            focusSelectedRow();
+            return;
+        }
+        Actor focused = stage.getKeyboardFocus();
+        int current = enabled.indexOf(focused);
+        int next = current < 0 ? (delta > 0 ? 0 : enabled.size() - 1)
+                : Math.floorMod(current + delta, enabled.size());
+        stage.setKeyboardFocus(enabled.get(next));
+        paintActionFocus();
+    }
+
+    /** Enter/Space activates the focused button; on a data row it falls back to Run. */
+    private void activateFocusedAction() {
+        Actor focused = stage.getKeyboardFocus();
+        if (focused instanceof TextButton button && actionButtons.contains(button)) {
+            if (!button.isDisabled()) {
+                actionRunnables.get(button).run();
+            }
+            return;
+        }
+        if (!runButton.isDisabled()) {
+            runSelected();
+        }
+    }
+
+    /** Paints the focused button with the HUD's blue block style. */
+    private void paintActionFocus() {
+        Actor focused = stage.getKeyboardFocus();
+        for (TextButton button : actionButtons) {
+            button.setStyle(skin.get(focused == button ? "focused" : "default",
+                    TextButton.TextButtonStyle.class));
+        }
+    }
+
+    /** If the focused action became disabled, return the focus to the selected row. */
+    private void ensureActionFocusValid() {
+        Actor focused = stage.getKeyboardFocus();
+        if (focused instanceof TextButton button && actionButtons.contains(button)
+                && button.isDisabled()) {
+            focusSelectedRow();
+        }
+    }
+
+    private static boolean isShiftPressed() {
+        return Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)
+                || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT);
+    }
+
+    private static boolean isAltPressed() {
+        return Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT)
+                || Gdx.input.isKeyPressed(Input.Keys.ALT_RIGHT);
     }
 
     private void pauseSelected() {
@@ -346,17 +412,25 @@ final class Gdx3DPlanningWindow {
         }
         totalLabel.setText(PlanningTableModel.totalLine(model.getPlannedWorks()));
         updateButtons();
+        ensureActionFocusValid();
         lastSignature = signature();
         if (rowsScroll != null) {
             rowsScroll.layout();
         }
-        if (!works.isEmpty() && selectedId >= 0 && rowButtons.containsKey(selectedId)) {
-            stage.setKeyboardFocus(rowButtons.get(selectedId));
-        } else {
-            // Keep the window-level shortcuts alive after deleting the last row: a removed button
-            // can no longer receive keyboard events.
-            stage.setKeyboardFocus(rowsTable);
+        if (!isActionFocused()) {
+            if (!works.isEmpty() && selectedId >= 0 && rowButtons.containsKey(selectedId)) {
+                stage.setKeyboardFocus(rowButtons.get(selectedId));
+            } else {
+                // Keep the window-level shortcuts alive after deleting the last row: a removed
+                // actor can no longer receive keyboard events.
+                stage.setKeyboardFocus(rowsTable);
+            }
         }
+        paintActionFocus();
+    }
+
+    private boolean isActionFocused() {
+        return actionButtons.contains(stage.getKeyboardFocus());
     }
 
     private void updateButtons() {
@@ -399,6 +473,7 @@ final class Gdx3DPlanningWindow {
         if (row != null) {
             stage.setKeyboardFocus(row);
         }
+        paintActionFocus();
     }
 
     private void moveSelection(int delta) {
@@ -556,6 +631,7 @@ final class Gdx3DPlanningWindow {
     private void focusSelectedRow() {
         Table row = rowButtons.get(selectedId);
         stage.setKeyboardFocus(row != null ? row : rowsTable);
+        paintActionFocus();
     }
 
     /** Closes the window and restores the mode the player had before opening it. */
