@@ -7,6 +7,7 @@ import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.Touchable;
 import com.badlogic.gdx.scenes.scene2d.ui.Dialog;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.ScrollPane;
@@ -123,9 +124,9 @@ final class Gdx3DPlanningWindow {
         root.defaults().space(6f);
 
         Table headerRow = new Table();
-        headerRow.setBackground(skin.newDrawable("white", Gdx3DHud.SELECTED_BG));
+        headerRow.setBackground(skin.newDrawable("white", Color.CYAN));
         Label header = new Label(PlanningTableModel.header(), skin, "monospace");
-        header.setColor(Color.WHITE);
+        header.setColor(Color.BLACK);
         // No extra horizontal padding: the header and every data row start at the same x, so the
         // fixed-width columns line up exactly as they do in the 2D terminal.
         headerRow.add(header).left().expandX().pad(2f, 0f, 2f, 0f);
@@ -325,6 +326,7 @@ final class Gdx3DPlanningWindow {
             Label label = new Label(text, skin, "monospace");
             label.setAlignment(com.badlogic.gdx.utils.Align.left);
             Table row = new Table();
+            row.setTouchable(Touchable.enabled);
             row.add(label).left().expandX().pad(2f, 0f, 2f, 0f);
             row.setBackground(skin.newDrawable("white",
                     work.id() == selectedId ? Gdx3DHud.SELECTED_BG : ROW_BG));
@@ -463,9 +465,9 @@ final class Gdx3DPlanningWindow {
         quoteDialog.padTop(35f);
 
         Table headerRow = new Table();
-        headerRow.setBackground(skin.newDrawable("white", Gdx3DHud.SELECTED_BG));
+        headerRow.setBackground(skin.newDrawable("white", Color.CYAN));
         Label header = new Label(PlanningTableModel.quoteHeader(), skin, "monospace");
-        header.setColor(Color.WHITE);
+        header.setColor(Color.BLACK);
         headerRow.add(header).left().expandX().pad(2f, 0f, 2f, 0f);
         quoteDialog.getContentTable().add(headerRow).growX().pad(0f, 12f, 6f, 12f).row();
 
@@ -477,6 +479,7 @@ final class Gdx3DPlanningWindow {
             label.setAlignment(com.badlogic.gdx.utils.Align.left);
             label.setColor(quote.feasible() ? Color.WHITE : Color.GRAY);
             Table row = new Table();
+            row.setTouchable(Touchable.enabled);
             row.add(label).left().expandX().pad(2f, 0f, 2f, 0f);
             row.setBackground(skin.newDrawable("white", ROW_BG));
             row.addListener(new ClickListener() {
