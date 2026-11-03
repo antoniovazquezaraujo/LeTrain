@@ -417,7 +417,8 @@ final class Gdx3DPlanningWindow {
         if (rowsScroll != null) {
             rowsScroll.layout();
         }
-        if (!isActionFocused()) {
+        Actor focus = stage.getKeyboardFocus();
+        if (!isActionFocused() && (focus == null || isFocusInsideWindow())) {
             if (!works.isEmpty() && selectedId >= 0 && rowButtons.containsKey(selectedId)) {
                 stage.setKeyboardFocus(rowButtons.get(selectedId));
             } else {
@@ -431,6 +432,12 @@ final class Gdx3DPlanningWindow {
 
     private boolean isActionFocused() {
         return actionButtons.contains(stage.getKeyboardFocus());
+    }
+
+    /** True when the stage focus belongs to this window, not to a nested HUD dialog. */
+    private boolean isFocusInsideWindow() {
+        Actor focus = stage.getKeyboardFocus();
+        return focus == window || focus != null && focus.isDescendantOf(window);
     }
 
     private void updateButtons() {
@@ -575,7 +582,7 @@ final class Gdx3DPlanningWindow {
         scroll.setScrollbarsOnTop(true);
         quoteDialog.getContentTable().add(scroll).grow().pad(0f, 12f, 8f, 12f).row();
 
-        TextButton close = new TextButton("Close", skin);
+        TextButton close = new TextButton("[C] Close", skin);
         close.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
@@ -597,7 +604,7 @@ final class Gdx3DPlanningWindow {
         quoteDialog.addListener(new InputListener() {
             @Override
             public boolean keyDown(InputEvent event, int keycode) {
-                if (keycode == Input.Keys.ESCAPE) {
+                if (keycode == Input.Keys.ESCAPE || keycode == Input.Keys.C) {
                     closeQuoteDialog();
                 }
                 return true;
@@ -613,6 +620,8 @@ final class Gdx3DPlanningWindow {
         quoteDialog.setHeight(Math.min(420f, Math.max(240f, stage.getHeight() - 160f)));
         quoteDialog.setPosition((stage.getWidth() - quoteDialog.getWidth()) / 2f,
                 (stage.getHeight() - quoteDialog.getHeight()) / 2f);
+        stage.setKeyboardFocus(close);
+        close.setStyle(skin.get("focused", TextButton.TextButtonStyle.class));
     }
 
     private void closeQuoteDialog() {
