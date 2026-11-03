@@ -318,6 +318,7 @@ final class Gdx3DPlanningWindow {
         for (TextButton button : actionButtons) {
             button.setStyle(skin.get(focused == button ? "focused" : "default",
                     TextButton.TextButtonStyle.class));
+            button.getLabel().setColor(button.isDisabled() ? Color.GRAY : Color.WHITE);
         }
     }
 
@@ -451,6 +452,9 @@ final class Gdx3DPlanningWindow {
         cancelButton.setDisabled(!PlanningTableModel.canCancel(selected));
         deleteButton.setDisabled(blockingWork || !PlanningTableModel.canDelete(selected));
         quotesButton.setDisabled(blockingWork || !PlanningTableModel.canChooseQuote(selected));
+        for (TextButton button : actionButtons) {
+            button.getLabel().setColor(button.isDisabled() ? Color.GRAY : Color.WHITE);
+        }
     }
 
     private PlannedWork selected() {
