@@ -467,7 +467,7 @@ final class Gdx3DPlanningWindow {
         Label header = new Label(PlanningTableModel.quoteHeader(), skin, "monospace");
         header.setColor(Color.WHITE);
         headerRow.add(header).left().expandX().pad(2f, 0f, 2f, 0f);
-        quoteDialog.getContentTable().add(headerRow).growX().padBottom(6f).row();
+        quoteDialog.getContentTable().add(headerRow).growX().pad(0f, 12f, 6f, 12f).row();
 
         Table quoteRows = new Table();
         quoteRows.top().left();
