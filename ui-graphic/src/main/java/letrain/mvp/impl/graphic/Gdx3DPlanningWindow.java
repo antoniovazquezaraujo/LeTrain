@@ -40,6 +40,7 @@ final class Gdx3DPlanningWindow {
 
     private static final float WINDOW_MAX_WIDTH = 1180f;
     private static final float WINDOW_MAX_HEIGHT = 620f;
+    private static final Color ROW_BG = new Color(0.12f, 0.12f, 0.12f, 1f);
 
     private final Stage stage;
     private final Skin skin;
@@ -61,7 +62,7 @@ final class Gdx3DPlanningWindow {
     private TextButton quotesButton;
 
     private List<PlannedWork> works = List.of();
-    private final Map<Integer, TextButton> rowButtons = new LinkedHashMap<>();
+    private final Map<Integer, Table> rowButtons = new LinkedHashMap<>();
     private int selectedId = -1;
     private String lastSignature = "";
     private Model.GameMode returnMode;
@@ -121,14 +122,17 @@ final class Gdx3DPlanningWindow {
         root.pad(10f);
         root.defaults().space(6f);
 
-        Table headerBox = new Table();
-        headerBox.setBackground(skin.newDrawable("white", Gdx3DHud.SELECTED_BG));
+        Table headerRow = new Table();
+        headerRow.setBackground(skin.newDrawable("white", Gdx3DHud.SELECTED_BG));
         Label header = new Label(PlanningTableModel.header(), skin, "monospace");
-        header.setColor(Color.BLACK);
-        headerBox.add(header).pad(2f, 8f, 2f, 8f);
-        root.add(headerBox).left().row();
+        header.setColor(Color.WHITE);
+        // No extra horizontal padding: the header and every data row start at the same x, so the
+        // fixed-width columns line up exactly as they do in the 2D terminal.
+        headerRow.add(header).left().expandX().pad(2f, 0f, 2f, 0f);
+        root.add(headerRow).growX().row();
 
         rowsTable = new Table();
+        rowsTable.top().left();
         rowsTable.defaults().space(2f);
         rowsScroll = new ScrollPane(rowsTable, skin);
         rowsScroll.setFadeScrollBars(false);
@@ -318,9 +322,12 @@ final class Gdx3DPlanningWindow {
         for (int index = 0; index < works.size(); index++) {
             PlannedWork work = works.get(index);
             String text = PlanningTableModel.formatRow(PlanningTableModel.row(work));
-            TextButton row = new TextButton(text, skin, "monospace-button");
-            row.getLabel().setAlignment(com.badlogic.gdx.utils.Align.left);
-            row.setChecked(work.id() == selectedId);
+            Label label = new Label(text, skin, "monospace");
+            label.setAlignment(com.badlogic.gdx.utils.Align.left);
+            Table row = new Table();
+            row.add(label).left().expandX().pad(2f, 0f, 2f, 0f);
+            row.setBackground(skin.newDrawable("white",
+                    work.id() == selectedId ? Gdx3DHud.SELECTED_BG : ROW_BG));
             final int rowIndex = index;
             row.addListener(new ClickListener() {
                 @Override
@@ -381,11 +388,12 @@ final class Gdx3DPlanningWindow {
             return;
         }
         selectedId = works.get(index).id();
-        for (Map.Entry<Integer, TextButton> entry : rowButtons.entrySet()) {
-            entry.getValue().setChecked(entry.getKey() == selectedId);
+        for (Map.Entry<Integer, Table> entry : rowButtons.entrySet()) {
+            entry.getValue().setBackground(skin.newDrawable("white",
+                    entry.getKey() == selectedId ? Gdx3DHud.SELECTED_BG : ROW_BG));
         }
         updateButtons();
-        TextButton row = rowButtons.get(selectedId);
+        Table row = rowButtons.get(selectedId);
         if (row != null) {
             stage.setKeyboardFocus(row);
         }
@@ -454,20 +462,23 @@ final class Gdx3DPlanningWindow {
         quoteDialog.setMovable(true);
         quoteDialog.padTop(35f);
 
-        Table headerBox = new Table();
-        headerBox.setBackground(skin.newDrawable("white", Gdx3DHud.SELECTED_BG));
+        Table headerRow = new Table();
+        headerRow.setBackground(skin.newDrawable("white", Gdx3DHud.SELECTED_BG));
         Label header = new Label(PlanningTableModel.quoteHeader(), skin, "monospace");
-        header.setColor(Color.BLACK);
-        headerBox.add(header).pad(2f, 8f, 2f, 8f);
-        quoteDialog.getContentTable().add(headerBox).left().padBottom(6f).row();
+        header.setColor(Color.WHITE);
+        headerRow.add(header).left().expandX().pad(2f, 0f, 2f, 0f);
+        quoteDialog.getContentTable().add(headerRow).growX().padBottom(6f).row();
 
         Table quoteRows = new Table();
+        quoteRows.top().left();
         quoteRows.defaults().space(2f);
         for (WorkQuote quote : quotes) {
-            TextButton row = new TextButton(PlanningTableModel.formatQuoteRow(quote), skin,
-                    "monospace-button");
-            row.getLabel().setAlignment(com.badlogic.gdx.utils.Align.left);
-            row.setDisabled(!quote.feasible());
+            Label label = new Label(PlanningTableModel.formatQuoteRow(quote), skin, "monospace");
+            label.setAlignment(com.badlogic.gdx.utils.Align.left);
+            label.setColor(quote.feasible() ? Color.WHITE : Color.GRAY);
+            Table row = new Table();
+            row.add(label).left().expandX().pad(2f, 0f, 2f, 0f);
+            row.setBackground(skin.newDrawable("white", ROW_BG));
             row.addListener(new ClickListener() {
                 @Override
                 public void clicked(InputEvent event, float x, float y) {
@@ -483,6 +494,7 @@ final class Gdx3DPlanningWindow {
         ScrollPane scroll = new ScrollPane(quoteRows, skin);
         scroll.setFadeScrollBars(false);
         scroll.setScrollingDisabled(false, false);
+        scroll.setScrollbarsOnTop(true);
         quoteDialog.getContentTable().add(scroll).grow().pad(0f, 12f, 8f, 12f).row();
 
         TextButton close = new TextButton("Close", skin);
@@ -539,7 +551,7 @@ final class Gdx3DPlanningWindow {
     }
 
     private void focusSelectedRow() {
-        TextButton row = rowButtons.get(selectedId);
+        Table row = rowButtons.get(selectedId);
         stage.setKeyboardFocus(row != null ? row : rowsTable);
     }
 

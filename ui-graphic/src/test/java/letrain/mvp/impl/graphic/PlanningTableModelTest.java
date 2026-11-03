@@ -42,6 +42,13 @@ class PlanningTableModelTest {
         assertTrue(header.endsWith("|   Time"), header);
         assertEquals(PlanningTableModel.HEADER.length(),
                 PlanningTableModel.formatRow(row).length());
+
+        String line = PlanningTableModel.formatRow(row);
+        for (int index = 0; index < header.length(); index++) {
+            if (header.charAt(index) == '|') {
+                assertEquals('|', line.charAt(index), "column separator at " + index);
+            }
+        }
     }
 
     @Test
