@@ -105,8 +105,10 @@ pintarlos.
   `ConstructionService` compartido. Cada acción muestra su atajo (`[R]`, `[P]`, `[S]`, `[X]`,
   `[D]`, `[Q]`, `[C]`) y acepta tanto la letra sola como `Alt+letra`. `Tab`/`Shift+Tab` recorren
   las acciones habilitadas y les aplican el estilo de foco azul del HUD; `Enter`/`Espacio`
-  activan la acción enfocada. `Add`/`Edit` no están en la ventana 3D: dependen de una preview de
-  ruta 3D que todavía no existe.
+  activan la acción enfocada. El selector de compañías se mueve con flechas o `j`/`k`, marca la
+  fila seleccionada y `Enter` contrata la oferta; la columna `Capabilities` muestra las
+  capacidades de cada constructora (puente/túnel), no los requisitos de la ruta. `Add`/`Edit` no
+  están en la ventana 3D: dependen de una preview de ruta 3D que todavía no existe.
 - **Texto de ayuda**: `MenuText.selectedHint(description, recording)` compone la línea del modo
   seleccionado (`... | [R]:Record ON/OFF | [X]:Experiment`), idéntica en 2D y 3D. El flag de
   grabación sale del journal de comandos (`isRecording() && isSimulationPaused()`).
