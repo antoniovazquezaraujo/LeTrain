@@ -74,6 +74,10 @@ final class Gdx3DPlanningWindow {
     private Model.GameMode returnMode;
     private Dialog quoteDialog;
     private Actor quoteBlocker;
+    private PlannedWork quoteWork;
+    private List<WorkQuote> quoteOptions = List.of();
+    private final List<Table> quoteRowTables = new ArrayList<>();
+    private int quoteSelectedIndex = -1;
 
     Gdx3DPlanningWindow(Stage stage, Skin skin, Model model, GraphicPresenter view) {
         this.stage = stage;
@@ -545,6 +549,11 @@ final class Gdx3DPlanningWindow {
         if (quoteDialog != null) {
             closeQuoteDialog();
         }
+        quoteWork = work;
+        quoteOptions = List.copyOf(quotes);
+        quoteSelectedIndex = indexOfQuote(work, quoteOptions);
+        quoteRowTables.clear();
+
         quoteDialog = new Dialog("Company quotes", skin.get("dialog", Window.WindowStyle.class));
         quoteDialog.setModal(true);
         quoteDialog.setMovable(true);
@@ -560,31 +569,39 @@ final class Gdx3DPlanningWindow {
         Table quoteRows = new Table();
         quoteRows.top().left();
         quoteRows.defaults().space(2f);
-        for (WorkQuote quote : quotes) {
+        for (int index = 0; index < quoteOptions.size(); index++) {
+            WorkQuote quote = quoteOptions.get(index);
             Label label = new Label(PlanningTableModel.formatQuoteRow(quote), skin, "monospace");
             label.setAlignment(com.badlogic.gdx.utils.Align.left);
             label.setColor(quote.feasible() ? Color.WHITE : Color.GRAY);
             Table row = new Table();
             row.setTouchable(Touchable.enabled);
             row.add(label).left().expandX().pad(2f, 0f, 2f, 0f);
-            row.setBackground(skin.newDrawable("white", ROW_BG));
+            row.setBackground(skin.newDrawable("white",
+                    index == quoteSelectedIndex ? Gdx3DHud.SELECTED_BG : ROW_BG));
+            final int quoteIndex = index;
             row.addListener(new ClickListener() {
                 @Override
                 public void clicked(InputEvent event, float x, float y) {
-                    if (quote.feasible()) {
-                        view.selectQuote(work, quote);
-                        closeQuoteDialog();
-                        refresh();
-                    }
+                    selectQuoteRow(quoteIndex);
+                    activateQuoteSelection();
                 }
             });
             quoteRows.add(row).growX().row();
+            quoteRowTables.add(row);
+        }
+        if (quoteOptions.isEmpty()) {
+            quoteRows.add(new Label("No companies available.", skin, "monospace")).left().row();
         }
         ScrollPane scroll = new ScrollPane(quoteRows, skin);
         scroll.setFadeScrollBars(false);
         scroll.setScrollingDisabled(false, false);
         scroll.setScrollbarsOnTop(true);
         quoteDialog.getContentTable().add(scroll).grow().pad(0f, 12f, 8f, 12f).row();
+
+        Label hint = new Label("[j/k] Select  [Enter] Choose  [C] Close", skin, "monospace");
+        hint.setColor(Color.LIGHT_GRAY);
+        quoteDialog.getContentTable().add(hint).left().pad(0f, 12f, 4f, 12f).row();
 
         TextButton close = new TextButton("[C] Close", skin);
         close.addListener(new ChangeListener() {
@@ -603,13 +620,27 @@ final class Gdx3DPlanningWindow {
             }
         });
         stage.addActor(quoteBlocker);
-        // The chooser is modal too: Esc closes it and no game shortcut leaks through while it is
-        // open.
+        // The chooser is modal: arrows/j/k move the highlighted quote, Enter chooses it and
+        // Esc/C closes. Focus stays on Close so the ScrollPane never consumes the arrow keys.
         quoteDialog.addListener(new InputListener() {
             @Override
             public boolean keyDown(InputEvent event, int keycode) {
                 if (keycode == Input.Keys.ESCAPE || keycode == Input.Keys.C) {
                     closeQuoteDialog();
+                    return true;
+                }
+                if (keycode == Input.Keys.UP || keycode == Input.Keys.K) {
+                    moveQuoteSelection(-1);
+                    return true;
+                }
+                if (keycode == Input.Keys.DOWN || keycode == Input.Keys.J) {
+                    moveQuoteSelection(1);
+                    return true;
+                }
+                if (keycode == Input.Keys.ENTER || keycode == Input.Keys.NUMPAD_ENTER
+                        || keycode == Input.Keys.SPACE) {
+                    activateQuoteSelection();
+                    return true;
                 }
                 return true;
             }
@@ -628,6 +659,57 @@ final class Gdx3DPlanningWindow {
         close.setStyle(skin.get("focused", TextButton.TextButtonStyle.class));
     }
 
+    /** Index of the work's current company, or the first quote when there is no current match. */
+    private static int indexOfQuote(PlannedWork work, List<WorkQuote> quotes) {
+        if (quotes.isEmpty()) {
+            return -1;
+        }
+        String currentCompany = work.quote().map(quote -> quote.company().id()).orElse(null);
+        if (currentCompany != null) {
+            for (int index = 0; index < quotes.size(); index++) {
+                if (currentCompany.equals(quotes.get(index).company().id())) {
+                    return index;
+                }
+            }
+        }
+        return 0;
+    }
+
+    /** Highlights one quote row without choosing it yet. */
+    private void selectQuoteRow(int index) {
+        if (index < 0 || index >= quoteOptions.size()) {
+            return;
+        }
+        quoteSelectedIndex = index;
+        for (int rowIndex = 0; rowIndex < quoteRowTables.size(); rowIndex++) {
+            quoteRowTables.get(rowIndex).setBackground(skin.newDrawable("white",
+                    rowIndex == quoteSelectedIndex ? Gdx3DHud.SELECTED_BG : ROW_BG));
+        }
+    }
+
+    private void moveQuoteSelection(int delta) {
+        if (quoteOptions.isEmpty()) {
+            return;
+        }
+        selectQuoteRow(
+                PlanningTableModel.moveIndex(quoteSelectedIndex, quoteOptions.size(), delta));
+    }
+
+    /** Chooses the highlighted quote when it is feasible. */
+    private void activateQuoteSelection() {
+        if (quoteWork == null || quoteSelectedIndex < 0
+                || quoteSelectedIndex >= quoteOptions.size()) {
+            return;
+        }
+        WorkQuote quote = quoteOptions.get(quoteSelectedIndex);
+        if (!quote.feasible()) {
+            return;
+        }
+        view.selectQuote(quoteWork, quote);
+        closeQuoteDialog();
+        refresh();
+    }
+
     private void closeQuoteDialog() {
         if (quoteBlocker != null) {
             quoteBlocker.remove();
@@ -638,6 +720,10 @@ final class Gdx3DPlanningWindow {
             quoteDialog.remove();
             quoteDialog = null;
         }
+        quoteWork = null;
+        quoteOptions = List.of();
+        quoteRowTables.clear();
+        quoteSelectedIndex = -1;
         focusSelectedRow();
     }
 

@@ -37,7 +37,7 @@ class QuotesDialogTest {
     }
 
     @Test
-    @DisplayName("a quote row shows company, cost, time, quality and required capability")
+    @DisplayName("a quote row shows company, cost, time, quality and its capabilities")
     void should_FormatAQuoteRow() {
         String row = QuotesDialog.formatRow(normalQuote());
         String[] cells = row.split("\\|", -1);
@@ -47,7 +47,7 @@ class QuotesDialogTest {
         assertEquals("$250", cells[1].trim(), row);
         assertEquals("1 min", cells[2].trim(), row);
         assertEquals("High", cells[3].trim(), row);
-        assertEquals("-", cells[4].trim(), row);
+        assertEquals("Bridge+Tunnel", cells[4].trim(), row);
     }
 
     @Test
@@ -59,6 +59,7 @@ class QuotesDialogTest {
         assertEquals("CHAPUCERT", cells[0].trim(), row);
         assertEquals("-", cells[1].trim(), row);
         assertEquals("-", cells[2].trim(), row);
+        assertTrue(cells[4].trim().startsWith("-"), row);
         assertTrue(row.endsWith("!"), row);
         assertTrue(QuotesDialog.unavailableLine(List.of(bridgeQuote()))
                 .contains("cannot build bridges"));

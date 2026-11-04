@@ -167,6 +167,10 @@ class PlanningTableModelTest {
 
         assertFalse(unavailable.feasible());
         assertTrue(unavailableRow.endsWith(" !"), unavailableRow);
-        assertTrue(unavailableRow.contains("Bridge"), unavailableRow);
+
+        WorkQuote imperial = WorkQuote.quote(ConstructionCompanyCatalog.IMPERIAL, normal,
+                WorkQuote.DEFAULT_BASE_DELAY_TICKS_PER_CELL);
+        assertTrue(PlanningTableModel.formatQuoteRow(imperial).contains("Bridge+Tunnel"));
+        assertFalse(PlanningTableModel.formatQuoteRow(feasible).contains("Bridge+Tunnel"));
     }
 }

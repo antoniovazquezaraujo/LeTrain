@@ -198,10 +198,10 @@ public final class PlanningTableModel {
         };
     }
 
-    /** Company capabilities required by the quote's route. */
+    /** Structural capabilities offered by the company, independent of this route. */
     static String capabilityLabel(WorkQuote quote) {
-        boolean bridge = quote.requiredCapabilities().contains(Capability.BRIDGE);
-        boolean tunnel = quote.requiredCapabilities().contains(Capability.TUNNEL);
+        boolean bridge = quote.company().capabilities().contains(Capability.BRIDGE);
+        boolean tunnel = quote.company().capabilities().contains(Capability.TUNNEL);
         if (bridge && tunnel) {
             return "Bridge+Tunnel";
         }
