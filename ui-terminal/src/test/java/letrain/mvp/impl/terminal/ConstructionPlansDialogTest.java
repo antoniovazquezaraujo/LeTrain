@@ -159,6 +159,24 @@ class ConstructionPlansDialogTest {
     }
 
     @Test
+    @DisplayName("Run is enabled only when the selected row is a Draft")
+    void should_EnableRunOnlyForSelectedDraft() {
+        ConstructionPlansDialog.Row draft = new ConstructionPlansDialog.Row(1, "Draft", "1,1",
+                "2,2", "DIRECT", "-", "-", 2, "$100", "1 min", "");
+        ConstructionPlansDialog.Row done = new ConstructionPlansDialog.Row(2, "Done", "3,3", "4,4",
+                "DIRECT", "-", "-", 2, "$100", "1 min", "");
+        List<ConstructionPlansDialog.Row> rows = List.of(draft, done);
+
+        assertTrue(ConstructionPlansDialog.canRunSelected(rows, 0, false, false));
+        assertFalse(ConstructionPlansDialog.canRunSelected(rows, 1, false, false),
+                "Done must not enable Run even if a Draft exists elsewhere");
+        assertFalse(ConstructionPlansDialog.canRunSelected(rows, 0, true, false));
+        assertFalse(ConstructionPlansDialog.canRunSelected(rows, 0, false, true));
+        assertFalse(ConstructionPlansDialog.canRunSelected(rows, -1, false, false));
+        assertFalse(ConstructionPlansDialog.canRunSelected(List.of(), 0, false, false));
+    }
+
+    @Test
     @DisplayName("j/k move the table selection and wrap around the ends")
     void should_MoveSelectionWithJAndK() {
         ActionListBox list = mock(ActionListBox.class);
