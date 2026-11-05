@@ -107,8 +107,10 @@ pintarlos.
   las acciones habilitadas y les aplican el estilo de foco azul del HUD; `Enter`/`Espacio`
   activan la acción enfocada. El selector de compañías se mueve con flechas o `j`/`k`, marca la
   fila seleccionada y `Enter` contrata la oferta; la columna `Capabilities` muestra las
-  capacidades de cada constructora (puente/túnel), no los requisitos de la ruta. `Add`/`Edit` no
-  están en la ventana 3D: dependen de una preview de ruta 3D que todavía no existe.
+  capacidades de cada constructora (puente/túnel), no los requisitos de la ruta. Las obras
+  `DRAFT`/`PAUSED` se pintan en el mapa 3D mediante `PlannedWorksOverlay` y `Gdx3DRenderer` como
+  puntos cyan con extremos A/B ámbar; una pausada solo enseña las celdas pendientes. `Add`/`Edit`
+  no están en la ventana 3D: dependen de una preview de ruta 3D que todavía no existe.
 - **Texto de ayuda**: `MenuText.selectedHint(description, recording)` compone la línea del modo
   seleccionado (`... | [R]:Record ON/OFF | [X]:Experiment`), idéntica en 2D y 3D. El flag de
   grabación sale del journal de comandos (`isRecording() && isSimulationPaused()`).

@@ -3,6 +3,7 @@ package letrain.visitor.gdx3d;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import java.util.ArrayList;
 import java.util.List;
+import letrain.construction.PlannedWork;
 import letrain.economy.EconomyManager;
 import letrain.ground.Ground;
 import letrain.ground.GroundMap;
@@ -253,7 +254,28 @@ public class Gdx3DRenderer implements Visitor {
                 t.accept(infrastructureRenderer);
             }
         });
+        renderPlannedWorks(model);
         visitCursor(model.getCursor());
+    }
+
+    /** Paints the projected routes of stored planned works over the real map. */
+    private void renderPlannedWorks(Model model) {
+        if (model.getPlannedWorks() == null) {
+            return;
+        }
+        for (PlannedWork work : model.getPlannedWorks().works()) {
+            for (PlannedWorksOverlay.Cell cell : PlannedWorksOverlay.cells(work)) {
+                if (!isVisible(new letrain.map.Point(cell.x(), cell.y()))) {
+                    continue;
+                }
+                ModelInstance marker = resourceContext
+                        .getModelInstance(cell.endpoint() ? resourceContext.plannedEndpointModel
+                                : resourceContext.plannedWorkModel);
+                marker.transform.setToTranslation(cell.x() + 0.5f, cell.endpoint() ? 0.22f : 0.12f,
+                        cell.y() + 0.5f);
+                instances.add(marker);
+            }
+        }
     }
 
     private boolean isVisible(letrain.map.Point pos) {
