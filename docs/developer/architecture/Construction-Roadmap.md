@@ -153,15 +153,19 @@ Implementación actual de la fase 1:
 - `GraphicPresenter` posee el `ConstructionService` de 3D, lo recrea al cambiar de modelo y lo
   avanza en cada tick de simulación. El menú `B:Planning` y la tecla `b` abren la ventana; cerrarla
   restaura el modo anterior. Mientras una obra está activa, el guardado se bloquea como en 2D.
+- `ui-graphic/.../PlannedWorksOverlay` y `Gdx3DRenderer`: las obras `DRAFT`/`PAUSED` se pintan en
+  el mapa 3D como puntos cyan con los extremos A/B en ámbar. Una obra pausada solo pinta las celdas
+  pendientes; `WORKING`, `DONE` y `CANCELLED` no se pintan.
 
 La lista vive en el modelo y se guarda en el savegame (`plannedWorks`). El presenter conserva
 solo la fila seleccionada y los avisos transitorios. Una obra automática activa todavía no se puede
 guardar: hay que pausarla, terminarla o cancelarla antes. Una obra pausada guarda su progreso, tick
 restante y prepago, y se reanuda desde el mismo punto sin volver a cobrar la cotización.
 
-La ventana 3D no implementa `Add`/`Edit` ni pinta las rutas planificadas en el mapa 3D: esas dos
-piezas dependen de una preview de ruta 3D que todavía no existe. La ventana es, por tanto, una
-herramienta de gestión de obras creadas en 2D o cargadas de un savegame, no un editor de rutas.
+La ventana 3D no implementa `Add`/`Edit`: esas dos piezas dependen de una preview de ruta 3D que
+todavía no existe. La ventana es, por tanto, una herramienta de gestión de obras creadas en 2D o
+cargadas de un savegame, no un editor de rutas; las rutas guardadas sí se ven en el mapa 3D mientras
+sean `DRAFT`/`PAUSED`.
 
 ### Visión final de la lista
 

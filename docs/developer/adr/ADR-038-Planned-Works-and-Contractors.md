@@ -25,8 +25,8 @@
 >
 > El cliente 3D ya ofrece `Gdx3DPlanningWindow`: lista y gestiona obras existentes con el mismo
 > `ConstructionService` (Run, Pause, Resume, Cancel, Delete, Quotes y Close). `Add` y `Edit`
-> siguen siendo 2D hasta que exista una preview de ruta 3D; la ventana 3D tampoco pinta aún los
-> planes en el mapa 3D.
+> siguen siendo 2D hasta que exista una preview de ruta 3D; las rutas `DRAFT`/`PAUSED` ya se pintan
+> en el mapa 3D como puntos cyan con extremos ámbar.
 
 ## Contexto
 
