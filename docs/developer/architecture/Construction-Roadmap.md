@@ -139,6 +139,8 @@ Implementación actual de la fase 1:
   pedir A/B y permite cambiar la política.
 - `ui-terminal/.../ConstructionPlansDialog`: diálogo modal con tabla, total y acciones; `Run`
   habilitado solo cuando hay cotización y el saldo alcanza (comprobación final en el presenter).
+- `core/.../construction/ConstructionService`: estado compartido de ejecución (cola activa, prepago,
+  pausa/reanudación y cancelación), sin dependencias de UI; lo usan los presentadores.
 - `TerminalPresenter`: flujo `Add` en modo guardar, flujo `Edit` sobre el plan guardado, `Q` para
   cotizaciones, `Run` con prepago y cancelación con devolución, apertura con `b`, borrado y creación
   de las marcas de extremos. El diálogo no se reabre solo.
