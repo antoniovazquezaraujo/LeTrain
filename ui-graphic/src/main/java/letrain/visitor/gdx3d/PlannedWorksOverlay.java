@@ -26,20 +26,25 @@ public final class PlannedWorksOverlay {
 
     /** Cells to paint for {@code work}; empty for states that have no projected route. */
     public static List<Cell> cells(PlannedWork work) {
-        if (work == null || work.plan() == null || !work.plan().feasible()) {
+        if (work == null || work.plan() == null) {
             return List.of();
         }
         boolean paused = work.state() == PlannedWork.State.PAUSED;
         if (work.state() != PlannedWork.State.DRAFT && !paused) {
             return List.of();
         }
-        RoutePlan plan = work.plan();
-        if (plan.steps().isEmpty()) {
+        int fromStep = paused ? work.builtSteps() : 0;
+        return cells(work.plan(), fromStep);
+    }
+
+    /** Pending cells of a route from {@code fromStep}, including both A/B endpoints. */
+    public static List<Cell> cells(RoutePlan plan, int fromStep) {
+        if (plan == null || !plan.feasible() || plan.steps().isEmpty()) {
             return List.of();
         }
-        int fromStep = paused ? Math.max(0, Math.min(work.builtSteps(), plan.steps().size())) : 0;
+        int start = Math.max(0, Math.min(fromStep, plan.steps().size()));
         Map<Long, Cell> byPosition = new LinkedHashMap<>();
-        for (int index = fromStep; index < plan.steps().size(); index++) {
+        for (int index = start; index < plan.steps().size(); index++) {
             RouteStep step = plan.steps().get(index);
             put(byPosition, step.point().getX(), step.point().getY(), false);
         }

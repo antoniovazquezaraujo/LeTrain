@@ -16,9 +16,12 @@ import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import letrain.construction.ConstructionCompanyCatalog;
+import letrain.construction.ConstructionProgress;
 import letrain.construction.ConstructionService;
 import letrain.construction.PlannedWork;
 import letrain.construction.RailTrackMaterializer;
+import letrain.construction.RouteConstructionJob;
+import letrain.construction.RouteConstructionQueue;
 import letrain.construction.WorkQuote;
 import letrain.mvp.input.InputEvent;
 import java.io.File;
@@ -26,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import letrain.map.Point;
+import letrain.planner.RoutePlan;
 import letrain.mvp.Model.GameModeMenuOption;
 import letrain.palette.VisualPalette;
 import letrain.mvp.impl.GameSaveService;
@@ -488,6 +492,9 @@ public class GraphicPresenter extends ApplicationAdapter
             Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST);
         }
 
+        // The active work owns the remaining projected cells: keep its ghost in sync with the
+        // service before the renderer rebuilds the frame.
+        syncConstructionGhost();
         // Actualizar instancias desde el modelo
         renderer.clear();
         renderer.visitModel(model, cam);
@@ -940,6 +947,21 @@ public class GraphicPresenter extends ApplicationAdapter
     /** True while the shared service is laying planned track. */
     boolean isConstructionActive() {
         return constructionService != null && constructionService.isActive();
+    }
+
+    /** Feeds the pending cells of the active work to the 3D renderer. */
+    private void syncConstructionGhost() {
+        if (renderer == null) {
+            return;
+        }
+        if (constructionService == null || !constructionService.isActive()) {
+            renderer.setActiveConstruction(null, 0);
+            return;
+        }
+        ConstructionProgress progress = constructionService.progress();
+        RoutePlan plan = constructionService.queue().flatMap(RouteConstructionQueue::job)
+                .map(RouteConstructionJob::plan).orElse(null);
+        renderer.setActiveConstruction(plan, progress.builtSteps());
     }
 
     /** Cancels a working or paused work, refunding the unbuilt budget minus the penalty. */
