@@ -144,11 +144,24 @@ Implementación actual de la fase 1:
 - `TerminalPresenter`: flujo `Add` en modo guardar, flujo `Edit` sobre el plan guardado, `Q` para
   cotizaciones, `Run` con prepago y cancelación con devolución, apertura con `b`, borrado y creación
   de las marcas de extremos. El diálogo no se reabre solo.
+- `core/.../construction/RailBuildability` y `RailTrackMaterializer`: preflight y materializador
+  compartidos por terminal y 3D. El materializador ya no es un adaptador exclusivo de terminal.
+- `ui-graphic/.../Gdx3DPlanningWindow` y `PlanningTableModel`: ventana Scene2D de gestión de obras
+  existentes. Reutiliza el mismo `ConstructionService` para `Run`, `Pause`, `Resume`, `Cancel` y
+  `Delete`, y ofrece `Quotes` y `Close`. `Add`/`Edit` quedan fuera de esta rebanada porque el
+  cliente 3D todavía no tiene preview de ruta.
+- `GraphicPresenter` posee el `ConstructionService` de 3D, lo recrea al cambiar de modelo y lo
+  avanza en cada tick de simulación. El menú `B:Planning` y la tecla `b` abren la ventana; cerrarla
+  restaura el modo anterior. Mientras una obra está activa, el guardado se bloquea como en 2D.
 
 La lista vive en el modelo y se guarda en el savegame (`plannedWorks`). El presenter conserva
 solo la fila seleccionada y los avisos transitorios. Una obra automática activa todavía no se puede
 guardar: hay que pausarla, terminarla o cancelarla antes. Una obra pausada guarda su progreso, tick
 restante y prepago, y se reanuda desde el mismo punto sin volver a cobrar la cotización.
+
+La ventana 3D no implementa `Add`/`Edit` ni pinta las rutas planificadas en el mapa 3D: esas dos
+piezas dependen de una preview de ruta 3D que todavía no existe. La ventana es, por tanto, una
+herramienta de gestión de obras creadas en 2D o cargadas de un savegame, no un editor de rutas.
 
 ### Visión final de la lista
 

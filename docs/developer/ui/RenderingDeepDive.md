@@ -98,8 +98,17 @@ pintarlos.
   `GameModeMenuOption.shortcut` (`Planning` + `b` → `B:Planning`). Si está vacío, se usa el
   `&` de la etiqueta. El menú 2D reparte las entradas en varias filas cuando no caben en el ancho
   de la terminal.
-- **Planning en 3D**: `Gdx3DHud.menuOptions()` filtra `PLANNED_WORKS` hasta que exista una ventana
-  de planificación 3D; el modelo comparte la entrada, pero el HUD no muestra un botón muerto.
+- **Planning en 3D**: `Gdx3DHud.menuOptions()` muestra `PLANNED_WORKS` como `B:Planning`. La
+  tecla `b` y el botón abren `Gdx3DPlanningWindow`, una ventana Scene2D modal que lista las obras
+  existentes y ofrece `Run`, `Pause`, `Resume`, `Cancel`, `Delete`, `Quotes` y `Close`. La tabla y
+  sus reglas de selección viven en `PlanningTableModel`; la ejecución la sigue decidiendo el
+  `ConstructionService` compartido. Cada acción muestra su atajo (`[R]`, `[P]`, `[S]`, `[X]`,
+  `[D]`, `[Q]`, `[C]`) y acepta tanto la letra sola como `Alt+letra`. `Tab`/`Shift+Tab` recorren
+  las acciones habilitadas y les aplican el estilo de foco azul del HUD; `Enter`/`Espacio`
+  activan la acción enfocada. El selector de compañías se mueve con flechas o `j`/`k`, marca la
+  fila seleccionada y `Enter` contrata la oferta; la columna `Capabilities` muestra las
+  capacidades de cada constructora (puente/túnel), no los requisitos de la ruta. `Add`/`Edit` no
+  están en la ventana 3D: dependen de una preview de ruta 3D que todavía no existe.
 - **Texto de ayuda**: `MenuText.selectedHint(description, recording)` compone la línea del modo
   seleccionado (`... | [R]:Record ON/OFF | [X]:Experiment`), idéntica en 2D y 3D. El flag de
   grabación sale del journal de comandos (`isRecording() && isSimulationPaused()`).

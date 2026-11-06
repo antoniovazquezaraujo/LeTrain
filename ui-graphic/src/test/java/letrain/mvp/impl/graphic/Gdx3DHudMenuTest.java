@@ -52,9 +52,9 @@ class Gdx3DHudMenuTest {
     }
 
     @Test
-    @DisplayName("Planning is hidden from the 3D menu until a 3D works window exists")
-    void should_HidePlanningFromGraphicMenu() {
-        assertFalse(Gdx3DHud.visibleInGraphic(Model.GameMode.PLANNED_WORKS));
+    @DisplayName("Planning is offered in the 3D menu now that the works window exists")
+    void should_ShowPlanningInGraphicMenu() {
+        assertTrue(Gdx3DHud.visibleInGraphic(Model.GameMode.PLANNED_WORKS));
         assertTrue(Gdx3DHud.visibleInGraphic(Model.GameMode.RAILS));
     }
 
@@ -113,7 +113,7 @@ class Gdx3DHudMenuTest {
         String keys = Gdx3DHud.keysText();
 
         assertEquals("[Alt+▲▼ / Mouse Wheel]:Zoom | [Alt+◀▶]:Rotate"
-                + " | [z/Z]:Camera | [a/r/d/f/s/t/c/u/p/n]:Modes | [Tab]:Toggle Panel"
+                + " | [z/Z]:Camera | [a/r/d/f/s/t/c/u/p/n/b]:Modes | [Tab]:Toggle Panel"
                 + " | [Esc]:Menu", keys);
         assertFalse(keys.contains("[PgUp"), "3D has no page-scroll binding");
         assertFalse(keys.contains("ZOOM") || keys.contains("ROTATE"),

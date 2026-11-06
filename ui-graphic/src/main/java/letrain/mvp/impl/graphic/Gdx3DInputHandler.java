@@ -427,6 +427,19 @@ public class Gdx3DInputHandler implements InputProcessor {
             return;
         }
 
+        // 'b' opens the Planning window in the map modes, like the 2D planned-works key and the
+        // B:Planning menu entry. Add/Edit stay 2D-only: the 3D client has no route preview.
+        if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null
+                && (stroke.getCharacter() == 'b' || stroke.getCharacter() == 'B')
+                && !stroke.isCtrlDown() && !stroke.isAltDown()
+                && (model.getMode() == Model.GameMode.RAILS
+                        || model.getMode() == Model.GameMode.MENU)) {
+            // Planning is a transient mode, like the 2D list: the window closes back to the map.
+            model.setMode(Model.GameMode.PLANNED_WORKS);
+            view.showPlanningWindow();
+            return;
+        }
+
         // Shift+X toggles experiment mode (live sandbox with in-memory snapshot/restore). Not in
         // TRAINS: there the letter is a locomotive aspect, like in the 2D terminal.
         if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null

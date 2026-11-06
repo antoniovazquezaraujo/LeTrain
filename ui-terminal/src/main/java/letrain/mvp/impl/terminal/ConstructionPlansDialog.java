@@ -147,10 +147,39 @@ final class ConstructionPlansDialog {
         heading.addComponent(header);
         body.addComponent(heading, BorderLayout.Location.TOP);
 
+        // The Run button follows the selected row, not just the presence of any draft. Subclassing
+        // the list is the smallest hook Lanterna gives us: selection changes happen inside its
+        // handleKeyStroke (arrows/Home/End/mouse) and through setSelectedIndex (j/k).
+        final Runnable[] refreshRun = {() -> {
+        }};
         ActionListBox list = new ActionListBox() {
             @Override
             public boolean isFocusable() {
                 return !safeRows.isEmpty();
+            }
+
+            @Override
+            public synchronized ActionListBox setSelectedIndex(int index) {
+                ActionListBox result = super.setSelectedIndex(index);
+                refreshRun[0].run();
+                return result;
+            }
+
+            @Override
+            public com.googlecode.lanterna.gui2.Interactable.Result handleKeyStroke(
+                    KeyStroke keyStroke) {
+                com.googlecode.lanterna.gui2.Interactable.Result result =
+                        super.handleKeyStroke(keyStroke);
+                refreshRun[0].run();
+                return result;
+            }
+
+            @Override
+            protected synchronized void afterEnterFocus(
+                    com.googlecode.lanterna.gui2.Interactable.FocusChangeDirection direction,
+                    com.googlecode.lanterna.gui2.Interactable previouslyInFocus) {
+                super.afterEnterFocus(direction, previouslyInFocus);
+                refreshRun[0].run();
             }
         };
         for (Row row : safeRows) {
@@ -220,7 +249,6 @@ final class ConstructionPlansDialog {
         boolean hasSelection = !safeRows.isEmpty();
         boolean hasWorking = safeRows.stream().anyMatch(row -> "Working".equals(row.state()));
         boolean hasPaused = safeRows.stream().anyMatch(row -> "Paused".equals(row.state()));
-        boolean hasDraft = safeRows.stream().anyMatch(row -> "Draft".equals(row.state()));
         addButton.setEnabled(!hasWorking && !hasPaused);
         editButton.setEnabled(hasSelection && !hasWorking && !hasPaused);
         quotesButton.setEnabled(hasSelection && !hasWorking && !hasPaused);
@@ -231,7 +259,9 @@ final class ConstructionPlansDialog {
         Button runButton = NewGameDialog.mnemonicButton("Run", 'R', run);
         Button pauseButton = NewGameDialog.mnemonicButton("Pause", 'P', pause);
         Button resumeButton = NewGameDialog.mnemonicButton("Resume", 'S', resume);
-        runButton.setEnabled(hasDraft && hasSelection && !hasWorking && !hasPaused);
+        refreshRun[0] = () -> runButton
+                .setEnabled(canRunSelected(safeRows, selectedIndex(list), hasWorking, hasPaused));
+        refreshRun[0].run();
         pauseButton.setEnabled(hasWorking);
         resumeButton.setEnabled(hasPaused);
         runRow.addComponent(runButton);
@@ -277,7 +307,11 @@ final class ConstructionPlansDialog {
                             case ADD -> add.run();
                             case EDIT -> edit.run();
                             case QUOTES -> quotes.run();
-                            case RUN -> run.run();
+                            case RUN -> {
+                                if (runButton.isEnabled()) {
+                                    run.run();
+                                }
+                            }
                             case PAUSE -> pause.run();
                             case RESUME -> resume.run();
                             case CANCEL -> cancelWork.run();
@@ -322,7 +356,7 @@ final class ConstructionPlansDialog {
                         deliverEvent.set(false);
                     }
                     case 'r' -> {
-                        if (hasDraft && !hasWorking && !hasPaused) {
+                        if (runButton.isEnabled()) {
                             run.run();
                         }
                         deliverEvent.set(false);
@@ -378,6 +412,19 @@ final class ConstructionPlansDialog {
 
     private static int selectedIndex(ActionListBox list) {
         return Math.max(-1, list.getSelectedIndex());
+    }
+
+    /**
+     * True only when the selected row is a draft and no other work is running or paused. Done,
+     * cancelled and unquoted selected rows never enable Run; the presenter still validates cash and
+     * the company quote when the action is pressed.
+     */
+    static boolean canRunSelected(List<Row> rows, int selectedIndex, boolean hasWorking,
+            boolean hasPaused) {
+        if (hasWorking || hasPaused || selectedIndex < 0 || selectedIndex >= rows.size()) {
+            return false;
+        }
+        return "Draft".equals(rows.get(selectedIndex).state());
     }
 
     /** Moves the table selection with j/k, wrapping around the ends. */

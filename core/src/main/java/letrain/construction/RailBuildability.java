@@ -1,4 +1,4 @@
-package letrain.mvp.impl.terminal;
+package letrain.construction;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -20,16 +20,16 @@ import letrain.track.Station;
  * The preview uses it while the author is still choosing, and {@link RailTrackMaterializer} uses it
  * again as the last line of defence before a construction job starts.
  */
-final class RailBuildability {
+public final class RailBuildability {
 
     /** What already occupies a planned cell. */
-    enum Occupant {
+    public enum Occupant {
         TRACK, RAIL_ELEMENT
     }
 
     /** First unbuildable cell found in a plan, with the reason the author must see. */
-    record Issue(Point cell, Occupant occupant) {
-        Issue {
+    public record Issue(Point cell, Occupant occupant) {
+        public Issue {
             Objects.requireNonNull(cell, "cell must not be null");
             Objects.requireNonNull(occupant, "occupant must not be null");
             cell = new Point(cell);
@@ -39,7 +39,7 @@ final class RailBuildability {
          * Concise, lower-case reason suitable for the status line, e.g.
          * {@code cell (2,0) already has track}.
          */
-        String description() {
+        public String description() {
             String what = occupant == Occupant.TRACK ? "track" : "a rail element";
             return "cell (" + cell + ") already has " + what;
         }
@@ -51,7 +51,7 @@ final class RailBuildability {
      * Checks a feasible plan cell by cell. An infeasible plan has no cells to build, so it is not a
      * buildability problem: its planner reason takes precedence.
      */
-    static Optional<Issue> check(Model model, RoutePlan plan) {
+    public static Optional<Issue> check(Model model, RoutePlan plan) {
         return check(model, plan, 0);
     }
 
@@ -59,7 +59,7 @@ final class RailBuildability {
      * Checks the plan from {@code fromStep} onwards. The prefix is skipped because it belongs to a
      * work that is already built and is being resumed.
      */
-    static Optional<Issue> check(Model model, RoutePlan plan, int fromStep) {
+    public static Optional<Issue> check(Model model, RoutePlan plan, int fromStep) {
         Objects.requireNonNull(model, "model must not be null");
         if (plan == null || !plan.feasible()) {
             return Optional.empty();
@@ -75,7 +75,7 @@ final class RailBuildability {
     }
 
     /** Checks a single cell; useful for the immediate A-pick warning. */
-    static Optional<Issue> checkCell(Model model, Point point) {
+    public static Optional<Issue> checkCell(Model model, Point point) {
         Objects.requireNonNull(model, "model must not be null");
         Objects.requireNonNull(point, "point must not be null");
         if (model.getRailMap().getTrackAt(point) != null) {

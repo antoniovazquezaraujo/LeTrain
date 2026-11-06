@@ -64,8 +64,10 @@ El paquete es UI-free. No conoce `Model`, `RailTrackMaker`, `View` ni Lanterna.
 
 ### Materialización real
 
-`RailTrackMaterializer` es el adaptador de terminal. Usa la maquinaria existente
+`RailTrackMaterializer` es el adaptador compartido, en `core`, y usa la maquinaria existente
 (`RailTrackMaker`/`TurtleBuilder`) para no duplicar la creación de vías, puentes, túneles y gates.
+Lo usan tanto el cliente de terminal como el 3D; `RailBuildability` también vive en `core` para
+que la preview y la cola compartan el mismo preflight.
 
 Antes de construir:
 
@@ -110,6 +112,18 @@ esta implementación.
 - El menú File está bloqueado durante la obra: `Esc` abre una confirmación en dos pasos. El primer
   `Esc` pausa la cola y pide confirmación; el segundo cancela, y cualquier otra tecla reanuda.
 - Tras terminar o cancelar, la edición manual se libera y `Esc` vuelve a abrir el menú File normal.
+
+### UI 3D
+
+- `B:Planning` en el menú y la tecla `b` abren `Gdx3DPlanningWindow`, la ventana de gestión de
+  obras existentes. Reutiliza el mismo `ConstructionService` para `Run`, `Pause`, `Resume`,
+  `Cancel` y `Delete`, y ofrece `Quotes` y `Close`.
+- La ventana no crea ni edita rutas: `Add`/`Edit` siguen siendo 2D hasta que exista una preview de
+  ruta 3D. Tampoco pinta los planes en el mapa 3D en esta rebanada.
+- El guardado se bloquea mientras una obra automática está activa, igual que en 2D; una obra
+  pausada sí se puede guardar.
+- El bloqueo global de edición manual mientras la obra avanza sigue siendo una diferencia conocida
+  del cliente 3D y se cerrará en una rebanada posterior.
 
 ### Límites deliberados de esta fase
 

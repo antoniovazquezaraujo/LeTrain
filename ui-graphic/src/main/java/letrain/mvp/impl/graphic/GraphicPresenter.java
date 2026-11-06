@@ -15,6 +15,11 @@ import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import letrain.construction.ConstructionCompanyCatalog;
+import letrain.construction.ConstructionService;
+import letrain.construction.PlannedWork;
+import letrain.construction.RailTrackMaterializer;
+import letrain.construction.WorkQuote;
 import letrain.mvp.input.InputEvent;
 import java.io.File;
 import java.util.List;
@@ -140,6 +145,13 @@ public class GraphicPresenter extends ApplicationAdapter
     private boolean eventSoundsSuppressed = false;
 
     private SimulationController simulationController;
+
+    /**
+     * Shared construction execution state (ADR-037/038). The presenter owns it so the 3D window and
+     * the simulation tick drive the same queue. It is recreated on every model swap, since it binds
+     * the model's planned works and economy.
+     */
+    private ConstructionService constructionService;
 
     // Persistence
     private final GameSaveService gameSaveService;
@@ -425,6 +437,7 @@ public class GraphicPresenter extends ApplicationAdapter
                     CAMERA_VIEW_RADIUS * 2 + 1);
 
             simulationController.tick();
+            tickConstruction();
             if (hud != null) {
                 hud.updateClock();
             }
@@ -744,6 +757,9 @@ public class GraphicPresenter extends ApplicationAdapter
         this.inputHandler = new Gdx3DInputHandler(newModel, this, cameraController, trackMaker,
                 audioController);
         this.simulationController = new SimulationController(newModel, audioController, trackMaker);
+        // The construction queue binds the previous model's works and economy; drop it so the new
+        // model starts without a stale active job.
+        this.constructionService = null;
         // The HUD keeps a direct reference to the model, so rebuild it against the restored one.
         if (hud != null) {
             hud.dispose();
@@ -821,7 +837,190 @@ public class GraphicPresenter extends ApplicationAdapter
     public void onGameModeSelected(letrain.mvp.Model.GameMode mode) {
         if (mode == letrain.mvp.Model.GameMode.PROGRAM) {
             hud.showIDE();
+        } else if (mode == letrain.mvp.Model.GameMode.PLANNED_WORKS) {
+            showPlanningWindow();
         }
+    }
+
+    /** Opens the 3D Planning window (menu {@code B:Planning} or the {@code b} key). */
+    public void showPlanningWindow() {
+        if (hud != null) {
+            hud.showPlanningWindow();
+        }
+    }
+
+    /** Shared confirmation dialog used by the Planning window before destructive actions. */
+    void showConfirmDialog(String title, String message, String confirmLabel, Runnable onConfirm) {
+        if (hud != null) {
+            hud.showConfirmDialog(title, message, confirmLabel, onConfirm);
+        }
+    }
+
+    /**
+     * Confirmation with a cancel callback, so the Planning window can restore its keyboard focus.
+     */
+    void showConfirmDialog(String title, String message, String confirmLabel, Runnable onConfirm,
+            Runnable onCancel) {
+        if (hud != null) {
+            hud.showConfirmDialog(title, message, confirmLabel, onConfirm, onCancel);
+        }
+    }
+
+    private ConstructionService constructionService() {
+        if (constructionService == null) {
+            constructionService =
+                    new ConstructionService(model.getPlannedWorks(), model.getEconomyManager());
+        }
+        return constructionService;
+    }
+
+    /**
+     * Advances the shared construction queue once per simulation tick. The service is only created
+     * when a work has been started, so an idle game never allocates it.
+     */
+    void tickConstruction() {
+        if (constructionService == null) {
+            return;
+        }
+        ConstructionService.Outcome outcome = constructionService.tick();
+        if (outcome.status() == ConstructionService.Status.DONE) {
+            showMessage("Planning", "Construction complete");
+        } else if (outcome.status() == ConstructionService.Status.CANCELLED) {
+            showMessage("Planning", cancelledMessage(outcome.spent()));
+        }
+    }
+
+    /** Runs a draft with its chosen feasible quote, charging the company price once. */
+    void runPlannedWork(int id) {
+        PlannedWork work = model.getPlannedWorks().find(id).orElse(null);
+        if (work == null) {
+            return;
+        }
+        if (work.state() != PlannedWork.State.DRAFT) {
+            showMessage("Planning",
+                    "This work is already " + PlanningTableModel.stateLabel(work.state()));
+            return;
+        }
+        WorkQuote quote = work.quote().orElse(null);
+        if (quote == null) {
+            showMessage("Planning", "Select a company quote before running the work");
+            return;
+        }
+        ConstructionService.Outcome outcome =
+                constructionService().start(work, quote, new RailTrackMaterializer(this, false));
+        applyConstructionOutcome(outcome, quote);
+    }
+
+    /** Resumes a paused work from its saved step, without charging the quote again. */
+    void resumePlannedWork(int id) {
+        PlannedWork work = model.getPlannedWorks().find(id).orElse(null);
+        if (work == null) {
+            return;
+        }
+        ConstructionService.Outcome outcome =
+                constructionService().resume(work, new RailTrackMaterializer(this, false));
+        applyConstructionOutcome(outcome, work.quote().orElse(null));
+    }
+
+    /** Pauses the selected automatic work, keeping its progress and prepaid cash. */
+    void pauseActivePlannedWork(int id) {
+        if (constructionService == null || !constructionService.isAutomatic()
+                || constructionService.activeWorkId().orElse(-1) != id) {
+            showMessage("Planning", "Select the active work to pause it");
+            return;
+        }
+        ConstructionService.Outcome outcome = constructionService.pause();
+        if (outcome.status() == ConstructionService.Status.PAUSED) {
+            showMessage("Planning", "Work paused");
+        } else {
+            showMessage("Planning", "The active work cannot be paused");
+        }
+    }
+
+    /** True while the shared service is laying planned track. */
+    boolean isConstructionActive() {
+        return constructionService != null && constructionService.isActive();
+    }
+
+    /** Cancels a working or paused work, refunding the unbuilt budget minus the penalty. */
+    void cancelPlannedWork(int id) {
+        PlannedWork work = model.getPlannedWorks().find(id).orElse(null);
+        if (work == null) {
+            return;
+        }
+        ConstructionService.Outcome outcome;
+        if (work.state() == PlannedWork.State.PAUSED) {
+            outcome = constructionService().cancelPaused(work);
+        } else if (work.state() == PlannedWork.State.WORKING
+                && constructionService().activeWorkId().orElse(-1) == id) {
+            outcome = constructionService().cancelActive();
+        } else {
+            showMessage("Planning", "Select a Working or Paused work to cancel it");
+            return;
+        }
+        if (outcome.status() == ConstructionService.Status.CANCELLED) {
+            showMessage("Planning", cancelledMessage(outcome.spent()));
+        } else {
+            showMessage("Planning", "Could not cancel the work");
+        }
+    }
+
+    /**
+     * Removes a draft, done or cancelled work; working and paused works must be cancelled first.
+     */
+    void deletePlannedWork(int id) {
+        PlannedWork work = model.getPlannedWorks().find(id).orElse(null);
+        if (work == null) {
+            return;
+        }
+        if (!PlanningTableModel.canDelete(work)) {
+            showMessage("Planning", "Cancel the work before deleting it");
+            return;
+        }
+        model.getPlannedWorks().remove(id);
+    }
+
+    /** Quotes every catalogue company for the selected work. */
+    java.util.List<WorkQuote> quotesFor(PlannedWork work) {
+        if (work == null) {
+            return java.util.List.of();
+        }
+        return ConstructionCompanyCatalog.all().stream()
+                .map(company -> WorkQuote.quote(company, work.plan(),
+                        WorkQuote.DEFAULT_BASE_DELAY_TICKS_PER_CELL, model.getEconomyManager()))
+                .toList();
+    }
+
+    /** Stores a feasible quote for a draft. */
+    void selectQuote(PlannedWork work, WorkQuote quote) {
+        if (work == null || quote == null || !quote.feasible()
+                || work.state() != PlannedWork.State.DRAFT) {
+            return;
+        }
+        model.getPlannedWorks().replaceQuote(work.id(), quote);
+    }
+
+    private void applyConstructionOutcome(ConstructionService.Outcome outcome, WorkQuote quote) {
+        switch (outcome.status()) {
+            case STARTED, RESUMED -> showMessage("Planning", "Work started");
+            case ACTIVE -> showMessage("Planning", "Another construction is already active");
+            case NO_QUOTE ->
+                showMessage("Planning", "Select a company quote before running the work");
+            case NO_CASH -> showMessage("Planning", "Not enough cash: need "
+                    + PlanningTableModel.formatCost(quote == null ? 0 : quote.totalCost()));
+            case PREFLIGHT -> showMessage("Planning", "Work cannot start: " + outcome.detail());
+            case REJECTED -> showMessage("Planning", "Work rejected: " + outcome.detail());
+            case DONE -> showMessage("Planning", "Construction complete");
+            case WRONG_STATE -> showMessage("Planning", "This action does not fit the selection");
+            case IDLE, PAUSED, CANCELLED -> {
+                // No user-facing notice for these outcomes in the 3D window.
+            }
+        }
+    }
+
+    private static String cancelledMessage(double spent) {
+        return spent > 0 ? "Work cancelled · spent " + PlanningTableModel.formatCost(spent)
+                : "Work cancelled";
     }
 
     @Override
@@ -1071,6 +1270,10 @@ public class GraphicPresenter extends ApplicationAdapter
             log.warn("Ignoring save request with null file");
             return;
         }
+        if (isConstructionActive()) {
+            showMessage("Save", "Finish or cancel the active work before saving.");
+            return;
+        }
         file = letrain.command.FileNames.withSavegameExtension(file);
         boolean ok = gameSaveService.save(model, file);
         if (!ok) {
@@ -1265,6 +1468,9 @@ public class GraphicPresenter extends ApplicationAdapter
         this.inputHandler =
                 new Gdx3DInputHandler(model, this, cameraController, trackMaker, audioController);
         this.simulationController = new SimulationController(model, audioController, trackMaker);
+        // A loaded game is a different model: the shared construction service must bind its works
+        // and economy instead of keeping the previous world's queue.
+        this.constructionService = null;
         this.renderer = new letrain.visitor.gdx3d.Gdx3DRenderer(resourceContext);
         this.cameraGroupStrategy =
                 new com.badlogic.gdx.graphics.g3d.decals.CameraGroupStrategy(cam);

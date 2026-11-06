@@ -22,6 +22,11 @@
 >
 > Depende de ADR-034, ADR-035, ADR-036 y ADR-037. La calidad de construcción y el mantenimiento se
 > separan en [[ADR-039-Track-Quality-and-Maintenance|ADR-039]].
+>
+> El cliente 3D ya ofrece `Gdx3DPlanningWindow`: lista y gestiona obras existentes con el mismo
+> `ConstructionService` (Run, Pause, Resume, Cancel, Delete, Quotes y Close). `Add` y `Edit`
+> siguen siendo 2D hasta que exista una preview de ruta 3D; la ventana 3D tampoco pinta aún los
+> planes en el mapa 3D.
 
 ## Contexto
 
@@ -57,6 +62,12 @@ En el futuro, aceptar una ruta en la preview no la construirá inmediatamente. L
 La construcción inmediata seguirá existiendo como opción, pero dejará de ser el único flujo.
 
 ### 2. Lista de obras
+
+**Implementación 3D actual:** la ventana Scene2D `Gdx3DPlanningWindow` replica la tabla y las
+acciones de gestión de la lista 2D sobre el `ConstructionService` compartido. `Gdx3DHud` muestra
+`B:Planning` y la tecla `b` abre la ventana sin crear una ruta. `Add`/`Edit` se aplazan porque
+necesitan una preview de ruta 3D; la lista 3D solo gestiona obras creadas en 2D o cargadas de un
+savegame.
 
 Cada entrada de la lista debe guardar, como mínimo:
 
