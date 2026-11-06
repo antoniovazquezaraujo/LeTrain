@@ -54,6 +54,19 @@ class PlannedWorksOverlayTest {
     }
 
     @Test
+    @DisplayName("a progress offset leaves only the pending cells plus both endpoints")
+    void should_PaintFromProgressOffset() {
+        PlannedWork work = draft();
+        List<PlannedWorksOverlay.Cell> cells = PlannedWorksOverlay.cells(work.plan(), 2);
+
+        assertEquals(2, cells.size());
+        assertTrue(
+                cells.stream().anyMatch(cell -> cell.x() == 1 && cell.y() == 2 && cell.endpoint()));
+        assertTrue(
+                cells.stream().anyMatch(cell -> cell.x() == 3 && cell.y() == 2 && cell.endpoint()));
+    }
+
+    @Test
     @DisplayName("working, done and cancelled works have no projected route")
     void should_HideNonProjectedStates() {
         assertTrue(

@@ -109,6 +109,10 @@ public class Gdx3DResourceContext implements Disposable {
     public Model plannedWorkModel;
     /** Larger, brighter marker for the A/B endpoints of a planned work. */
     public Model plannedEndpointModel;
+    /** Pending-cell marker while an automatic work is being materialised. */
+    public Model constructionGhostModel;
+    /** Pending A/B endpoints while an automatic work is being materialised. */
+    public Model constructionGhostEndpointModel;
     public Model locomotiveModel;
     public Model wagonModel;
     public Model highlightModel;
@@ -207,6 +211,12 @@ public class Gdx3DResourceContext implements Disposable {
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
             plannedEndpointModel = register(modelBuilder.createBox(0.55f, 0.18f, 0.55f,
                     new Material(ColorAttribute.createDiffuse(new Color(1f, 0.75f, 0f, 1f))),
+                    VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
+            constructionGhostModel = register(modelBuilder.createBox(0.28f, 0.04f, 0.28f,
+                    new Material(ColorAttribute.createDiffuse(new Color(1f, 0.45f, 0f, 1f))),
+                    VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
+            constructionGhostEndpointModel = register(modelBuilder.createBox(0.55f, 0.18f, 0.55f,
+                    new Material(ColorAttribute.createDiffuse(new Color(1f, 0.15f, 0f, 1f))),
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 
             // Locomotora simple

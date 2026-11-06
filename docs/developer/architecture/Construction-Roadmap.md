@@ -155,7 +155,8 @@ Implementación actual de la fase 1:
   restaura el modo anterior. Mientras una obra está activa, el guardado se bloquea como en 2D.
 - `ui-graphic/.../PlannedWorksOverlay` y `Gdx3DRenderer`: las obras `DRAFT`/`PAUSED` se pintan en
   el mapa 3D como puntos cyan con los extremos A/B en ámbar. Una obra pausada solo pinta las celdas
-  pendientes; `WORKING`, `DONE` y `CANCELLED` no se pintan.
+  pendientes; mientras una obra `WORKING` avanza, sus celdas pendientes se pintan como fantasmas
+  naranjas con extremos rojos; `DONE` y `CANCELLED` no se pintan.
 
 La lista vive en el modelo y se guarda en el savegame (`plannedWorks`). El presenter conserva
 solo la fila seleccionada y los avisos transitorios. Una obra automática activa todavía no se puede

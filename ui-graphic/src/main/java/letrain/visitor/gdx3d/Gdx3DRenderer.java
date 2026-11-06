@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import java.util.ArrayList;
 import java.util.List;
 import letrain.construction.PlannedWork;
+import letrain.planner.RoutePlan;
 import letrain.economy.EconomyManager;
 import letrain.ground.Ground;
 import letrain.ground.GroundMap;
@@ -64,6 +65,8 @@ public class Gdx3DRenderer implements Visitor {
 
     private float animationAlpha = 1.0f;
     private boolean isXRayActive = false;
+    private RoutePlan activeConstructionPlan;
+    private int activeConstructionBuiltSteps;
 
     public Gdx3DRenderer(Gdx3DResourceContext resourceContext) {
         this.resourceContext = resourceContext;
@@ -136,6 +139,12 @@ public class Gdx3DRenderer implements Visitor {
 
     public void setAnimationAlpha(float alpha) {
         this.animationAlpha = alpha;
+    }
+
+    /** Routes the pending cells of the active automatic work; {@code null} clears the ghost. */
+    public void setActiveConstruction(RoutePlan plan, int builtSteps) {
+        this.activeConstructionPlan = plan;
+        this.activeConstructionBuiltSteps = Math.max(0, builtSteps);
     }
 
     public void init() {}
@@ -255,6 +264,7 @@ public class Gdx3DRenderer implements Visitor {
             }
         });
         renderPlannedWorks(model);
+        renderConstructionGhost();
         visitCursor(model.getCursor());
     }
 
@@ -275,6 +285,25 @@ public class Gdx3DRenderer implements Visitor {
                         cell.y() + 0.5f);
                 instances.add(marker);
             }
+        }
+    }
+
+    /** Paints the remaining cells of the automatic work currently being materialised. */
+    private void renderConstructionGhost() {
+        if (activeConstructionPlan == null) {
+            return;
+        }
+        for (PlannedWorksOverlay.Cell cell : PlannedWorksOverlay.cells(activeConstructionPlan,
+                activeConstructionBuiltSteps)) {
+            if (!isVisible(new letrain.map.Point(cell.x(), cell.y()))) {
+                continue;
+            }
+            ModelInstance marker = resourceContext.getModelInstance(
+                    cell.endpoint() ? resourceContext.constructionGhostEndpointModel
+                            : resourceContext.constructionGhostModel);
+            marker.transform.setToTranslation(cell.x() + 0.5f, cell.endpoint() ? 0.26f : 0.16f,
+                    cell.y() + 0.5f);
+            instances.add(marker);
         }
     }
 
