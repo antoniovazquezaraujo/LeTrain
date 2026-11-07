@@ -122,8 +122,10 @@ esta implementación.
   ruta 3D. Tampoco pinta los planes en el mapa 3D en esta rebanada.
 - El guardado se bloquea mientras una obra automática está activa, igual que en 2D; una obra
   pausada sí se puede guardar.
-- El bloqueo global de edición manual mientras la obra avanza sigue siendo una diferencia conocida
-  del cliente 3D y se cerrará en una rebanada posterior.
+- El bloqueo global de edición manual mientras la obra avanza también se aplica en el cliente 3D:
+  se bloquean construcción/borrado de vías, infraestructura, trenes, enganches, consola y atajos de
+  edición; la navegación, la cámara, los cambios de modo, `b` Planning, `Drive` y el menú File siguen
+  disponibles.
 
 ### Límites deliberados de esta fase
 

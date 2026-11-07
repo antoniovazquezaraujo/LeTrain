@@ -183,7 +183,7 @@ public class Gdx3DInputHandler implements InputProcessor {
             }
         }
         if (ctrlPressed && keycode == Input.Keys.R && model.getMode() != Model.GameMode.COMMAND
-                && model.getMode() != Model.GameMode.PROGRAM) {
+                && model.getMode() != Model.GameMode.PROGRAM && !view.isConstructionActive()) {
             view.redo(1);
             return true;
         }
@@ -419,7 +419,8 @@ public class Gdx3DInputHandler implements InputProcessor {
         // '.' -> repeat the last console command (only outside COMMAND/PROGRAM to avoid stealing
         // a literal '.' typed while editing a program).
         if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null
-                && stroke.getCharacter() == '.' && model.getMode() != Model.GameMode.PROGRAM) {
+                && stroke.getCharacter() == '.' && model.getMode() != Model.GameMode.PROGRAM
+                && !constructionLocked()) {
             String last = view.getCommandHistory().last();
             if (last != null) {
                 executeConsoleCommand(last);
@@ -444,7 +445,7 @@ public class Gdx3DInputHandler implements InputProcessor {
         // TRAINS: there the letter is a locomotive aspect, like in the 2D terminal.
         if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null
                 && stroke.getCharacter() == 'X' && !stroke.isCtrlDown() && !stroke.isAltDown()
-                && model.getMode() != Model.GameMode.PROGRAM
+                && !constructionLocked() && model.getMode() != Model.GameMode.PROGRAM
                 && model.getMode() != Model.GameMode.TRAINS) {
             view.toggleExperimentMode();
             return;
@@ -454,7 +455,7 @@ public class Gdx3DInputHandler implements InputProcessor {
         // Not in TRAINS, where 'R' builds the locomotive with aspect R.
         if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null
                 && stroke.getCharacter() == 'R' && !stroke.isCtrlDown() && !stroke.isAltDown()
-                && model.getMode() != Model.GameMode.PROGRAM
+                && !constructionLocked() && model.getMode() != Model.GameMode.PROGRAM
                 && model.getMode() != Model.GameMode.TRAINS) {
             togglePauseEditing();
             return;
@@ -462,6 +463,9 @@ public class Gdx3DInputHandler implements InputProcessor {
 
         if (getEffectiveKeyType(stroke) == KeyType.Character && stroke.getCharacter() != null
                 && stroke.getCharacter() == ':') {
+            if (constructionLocked()) {
+                return;
+            }
             if (model.getMode() != Model.GameMode.PROGRAM) {
                 model.setMode(Model.GameMode.COMMAND);
                 model.setCommandText("");
@@ -564,7 +568,7 @@ public class Gdx3DInputHandler implements InputProcessor {
                     case 'u':
                         // While pause-editing is on (undo history active), 'u' = undo (vim-like).
                         // Ctrl+Z is avoided because several window managers/toolkits intercept it.
-                        if (model.isSimulationPaused()) {
+                        if (!constructionLocked() && model.isSimulationPaused()) {
                             view.undo(1);
                             return;
                         }
@@ -588,6 +592,9 @@ public class Gdx3DInputHandler implements InputProcessor {
                         }
                         return;
                     case 'p':
+                        if (constructionLocked()) {
+                            return;
+                        }
                         model.setMode(Model.GameMode.PROGRAM);
                         view.onGameModeSelected(Model.GameMode.PROGRAM);
                         return;
@@ -603,6 +610,16 @@ public class Gdx3DInputHandler implements InputProcessor {
         if (stroke.getKeyType() == KeyType.Escape && model.getMode() != Model.GameMode.ADD
                 && model.getMode() != Model.GameMode.PROGRAM) {
             view.showFileMenu();
+            return;
+        }
+
+        if (constructionLocked()) {
+            // Navigation, camera and mode changes have already returned above. Forward only
+            // non-editing movement/quantifier keys; everything else is swallowed while the
+            // automatic work owns the map.
+            if (isConstructionMovement(stroke)) {
+                trackMaker.onChar(stroke);
+            }
             return;
         }
 
@@ -831,6 +848,38 @@ public class Gdx3DInputHandler implements InputProcessor {
         }
     }
 
+
+    /** True while a planned construction runs and manual editing must stay locked. */
+    private boolean constructionLocked() {
+        return view.isConstructionActive() && model.getMode() != Model.GameMode.DRIVE
+                && model.getMode() != Model.GameMode.PROGRAM;
+    }
+
+    /** Movement/quantifiers that cannot build, erase or edit infrastructure. */
+    private static boolean isConstructionMovement(InputEvent stroke) {
+        if (stroke.isCtrlDown() || stroke.isAltDown() || stroke.isShiftDown()) {
+            return false;
+        }
+        switch (stroke.getKeyType()) {
+            case ArrowUp:
+            case ArrowDown:
+            case ArrowLeft:
+            case ArrowRight:
+            case PageUp:
+            case PageDown:
+                return true;
+            case Character:
+                Character c = stroke.getCharacter();
+                if (c == null) {
+                    return false;
+                }
+                char lower = Character.toLowerCase(c);
+                return lower == 'h' || lower == 'j' || lower == 'k' || lower == 'l' || lower == ' '
+                        || Character.isDigit(lower);
+            default:
+                return false;
+        }
+    }
 
     private KeyType getEffectiveKeyType(InputEvent event) {
         if (event.getKeyType() == KeyType.Character && event.getCharacter() != null) {
