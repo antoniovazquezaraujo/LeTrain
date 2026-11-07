@@ -119,7 +119,9 @@ esta implementación.
   obras existentes. Reutiliza el mismo `ConstructionService` para `Run`, `Pause`, `Resume`,
   `Cancel` y `Delete`, y ofrece `Quotes` y `Close`.
 - La ventana no crea ni edita rutas: `Add`/`Edit` siguen siendo 2D hasta que exista una preview de
-  ruta 3D. Tampoco pinta los planes en el mapa 3D en esta rebanada.
+  ruta 3D. El mapa 3D sí pinta las rutas planificadas en estado `DRAFT`/`PAUSED` como una ruta de
+  puntos cyan con los extremos A/B en ámbar; las obras `PAUSED` muestran solo las celdas pendientes.
+  `WORKING`, `DONE` y `CANCELLED` no se pintan.
 - El guardado se bloquea mientras una obra automática está activa, igual que en 2D; una obra
   pausada sí se puede guardar.
 - El bloqueo global de edición manual mientras la obra avanza sigue siendo una diferencia conocida

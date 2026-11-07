@@ -332,6 +332,7 @@
 - [[letrain.visitor.gdx3d.HeadlightGlows|HeadlightGlows]] (ui-graphic)
 - [[letrain.visitor.gdx3d.Headlights|Headlights]] (ui-graphic)
 - [[letrain.visitor.gdx3d.InfrastructureRenderer|InfrastructureRenderer]] (ui-graphic)
+- [[letrain.visitor.gdx3d.PlannedWorksOverlay|PlannedWorksOverlay]] (ui-graphic)
 - [[letrain.visitor.gdx3d.TailLamps|TailLamps]] (ui-graphic)
 - [[letrain.visitor.gdx3d.TrackRenderer|TrackRenderer]] (ui-graphic)
 - [[letrain.visitor.gdx3d.VehicleRenderer|VehicleRenderer]] (ui-graphic)

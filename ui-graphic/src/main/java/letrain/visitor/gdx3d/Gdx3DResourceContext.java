@@ -105,6 +105,10 @@ public class Gdx3DResourceContext implements Disposable {
     public Model inactiveRailModel;
     public Model invalidRailModel;
     public Model cursorModel;
+    /** Small flat marker for each pending cell of a planned work. */
+    public Model plannedWorkModel;
+    /** Larger, brighter marker for the A/B endpoints of a planned work. */
+    public Model plannedEndpointModel;
     public Model locomotiveModel;
     public Model wagonModel;
     public Model highlightModel;
@@ -194,6 +198,15 @@ public class Gdx3DResourceContext implements Disposable {
             // Cursor
             cursorModel = register(modelBuilder.createCylinder(0.8f, 0.02f, 0.8f, 3,
                     new Material(ColorAttribute.createDiffuse(Color.YELLOW)),
+                    VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
+
+            // Planned works: a dotted cyan route with larger amber A/B endpoints. These are
+            // deliberately opaque and above the ground so they read at normal camera zoom.
+            plannedWorkModel = register(modelBuilder.createBox(0.28f, 0.04f, 0.28f,
+                    new Material(ColorAttribute.createDiffuse(new Color(0.1f, 0.8f, 1f, 1f))),
+                    VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
+            plannedEndpointModel = register(modelBuilder.createBox(0.55f, 0.18f, 0.55f,
+                    new Material(ColorAttribute.createDiffuse(new Color(1f, 0.75f, 0f, 1f))),
                     VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 
             // Locomotora simple
